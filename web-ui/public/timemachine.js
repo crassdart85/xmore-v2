@@ -770,7 +770,14 @@
             }
             if (fcSelectedSymbols.length > 1) {
                 // Multi-stock: run all in parallel then show comparison
+                const multiDiv0 = document.getElementById('fcMultiResults');
                 if (resultsDiv) resultsDiv.style.display = 'none';
+                if (multiDiv0) multiDiv0.style.display = 'none';
+                // Update loading text to reflect multi-stock context
+                const fcCalcEl = loadingDiv?.querySelector('p:first-of-type');
+                const fcSubEl  = loadingDiv?.querySelector('.tm-loading-sub');
+                if (fcCalcEl) fcCalcEl.textContent = `Running forecasts for ${fcSelectedSymbols.length} stocks…`;
+                if (fcSubEl)  fcSubEl.textContent  = 'Running in parallel — this may take a moment';
                 if (loadingDiv) loadingDiv.style.display = 'flex';
                 if (runBtn) runBtn.disabled = true;
                 try {
@@ -788,6 +795,11 @@
                 } finally {
                     if (loadingDiv) loadingDiv.style.display = 'none';
                     if (runBtn) runBtn.disabled = false;
+                    // Restore default loading text for next single-stock run
+                    const fcCalcEl2 = loadingDiv?.querySelector('p:first-of-type');
+                    const fcSubEl2  = loadingDiv?.querySelector('.tm-loading-sub');
+                    if (fcCalcEl2) fcCalcEl2.textContent = 'Running 5,000 simulated futures…';
+                    if (fcSubEl2)  fcSubEl2.textContent  = 'Computing GBM parameters & Monte Carlo paths';
                 }
                 return;
             }
