@@ -1115,10 +1115,14 @@
         const rows = sorted.map((d, i) => {
             const sym = (d.symbol || '').replace('.CA', '');
             if (d.ok === false || !d.expected_value) {
+                // Show the actual reason from the API if available
+                const reason = d.error
+                    ? escHtml(d.error.replace(/\s*\(need.*\)/, '').replace(/^.*for [\w.]+\s*/, ''))
+                    : 'Insufficient price history';
                 return `<tr class="fc-multi-row fc-multi-error">
                     <td class="fc-multi-rank">${i + 1}</td>
                     <td class="fc-multi-sym">${escHtml(sym)}</td>
-                    <td colspan="5" class="fc-multi-err-msg">Forecast unavailable</td>
+                    <td colspan="5" class="fc-multi-err-msg">${reason}</td>
                 </tr>`;
             }
             const ret = d.expected_return_pct;
@@ -1127,9 +1131,9 @@
                 <td class="fc-multi-sym">${escHtml(sym)}</td>
                 <td class="fc-multi-ret ${retCls(ret)}">${fmtPct(ret)}</td>
                 <td class="fc-multi-prob">${d.probability_positive ?? '—'}%</td>
-                <td class="fc-multi-val">${fmtEGP(d.worst_case_5)}</td>
-                <td class="fc-multi-val">${fmtEGP(d.median)}</td>
-                <td class="fc-multi-val fc-multi-best">${fmtEGP(d.best_case_95)}</td>
+                <td class="fc-multi-val">${fmtEGP(d.worst_case_value)}</td>
+                <td class="fc-multi-val">${fmtEGP(d.median_value)}</td>
+                <td class="fc-multi-val fc-multi-best">${fmtEGP(d.best_case_value)}</td>
             </tr>`;
         }).join('');
 
