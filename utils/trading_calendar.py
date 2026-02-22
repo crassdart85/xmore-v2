@@ -23,17 +23,6 @@ EGX_HOLIDAYS_2026 = {
     date(2026, 10, 6),   # Armed Forces Day
 }
 
-def is_egx_trading_day(d: date = None) -> bool:
-    """Check if a date is an EGX trading day (Sun-Thu, not holiday)."""
-    d = d or date.today()
-    # EGX trades Sun (6) through Thu (3)
-    if d.weekday() in (4, 5):  # Friday, Saturday
-        return False
-    if d in EGX_HOLIDAYS_2026:
-        return False
-    return True
-
-
 # US holidays 2026
 US_HOLIDAYS_2026 = {
     date(2026, 1, 1),    # New Year's Day

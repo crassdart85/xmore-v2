@@ -1601,8 +1601,8 @@ footer {
     }
 
     .theme-btn {
-        width: 34px;
-        height: 34px;
+        width: 44px;
+        height: 44px;
         font-size: 0.9em;
     }
 
@@ -1628,6 +1628,7 @@ footer {
     }
 
     .stats-grid {
+        grid-template-columns: 1fr;
         gap: 6px;
     }
 
@@ -1643,14 +1644,49 @@ footer {
         font-size: 0.7em;
     }
 
+    .tab-btn {
+        padding: 6px 8px;
+        font-size: 0.75em;
+    }
+
     table {
-        min-width: 400px;
+        min-width: 320px;
     }
 
     th,
     td {
         padding: 8px 6px;
         font-size: 0.8em;
+    }
+
+    .company-name {
+        max-width: 70px;
+        font-size: 0.7em;
+    }
+
+    .header-buttons {
+        top: 6px;
+        right: 6px;
+        gap: 4px;
+    }
+
+    .theme-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .lang-btn {
+        padding: 5px 10px;
+        font-size: 0.75em;
+    }
+
+    .rtl .header-buttons {
+        right: auto;
+        left: 6px;
+    }
+
+    .rtl .company-name {
+        text-align: right;
     }
 }
 

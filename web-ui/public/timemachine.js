@@ -10,6 +10,9 @@
     let tmChart = null;       // LW Charts instance (Past equity curve)
     let fcBandChart = null;   // LW Charts instance (Future band chart)
     let fcStocksLoaded = false;
+    let fcAllStocks = [];        // full stock list, cached after first load
+    let fcSelectedSymbols = []; // [{symbol, name}] — current selection
+    const FC_MAX_STOCKS = 20;
     let fcMode = 'auto';      // 'auto' | 'manual'
 
     // ─── Public entry point (called by switchToTab) ───────────
@@ -539,35 +542,108 @@
 
     // ─── Load stock list into selector ───────────────────────
     async function loadForecastSymbols() {
-        const select = document.getElementById('fcSymbol');
-        const search = document.getElementById('fcSymbolSearch');
-        if (!select || fcStocksLoaded) return;
+        const search   = document.getElementById('fcSymbolSearch');
+        const dropdown = document.getElementById('fcSymbolDropdown');
+        if (!search || fcStocksLoaded) return;
         try {
             const res = await fetch('/api/stocks', { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to load stocks');
             const data = await res.json();
-            const stocks = data.stocks || data || [];
-            const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
-            select.innerHTML = '<option value="">— Select stock —</option>' +
-                stocks.map(s => {
-                    const name = lang === 'ar' ? (s.name_ar || s.name_en) : (s.name_en || s.name_ar);
-                    const sym  = s.symbol.replace('.CA', '');
-                    return `<option value="${s.symbol}" data-name="${escHtml(name)}" data-sym="${escHtml(sym)}">${escHtml(sym)} — ${escHtml(name)}</option>`;
-                }).join('');
+            fcAllStocks = (data.stocks || data || []).map(s => ({
+                symbol:  s.symbol,
+                name_en: s.name_en || s.name_ar || s.symbol,
+                name_ar: s.name_ar || s.name_en || s.symbol,
+                display: s.symbol.replace('.CA', ''),
+            }));
             fcStocksLoaded = true;
-            if (search) {
-                search.addEventListener('input', () => {
-                    const q = search.value.toLowerCase();
-                    Array.from(select.options).forEach(opt => {
-                        if (!opt.value) return;
-                        const text = (opt.dataset.sym + ' ' + (opt.dataset.name || '')).toLowerCase();
-                        opt.style.display = text.includes(q) ? '' : 'none';
-                    });
-                });
-            }
+            search.addEventListener('focus', () => {
+                renderFcDropdown(search.value);
+                if (dropdown) dropdown.style.display = '';
+            });
+            search.addEventListener('input', () => {
+                renderFcDropdown(search.value);
+                if (dropdown) dropdown.style.display = '';
+            });
+            document.addEventListener('click', (e) => {
+                if (search && dropdown &&
+                    !search.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.style.display = 'none';
+                }
+            });
         } catch (err) {
-            if (select) select.innerHTML = '<option value="">Could not load stocks</option>';
+            if (search) search.placeholder = 'Could not load stocks';
         }
+    }
+
+    function renderFcDropdown(query) {
+        const dropdown = document.getElementById('fcSymbolDropdown');
+        if (!dropdown) return;
+        const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
+        const q = (query || '').toLowerCase();
+        const filtered = q
+            ? fcAllStocks.filter(s => {
+                const name = lang === 'ar' ? s.name_ar : s.name_en;
+                return s.display.toLowerCase().includes(q) || name.toLowerCase().includes(q);
+            })
+            : fcAllStocks;
+        const items = filtered.slice(0, 60);
+        if (!items.length) {
+            dropdown.innerHTML = '<div class="fc-item-empty">No stocks found</div>';
+            return;
+        }
+        dropdown.innerHTML = items.map(s => {
+            const selected = fcSelectedSymbols.some(x => x.symbol === s.symbol);
+            const name = escHtml(lang === 'ar' ? s.name_ar : s.name_en);
+            return `<div class="fc-symbol-item${selected ? ' fc-item-selected' : ''}" data-symbol="${s.symbol}" data-name="${name}">
+                <span class="fc-item-check">${selected ? '✓' : ''}</span>
+                <span class="fc-item-sym">${escHtml(s.display)}</span>
+                <span class="fc-item-name">${name}</span>
+            </div>`;
+        }).join('');
+        dropdown.querySelectorAll('.fc-symbol-item[data-symbol]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleFcSymbol(item.dataset.symbol, item.dataset.name);
+                renderFcDropdown(document.getElementById('fcSymbolSearch')?.value || '');
+            });
+        });
+    }
+
+    function toggleFcSymbol(symbol, name) {
+        const idx = fcSelectedSymbols.findIndex(x => x.symbol === symbol);
+        if (idx >= 0) {
+            fcSelectedSymbols.splice(idx, 1);
+        } else {
+            if (fcSelectedSymbols.length >= FC_MAX_STOCKS) {
+                if (typeof showToast === 'function') showToast('warning', 'Maximum 20 stocks allowed.');
+                return;
+            }
+            fcSelectedSymbols.push({ symbol, name });
+        }
+        renderFcTags();
+    }
+
+    function renderFcTags() {
+        const container = document.getElementById('fcSelectedTags');
+        const counter   = document.getElementById('fcSelectionCount');
+        if (!container) return;
+        container.innerHTML = fcSelectedSymbols.map(s => {
+            const display = escHtml(s.symbol.replace('.CA', ''));
+            return `<span class="fc-tag" data-symbol="${s.symbol}">
+                ${display}<button class="fc-tag-remove" type="button" aria-label="Remove ${display}">×</button>
+            </span>`;
+        }).join('');
+        container.querySelectorAll('.fc-tag-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sym = btn.closest('.fc-tag').dataset.symbol;
+                const idx = fcSelectedSymbols.findIndex(x => x.symbol === sym);
+                if (idx >= 0) fcSelectedSymbols.splice(idx, 1);
+                renderFcTags();
+                renderFcDropdown(document.getElementById('fcSymbolSearch')?.value || '');
+            });
+        });
+        if (counter) counter.textContent = fcSelectedSymbols.length;
     }
 
     // ─── Escape helper (local fallback) ──────────────────────
@@ -687,14 +763,36 @@
         let payload = { investment_amount: amount, scenario };
 
         if (fcMode === 'manual') {
-            // Manual: user-picked stock + preset horizon
-            const symbol  = (document.getElementById('fcSymbol')?.value || '').trim();
             const horizon = parseInt(document.getElementById('fcHorizon')?.value, 10) || 63;
-            if (!symbol) {
-                if (typeof showToast === 'function') showToast('error', _t('fcSelectSymbol') || 'Please select a stock.');
+            if (fcSelectedSymbols.length === 0) {
+                if (typeof showToast === 'function') showToast('error', _t('fcSelectSymbol') || 'Please select at least one stock.');
                 return;
             }
-            payload.symbol  = symbol;
+            if (fcSelectedSymbols.length > 1) {
+                // Multi-stock: run all in parallel then show comparison
+                if (resultsDiv) resultsDiv.style.display = 'none';
+                if (loadingDiv) loadingDiv.style.display = 'flex';
+                if (runBtn) runBtn.disabled = true;
+                try {
+                    const multiResults = await Promise.all(
+                        fcSelectedSymbols.map(s =>
+                            fetch('/api/timemachine/forecast', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({ investment_amount: amount, scenario, symbol: s.symbol, horizon }),
+                            }).then(r => r.json()).catch(() => ({ ok: false, symbol: s.symbol }))
+                        )
+                    );
+                    renderMultiForecastResults(multiResults, amount);
+                } finally {
+                    if (loadingDiv) loadingDiv.style.display = 'none';
+                    if (runBtn) runBtn.disabled = false;
+                }
+                return;
+            }
+            // Single stock: fall through to standard single-result flow
+            payload.symbol  = fcSelectedSymbols[0].symbol;
             payload.horizon = horizon;
         } else {
             // Auto: derive horizon from calendar date picker
@@ -749,6 +847,9 @@
     function renderForecastResults(d) {
         const resultsDiv = document.getElementById('fcResults');
         if (!resultsDiv) return;
+        // Hide multi-stock panel when showing single-stock results
+        const multiDiv = document.getElementById('fcMultiResults');
+        if (multiDiv) multiDiv.style.display = 'none';
 
         const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
         const _t = typeof t === 'function' ? t : (k) => k;
@@ -990,6 +1091,73 @@
             const v = minV + (i / 4) * (maxV - minV);
             ctx.fillText(formatCompact(v), W - 5, yp(v) + 3);
         }
+    }
+
+    // ─── Multi-stock comparison results ──────────────────────
+    function renderMultiForecastResults(results, initialAmount) {
+        const multiDiv  = document.getElementById('fcMultiResults');
+        const singleDiv = document.getElementById('fcResults');
+        if (!multiDiv) return;
+        // Hide single-stock panel so its named elements (fcExpectedValue etc.) remain intact
+        if (singleDiv) singleDiv.style.display = 'none';
+
+        // Sort by expected return descending; failed runs go to bottom
+        const sorted = [...results].sort((a, b) => {
+            const ra = a.ok !== false ? (a.expected_return_pct ?? -999) : -9999;
+            const rb = b.ok !== false ? (b.expected_return_pct ?? -999) : -9999;
+            return rb - ra;
+        });
+
+        const fmtPct = (v) => v != null ? (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' : '—';
+        const fmtEGP = (v) => v != null ? formatEGP(v) + ' EGP' : '—';
+        const retCls = (v) => v != null && v >= 0 ? 'tm-pos' : 'tm-neg';
+
+        const rows = sorted.map((d, i) => {
+            const sym = (d.symbol || '').replace('.CA', '');
+            if (d.ok === false || !d.expected_value) {
+                return `<tr class="fc-multi-row fc-multi-error">
+                    <td class="fc-multi-rank">${i + 1}</td>
+                    <td class="fc-multi-sym">${escHtml(sym)}</td>
+                    <td colspan="5" class="fc-multi-err-msg">Forecast unavailable</td>
+                </tr>`;
+            }
+            const ret = d.expected_return_pct;
+            return `<tr class="fc-multi-row${i === 0 ? ' fc-multi-winner' : ''}">
+                <td class="fc-multi-rank">${i + 1}</td>
+                <td class="fc-multi-sym">${escHtml(sym)}</td>
+                <td class="fc-multi-ret ${retCls(ret)}">${fmtPct(ret)}</td>
+                <td class="fc-multi-prob">${d.probability_positive ?? '—'}%</td>
+                <td class="fc-multi-val">${fmtEGP(d.worst_case_5)}</td>
+                <td class="fc-multi-val">${fmtEGP(d.median)}</td>
+                <td class="fc-multi-val fc-multi-best">${fmtEGP(d.best_case_95)}</td>
+            </tr>`;
+        }).join('');
+
+        multiDiv.innerHTML = `
+            <div class="fc-multi-header">
+                <h4>Forecast Comparison — ${sorted.length} Stocks</h4>
+                <p class="fc-multi-sub">Investment: ${fmtEGP(initialAmount)} · Sorted by expected return</p>
+            </div>
+            <div class="fc-multi-table-wrap">
+                <table class="fc-multi-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Stock</th>
+                            <th>Expected Return</th>
+                            <th>Prob. Profit</th>
+                            <th>Worst (5%)</th>
+                            <th>Median</th>
+                            <th>Best (95%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>
+            <div class="tm-disclaimer">Multi-stock comparison runs one Monte Carlo simulation per stock.
+            Results are independent — no correlation or portfolio effects are modelled.
+            Not financial advice.</div>`;
+        multiDiv.style.display = 'block';
     }
 
     // ─── Outcome distribution histogram ──────────────────────

@@ -439,16 +439,16 @@
                         </div>
                     </div>
 
-                    <!-- MANUAL MODE: stock selector + horizon presets -->
+                    <!-- MANUAL MODE: multi-stock selector + horizon presets -->
                     <div id="fcManualSection" style="display:none">
                         <div class="tm-field">
-                            <label for="fcSymbol" data-translate="fcSymbolLabel">Stock Symbol</label>
+                            <label>Stocks <span class="fc-max-hint">(select up to 20)</span></label>
+                            <div id="fcSelectedTags" class="fc-selected-tags"></div>
                             <div class="fc-symbol-wrapper">
-                                <input type="text" id="fcSymbolSearch" placeholder="Search stock…" autocomplete="off" class="fc-symbol-search">
-                                <select id="fcSymbol" class="fc-symbol-select" size="1">
-                                    <option value="">Loading stocks…</option>
-                                </select>
+                                <input type="text" id="fcSymbolSearch" placeholder="Search and add stocks…" autocomplete="off" class="fc-symbol-search">
+                                <div id="fcSymbolDropdown" class="fc-symbol-dropdown" style="display:none"></div>
                             </div>
+                            <div class="fc-selection-counter"><span id="fcSelectionCount">0</span>/20 selected</div>
                         </div>
                         <div class="tm-field">
                             <label data-translate="fcHorizonLabel">Time Horizon</label>
@@ -585,6 +585,9 @@
                     Monte Carlo simulation assumes Geometric Brownian Motion. Past volatility does not guarantee future volatility.
                 </div>
             </div>
+
+            <!-- Multi-stock comparison results -->
+            <div id="fcMultiResults" style="display:none"></div>
 
             <!-- Forecast loading state -->
             <div id="fcLoading" class="tm-loading" style="display:none">

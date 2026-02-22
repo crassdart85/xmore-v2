@@ -290,6 +290,71 @@
     }
 }
 
+@media (max-width: 768px) {
+    .perf-proof-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    #equityCurveCanvas {
+        height: 200px;
+    }
+    #equityCurveChartContainer {
+        min-height: 220px;
+    }
+    .perf-metric-value {
+        font-size: 18px;
+    }
+    .perf-modal {
+        width: 96vw;
+        padding: 12px;
+        max-height: 88vh;
+    }
+    .perf-section-head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .perf-health {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .perf-proof-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+    }
+    #equityCurveCanvas {
+        height: 160px;
+    }
+    #equityCurveChartContainer {
+        min-height: 180px;
+    }
+    .perf-metric-value {
+        font-size: 16px;
+    }
+    .perf-metric-card {
+        padding: 8px;
+    }
+    .perf-action-btn {
+        width: 100%;
+        text-align: center;
+    }
+    .perf-modal {
+        width: 100vw;
+        border-radius: 0;
+        padding: 10px;
+        max-height: 95vh;
+    }
+    .perf-chart-controls {
+        gap: 6px;
+    }
+    .perf-period-btn {
+        padding: 3px 6px;
+        font-size: 0.8em;
+    }
+}
+
 [dir="rtl"] .perf-table th,
 [dir="rtl"] .perf-table td {
     text-align: right;

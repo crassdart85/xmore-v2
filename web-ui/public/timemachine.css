@@ -618,6 +618,38 @@ canvas#tmEquityChart {
         min-width: 0;
         text-align: center;
     }
+
+    /* Rank row: drop probability column, tighten columns */
+    .fc-rank-row {
+        grid-template-columns: 22px 52px 1fr 66px;
+    }
+    .fc-rank-prob {
+        display: none;
+    }
+
+    /* Timeline: reduce indent so dot doesn't clip */
+    .tm-timeline {
+        padding-left: 14px;
+    }
+    .tm-timeline-dot {
+        left: -20px;
+    }
+    .rtl .tm-timeline {
+        padding-left: 0;
+        padding-right: 14px;
+    }
+    .rtl .tm-timeline-dot {
+        left: auto;
+        right: -20px;
+    }
+
+    /* Empty state: reduce excessive vertical padding */
+    .tm-empty-state {
+        padding: 40px 16px;
+    }
+    .tm-empty-icon {
+        font-size: 2.2rem;
+    }
 }
 
 /* ─── Reduced motion ──────────────────────── */
@@ -921,7 +953,7 @@ canvas#tmEquityChart {
     margin-bottom: 16px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .fc-hero-grid { grid-template-columns: 1fr; }
 }
 
@@ -1079,8 +1111,193 @@ canvas#tmEquityChart {
     color: var(--text-primary);
 }
 
+/* ─── Multi-stock selector ──────────────────── */
+.fc-max-hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.fc-selected-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 10px;
+    margin-bottom: 8px;
+}
+
+.fc-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent);
+    color: white;
+    border-radius: 20px;
+    padding: 3px 10px 3px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.fc-tag-remove {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0.8;
+    transition: opacity 0.15s;
+}
+.fc-tag-remove:hover { opacity: 1; }
+
+.fc-symbol-dropdown {
+    position: absolute;
+    z-index: 200;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    background: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.fc-symbol-wrapper {
+    position: relative;
+}
+
+.fc-symbol-item {
+    display: grid;
+    grid-template-columns: 18px 56px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border-light);
+}
+.fc-symbol-item:last-child { border-bottom: none; }
+.fc-symbol-item:hover { background: var(--table-hover-bg); }
+
+.fc-item-selected {
+    background: rgba(102, 126, 234, 0.08);
+}
+
+.fc-item-check {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.fc-item-sym {
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.fc-item-name {
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fc-item-empty {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.fc-selection-counter {
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* ─── Multi-stock comparison table ─────────── */
+.fc-multi-header {
+    margin-bottom: 12px;
+}
+.fc-multi-header h4 {
+    margin: 0 0 4px;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+.fc-multi-sub {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.fc-multi-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+
+.fc-multi-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.fc-multi-table th {
+    background: var(--table-header-bg);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 9px 12px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.fc-multi-table td {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-light);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.fc-multi-winner td:first-child {
+    border-left: 3px solid var(--accent);
+}
+.fc-multi-winner {
+    background: rgba(102, 126, 234, 0.05);
+    font-weight: 600;
+}
+
+.fc-multi-rank {
+    color: var(--text-muted);
+    font-weight: 700;
+    text-align: center;
+}
+.fc-multi-sym {
+    font-weight: 700;
+    color: var(--accent);
+}
+.fc-multi-ret { font-weight: 700; }
+.fc-multi-prob { color: var(--text-secondary); }
+.fc-multi-best { color: #16a34a; font-weight: 600; }
+.fc-multi-err-msg { color: var(--text-muted); font-style: italic; }
+.fc-multi-error { opacity: 0.6; }
+
+@media (max-width: 480px) {
+    .fc-multi-table th,
+    .fc-multi-table td { padding: 8px 8px; font-size: 0.8rem; }
+}
+
 /* RTL adjustments */
 .rtl .tm-subtab-row { direction: rtl; }
 .rtl .fc-scenario-row { direction: rtl; }
 .rtl .fc-range-card { direction: rtl; }
 .rtl .fc-hero-main { border-left: none; border-right: 3px solid var(--accent); }
+.rtl .fc-symbol-item { direction: rtl; }
+.rtl .fc-multi-winner td:first-child { border-left: none; border-right: 3px solid var(--accent); }
