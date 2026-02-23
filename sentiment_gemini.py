@@ -2,9 +2,10 @@
 Gemini-powered Sentiment Analysis Module
 
 Primary news source : Enterprise Egypt (bilingual EN/AR, EGX-focused)
-Fallback news source: Finnhub API (per-symbol headlines)
-AI model            : gemini-1.5-flash (free tier: 1,500 req/day)
-Scoring             : Gemini returns -10..+10; normalized to -1..+1 for DB storage
+Fallback 1          : Mubasher EGX RSS EN + AR (free, no key)
+Fallback 2          : Finnhub API per-symbol headlines
+AI model            : gemini-2.5-flash (free tier: 10 req/min, 1,500 req/day)
+Scoring             : Gemini returns sentiment text -> mapped to ±0.7/0.0
 
 Drop-in replacement for sentiment.py — same public API:
   collect_sentiment()          -> main entry point
