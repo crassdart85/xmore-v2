@@ -1109,6 +1109,11 @@ footer {
     color: var(--accent);
 }
 
+/* Prices tab — date column hidden on small screens to keep table readable */
+@media (max-width: 480px) {
+    .prices-date-col { display: none; }
+}
+
 /* Price and volume cell styling */
 .price-cell {
     font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;

@@ -1995,21 +1995,21 @@ async function loadPrices() {
             }
         }
 
-        let html = `<table><thead><tr><th>${t('stock')}</th><th>${t('date')}</th><th>${t('closePrice')}</th><th>${t('volume')}</th></tr></thead><tbody>`;
+        let html = `<div class="scrollable-container"><table><thead><tr><th>${t('stock')}</th><th class="prices-date-col">${t('date')}</th><th>${t('closePrice')}</th><th>${t('volume')}</th></tr></thead><tbody>`;
 
         filteredData.forEach(stock => {
             const companyName = getCompanyName(stock.symbol);
             html += `
                 <tr>
-                    <td><strong>${stock.symbol}</strong><br><small class="company-name">${companyName}</small></td>
-                    <td>${formatDate(stock.date)}</td>
+                    <td class="stock-cell"><strong>${stock.symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                    <td class="prices-date-col">${formatDate(stock.date)}</td>
                     <td class="price-cell">${parseFloat(stock.close).toFixed(2)}</td>
                     <td class="volume-cell">${parseInt(stock.volume).toLocaleString()}</td>
                 </tr>
             `;
         });
 
-        html += '</tbody></table>';
+        html += '</tbody></table></div>';
         container.innerHTML = html;
     } catch (error) {
         console.error('Error loading prices:', error);
