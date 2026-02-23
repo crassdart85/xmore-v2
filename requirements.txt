@@ -23,4 +23,5 @@ deep-translator>=1.11.4
 python-dotenv>=1.0.1
 newspaper3k>=0.2.8
 pydantic>=2.8.0
+google-genai>=1.0.0
 
