@@ -136,6 +136,46 @@ RSS_SOURCES: Dict[str, RSSSourceConfig] = {
         max_results=10,
         description="FRA regulatory decisions",
     ),
+    "AlArabiya_Egypt": RSSSourceConfig(
+        queries=[
+            "site:alarabiya.net اقتصاد مصر بورصة",
+            "Al Arabiya Egypt economy EGX stock market",
+        ],
+        max_results=15,
+        description="Al Arabiya Egypt economy coverage (alarabiya.net — direct access blocked, via Google News)",
+    ),
+    "CNN_Arabic_Egypt": RSSSourceConfig(
+        queries=[
+            "site:arabic.cnn.com الاقتصاد المصري",
+            "CNN Arabic Egypt economy inflation GDP",
+        ],
+        max_results=15,
+        description="CNN Arabic Egypt economy tag (arabic.cnn.com/tag/alaqtsad-almsry)",
+    ),
+    "Asharq_Business_Egypt": RSSSourceConfig(
+        queries=[
+            "site:asharqbusiness.com مصر اقتصاد",
+            "Asharq Business Egypt economy investments",
+        ],
+        max_results=15,
+        description="Asharq Business Egypt coverage (asharqbusiness.com/tags/36 — Cloudflare blocked, via Google News)",
+    ),
+    "CBE_Arabic_News": RSSSourceConfig(
+        queries=[
+            "البنك المركزي المصري بيان قرار",
+            "CBE Egypt central bank decision press release",
+        ],
+        max_results=10,
+        description="CBE Arabic news page (cbe.org.eg/ar/news-publications/news — WAF blocked, via Google News)",
+    ),
+    "EIP_IDSC": RSSSourceConfig(
+        queries=[
+            "مركز المعلومات ودعم اتخاذ القرار مصر اقتصاد",
+            "IDSC Egypt economic information decision support",
+        ],
+        max_results=10,
+        description="EIP/IDSC Egypt government economic news (eip.gov.eg/IDSC/News)",
+    ),
 }
 
 PDF_SOURCES: Dict[str, PDFSourceConfig] = {

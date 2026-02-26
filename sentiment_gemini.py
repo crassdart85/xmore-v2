@@ -201,6 +201,64 @@ def _fetch_mubasher_articles() -> list:
     return articles
 
 
+# ── Supplementary: CNN Arabic RSS + EIP/IDSC scraper ─────────────────────────
+
+CNN_ARABIC_RSS = "https://arabic.cnn.com/rss"
+EIP_NEWS_URL   = "https://www.eip.gov.eg/IDSC/News/List.aspx"
+EIP_BASE_URL   = "https://www.eip.gov.eg"
+
+def _fetch_arabic_sources() -> list:
+    """
+    Supplementary Arabic news from CNN Arabic RSS and EIP/IDSC news page.
+    Always run alongside Enterprise Egypt (not a fallback) to provide Arabic
+    context that helps Gemini identify EGX-related sentiment.
+    Returns articles in [{'headline': str, 'text': str}] format.
+    """
+    import feedparser
+    import requests
+    from bs4 import BeautifulSoup
+
+    articles = []
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        )
+    }
+
+    # ── CNN Arabic RSS (general Egypt economy coverage) ─────────────────
+    try:
+        feed = feedparser.parse(CNN_ARABIC_RSS)
+        count = 0
+        for entry in feed.entries[:25]:
+            headline = entry.get("title", "")
+            summary  = entry.get("summary", "")
+            if headline:
+                articles.append({"headline": headline, "text": summary[:2000]})
+                count += 1
+        logger.info(f"Fetched {count} articles from CNN Arabic RSS")
+    except Exception as e:
+        logger.warning(f"CNN Arabic RSS fetch failed: {e}")
+
+    # ── EIP/IDSC news list (Egyptian government economic news) ──────────
+    try:
+        resp = requests.get(EIP_NEWS_URL, headers=headers, timeout=12)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        count = 0
+        for a in soup.find_all("a", href=True):
+            href  = a.get("href", "")
+            title = a.get_text(strip=True)
+            if "View.aspx?ID=" in href and len(title) > 10:
+                articles.append({"headline": title, "text": ""})
+                count += 1
+        logger.info(f"Fetched {count} articles from EIP/IDSC news page")
+    except Exception as e:
+        logger.warning(f"EIP/IDSC news fetch failed: {e}")
+
+    return articles
+
+
 # ── Fallback 2: Finnhub headlines ─────────────────────────────────────────────
 
 def _fetch_finnhub_articles(symbols: list, days_back: int = 7) -> list:
@@ -399,10 +457,13 @@ def collect_sentiment(symbols: list = None, days_back: int = 2) -> int:
     create_sentiment_table()
     today = datetime.now().strftime("%Y-%m-%d")
 
-    # Step 1 — fetch news: Enterprise Egypt → Mubasher RSS → Finnhub
+    # Step 1 — fetch news: Enterprise Egypt (primary) + Arabic sources (always)
+    #           → Mubasher RSS → Finnhub (fallbacks if primary unavailable)
     articles = _fetch_recent_articles(days_back=days_back)
+    arabic_articles = _fetch_arabic_sources()   # CNN Arabic + EIP/IDSC (always run)
+    articles.extend(arabic_articles)
     if not articles:
-        logger.warning("Enterprise Egypt unavailable — falling back to Mubasher RSS")
+        logger.warning("Enterprise Egypt + Arabic sources unavailable — falling back to Mubasher RSS")
         articles = _fetch_mubasher_articles()
     if not articles:
         logger.warning("Mubasher RSS unavailable — falling back to Finnhub headlines")

@@ -89,6 +89,42 @@ EGYPTIAN_NEWS_FEEDS = [
         "focus": "markets",
         "reliability": "medium"
     },
+    # ── Arabic sources ────────────────────────────────────────────────────────
+    {
+        "name": "CNN Arabic",
+        "url": "https://arabic.cnn.com/rss",
+        "language": "ar",
+        "focus": "general",
+        "reliability": "high"
+    },
+    {
+        "name": "Google News Al-Arabiya Egypt Economy",
+        "url": "https://news.google.com/rss/search?q=%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF+%D9%85%D8%B5%D8%B1+%D8%A8%D9%88%D8%B1%D8%B5%D8%A9&hl=ar&gl=EG&ceid=EG:ar",
+        "language": "ar",
+        "focus": "markets",
+        "reliability": "medium"
+    },
+    {
+        "name": "Google News Asharq Business Egypt",
+        "url": "https://news.google.com/rss/search?q=site:asharqbusiness.com+%D9%85%D8%B5%D8%B1&hl=ar&gl=EG&ceid=EG:ar",
+        "language": "ar",
+        "focus": "business",
+        "reliability": "medium"
+    },
+    {
+        "name": "Google News CBE Egypt",
+        "url": "https://news.google.com/rss/search?q=%D8%A7%D9%84%D8%A8%D9%86%D9%83+%D8%A7%D9%84%D9%85%D8%B1%D9%83%D8%B2%D9%8A+%D8%A7%D9%84%D9%85%D8%B5%D8%B1%D9%8A+%D8%B3%D8%B9%D8%B1+%D9%81%D8%A7%D8%A6%D8%AF%D8%A9&hl=ar&gl=EG&ceid=EG:ar",
+        "language": "ar",
+        "focus": "markets",
+        "reliability": "medium"
+    },
+    {
+        "name": "Google News EIP Egypt Economy",
+        "url": "https://news.google.com/rss/search?q=%D9%85%D8%B1%D9%83%D8%B2+%D8%A7%D9%84%D9%85%D8%B9%D9%84%D9%88%D9%85%D8%A7%D8%AA+%D9%85%D8%B5%D8%B1+%D8%A7%D9%82%D8%AA%D8%B5%D8%A7%D8%AF&hl=ar&gl=EG&ceid=EG:ar",
+        "language": "ar",
+        "focus": "business",
+        "reliability": "medium"
+    },
 ]
 
 
