@@ -17,6 +17,8 @@
     let pfInitialized   = false;
 
     const HORIZON_OPTIONS = [
+        { days: 21,  label_en: '1 Month',   label_ar: 'شهر'      },
+        { days: 42,  label_en: '2 Months',  label_ar: 'شهران'   },
         { days: 63,  label_en: '3 Months',  label_ar: '3 أشهر'  },
         { days: 126, label_en: '6 Months',  label_ar: '6 أشهر'  },
         { days: 252, label_en: '1 Year',    label_ar: 'سنة'      },
@@ -264,7 +266,24 @@
         if (cancelBtn) cancelBtn.addEventListener('click', () => closeForm());
 
         const searchEl  = document.getElementById('pfSymbolSearch');
-        if (searchEl) searchEl.addEventListener('input', () => filterPfDropdown(searchEl.value));
+        if (searchEl) {
+            searchEl.addEventListener('input',  () => filterPfDropdown(searchEl.value));
+            searchEl.addEventListener('focus',  () => filterPfDropdown(searchEl.value));
+            searchEl.addEventListener('blur',   () => {
+                // Delay hide so checkbox clicks register first
+                setTimeout(() => {
+                    const dd = document.getElementById('pfSymbolDropdown');
+                    if (dd) dd.style.display = 'none';
+                }, 200);
+            });
+        }
+        // Close dropdown on outside click
+        document.addEventListener('click', (e) => {
+            const dd = document.getElementById('pfSymbolDropdown');
+            if (dd && !dd.contains(e.target) && e.target !== document.getElementById('pfSymbolSearch')) {
+                dd.style.display = 'none';
+            }
+        });
 
         // Horizon preset buttons
         document.querySelectorAll('.pf-horizon-btn').forEach(btn => {
@@ -375,6 +394,11 @@
             s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q)
         ).slice(0, 40);
 
+        if (!filtered.length) {
+            ddEl.style.display = 'none';
+            return;
+        }
+
         ddEl.innerHTML = filtered.map(s => {
             const checked = pfSelectedSyms.includes(s.symbol);
             return `<label class="pf-dropdown-item ${checked ? 'pf-checked' : ''}">
@@ -387,6 +411,7 @@
         ddEl.querySelectorAll('input[type=checkbox]').forEach(cb => {
             cb.addEventListener('change', () => togglePfSymbol(cb.value, cb.checked));
         });
+        ddEl.style.display = '';
     }
 
     function togglePfSymbol(symbol, checked) {

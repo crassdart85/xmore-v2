@@ -3563,7 +3563,7 @@ button:active, .btn:active, .tab-btn:active {
     margin: 0;
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--text);
+    color: var(--text-primary);
 }
 
 .pf-create-btn {
@@ -3571,67 +3571,118 @@ button:active, .btn:active, .tab-btn:active {
     color: #fff;
     border: none;
     border-radius: 8px;
-    padding: 8px 16px;
+    padding: 9px 18px;
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition: opacity 0.2s;
+    white-space: nowrap;
 }
 .pf-create-btn:hover { opacity: 0.85; }
 
 /* Create/Edit form card */
 .pf-form-card {
     background: var(--card-bg);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: 20px;
+    padding: 24px;
     margin-bottom: 20px;
 }
 
 .pf-form-title {
-    margin: 0 0 16px 0;
-    font-size: 1rem;
-    font-weight: 600;
+    margin: 0 0 20px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--text-primary);
 }
 
 .pf-form-row {
-    margin-bottom: 16px;
+    margin-bottom: 18px;
 }
 
 .pf-form-row label {
     display: block;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 6px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
 }
 
 .pf-name-input,
 .pf-amount-input {
     width: 100%;
     box-sizing: border-box;
-    background: var(--input-bg, var(--bg));
-    border: 1px solid var(--border);
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 10px 12px;
+    padding: 10px 14px;
     font-size: 0.95rem;
-    color: var(--text);
+    color: var(--text-primary);
+    transition: border-color 0.15s;
 }
+.pf-name-input:focus,
+.pf-amount-input:focus {
+    border-color: var(--accent);
+    outline: none;
+}
+.pf-name-input::placeholder { color: var(--text-muted); }
+
+/* Symbol picker dropdown items */
+.pf-dropdown-item {
+    display: grid;
+    grid-template-columns: 20px 64px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border-light);
+}
+.pf-dropdown-item:last-child { border-bottom: none; }
+.pf-dropdown-item:hover { background: var(--table-hover-bg, rgba(255,255,255,0.04)); }
+.pf-dropdown-item.pf-checked { background: rgba(102,126,234,0.1); }
+.pf-dropdown-item input[type="checkbox"] { accent-color: var(--accent); width: 14px; height: 14px; }
+.pf-sym { font-weight: 700; color: var(--accent); }
+.pf-name { color: var(--text-secondary); font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Selected stock tags */
+.pf-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 20px;
+    padding: 3px 10px 3px 12px;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.pf-tag-remove {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 2px;
+    opacity: 0.8;
+}
+.pf-tag-remove:hover { opacity: 1; }
 
 .pf-form-error {
     color: #ef4444;
     font-size: 0.85rem;
     min-height: 1.2em;
-    margin-top: 8px;
+    margin-bottom: 4px;
 }
 
 .pf-form-actions {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 24px;
     flex-wrap: wrap;
 }
 
@@ -3642,15 +3693,15 @@ button:active, .btn:active, .tab-btn:active {
 
 .pf-cancel-btn {
     background: transparent;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 10px 20px;
-    font-size: 0.95rem;
-    color: var(--muted);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: background 0.15s;
 }
-.pf-cancel-btn:hover { background: var(--hover-bg, rgba(255,255,255,0.05)); }
+.pf-cancel-btn:hover { background: rgba(255,255,255,0.06); }
 
 /* Portfolio cards list */
 .pf-list {
@@ -3676,12 +3727,12 @@ button:active, .btn:active, .tab-btn:active {
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 4px;
-    color: var(--text);
+    color: var(--text-primary);
 }
 
 .pf-card-meta {
     font-size: 0.8rem;
-    color: var(--muted);
+    color: var(--text-muted);
     margin-bottom: 10px;
 }
 
@@ -3738,7 +3789,7 @@ button:active, .btn:active, .tab-btn:active {
     border-radius: 7px;
     padding: 6px 10px;
     font-size: 0.82rem;
-    color: var(--muted);
+    color: var(--text-muted);
     cursor: pointer;
     transition: background 0.15s;
 }
@@ -3766,12 +3817,12 @@ button:active, .btn:active, .tab-btn:active {
 .pf-results-title {
     font-size: 1rem;
     font-weight: 700;
-    color: var(--text);
+    color: var(--text-primary);
 }
 
 .pf-results-meta {
     font-size: 0.8rem;
-    color: var(--muted);
+    color: var(--text-muted);
 }
 
 .pf-results-table {
@@ -3786,7 +3837,7 @@ button:active, .btn:active, .tab-btn:active {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--muted);
+    color: var(--text-muted);
     padding: 6px 10px;
     border-bottom: 1px solid var(--border);
 }
@@ -3796,7 +3847,7 @@ button:active, .btn:active, .tab-btn:active {
 .pf-results-table td {
     padding: 10px 10px;
     border-bottom: 1px solid var(--border);
-    color: var(--text);
+    color: var(--text-primary);
     text-align: right;
 }
 
@@ -3807,7 +3858,7 @@ button:active, .btn:active, .tab-btn:active {
 
 .pf-ret-pos { color: var(--green, #48C774); }
 .pf-ret-neg { color: var(--red, #FF5050); }
-.pf-ret-neu { color: var(--muted); }
+.pf-ret-neu { color: var(--text-muted); }
 
 .pf-eval-badge {
     font-size: 0.75rem;
@@ -3815,7 +3866,7 @@ button:active, .btn:active, .tab-btn:active {
     border-radius: 5px;
     font-weight: 600;
 }
-.pf-eval-pending   { background: rgba(160,160,180,0.12); color: var(--muted); }
+.pf-eval-pending   { background: rgba(160,160,180,0.12); color: var(--text-muted); }
 .pf-eval-within    { background: rgba(72,199,116,0.15);  color: var(--green, #48C774); }
 .pf-eval-outside   { background: rgba(255,80,80,0.12);   color: var(--red, #FF5050); }
 
@@ -3823,7 +3874,7 @@ button:active, .btn:active, .tab-btn:active {
 .pf-empty {
     text-align: center;
     padding: 40px 20px;
-    color: var(--muted);
+    color: var(--text-muted);
     font-size: 0.9rem;
 }
 
