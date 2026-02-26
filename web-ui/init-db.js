@@ -372,6 +372,72 @@ async function initializeDatabase() {
     `);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_custom_articles_source ON custom_source_articles(source_id, fetched_at DESC)');
 
+    // Table: Forecast Portfolios (user-defined stock lists for recurring Monte Carlo forecasts)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS forecast_portfolios (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        name TEXT NOT NULL,
+        symbols_json TEXT NOT NULL DEFAULT '[]',
+        horizon_days INTEGER NOT NULL DEFAULT 63,
+        scenario TEXT NOT NULL DEFAULT 'base',
+        investment_amount REAL NOT NULL DEFAULT 10000,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(user_id, name)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_fp_user ON forecast_portfolios(user_id)');
+
+    // Table: Portfolio Forecast Results (one row per stock per run)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS portfolio_forecast_results (
+        id SERIAL PRIMARY KEY,
+        portfolio_id INTEGER NOT NULL REFERENCES forecast_portfolios(id) ON DELETE CASCADE,
+        symbol TEXT NOT NULL,
+        run_date DATE NOT NULL,
+        target_date DATE NOT NULL,
+        horizon_days INTEGER NOT NULL,
+        scenario TEXT NOT NULL DEFAULT 'base',
+        investment_amount REAL,
+        expected_return_pct REAL,
+        probability_positive REAL,
+        worst_case_pct REAL,
+        median_pct REAL,
+        best_case_pct REAL,
+        volatility_annual_pct REAL,
+        data_points INTEGER,
+        ok BOOLEAN NOT NULL DEFAULT TRUE,
+        error_reason TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(portfolio_id, symbol, run_date, horizon_days, scenario)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfr_portfolio ON portfolio_forecast_results(portfolio_id, run_date DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfr_target ON portfolio_forecast_results(target_date)');
+
+    // Table: Portfolio Forecast Evaluations (actual vs forecasted, auto-filled by evaluate.py)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS portfolio_forecast_evaluations (
+        id SERIAL PRIMARY KEY,
+        forecast_result_id INTEGER NOT NULL REFERENCES portfolio_forecast_results(id) ON DELETE CASCADE,
+        portfolio_id INTEGER NOT NULL,
+        symbol TEXT NOT NULL,
+        run_date DATE NOT NULL,
+        target_date DATE NOT NULL,
+        expected_return_pct REAL,
+        actual_return_pct REAL,
+        actual_close REAL,
+        error_pct REAL,
+        within_5pct BOOLEAN NOT NULL DEFAULT FALSE,
+        within_10pct BOOLEAN NOT NULL DEFAULT FALSE,
+        evaluated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(forecast_result_id)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)');
+
     // Seed ALL EGX stocks (~190)
     console.log('🌱 Seeding EGX stocks...');
     await pool.query(`
