@@ -3621,6 +3621,13 @@ button:active, .btn:active, .tab-btn:active {
     color: var(--text);
 }
 
+.pf-form-error {
+    color: #ef4444;
+    font-size: 0.85rem;
+    min-height: 1.2em;
+    margin-top: 8px;
+}
+
 .pf-form-actions {
     display: flex;
     gap: 10px;
