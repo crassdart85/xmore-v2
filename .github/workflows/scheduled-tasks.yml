@@ -1,20 +1,35 @@
 name: Trading System Automation
 
+# EGX market hours: 09:00–14:00 Cairo (UTC+2) = 07:00–12:00 UTC, Sun–Thu
+# ─────────────────────────────────────────────────────────────────────────
+# Schedule overview (all times UTC):
+#
+#  07,08,09,10,11,12  Sun–Thu  intraday-price-update   (hourly prices, 09:00–14:00 Cairo)
+#  07,09,11           Sun–Thu  intraday-news-update     (news+RSS 3× during trading day)
+#  12:30              Sun–Thu  post-market-pipeline     (close prices→sentiment→agents→eval)
+#  14:00              Sun–Thu  egx-daily-snapshot       (backup EGX data export, 16:00 Cairo)
+#  22:00              Sun–Fri  daily-pipeline           (full nightly: briefing, portfolios)
+#  06,12,18           Daily    catchup-evaluation       (resolve expired predictions)
+
 on:
   schedule:
-    # EGX daily snapshot export after market close (Sun-Thu, 14:00 UTC)
-    # 14:00 UTC ~= 16:00/17:00 Cairo (post-close across DST)
+    # Hourly price collection during EGX trading hours (09:00–14:00 Cairo = 07:00–12:00 UTC)
+    - cron: '0 7,8,9,10,11,12 * * 0-4'
+
+    # News + RSS collection 3× during trading day (09:00, 11:00, 13:00 Cairo = 07:00, 09:00, 11:00 UTC)
+    - cron: '0 7,9,11 * * 0-4'
+
+    # Post-market pipeline: 30 min after close (14:30 Cairo = 12:30 UTC)
+    # prices → news → reliable-news → sentiment → agents → evaluate
+    - cron: '30 12 * * 0-4'
+
+    # EGX daily snapshot backup (16:00 Cairo = 14:00 UTC)
     - cron: '0 14 * * 0-4'
 
-    # EGX midday collection: 2:30 PM Cairo = 17:30 UTC (Sun-Thu)
-    - cron: '30 17 * * 0-4'
-
-    # Full daily pipeline: 5:00 PM EST = 22:00 UTC (Sun-Fri)
-    # Runs AFTER both EGX (17:30) and US (included in collect_data.py) markets
+    # Full nightly pipeline (00:00 Cairo+1 = 22:00 UTC) — includes briefing + portfolios
     - cron: '0 22 * * 0-5'
 
-    # Catchup evaluation: 3x daily (06:00, 12:00, 18:00 UTC)
-    # Resolves predictions whose target_date has passed since last pipeline run
+    # Catchup evaluation: 3× daily
     - cron: '0 6,12,18 * * *'
 
   workflow_dispatch:
@@ -28,10 +43,124 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
   NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
-  ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 
 jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Intraday price update (hourly during EGX trading, 09:00–14:00 Cairo)
+  # Lightweight — prices only, no news, no agents
+  # ──────────────────────────────────────────────
+  intraday-price-update:
+    if: github.event.schedule == '0 7,8,9,10,11,12 * * 0-4' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize database schema
+        run: python -c "from database import create_tables; create_tables()"
+
+      - name: Collect intraday prices
+        run: python collect_data.py --prices-only
+
+  # ──────────────────────────────────────────────
+  # Job 2: Intraday news update (3× during trading: 09:00, 11:00, 13:00 Cairo)
+  # News + RSS only — respects NewsAPI 100 req/day free tier
+  # ──────────────────────────────────────────────
+  intraday-news-update:
+    if: github.event.schedule == '0 7,9,11 * * 0-4' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize database schema
+        run: python -c "from database import create_tables; create_tables()"
+
+      - name: Collect news and RSS feeds
+        run: python collect_data.py --news-only
+
+      - name: Collect reliable institutional news (RSS + PDF)
+        continue-on-error: true
+        run: python xmore_news_reliable/main.py --run-all
+
+  # ──────────────────────────────────────────────
+  # Job 3: Post-market pipeline (30 min after EGX close — 14:30 Cairo = 12:30 UTC)
+  # Runs same-day predictions so the dashboard shows fresh signals by afternoon
+  # ──────────────────────────────────────────────
+  post-market-pipeline:
+    if: github.event.schedule == '30 12 * * 0-4' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize database schema
+        run: python -c "from database import create_tables; create_tables()"
+
+      # Collect final close prices
+      - name: Collect close prices
+        run: python collect_data.py --prices-only
+
+      # Collect any last-minute news
+      - name: Collect news
+        continue-on-error: true
+        run: python collect_data.py --news-only
+
+      # Institutional news (CBE, EGX, IMF, FRA) via RSS and PDF monitor
+      - name: Collect reliable institutional news
+        continue-on-error: true
+        run: python xmore_news_reliable/main.py --run-all
+
+      # Sentiment scoring via Gemini
+      - name: Analyze sentiment
+        continue-on-error: true
+        run: python sentiment_gemini.py
+
+      # Run 5-agent prediction pipeline (RSI + MA + Volume + ML + Gemini LLM)
+      - name: Run agent pipeline
+        run: python run_agents.py
+
+      # Evaluate any predictions whose target_date has now passed
+      - name: Evaluate prediction accuracy
+        run: python evaluate.py
+
+  # ──────────────────────────────────────────────
+  # Job 4: EGX daily snapshot (backup export, 16:00 Cairo = 14:00 UTC, Sun–Thu)
+  # ──────────────────────────────────────────────
   egx-daily-snapshot:
     if: github.event.schedule == '0 14 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -62,51 +191,15 @@ jobs:
           name: egx-daily-snapshots-${{ github.run_id }}
           path: data_exports/daily_egx_snapshots/
           if-no-files-found: warn
-  # ──────────────────────────────────────────────
-  # Job 1: EGX midday collection (Sun-Thu 17:30 UTC)
-  # Captures EGX close prices early so the main pipeline has fresh data
-  # ──────────────────────────────────────────────
-  egx-midday-collection:
-    if: github.event.schedule == '30 17 * * 0-4' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 1
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Initialize database schema
-        run: python -c "from database import create_tables; create_tables()"
-
-      - name: Collect EGX prices
-        run: |
-          python -c "
-          from collect_data import collect_egx_data
-          count = collect_egx_data()
-          print(f'EGX collection complete: {count} stocks')
-          "
-
-      - name: Collect sentiment
-        continue-on-error: true
-        run: python sentiment_gemini.py
 
   # ──────────────────────────────────────────────
-  # Job 2: Full daily pipeline (Sun-Fri 22:00 UTC)
-  # Sequential: collect → sentiment → agents → portfolios → evaluate
-  # On manual dispatch, waits for EGX collection to finish first
+  # Job 5: Full nightly pipeline (00:00 Cairo+1 = 22:00 UTC, Sun–Fri)
+  # Includes briefing generation, model portfolios, and full sentiment refresh.
+  # Depends on post-market-pipeline having already run today's agents.
   # ──────────────────────────────────────────────
   daily-pipeline:
-    needs: [egx-midday-collection]
-    # Run even if egx-midday-collection was skipped (different schedule) or failed
+    needs: [post-market-pipeline]
+    # Run even if post-market-pipeline was skipped (different schedule) or failed
     if: always() && (github.event.schedule == '0 22 * * 0-5' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -127,38 +220,42 @@ jobs:
       - name: Initialize database schema
         run: python -c "from database import create_tables; create_tables()"
 
-      # Step 1: Collect all prices + news
+      # Step 1: Full price + news collection
       - name: Collect prices and news
         run: python collect_data.py
 
-      # Step 2: Fetch custom news sources (URLs, RSS, Telegram channels)
+      # Step 2: Custom news sources (URLs, RSS, Telegram channels)
       - name: Fetch custom news sources
         continue-on-error: true
         run: python engines/custom_source_fetcher.py --fetch-all
 
-      # Step 3: Sentiment analysis (includes freshly-fetched custom source articles)
+      # Step 3: Reliable institutional news (CBE, EGX, IMF, FRA, MoF)
+      - name: Collect reliable institutional news
+        continue-on-error: true
+        run: python xmore_news_reliable/main.py --run-all
+
+      # Step 4: Full sentiment analysis with Gemini
       - name: Analyze sentiment
         continue-on-error: true
         run: python sentiment_gemini.py
 
-      # Step 4: Run 3-layer agent pipeline
-      # (predictions → consensus → trade recs → briefing → performance eval)
+      # Step 5: Run 5-agent pipeline (RSI + MA + Volume + ML + Gemini LLM)
+      # Also generates trade recommendations and daily briefing
       - name: Run agent pipeline
         run: python run_agents.py
 
-      # Step 5: Generate model portfolios
+      # Step 6: Generate model portfolios
       - name: Generate portfolios
         continue-on-error: true
         run: python engines/generate_portfolios.py
 
-      # Step 6: Evaluate agent prediction accuracy (fills evaluations table)
+      # Step 7: Evaluate agent prediction accuracy
       - name: Evaluate prediction accuracy
         run: python evaluate.py
 
   # ──────────────────────────────────────────────
-  # Job 3: Catchup evaluation (3x daily)
+  # Job 6: Catchup evaluation (3× daily — 06:00, 12:00, 18:00 UTC)
   # Resolves predictions whose target_date has passed between pipeline runs
-  # Lightweight: only evaluation, no data collection or predictions
   # ──────────────────────────────────────────────
   catchup-evaluation:
     if: github.event.schedule == '0 6,12,18 * * *'

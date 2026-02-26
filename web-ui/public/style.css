@@ -3541,3 +3541,302 @@ button:active, .btn:active, .tab-btn:active {
 .admin-toggle-switch input:checked + .admin-toggle-track::after { transform: translateX(18px); }
 .admin-toggle-switch input:disabled + .admin-toggle-track { opacity: 0.5; cursor: not-allowed; }
 .admin-settings-reset-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
+
+/* ============================================================
+   SAVED FORECAST PORTFOLIOS — #pfSection
+   ============================================================ */
+
+.pf-section {
+    margin-top: 24px;
+}
+
+.pf-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pf-header-bar h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.pf-create-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, opacity 0.2s;
+}
+.pf-create-btn:hover { opacity: 0.85; }
+
+/* Create/Edit form card */
+.pf-form-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.pf-form-row {
+    margin-bottom: 16px;
+}
+
+.pf-form-row label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pf-name-input,
+.pf-amount-input {
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--input-bg, var(--bg));
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    color: var(--text);
+}
+
+.pf-form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.pf-save-btn {
+    flex: 1;
+    min-width: 140px;
+}
+
+.pf-cancel-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.pf-cancel-btn:hover { background: var(--hover-bg, rgba(255,255,255,0.05)); }
+
+/* Portfolio cards list */
+.pf-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+.pf-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+.pf-card:hover { border-color: var(--accent); box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.pf-card.pf-card-active { border-color: var(--accent); }
+
+.pf-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: var(--text);
+}
+
+.pf-card-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.pf-card-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.pf-badge {
+    background: var(--accent-dim, rgba(100,140,255,0.12));
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.pf-accuracy-badge {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+}
+.pf-accuracy-good { background: rgba(72,199,116,0.15); color: var(--green, #48C774); }
+.pf-accuracy-ok   { background: rgba(255,193,7,0.15);  color: var(--yellow, #FFC107); }
+.pf-accuracy-poor { background: rgba(255,80,80,0.15);  color: var(--red, #FF5050); }
+
+.pf-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.pf-run-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.pf-run-btn:hover { opacity: 0.85; }
+.pf-run-btn:disabled { opacity: 0.5; cursor: default; }
+
+.pf-edit-btn,
+.pf-delete-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 0.82rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.pf-edit-btn:hover   { background: var(--hover-bg, rgba(255,255,255,0.05)); }
+.pf-delete-btn:hover { background: rgba(255,80,80,0.1); color: var(--red, #FF5050); }
+
+/* Results panel */
+#pfResults {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 8px;
+}
+
+.pf-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pf-results-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.pf-results-meta {
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.pf-results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.pf-results-table th {
+    text-align: right;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.pf-results-table th:first-child { text-align: left; }
+
+.pf-results-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    text-align: right;
+}
+
+.pf-results-table td:first-child { text-align: left; font-weight: 600; }
+
+.pf-results-table tr:last-child td { border-bottom: none; }
+.pf-results-table tr:hover td { background: var(--hover-bg, rgba(255,255,255,0.03)); }
+
+.pf-ret-pos { color: var(--green, #48C774); }
+.pf-ret-neg { color: var(--red, #FF5050); }
+.pf-ret-neu { color: var(--muted); }
+
+.pf-eval-badge {
+    font-size: 0.75rem;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-weight: 600;
+}
+.pf-eval-pending   { background: rgba(160,160,180,0.12); color: var(--muted); }
+.pf-eval-within    { background: rgba(72,199,116,0.15);  color: var(--green, #48C774); }
+.pf-eval-outside   { background: rgba(255,80,80,0.12);   color: var(--red, #FF5050); }
+
+/* Empty / loading states */
+.pf-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.pf-spinner {
+    display: inline-block;
+    width: 20px; height: 20px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+/* RTL support */
+[dir="rtl"] .pf-header-bar,
+[dir="rtl"] .pf-card-actions,
+[dir="rtl"] .pf-form-actions { flex-direction: row-reverse; }
+
+[dir="rtl"] .pf-results-table th,
+[dir="rtl"] .pf-results-table td { text-align: left; }
+[dir="rtl"] .pf-results-table th:first-child,
+[dir="rtl"] .pf-results-table td:first-child { text-align: right; }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .pf-list { grid-template-columns: 1fr; }
+    .pf-results-table { font-size: 0.8rem; }
+    .pf-results-table th, .pf-results-table td { padding: 8px 6px; }
+}

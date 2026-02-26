@@ -565,4 +565,53 @@ router.post('/sources/manual', waUpload.single('file'), async (req, res) => {
     }
 });
 
+// ─── GET /api/admin/forecast-accuracy ────────────────────────
+router.get('/forecast-accuracy', async (_req, res) => {
+    try {
+        // Overall summary
+        const summary = await dbGet(`
+            SELECT
+                COUNT(*)                                         AS total_forecasts,
+                SUM(CASE WHEN e.id IS NOT NULL THEN 1 ELSE 0 END) AS total_evaluated,
+                AVG(CASE WHEN e.id IS NOT NULL THEN e.error_pct END) AS avg_error_pct,
+                AVG(CASE WHEN e.id IS NOT NULL THEN CAST(e.within_10pct AS REAL) END) AS within_10pct_rate
+            FROM portfolio_forecast_results r
+            LEFT JOIN portfolio_forecast_evaluations e ON e.forecast_result_id = r.id
+            WHERE r.ok = 1
+        `);
+
+        // Per-stock breakdown
+        const byStock = await dbAll(`
+            SELECT
+                r.symbol,
+                COUNT(r.id)                                            AS total_forecasts,
+                AVG(r.expected_return_pct)                             AS avg_expected_pct,
+                AVG(e.actual_return_pct)                               AS avg_actual_pct,
+                AVG(e.error_pct)                                       AS avg_error_pct,
+                AVG(CAST(e.within_10pct AS REAL))                      AS within_10pct_rate
+            FROM portfolio_forecast_results r
+            LEFT JOIN portfolio_forecast_evaluations e ON e.forecast_result_id = r.id
+            WHERE r.ok = 1
+            GROUP BY r.symbol
+            ORDER BY COUNT(r.id) DESC
+        `);
+
+        // Recent evaluations (last 30)
+        const recentEvaluations = await dbAll(`
+            SELECT
+                e.run_date, e.symbol, e.target_date,
+                e.expected_return_pct, e.actual_return_pct, e.error_pct, e.within_10pct,
+                e.evaluated_at
+            FROM portfolio_forecast_evaluations e
+            ORDER BY e.evaluated_at DESC
+            LIMIT 30
+        `);
+
+        res.json({ summary, by_stock: byStock, recent_evaluations: recentEvaluations });
+    } catch (err) {
+        console.error('Forecast accuracy error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = { router, attachDb };

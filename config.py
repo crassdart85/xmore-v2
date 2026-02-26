@@ -12,6 +12,7 @@ Sections:
 - Evaluation: success metrics
 """
 
+import os
 from datetime import time
 
 # ============================================
@@ -46,9 +47,8 @@ EGX_CONFIG = {
     "timezone": "Africa/Cairo",
     "trading_days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
     "trading_hours": {
-        "pre_open": "09:30",
-        "open": "10:00",
-        "close": "14:30",
+        "open": "09:00",   # EGX opens at 09:00 Cairo (07:00 UTC)
+        "close": "14:00",  # EGX closes at 14:00 Cairo (12:00 UTC)
     },
     # EGX has higher volatility than US markets
     "volatility_adjustment": 1.2,
@@ -65,7 +65,7 @@ EGX_CONFIG = {
 # ============================================
 
 # News API (Get free key from: https://newsapi.org/)
-NEWS_API_KEY = '911bd9fe0dd0497c81632ee8af966bb4'
+NEWS_API_KEY = os.getenv('NEWS_API_KEY', '')
 
 # Add other API keys as needed
 # ALPHA_VANTAGE_KEY = os.getenv('ALPHA_VANTAGE_KEY', '')
@@ -86,8 +86,8 @@ MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5  # Wait between retries
 
 # Data collection time (after market close)
-# EGX closes at 14:30 Cairo time, collect at 15:00 Cairo / 13:00 UTC
-COLLECTION_TIME = time(15, 0)  # 3:00 PM Cairo time (EGX closes 2:30 PM)
+# EGX closes at 14:00 Cairo (12:00 UTC). Hourly intraday updates run 09:00-14:00 Cairo.
+COLLECTION_TIME = time(14, 30)  # 2:30 PM Cairo (30 min post-close fallback)
 
 # ============================================
 # DATABASE SETTINGS
@@ -99,12 +99,12 @@ DATABASE_PATH = 'stocks.db'
 # NOTIFICATION SETTINGS
 # ============================================
 
-# Email settings
-SMTP_SERVER = 'smtp.mail.yahoo.com'
-SMTP_PORT = 587
-EMAIL_FROM = 'moatasem_cs@yahoo.com'
-EMAIL_TO = 'crassdart@gmail.com'
-EMAIL_PASSWORD =  'jegihpicqgqdqkbw'
+# Email settings - loaded from environment variables
+SMTP_SERVER = os.getenv('SMTP_SERVER', 'smtp.mail.yahoo.com')
+SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
+EMAIL_FROM = os.getenv('EMAIL_FROM', '')
+EMAIL_TO = os.getenv('EMAIL_TO', '')
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', '')
 
 # Alert thresholds
 ALERT_ON_MISSING_DATA = True
@@ -166,11 +166,14 @@ RISK_CONFIG = {
 }
 
 # Consensus engine agent weights (sum should be ~1.0)
+# Gemini_LLM_Agent included when GOOGLE_API_KEY is set; consensus engine
+# normalises weights at runtime so it's safe to always list it here.
 AGENT_WEIGHTS = {
-    "ML_RandomForest":     0.35,
-    "MA_Crossover_Agent":  0.25,
-    "RSI_Agent":           0.20,
-    "Volume_Spike_Agent":  0.20,
+    "ML_RandomForest":     0.28,
+    "MA_Crossover_Agent":  0.20,
+    "RSI_Agent":           0.17,
+    "Volume_Spike_Agent":  0.15,
+    "Gemini_LLM_Agent":    0.20,
 }
 
 # ============================================

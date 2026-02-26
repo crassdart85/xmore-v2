@@ -502,6 +502,72 @@ def create_tables():
                     VALUES (?, ?, ?, ?, ?)
                 """, stock)
 
+        # Table 17: Forecast Portfolios (user-defined stock lists for recurring forecasts)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS forecast_portfolios (
+                id {auto_id},
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                name TEXT NOT NULL,
+                symbols_json TEXT NOT NULL DEFAULT '[]',
+                horizon_days INTEGER NOT NULL DEFAULT 63,
+                scenario TEXT NOT NULL DEFAULT 'base',
+                investment_amount REAL NOT NULL DEFAULT 10000,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, name)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_fp_user ON forecast_portfolios(user_id)")
+
+        # Table 18: Portfolio Forecast Results (one row per stock per run)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS portfolio_forecast_results (
+                id {auto_id},
+                portfolio_id INTEGER NOT NULL REFERENCES forecast_portfolios(id) ON DELETE CASCADE,
+                symbol TEXT NOT NULL,
+                run_date DATE NOT NULL,
+                target_date DATE NOT NULL,
+                horizon_days INTEGER NOT NULL,
+                scenario TEXT NOT NULL DEFAULT 'base',
+                investment_amount REAL,
+                expected_return_pct REAL,
+                probability_positive REAL,
+                worst_case_pct REAL,
+                median_pct REAL,
+                best_case_pct REAL,
+                volatility_annual_pct REAL,
+                data_points INTEGER,
+                ok {bool_default},
+                error_reason TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(portfolio_id, symbol, run_date, horizon_days, scenario)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfr_portfolio ON portfolio_forecast_results(portfolio_id, run_date DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfr_target ON portfolio_forecast_results(target_date)")
+
+        # Table 19: Portfolio Forecast Evaluations (actual vs forecasted, auto-filled by evaluate.py)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS portfolio_forecast_evaluations (
+                id {auto_id},
+                forecast_result_id INTEGER NOT NULL REFERENCES portfolio_forecast_results(id) ON DELETE CASCADE,
+                portfolio_id INTEGER NOT NULL,
+                symbol TEXT NOT NULL,
+                run_date DATE NOT NULL,
+                target_date DATE NOT NULL,
+                expected_return_pct REAL,
+                actual_return_pct REAL,
+                actual_close REAL,
+                error_pct REAL,
+                within_5pct {bool_default},
+                within_10pct {bool_default},
+                evaluated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(forecast_result_id)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)")
+
         # Create indexes for common queries
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")

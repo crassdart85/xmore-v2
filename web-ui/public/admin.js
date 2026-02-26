@@ -520,13 +520,14 @@ function initInfoBanners() {
 // ============================================================
 
 const TAB_DEFS = [
-    { id: 'tab-health',   label: 'System Health' },
-    { id: 'tab-kb',       label: 'Knowledge Base' },
-    { id: 'tab-reports',  label: 'Reports' },
-    { id: 'tab-prices',   label: 'Prices' },
-    { id: 'tab-sources',  label: 'News Sources' },
-    { id: 'tab-telegram', label: 'Telegram Feed' },
-    { id: 'tab-settings', label: 'Settings' },
+    { id: 'tab-health',            label: 'System Health' },
+    { id: 'tab-kb',                label: 'Knowledge Base' },
+    { id: 'tab-reports',           label: 'Reports' },
+    { id: 'tab-prices',            label: 'Prices' },
+    { id: 'tab-sources',           label: 'News Sources' },
+    { id: 'tab-telegram',          label: 'Telegram Feed' },
+    { id: 'tab-forecast-accuracy', label: 'Forecast Accuracy' },
+    { id: 'tab-settings',          label: 'Settings' },
 ];
 
 const HIDDEN_TABS_KEY = 'admin_hidden_tabs';
@@ -760,7 +761,84 @@ function bindPricesTab() {
         if (btn && btn.dataset.tab === 'tab-prices' && _allPriceRows.length === 0) {
             loadPrices();
         }
+        if (btn && btn.dataset.tab === 'tab-forecast-accuracy') {
+            loadForecastAccuracy();
+        }
     });
+}
+
+// ============================================================
+// FORECAST ACCURACY TAB
+// ============================================================
+
+let _faLoaded = false;
+
+async function loadForecastAccuracy() {
+    if (_faLoaded) return;
+    _faLoaded = true;
+
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setVal('faStatTotal',     '…');
+    setVal('faStatEvaluated', '…');
+    setVal('faStatAvgError',  '…');
+    setVal('faStatHitRate',   '…');
+
+    try {
+        const data = await fetchJson(`${API_BASE}/forecast-accuracy`);
+
+        // Summary
+        setVal('faStatTotal',     data.summary?.total_forecasts    ?? '—');
+        setVal('faStatEvaluated', data.summary?.total_evaluated    ?? '—');
+        const avgErr = data.summary?.avg_error_pct;
+        setVal('faStatAvgError',  avgErr != null ? avgErr.toFixed(2) + '%' : '—');
+        const hitRate = data.summary?.within_10pct_rate;
+        setVal('faStatHitRate',   hitRate != null ? (hitRate * 100).toFixed(1) + '%' : '—');
+
+        // Per-stock table
+        const stockBody = document.getElementById('faStockTableBody');
+        if (stockBody) {
+            const rows = data.by_stock || [];
+            if (rows.length === 0) {
+                stockBody.innerHTML = '<tr><td colspan="6" class="admin-muted" style="text-align:center;padding:20px;">No evaluated forecasts yet. Evaluations run automatically after target dates pass.</td></tr>';
+            } else {
+                stockBody.innerHTML = rows.map(r => `<tr>
+                    <td><strong>${escapeHtml(r.symbol)}</strong></td>
+                    <td>${r.total_forecasts}</td>
+                    <td class="num">${r.avg_expected_pct != null ? r.avg_expected_pct.toFixed(2) + '%' : '—'}</td>
+                    <td class="num">${r.avg_actual_pct != null ? r.avg_actual_pct.toFixed(2) + '%' : '—'}</td>
+                    <td class="num">${r.avg_error_pct != null ? r.avg_error_pct.toFixed(2) + '%' : '—'}</td>
+                    <td class="num">${r.within_10pct_rate != null ? (r.within_10pct_rate * 100).toFixed(1) + '%' : '—'}</td>
+                </tr>`).join('');
+            }
+        }
+
+        // Recent evaluations table
+        const recentBody = document.getElementById('faRecentTableBody');
+        if (recentBody) {
+            const evals = data.recent_evaluations || [];
+            if (evals.length === 0) {
+                recentBody.innerHTML = '<tr><td colspan="7" class="admin-muted" style="text-align:center;padding:20px;">No evaluations recorded yet.</td></tr>';
+            } else {
+                recentBody.innerHTML = evals.map(e => {
+                    const errPct = e.error_pct != null ? e.error_pct.toFixed(2) + '%' : '—';
+                    const within = e.within_10pct ? '<span style="color:var(--green)">✓ Within 10%</span>' : '<span style="color:var(--red)">✗ Outside 10%</span>';
+                    return `<tr>
+                        <td>${escapeHtml(e.run_date || '—')}</td>
+                        <td><strong>${escapeHtml(e.symbol)}</strong></td>
+                        <td>${escapeHtml(e.target_date || '—')}</td>
+                        <td class="num">${e.expected_return_pct != null ? e.expected_return_pct.toFixed(2) + '%' : '—'}</td>
+                        <td class="num">${e.actual_return_pct != null ? e.actual_return_pct.toFixed(2) + '%' : '—'}</td>
+                        <td class="num">${errPct}</td>
+                        <td>${within}</td>
+                    </tr>`;
+                }).join('');
+            }
+        }
+    } catch (err) {
+        const stockBody = document.getElementById('faStockTableBody');
+        if (stockBody) stockBody.innerHTML = `<tr><td colspan="6" class="error-message">${escapeHtml(err.message)}</td></tr>`;
+        setVal('faStatTotal', 'Error');
+    }
 }
 
 // ============================================================

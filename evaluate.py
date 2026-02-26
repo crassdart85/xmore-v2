@@ -151,14 +151,115 @@ def evaluate_lookback(days_ago=7):
         print("\n  Detailed Breakdown:")
         print(evals[['symbol', 'agent_name', 'prediction', 'actual_outcome', 'was_correct']].to_string(index=False))
 
+def evaluate_portfolio_forecasts():
+    """
+    Auto-evaluate portfolio forecast results whose target_date has passed.
+
+    For each portfolio_forecast_results row where:
+      - target_date <= today
+      - no evaluation row exists yet
+
+    Fetches the actual close price from the prices table (or nearest available
+    date within 5 days), computes actual_return_pct, and stores the result in
+    portfolio_forecast_evaluations.
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    print(f"📊 Evaluating portfolio forecasts due by {today}...")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Find due results with no evaluation yet
+        due_query = _adapt_sql("""
+            SELECT r.id, r.portfolio_id, r.symbol, r.run_date, r.target_date,
+                   r.expected_return_pct, r.investment_amount, r.ok
+            FROM portfolio_forecast_results r
+            LEFT JOIN portfolio_forecast_evaluations e ON r.id = e.forecast_result_id
+            WHERE r.target_date <= ? AND e.id IS NULL AND r.ok = 1
+        """)
+        cursor.execute(due_query, (today,))
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        rows = cursor.fetchall()
+        due = [dict(zip(columns, row)) if not hasattr(row, 'keys') else dict(row) for row in rows]
+
+        if not due:
+            print("  No portfolio forecasts due for evaluation.")
+            return
+
+        print(f"  Found {len(due)} portfolio forecast(s) to evaluate.")
+        price_q = _adapt_sql("SELECT close FROM prices WHERE symbol = ? AND date = ?")
+        near_q  = _adapt_sql(
+            "SELECT close, date FROM prices WHERE symbol = ? AND date >= ? "
+            "ORDER BY date ASC LIMIT 1"
+        )
+
+        evaluated = 0
+        for row in due:
+            symbol      = row['symbol']
+            run_date    = row['run_date']
+            target_date = row['target_date']
+            expected    = row['expected_return_pct'] or 0.0
+
+            # Fetch actual close on run_date (base price)
+            cursor.execute(price_q, (symbol, run_date))
+            base_row = cursor.fetchone()
+            if not base_row:
+                print(f"  ⚠️  No base price for {symbol} on {run_date}, skipping")
+                continue
+            base_price = base_row[0] if not hasattr(base_row, '__getitem__') or isinstance(base_row, (list, tuple)) else base_row['close']
+
+            # Fetch actual close on target_date (or nearest available within 5 days)
+            cursor.execute(price_q, (symbol, target_date))
+            end_row = cursor.fetchone()
+            if not end_row:
+                cursor.execute(near_q, (symbol, target_date))
+                end_row = cursor.fetchone()
+            if not end_row:
+                print(f"  ⚠️  No actual price for {symbol} near {target_date}, skipping")
+                continue
+
+            actual_close = end_row[0] if not hasattr(end_row, '__getitem__') or isinstance(end_row, (list, tuple)) else end_row['close']
+            if base_price == 0:
+                continue
+
+            actual_return = ((actual_close - base_price) / base_price) * 100
+            error_pct     = actual_return - expected
+            within_5  = abs(error_pct) <= 5.0
+            within_10 = abs(error_pct) <= 10.0
+
+            insert_q = _adapt_sql("""
+                INSERT INTO portfolio_forecast_evaluations
+                (forecast_result_id, portfolio_id, symbol, run_date, target_date,
+                 expected_return_pct, actual_return_pct, actual_close,
+                 error_pct, within_5pct, within_10pct)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """)
+            cursor.execute(insert_q, (
+                int(row['id']), int(row['portfolio_id']),
+                symbol, run_date, target_date,
+                float(expected), float(actual_return), float(actual_close),
+                float(error_pct),
+                1 if within_5  else 0,
+                1 if within_10 else 0,
+            ))
+            icon = "✅" if within_10 else "⚠️"
+            print(f"  {icon} {symbol}: expected {expected:+.1f}% → actual {actual_return:+.1f}% (err {error_pct:+.1f}%)")
+            evaluated += 1
+
+        print(f"  ✅ Evaluated {evaluated} portfolio forecast(s).")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate Xmore2 Predictions')
     parser.add_argument('--lookback', action='store_true', help='Run look-back analysis for previous week')
     parser.add_argument('--days', type=int, default=7, help='Days ago for look-back (default: 7)')
     args = parser.parse_args()
-    
+
     # Always run standard evaluation first to ensure latest data is processed
     evaluate_predictions()
-    
+
+    # Evaluate portfolio forecasts whose target date has passed
+    evaluate_portfolio_forecasts()
+
     if args.lookback:
         evaluate_lookback(days_ago=args.days)

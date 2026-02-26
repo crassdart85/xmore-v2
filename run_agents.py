@@ -14,7 +14,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import config
 from database import get_connection
-from sentiment import get_latest_sentiment
+from sentiment_gemini import get_latest_sentiment
 import sys
 import traceback
 import logging
@@ -33,6 +33,18 @@ except Exception as e:
     print(f"❌ Failed to import agents: {e}")
     traceback.print_exc()
     sys.exit(1)
+
+# Import Gemini LLM agent (optional — gracefully skipped if unavailable)
+try:
+    from agents.gemini_agent import GeminiAgent
+    _gemini_agent = GeminiAgent()
+    if _gemini_agent._enabled:
+        print("✅ Gemini LLM Agent loaded and enabled")
+    else:
+        print("⚠️  Gemini LLM Agent loaded but disabled (GOOGLE_API_KEY not set)")
+except Exception as e:
+    _gemini_agent = None
+    print(f"⚠️  Gemini LLM Agent not available: {e}")
 
 
 def _compute_market_data(df):
@@ -205,7 +217,9 @@ def execute():
         ml_agent = MLAgent()
 
         agents = [rsi_agent, ma_agent, vol_agent, ml_agent]
-        print(f"✅ Created {len(agents)} signal agents")
+        gemini_agent = _gemini_agent  # module-level instance (None if unavailable)
+        print(f"✅ Created {len(agents)} technical agents" +
+              (" + Gemini LLM Agent" if gemini_agent and gemini_agent._enabled else ""))
 
         # Define prediction windows
         today = datetime.now().strftime('%Y-%m-%d')
@@ -301,6 +315,43 @@ def execute():
                 if not agent_signals:
                     print(f"  ⚠️  No agent signals generated, skipping consensus")
                     continue
+
+                # ── Layer 1 continued: Gemini LLM Agent ──
+                # Runs after technical agents so it can synthesise their signals.
+                if gemini_agent and gemini_agent._enabled:
+                    try:
+                        gemini_signal = gemini_agent.predict_signal_with_context(
+                            df, symbol=stock, sentiment=sentiment, other_signals=agent_signals
+                        )
+                        agent_signals.append(gemini_signal)
+
+                        g_pred = gemini_signal.get('prediction', 'HOLD')
+                        g_conf = gemini_signal.get('confidence', 0)
+                        g_reasoning = gemini_signal.get('reasoning', {})
+                        g_reasoning_json = json.dumps(g_reasoning)
+
+                        if os.getenv('DATABASE_URL'):
+                            cursor.execute("""
+                                INSERT INTO predictions
+                                (symbol, prediction_date, target_date, agent_name, prediction, confidence, reasoning)
+                                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                                ON CONFLICT (symbol, prediction_date, target_date, agent_name)
+                                DO UPDATE SET prediction = EXCLUDED.prediction,
+                                             confidence = EXCLUDED.confidence,
+                                             reasoning = EXCLUDED.reasoning
+                            """, (stock, today, target, gemini_agent.name, g_pred, g_conf, g_reasoning_json))
+                        else:
+                            cursor.execute("""
+                                INSERT OR REPLACE INTO predictions
+                                (symbol, prediction_date, target_date, agent_name, prediction, confidence, reasoning)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            """, (stock, today, target, gemini_agent.name, g_pred, g_conf, g_reasoning_json))
+
+                        reasoning_short = g_reasoning.get('llm_reasoning', '')[:60]
+                        print(f"  🤖 {gemini_agent.name}: {g_pred} ({g_conf:.0f}%) — {reasoning_short}")
+
+                    except Exception as e:
+                        print(f"  ⚠️  Gemini agent skipped for {stock}: {e}")
 
                 # ── Compute market data for Risk Agent ──
                 market_data = _compute_market_data(df)

@@ -13,7 +13,8 @@
     let fcAllStocks = [];        // full stock list, cached after first load
     let fcSelectedSymbols = []; // [{symbol, name}] — current selection
     const FC_MAX_STOCKS = 20;
-    let fcMode = 'auto';      // 'auto' | 'manual'
+    let fcMode = 'auto';      // 'auto' | 'manual' | 'portfolio'
+    let pfInitialized = false;
 
     // ─── Public entry point (called by switchToTab) ───────────
     window.loadTimeMachine = function () {
@@ -688,31 +689,53 @@
             if (!datePicker.value) datePicker.value = defDate.toISOString().split('T')[0];
         }
 
-        // Mode toggle (AI auto / manual pick)
-        const modeAutoBtn   = document.getElementById('fcModeAuto');
-        const modeManualBtn = document.getElementById('fcModeManual');
-        const autoSection   = document.getElementById('fcAutoSection');
-        const manualSection = document.getElementById('fcManualSection');
-        const runBtn2       = document.getElementById('fcRunBtn');
+        // Mode toggle (AI auto / manual pick / portfolio)
+        const modeAutoBtn      = document.getElementById('fcModeAuto');
+        const modeManualBtn    = document.getElementById('fcModeManual');
+        const modePortfolioBtn = document.getElementById('fcModePortfolio');
+        const autoSection      = document.getElementById('fcAutoSection');
+        const manualSection    = document.getElementById('fcManualSection');
+        const pfSection        = document.getElementById('pfSection');
+        const fcInputCard      = document.querySelector('#tmTabFuture .tm-input-card');
+        const runBtn2          = document.getElementById('fcRunBtn');
         const _t = typeof t === 'function' ? t : (k) => k;
 
         function setMode(mode) {
             fcMode = mode;
-            if (mode === 'auto') {
-                autoSection.style.display   = '';
-                manualSection.style.display = 'none';
-                modeAutoBtn.classList.add('fc-mode-active');
-                modeManualBtn.classList.remove('fc-mode-active');
-                if (runBtn2) runBtn2.setAttribute('data-translate', 'fcRunBtn');
-                if (runBtn2 && typeof t === 'function') runBtn2.textContent = t('fcRunBtn');
+            [modeAutoBtn, modeManualBtn, modePortfolioBtn].forEach(b => b && b.classList.remove('fc-mode-active'));
+
+            if (mode === 'portfolio') {
+                // Show portfolio section, hide forecast input card + results
+                if (fcInputCard)  fcInputCard.style.display  = 'none';
+                if (pfSection)    pfSection.style.display    = '';
+                document.getElementById('fcResults')?.style && (document.getElementById('fcResults').style.display = 'none');
+                document.getElementById('fcMultiResults')?.style && (document.getElementById('fcMultiResults').style.display = 'none');
+                document.getElementById('fcLoading')?.style && (document.getElementById('fcLoading').style.display = 'none');
+                if (modePortfolioBtn) modePortfolioBtn.classList.add('fc-mode-active');
+                // Initialise portfolio module on first visit
+                if (!pfInitialized) {
+                    pfInitialized = true;
+                    if (typeof window.loadPortfolioForecasts === 'function') window.loadPortfolioForecasts();
+                }
             } else {
-                autoSection.style.display   = 'none';
-                manualSection.style.display = '';
-                modeManualBtn.classList.add('fc-mode-active');
-                modeAutoBtn.classList.remove('fc-mode-active');
-                if (runBtn2) runBtn2.setAttribute('data-translate', 'fcRunBtnManual');
-                if (runBtn2 && typeof t === 'function') runBtn2.textContent = t('fcRunBtnManual');
-                if (!fcStocksLoaded) loadForecastSymbols();
+                // Show forecast input card, hide portfolio section
+                if (fcInputCard) fcInputCard.style.display = '';
+                if (pfSection)   pfSection.style.display   = 'none';
+
+                if (mode === 'auto') {
+                    autoSection.style.display   = '';
+                    manualSection.style.display = 'none';
+                    if (modeAutoBtn) modeAutoBtn.classList.add('fc-mode-active');
+                    if (runBtn2) runBtn2.setAttribute('data-translate', 'fcRunBtn');
+                    if (runBtn2 && typeof t === 'function') runBtn2.textContent = t('fcRunBtn');
+                } else {
+                    autoSection.style.display   = 'none';
+                    manualSection.style.display = '';
+                    if (modeManualBtn) modeManualBtn.classList.add('fc-mode-active');
+                    if (runBtn2) runBtn2.setAttribute('data-translate', 'fcRunBtnManual');
+                    if (runBtn2 && typeof t === 'function') runBtn2.textContent = t('fcRunBtnManual');
+                    if (!fcStocksLoaded) loadForecastSymbols();
+                }
             }
         }
 
@@ -720,6 +743,7 @@
             modeAutoBtn._modeBound = true;
             modeAutoBtn.addEventListener('click', () => setMode('auto'));
             modeManualBtn.addEventListener('click', () => setMode('manual'));
+            if (modePortfolioBtn) modePortfolioBtn.addEventListener('click', () => setMode('portfolio'));
         }
 
         // Horizon preset buttons (manual mode)

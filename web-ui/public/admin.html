@@ -33,6 +33,7 @@
                 <button class="admin-tab-btn" data-tab="tab-prices" role="tab">Prices</button>
                 <button class="admin-tab-btn" data-tab="tab-sources" role="tab">News Sources</button>
                 <button class="admin-tab-btn" data-tab="tab-telegram" role="tab">Telegram Feed</button>
+                <button class="admin-tab-btn" data-tab="tab-forecast-accuracy" role="tab">Forecast Accuracy</button>
                 <button class="admin-tab-btn" data-tab="tab-settings" role="tab">Settings</button>
             </div>
             <div class="admin-tab-config-wrap">
@@ -348,6 +349,58 @@
                 <div class="admin-form-actions" style="margin-top:16px;">
                     <button id="resetFrontendTabsBtn" class="admin-btn">Reset to Defaults</button>
                 </div>
+            </div>
+        </section>
+
+        <!-- FORECAST ACCURACY                                -->
+        <!-- ================================================ -->
+        <section class="section admin-tab-panel" id="tab-forecast-accuracy" role="tabpanel">
+            <h2>Forecast Accuracy</h2>
+            <p class="admin-muted">Tracks the accuracy of saved portfolio forecasts — comparing predicted vs actual returns after target dates are reached.</p>
+
+            <!-- Summary cards -->
+            <div id="forecastAccuracySummary" class="admin-health-grid" style="margin-bottom:24px;">
+                <div class="admin-metric-card"><div class="admin-metric-label">Total Forecasts Run</div><div class="admin-metric-value" id="faStatTotal">—</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Evaluated</div><div class="admin-metric-value" id="faStatEvaluated">—</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Avg Error %</div><div class="admin-metric-value" id="faStatAvgError">—</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Within 10% Hit Rate</div><div class="admin-metric-value" id="faStatHitRate">—</div></div>
+            </div>
+
+            <!-- Per-stock accuracy table -->
+            <h3 style="margin-bottom:12px;">Per-Stock Accuracy</h3>
+            <div class="scrollable-container" style="margin-bottom:24px;">
+                <table class="admin-table" id="faStockTable">
+                    <thead>
+                        <tr>
+                            <th>Symbol</th>
+                            <th>Forecasts</th>
+                            <th>Avg Expected %</th>
+                            <th>Avg Actual %</th>
+                            <th>Avg Error %</th>
+                            <th>Within 10% Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="faStockTableBody"><tr><td colspan="6" class="admin-muted" style="text-align:center;padding:20px;">Loading…</td></tr></tbody>
+                </table>
+            </div>
+
+            <!-- Recent evaluations -->
+            <h3 style="margin-bottom:12px;">Recent Evaluations</h3>
+            <div class="scrollable-container">
+                <table class="admin-table" id="faRecentTable">
+                    <thead>
+                        <tr>
+                            <th>Run Date</th>
+                            <th>Symbol</th>
+                            <th>Target Date</th>
+                            <th>Expected %</th>
+                            <th>Actual %</th>
+                            <th>Error %</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="faRecentTableBody"><tr><td colspan="7" class="admin-muted" style="text-align:center;padding:20px;">Loading…</td></tr></tbody>
+                </table>
             </div>
         </section>
     </div>

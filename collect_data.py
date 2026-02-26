@@ -294,6 +294,15 @@ def collect_rss_news_wrapper():
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Xmore data collection")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--prices-only', action='store_true',
+                      help='Collect prices only (fast, used for intraday updates)')
+    mode.add_argument('--news-only', action='store_true',
+                      help='Collect news + RSS only (no price fetching)')
+    args = parser.parse_args()
+
     start_time = time.time()
     print(f"🚀 Starting data collection at {datetime.now()}")
     print(f"📊 Collecting data for {len(config.ALL_STOCKS)} stocks")
@@ -303,20 +312,36 @@ if __name__ == "__main__":
     create_tables()
 
     try:
-        # Collect price data
-        p_count = collect_prices()
+        p_count = n_count = rss_count = 0
 
-        # Collect news from NewsAPI
-        n_count = collect_news()
+        if args.prices_only:
+            # Lightweight intraday price update — no news
+            p_count = collect_prices()
+            duration = time.time() - start_time
+            msg = f"[prices-only] Collected prices for {p_count} stocks."
+            log_system_run("collect_data.py", "success", msg, duration)
+            print(f"✅ {msg}")
 
-        # Collect Egyptian RSS news (supplementary)
-        rss_stats = collect_rss_news_wrapper()
-        rss_count = rss_stats.get('articles_saved', 0)
+        elif args.news_only:
+            # News + RSS only — respects NewsAPI daily rate limits
+            n_count = collect_news()
+            rss_stats = collect_rss_news_wrapper()
+            rss_count = rss_stats.get('articles_saved', 0)
+            duration = time.time() - start_time
+            msg = f"[news-only] NewsAPI for {n_count} stocks, RSS articles: {rss_count}."
+            log_system_run("collect_data.py", "success", msg, duration)
+            print(f"✅ {msg}")
 
-        duration = time.time() - start_time
-        msg = f"Collected prices for {p_count} stocks, NewsAPI for {n_count} stocks, RSS articles: {rss_count}."
-        log_system_run("collect_data.py", "success", msg, duration)
-        print(f"✅ Collection complete! {msg}")
+        else:
+            # Full collection: prices + news + RSS
+            p_count = collect_prices()
+            n_count = collect_news()
+            rss_stats = collect_rss_news_wrapper()
+            rss_count = rss_stats.get('articles_saved', 0)
+            duration = time.time() - start_time
+            msg = f"Collected prices for {p_count} stocks, NewsAPI for {n_count} stocks, RSS articles: {rss_count}."
+            log_system_run("collect_data.py", "success", msg, duration)
+            print(f"✅ Collection complete! {msg}")
 
     except Exception as e:
         duration = time.time() - start_time
