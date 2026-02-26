@@ -438,6 +438,20 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)');
 
+    // Table: Portfolio Daily Actuals (actual price recorded each day for in-progress forecasts)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS portfolio_daily_actuals (
+        id SERIAL PRIMARY KEY,
+        portfolio_id INTEGER NOT NULL REFERENCES forecast_portfolios(id) ON DELETE CASCADE,
+        symbol TEXT NOT NULL,
+        date DATE NOT NULL,
+        actual_close REAL,
+        return_pct_from_start REAL,
+        UNIQUE(portfolio_id, symbol, date)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)');
+
     // Seed ALL EGX stocks (~190)
     console.log('🌱 Seeding EGX stocks...');
     await pool.query(`

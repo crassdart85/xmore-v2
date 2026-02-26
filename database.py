@@ -568,6 +568,20 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)")
 
+        # Table 20: Portfolio Daily Actuals (actual price recorded each day for in-progress forecasts)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS portfolio_daily_actuals (
+                id {auto_id},
+                portfolio_id INTEGER NOT NULL REFERENCES forecast_portfolios(id) ON DELETE CASCADE,
+                symbol TEXT NOT NULL,
+                date DATE NOT NULL,
+                actual_close REAL NOT NULL,
+                return_pct_from_start REAL,
+                UNIQUE(portfolio_id, symbol, date)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)")
+
         # Create indexes for common queries
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")

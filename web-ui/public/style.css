@@ -4059,3 +4059,238 @@ button:active, .btn:active, .tab-btn:active {
     .pf-card-meta { gap: 4px; font-size: 0.75rem; }
     #pfResults { padding: 14px 12px; }
 }
+
+/* ============================================================
+   PORTFOLIO RESULT CARDS — rich per-stock grid
+   ============================================================ */
+
+/* Results title */
+.pf-results-title {
+    margin: 0 0 4px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Card grid — 3 cols desktop, 2 tablet, 1 mobile */
+.pf-result-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 16px;
+}
+
+/* Individual result card */
+.pf-result-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.pf-result-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+}
+
+/* Top row: symbol + expected return */
+.pf-rc-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+.pf-rc-symbol {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+}
+.pf-rc-return {
+    font-size: 1.25rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* Probability gauge */
+.pf-rc-prob-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.pf-rc-prob-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.pf-rc-prob-bar-wrap {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.pf-rc-prob-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+.pf-rc-prob-value {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    white-space: nowrap;
+    min-width: 32px;
+    text-align: right;
+}
+
+/* Range bar: worst / median / best markers */
+.pf-rc-range {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.pf-rc-range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+.pf-rc-range-bar {
+    position: relative;
+    height: 8px;
+    background: linear-gradient(to right, rgba(255,80,80,0.25), rgba(255,193,7,0.25), rgba(72,199,116,0.25));
+    border-radius: 4px;
+}
+.pf-rc-range-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--card-bg);
+}
+.pf-rc-marker-worst { background: var(--red,  #FF5050); }
+.pf-rc-marker-med   { background: var(--text-muted); }
+.pf-rc-marker-best  { background: var(--green, #48C774); }
+.pf-rc-marker-exp   {
+    background: var(--accent);
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    z-index: 1;
+}
+.pf-rc-range-hint {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Meta row (volatility, data points) */
+.pf-rc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* Progress rows */
+.pf-progress-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-light, var(--border-color));
+}
+.pf-progress-bar-wrap {
+    height: 4px;
+    background: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.pf-progress-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+}
+.pf-progress-text {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.pf-progress-actual {
+    font-weight: 600;
+}
+.pf-progress-actual small {
+    font-weight: 400;
+    opacity: 0.75;
+    margin-left: 4px;
+}
+.pf-progress-pending {
+    font-style: italic;
+    color: var(--text-muted);
+}
+.pf-progress-final {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+.pf-progress-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    flex-shrink: 0;
+}
+.pf-progress-err {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-left: auto;
+}
+
+/* Failed stocks list */
+.pf-failed-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.pf-failed-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(255,80,80,0.05);
+    border: 1px solid rgba(255,80,80,0.15);
+    border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+/* RTL */
+[dir="rtl"] .pf-rc-top,
+[dir="rtl"] .pf-rc-prob-row,
+[dir="rtl"] .pf-progress-text,
+[dir="rtl"] .pf-progress-final { flex-direction: row-reverse; }
+[dir="rtl"] .pf-rc-prob-value { text-align: left; }
+[dir="rtl"] .pf-progress-err  { margin-left: 0; margin-right: auto; }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .pf-result-grid { grid-template-columns: 1fr; gap: 10px; }
+    .pf-result-card { padding: 14px; }
+    .pf-rc-return   { font-size: 1.1rem; }
+}

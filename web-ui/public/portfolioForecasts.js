@@ -158,6 +158,7 @@
         pfActive = id;
         const resultsEl = document.getElementById('pfResults');
         if (!resultsEl) return;
+        resultsEl.style.display = '';
         resultsEl.innerHTML = `<div class="pf-loading">${isAr() ? 'جارٍ التحميل…' : 'Loading…'}</div>`;
 
         try {
@@ -181,49 +182,154 @@
 
         const successRows = results.filter(r => r.ok || r.ok === 1);
         const failedRows  = results.filter(r => !r.ok && r.ok !== 1);
+        const targetDate  = results[0]?.target_date || '—';
+        const horizonDays = portfolio.horizon_days || 63;
 
-        el.innerHTML = `
+        // ── Header ────────────────────────────────────────────────────────────
+        let html = `
         <div class="pf-results-header">
-            <h4>${escHtml(portfolio.name)}</h4>
-            <span class="pf-run-date">${isAr() ? 'تاريخ التشغيل:' : 'Run date:'} ${run_date} → ${results[0]?.target_date || '—'}</span>
-        </div>
-        <div class="pf-table-wrap">
-        <table class="pf-table">
-            <thead><tr>
-                <th>${isAr() ? 'السهم' : 'Stock'}</th>
-                <th>${isAr() ? 'العائد المتوقع' : 'Expected Return'}</th>
-                <th>${isAr() ? 'احتمال الارتفاع' : 'Prob. Positive'}</th>
-                <th>${isAr() ? 'الأسوأ' : 'Worst'}</th>
-                <th>${isAr() ? 'الوسيط' : 'Median'}</th>
-                <th>${isAr() ? 'الأفضل' : 'Best'}</th>
-                <th>${isAr() ? 'التقلب' : 'Volatility'}</th>
-                <th>${isAr() ? 'النتيجة الفعلية' : 'Actual Result'}</th>
-            </tr></thead>
-            <tbody>
-            ${successRows.map(r => {
-                const evaluated = r.evaluated || r.evaluated === 1;
-                const actualCell = evaluated
-                    ? `<span class="${colorClass(r.actual_return_pct)}">${fmt(r.actual_return_pct)} <small>(err ${fmt(r.error_pct)})</small></span>`
-                    : `<span class="pf-pending" title="${isAr() ? 'في انتظار تاريخ الهدف' : 'Waiting for target date'}">⏳</span>`;
-                return `<tr>
-                    <td><strong>${escHtml(r.symbol)}</strong></td>
-                    <td class="${colorClass(r.expected_return_pct)}">${fmt(r.expected_return_pct)}</td>
-                    <td>${r.probability_positive != null ? Math.round(r.probability_positive) + '%' : '—'}</td>
-                    <td class="pf-negative">${fmt(r.worst_case_pct)}</td>
-                    <td>${fmt(r.median_pct)}</td>
-                    <td class="pf-positive">${fmt(r.best_case_pct)}</td>
-                    <td>${r.volatility_annual_pct != null ? Math.round(r.volatility_annual_pct) + '%' : '—'}</td>
-                    <td>${actualCell}</td>
-                </tr>`;
-            }).join('')}
-            ${failedRows.map(r => `
-                <tr class="pf-row-failed">
-                    <td><strong>${escHtml(r.symbol)}</strong></td>
-                    <td colspan="7" class="pf-error-cell">⚠ ${escHtml(r.error_reason || 'Forecast unavailable')}</td>
-                </tr>`).join('')}
-            </tbody>
-        </table>
+            <div>
+                <h4 class="pf-results-title">${escHtml(portfolio.name)}</h4>
+                <span class="pf-run-date">
+                    ${isAr() ? 'من' : 'From'} ${run_date}
+                    ${isAr() ? 'إلى' : 'to'} ${targetDate}
+                    · ${horizonDays} ${isAr() ? 'يوم' : 'days'}
+                </span>
+            </div>
         </div>`;
+
+        // ── Success cards grid ────────────────────────────────────────────────
+        if (successRows.length) {
+            html += `<div class="pf-result-grid">`;
+            for (const r of successRows) {
+                const exp    = r.expected_return_pct;
+                const prob   = r.probability_positive != null ? Math.round(r.probability_positive) : null;
+                const worst  = r.worst_case_pct;
+                const med    = r.median_pct;
+                const best   = r.best_case_pct;
+                const vol    = r.volatility_annual_pct != null ? Math.round(r.volatility_annual_pct) : null;
+                const evaluated = r.evaluated || r.evaluated === 1;
+
+                // Probability bar width (clamp 0–100)
+                const probW = prob != null ? Math.min(100, Math.max(0, prob)) : 50;
+
+                // Range bar: map worst→best to 0–100%, mark expected position
+                const rangeMin = Math.min(worst ?? -20, -5);
+                const rangeMax = Math.max(best  ??  20,  5);
+                const rangeSpan = rangeMax - rangeMin || 1;
+                function toRangePct(v) {
+                    return Math.min(100, Math.max(0, ((v - rangeMin) / rangeSpan) * 100)).toFixed(1);
+                }
+                const worstPct  = worst != null ? toRangePct(worst) : '5';
+                const medPct    = med   != null ? toRangePct(med)   : '50';
+                const bestPct   = best  != null ? toRangePct(best)  : '95';
+                const expPct    = exp   != null ? toRangePct(exp)   : '50';
+
+                // Progress / actual result row
+                let progressHtml = '';
+                const elapsed   = r.days_elapsed ?? 0;
+                const progressW = horizonDays > 0 ? Math.min(100, Math.round((elapsed / horizonDays) * 100)) : 0;
+
+                if (evaluated) {
+                    const actualRet = r.actual_return_pct;
+                    const errVal    = r.error_pct;
+                    progressHtml = `
+                    <div class="pf-progress-row pf-progress-final">
+                        <span class="pf-progress-label">${isAr() ? 'النتيجة النهائية' : 'Final Result'}</span>
+                        <span class="pf-progress-actual ${colorClass(actualRet)}">${fmt(actualRet)}</span>
+                        <span class="pf-progress-err">${isAr() ? 'خطأ' : 'err'} ${fmt(errVal)}</span>
+                    </div>`;
+                } else if (r.daily_return_pct != null) {
+                    progressHtml = `
+                    <div class="pf-progress-row">
+                        <div class="pf-progress-bar-wrap" title="${isAr() ? 'اليوم ' + elapsed + ' من ' + horizonDays : 'Day ' + elapsed + ' of ' + horizonDays}">
+                            <div class="pf-progress-bar-fill" style="width:${progressW}%"></div>
+                        </div>
+                        <div class="pf-progress-text">
+                            <span>${isAr() ? 'يوم ' + elapsed + '/' + horizonDays : 'Day ' + elapsed + '/' + horizonDays}</span>
+                            <span class="pf-progress-actual ${colorClass(r.daily_return_pct)}">
+                                ${isAr() ? 'الفعلي:' : 'Actual:'} ${fmt(r.daily_return_pct)}
+                                <small>${isAr() ? 'مقابل' : 'vs'} ${fmt(exp)}</small>
+                            </span>
+                        </div>
+                    </div>`;
+                } else if (elapsed > 0) {
+                    progressHtml = `
+                    <div class="pf-progress-row">
+                        <div class="pf-progress-bar-wrap" title="${isAr() ? 'يوم ' + elapsed + ' من ' + horizonDays : 'Day ' + elapsed + ' of ' + horizonDays}">
+                            <div class="pf-progress-bar-fill" style="width:${progressW}%"></div>
+                        </div>
+                        <div class="pf-progress-text">
+                            <span>${isAr() ? 'يوم ' + elapsed + '/' + horizonDays : 'Day ' + elapsed + '/' + horizonDays}</span>
+                            <span class="pf-progress-pending">${isAr() ? 'في انتظار البيانات' : 'Awaiting price data'}</span>
+                        </div>
+                    </div>`;
+                }
+
+                html += `
+                <div class="pf-result-card">
+                    <!-- Symbol + expected return -->
+                    <div class="pf-rc-top">
+                        <span class="pf-rc-symbol">${escHtml(r.symbol)}</span>
+                        <span class="pf-rc-return ${colorClass(exp)}">${fmt(exp)}</span>
+                    </div>
+
+                    <!-- Probability gauge -->
+                    <div class="pf-rc-prob-row">
+                        <span class="pf-rc-prob-label">${isAr() ? 'احتمال الارتفاع' : 'Prob. Positive'}</span>
+                        <div class="pf-rc-prob-bar-wrap">
+                            <div class="pf-rc-prob-bar-fill" style="width:${probW}%"></div>
+                        </div>
+                        <span class="pf-rc-prob-value">${prob != null ? prob + '%' : '—'}</span>
+                    </div>
+
+                    <!-- Range bar: worst / median / best -->
+                    <div class="pf-rc-range">
+                        <div class="pf-rc-range-labels">
+                            <span class="pf-negative">${fmt(worst)}</span>
+                            <span>${fmt(med)}</span>
+                            <span class="pf-positive">${fmt(best)}</span>
+                        </div>
+                        <div class="pf-rc-range-bar">
+                            <div class="pf-rc-range-marker pf-rc-marker-worst"  style="left:${worstPct}%"></div>
+                            <div class="pf-rc-range-marker pf-rc-marker-med"    style="left:${medPct}%"></div>
+                            <div class="pf-rc-range-marker pf-rc-marker-best"   style="left:${bestPct}%"></div>
+                            <div class="pf-rc-range-marker pf-rc-marker-exp"    style="left:${expPct}%"></div>
+                        </div>
+                        <div class="pf-rc-range-hint">
+                            <span>${isAr() ? 'أسوأ' : 'Worst'}</span>
+                            <span>${isAr() ? 'وسيط' : 'Median'}</span>
+                            <span>${isAr() ? 'أفضل' : 'Best'}</span>
+                        </div>
+                    </div>
+
+                    <!-- Meta row -->
+                    <div class="pf-rc-meta">
+                        ${vol != null ? `<span>${isAr() ? 'تقلب:' : 'Vol:'} ${vol}%/yr</span>` : ''}
+                        ${r.data_points ? `<span>${r.data_points} ${isAr() ? 'نقطة بيانات' : 'data pts'}</span>` : ''}
+                    </div>
+
+                    <!-- Progress / actual result -->
+                    ${progressHtml}
+                </div>`;
+            }
+            html += `</div>`;
+        }
+
+        // ── Failed rows ───────────────────────────────────────────────────────
+        if (failedRows.length) {
+            html += `<div class="pf-failed-list">`;
+            for (const r of failedRows) {
+                html += `<div class="pf-failed-item">
+                    <strong>${escHtml(r.symbol)}</strong>
+                    <span class="pf-error-cell">⚠ ${escHtml(r.error_reason || 'Forecast unavailable')}</span>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+
+        el.innerHTML = html;
+        el.style.display = '';
     }
 
     // ── Run forecast ─────────────────────────────────────────────────────────
@@ -360,6 +466,7 @@
         const horizon = parseInt(document.getElementById('pfHorizonInput')?.value) || 63;
         const sc      = document.querySelector('input[name="pfScenario"]:checked')?.value || 'base';
         const errEl   = document.getElementById('pfFormError');
+        const wasCreating = !pfEditingId;
 
         if (!name)                    { errEl.textContent = isAr() ? 'أدخل اسم المحفظة' : 'Enter a portfolio name'; return; }
         if (!pfSelectedSyms.length)   { errEl.textContent = isAr() ? 'اختر سهماً واحداً على الأقل' : 'Select at least one stock'; return; }
@@ -370,11 +477,17 @@
         try {
             if (pfEditingId) {
                 await apiFetch(`/api/portfolio-forecasts/${pfEditingId}`, { method: 'PUT', headers: apiHeaders(), body: JSON.stringify(body) });
+                closeForm();
+                await refreshPortfolioList();
             } else {
-                await apiFetch('/api/portfolio-forecasts', { method: 'POST', headers: apiHeaders(), body: JSON.stringify(body) });
+                const newData = await apiFetch('/api/portfolio-forecasts', { method: 'POST', headers: apiHeaders(), body: JSON.stringify(body) });
+                closeForm();
+                await refreshPortfolioList();
+                // Auto-run forecast immediately on create
+                if (newData && newData.id) {
+                    await runPortfolioForecast(newData.id, null);
+                }
             }
-            closeForm();
-            await refreshPortfolioList();
         } catch (err) {
             errEl.textContent = err.message;
         }

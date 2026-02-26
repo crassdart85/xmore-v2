@@ -326,10 +326,42 @@ router.get('/:id/results', authMiddleware, async (req, res) => {
             ORDER BY r.expected_return_pct DESC NULLS LAST
         `), [id, runDate]);
 
+        // Fetch latest daily actual per symbol for in-progress tracking
+        let dailyMap = {};
+        try {
+            const dailyRows = await dbAll(adaptSql(`
+                SELECT da.symbol, da.date as daily_date, da.actual_close as daily_close,
+                       da.return_pct_from_start as daily_return_pct
+                FROM portfolio_daily_actuals da
+                WHERE da.portfolio_id = ?
+                  AND da.date = (
+                      SELECT MAX(da2.date) FROM portfolio_daily_actuals da2
+                      WHERE da2.portfolio_id = da.portfolio_id AND da2.symbol = da.symbol
+                  )
+            `), [id]);
+            for (const dr of dailyRows) dailyMap[dr.symbol] = dr;
+        } catch (_) { /* table may not exist yet on older deployments */ }
+
+        // Compute progress days
+        const today = new Date().toISOString().split('T')[0];
+        const results = rows.map(r => {
+            const runMs    = new Date(r.run_date).getTime();
+            const todayMs  = new Date(today).getTime();
+            const daysPast = Math.max(0, Math.round((todayMs - runMs) / 86400000));
+            const daily    = dailyMap[r.symbol] || null;
+            return {
+                ...r,
+                days_elapsed:     daysPast,
+                daily_date:       daily ? daily.daily_date   : null,
+                daily_close:      daily ? daily.daily_close  : null,
+                daily_return_pct: daily ? daily.daily_return_pct : null,
+            };
+        });
+
         res.json({
             portfolio: { ...portfolio, symbols: parseSymbols(portfolio.symbols_json) },
             run_date: runDate,
-            results: rows,
+            results,
         });
     } catch (err) {
         console.error('GET /portfolio-forecasts/:id/results error:', err);

@@ -151,6 +151,97 @@ def evaluate_lookback(days_ago=7):
         print("\n  Detailed Breakdown:")
         print(evals[['symbol', 'agent_name', 'prediction', 'actual_outcome', 'was_correct']].to_string(index=False))
 
+def record_portfolio_daily_actuals():
+    """
+    Record today's actual close price for every stock in an active portfolio forecast.
+
+    An "active" forecast is one where:
+      - run_date <= today (forecast has started)
+      - target_date > today (hasn't matured yet)
+      - ok = 1 (forecast succeeded)
+
+    Stores one row per (portfolio_id, symbol, date) in portfolio_daily_actuals.
+    Skips gracefully if price data is missing for today.
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    print(f"📅 Recording daily actuals for active portfolio forecasts ({today})...")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Find distinct active forecast rows (one entry per portfolio+symbol)
+        active_q = _adapt_sql("""
+            SELECT DISTINCT r.portfolio_id, r.symbol, r.run_date
+            FROM portfolio_forecast_results r
+            WHERE r.run_date <= ? AND r.target_date > ? AND r.ok = 1
+        """)
+        cursor.execute(active_q, (today, today))
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        rows = cursor.fetchall()
+        active = [dict(zip(columns, row)) if not hasattr(row, 'keys') else dict(row) for row in rows]
+
+        if not active:
+            print("  No active portfolio forecasts to track.")
+            return
+
+        price_exact_q = _adapt_sql("SELECT close FROM prices WHERE symbol = ? AND date = ?")
+        price_near_q  = _adapt_sql(
+            "SELECT close FROM prices WHERE symbol = ? AND date <= ? ORDER BY date DESC LIMIT 1"
+        )
+
+        if DATABASE_URL:
+            upsert_q = """
+                INSERT INTO portfolio_daily_actuals (portfolio_id, symbol, date, actual_close, return_pct_from_start)
+                VALUES (%s, %s, %s, %s, %s)
+                ON CONFLICT (portfolio_id, symbol, date) DO UPDATE
+                  SET actual_close = EXCLUDED.actual_close,
+                      return_pct_from_start = EXCLUDED.return_pct_from_start
+            """
+        else:
+            upsert_q = """
+                INSERT OR REPLACE INTO portfolio_daily_actuals
+                (portfolio_id, symbol, date, actual_close, return_pct_from_start)
+                VALUES (?, ?, ?, ?, ?)
+            """
+
+        recorded = 0
+        for row in active:
+            symbol   = row['symbol']
+            run_date = row['run_date']
+            pid      = row['portfolio_id']
+
+            # Get base price (price on run_date)
+            cursor.execute(price_exact_q, (symbol, run_date))
+            base_row = cursor.fetchone()
+            if not base_row:
+                continue
+            base_price = base_row[0] if isinstance(base_row, (list, tuple)) else base_row['close']
+            if not base_price or base_price == 0:
+                continue
+
+            # Get today's price (exact or nearest past trading day)
+            cursor.execute(price_exact_q, (symbol, today))
+            today_row = cursor.fetchone()
+            if not today_row:
+                cursor.execute(price_near_q, (symbol, today))
+                today_row = cursor.fetchone()
+            if not today_row:
+                continue
+
+            today_price = today_row[0] if isinstance(today_row, (list, tuple)) else today_row['close']
+            if not today_price:
+                continue
+
+            return_pct = ((today_price - base_price) / base_price) * 100
+
+            cursor.execute(upsert_q, (
+                int(pid), symbol, today, float(today_price), float(return_pct)
+            ))
+            recorded += 1
+
+        print(f"  Recorded {recorded} daily actual(s).")
+
+
 def evaluate_portfolio_forecasts():
     """
     Auto-evaluate portfolio forecast results whose target_date has passed.
@@ -163,6 +254,9 @@ def evaluate_portfolio_forecasts():
     date within 5 days), computes actual_return_pct, and stores the result in
     portfolio_forecast_evaluations.
     """
+    # Record today's prices for all in-progress forecasts first
+    record_portfolio_daily_actuals()
+
     today = datetime.now().strftime('%Y-%m-%d')
     print(f"📊 Evaluating portfolio forecasts due by {today}...")
 
