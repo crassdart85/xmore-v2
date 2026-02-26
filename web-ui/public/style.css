@@ -3713,7 +3713,7 @@ button:active, .btn:active, .tab-btn:active {
 
 .pf-card {
     background: var(--card-bg);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 16px;
     cursor: pointer;
@@ -3785,7 +3785,7 @@ button:active, .btn:active, .tab-btn:active {
 .pf-edit-btn,
 .pf-delete-btn {
     background: transparent;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 7px;
     padding: 6px 10px;
     font-size: 0.82rem;
@@ -3799,7 +3799,7 @@ button:active, .btn:active, .tab-btn:active {
 /* Results panel */
 #pfResults {
     background: var(--card-bg);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 20px;
     margin-top: 8px;
@@ -3839,14 +3839,14 @@ button:active, .btn:active, .tab-btn:active {
     letter-spacing: 0.05em;
     color: var(--text-muted);
     padding: 6px 10px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .pf-results-table th:first-child { text-align: left; }
 
 .pf-results-table td {
     padding: 10px 10px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
     text-align: right;
 }
@@ -3899,9 +3899,163 @@ button:active, .btn:active, .tab-btn:active {
 [dir="rtl"] .pf-results-table th:first-child,
 [dir="rtl"] .pf-results-table td:first-child { text-align: right; }
 
-/* Responsive */
+/* ── Card header (name + actions row) ──────────────────────────────────── */
+.pf-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+/* ── Card meta (pills row) ──────────────────────────────────────────────── */
+.pf-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 0;
+}
+
+/* ── Scenario badge ─────────────────────────────────────────────────────── */
+.pf-scenario-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.pf-scenario-base { background: rgba(102,126,234,0.15); color: var(--accent); }
+.pf-scenario-bull { background: rgba(72,199,116,0.15);  color: var(--green, #48C774); }
+.pf-scenario-bear { background: rgba(255,80,80,0.15);   color: var(--red, #FF5050); }
+
+/* ── JS-generated button classes (pf-btn-*) ────────────────────────────── */
+.pf-btn-view,
+.pf-btn-run,
+.pf-btn-edit,
+.pf-btn-delete {
+    border-radius: 7px;
+    padding: 6px 11px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, opacity 0.2s;
+    white-space: nowrap;
+}
+
+.pf-btn-view {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+.pf-btn-view:hover { background: rgba(255,255,255,0.05); }
+
+.pf-btn-run {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+}
+.pf-btn-run:hover  { opacity: 0.85; }
+.pf-btn-run:disabled { opacity: 0.5; cursor: default; }
+
+.pf-btn-edit {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+.pf-btn-edit:hover { background: rgba(255,255,255,0.05); }
+
+.pf-btn-delete {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+}
+.pf-btn-delete:hover { background: rgba(255,80,80,0.1); color: var(--red, #FF5050); border-color: rgba(255,80,80,0.4); }
+
+/* ── Results table (JS uses .pf-table, not .pf-results-table) ──────────── */
+.pf-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+.pf-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    min-width: 540px;
+}
+.pf-table th {
+    text-align: right;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+.pf-table th:first-child { text-align: left; }
+.pf-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+    text-align: right;
+}
+.pf-table td:first-child { text-align: left; font-weight: 600; }
+.pf-table tr:last-child td { border-bottom: none; }
+.pf-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+/* ── Color helpers used in results ─────────────────────────────────────── */
+.pf-positive { color: var(--green, #48C774); }
+.pf-negative { color: var(--red, #FF5050); }
+
+/* ── Run date / loading / error states ─────────────────────────────────── */
+.pf-run-date {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.pf-loading {
+    text-align: center;
+    padding: 32px 16px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+.pf-error {
+    color: var(--red, #FF5050);
+    font-size: 0.85rem;
+    padding: 8px 0;
+}
+.pf-error-cell {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-style: italic;
+}
+.pf-row-failed td { opacity: 0.7; }
+.pf-pending { font-size: 1rem; }
+
+/* ── RTL additions ──────────────────────────────────────────────────────── */
+[dir="rtl"] .pf-card-header { flex-direction: row-reverse; }
+[dir="rtl"] .pf-card-actions { flex-direction: row-reverse; }
+[dir="rtl"] .pf-table th, [dir="rtl"] .pf-table td { text-align: left; }
+[dir="rtl"] .pf-table th:first-child, [dir="rtl"] .pf-table td:first-child { text-align: right; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
     .pf-list { grid-template-columns: 1fr; }
+    .pf-card { padding: 14px; }
+    .pf-card-actions { flex-wrap: wrap; gap: 5px; }
+    .pf-btn-view, .pf-btn-run, .pf-btn-edit, .pf-btn-delete {
+        padding: 7px 10px;
+        font-size: 0.78rem;
+        flex: 1;
+        text-align: center;
+        min-width: 56px;
+    }
     .pf-results-table { font-size: 0.8rem; }
     .pf-results-table th, .pf-results-table td { padding: 8px 6px; }
+    .pf-table { font-size: 0.8rem; min-width: 460px; }
+    .pf-table th, .pf-table td { padding: 8px 6px; }
+    .pf-card-meta { gap: 4px; font-size: 0.75rem; }
+    #pfResults { padding: 14px 12px; }
 }
