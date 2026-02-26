@@ -96,7 +96,8 @@
             pfPortfolios = data.portfolios || [];
             renderPortfolioList(listEl);
         } catch (err) {
-            if (err.message.includes('401') || err.message.includes('403')) {
+            const msg = (err.message || '').toLowerCase();
+            if (msg.includes('401') || msg.includes('403') || msg.includes('not authenticated') || msg.includes('unauthorized')) {
                 listEl.innerHTML = `<p class="pf-empty">${isAr() ? 'يرجى تسجيل الدخول لعرض المحافظ' : 'Please log in to view your forecast portfolios.'}</p>`;
             } else {
                 listEl.innerHTML = `<p class="pf-error">${escHtml(err.message)}</p>`;
