@@ -3588,6 +3588,13 @@ button:active, .btn:active, .tab-btn:active {
     margin-bottom: 20px;
 }
 
+.pf-form-title {
+    margin: 0 0 16px 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .pf-form-row {
     margin-bottom: 16px;
 }
