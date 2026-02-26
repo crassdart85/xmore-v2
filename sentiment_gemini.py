@@ -201,17 +201,32 @@ def _fetch_mubasher_articles() -> list:
     return articles
 
 
-# ── Supplementary: CNN Arabic RSS + EIP/IDSC scraper ─────────────────────────
+# ── Supplementary Arabic sources (always run alongside Enterprise Egypt) ──────
 
-CNN_ARABIC_RSS = "https://arabic.cnn.com/rss"
-EIP_NEWS_URL   = "https://www.eip.gov.eg/IDSC/News/List.aspx"
-EIP_BASE_URL   = "https://www.eip.gov.eg"
+CNN_ARABIC_RSS   = "https://arabic.cnn.com/rss"
+ALBORSA_RSS      = "https://www.alborsaanews.com/feed"
+ALMAL_NEWS_URL   = "https://almalnews.com/category/stocks/1/"
+EIP_NEWS_URL     = "https://www.eip.gov.eg/IDSC/News/List.aspx"
+
+_ARABIC_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "ar-EG,ar;q=0.9,en;q=0.8",
+}
 
 def _fetch_arabic_sources() -> list:
     """
-    Supplementary Arabic news from CNN Arabic RSS and EIP/IDSC news page.
-    Always run alongside Enterprise Egypt (not a fallback) to provide Arabic
-    context that helps Gemini identify EGX-related sentiment.
+    Supplementary Arabic news — always run alongside Enterprise Egypt to give
+    Gemini broader EGX-related Arabic context.
+
+    Sources:
+      - CNN Arabic RSS          (general Egypt economy)
+      - Al Borsa News RSS       (EGX stocks & companies, direct RSS)
+      - Al Mal News scraper     (EGX stocks category page)
+      - EIP/IDSC scraper        (Egyptian government economic news)
+
     Returns articles in [{'headline': str, 'text': str}] format.
     """
     import feedparser
@@ -219,14 +234,8 @@ def _fetch_arabic_sources() -> list:
     from bs4 import BeautifulSoup
 
     articles = []
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
-        )
-    }
 
-    # ── CNN Arabic RSS (general Egypt economy coverage) ─────────────────
+    # ── CNN Arabic RSS ───────────────────────────────────────────────────
     try:
         feed = feedparser.parse(CNN_ARABIC_RSS)
         count = 0
@@ -240,16 +249,44 @@ def _fetch_arabic_sources() -> list:
     except Exception as e:
         logger.warning(f"CNN Arabic RSS fetch failed: {e}")
 
-    # ── EIP/IDSC news list (Egyptian government economic news) ──────────
+    # ── Al Borsa News RSS (EGX-focused Arabic financial news) ────────────
     try:
-        resp = requests.get(EIP_NEWS_URL, headers=headers, timeout=12)
+        feed = feedparser.parse(ALBORSA_RSS)
+        count = 0
+        for entry in feed.entries[:25]:
+            headline = entry.get("title", "")
+            summary  = entry.get("summary", "")
+            if headline:
+                articles.append({"headline": headline, "text": summary[:2000]})
+                count += 1
+        logger.info(f"Fetched {count} articles from Al Borsa News RSS")
+    except Exception as e:
+        logger.warning(f"Al Borsa News RSS fetch failed: {e}")
+
+    # ── Al Mal News — stocks category scraper ────────────────────────────
+    try:
+        resp = requests.get(ALMAL_NEWS_URL, headers=_ARABIC_HEADERS, timeout=12)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.text, "html.parser")
+        count = 0
+        for h3 in soup.find_all("h3"):
+            title = h3.get_text(strip=True)
+            if len(title) > 10:
+                articles.append({"headline": title, "text": ""})
+                count += 1
+        logger.info(f"Fetched {count} articles from Al Mal News")
+    except Exception as e:
+        logger.warning(f"Al Mal News fetch failed: {e}")
+
+    # ── EIP/IDSC news list ───────────────────────────────────────────────
+    try:
+        resp = requests.get(EIP_NEWS_URL, headers=_ARABIC_HEADERS, timeout=12)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, "html.parser")
         count = 0
         for a in soup.find_all("a", href=True):
-            href  = a.get("href", "")
             title = a.get_text(strip=True)
-            if "View.aspx?ID=" in href and len(title) > 10:
+            if "View.aspx?ID=" in a.get("href", "") and len(title) > 10:
                 articles.append({"headline": title, "text": ""})
                 count += 1
         logger.info(f"Fetched {count} articles from EIP/IDSC news page")

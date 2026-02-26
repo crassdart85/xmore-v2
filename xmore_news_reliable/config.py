@@ -176,6 +176,38 @@ RSS_SOURCES: Dict[str, RSSSourceConfig] = {
         max_results=10,
         description="EIP/IDSC Egypt government economic news (eip.gov.eg/IDSC/News)",
     ),
+    "AlBorsa_News": RSSSourceConfig(
+        queries=[
+            "site:alborsaanews.com بورصة مصر",
+            "Al Borsa News Egypt stocks EGX",
+        ],
+        max_results=20,
+        description="Al Borsa News — EGX stocks & companies (has direct RSS at alborsaanews.com/feed)",
+    ),
+    "AlMal_News": RSSSourceConfig(
+        queries=[
+            "site:almalnews.com بورصة أسهم مصر",
+            "Al Mal News Egypt stocks market",
+        ],
+        max_results=15,
+        description="Al Mal News Egypt stocks category (almalnews.com/category/stocks — no RSS, via Google News)",
+    ),
+    "Investing_Egypt": RSSSourceConfig(
+        queries=[
+            "site:sa.investing.com Egypt equities stocks",
+            "Investing.com Egypt EGX market analysis",
+        ],
+        max_results=10,
+        description="Investing.com Egypt equities (sa.investing.com/equities/egypt — 403 blocked, via Google News)",
+    ),
+    "EGX_Arabic": RSSSourceConfig(
+        queries=[
+            "site:egx.com.eg بورصة مصر إعلانات",
+            "EGX Egyptian Exchange Arabic announcements disclosures",
+        ],
+        max_results=10,
+        description="EGX Arabic pages (egx.com.eg/ar — JS-rendered, via Google News)",
+    ),
 }
 
 PDF_SOURCES: Dict[str, PDFSourceConfig] = {

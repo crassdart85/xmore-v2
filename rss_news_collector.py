@@ -125,6 +125,27 @@ EGYPTIAN_NEWS_FEEDS = [
         "focus": "business",
         "reliability": "medium"
     },
+    {
+        "name": "Al Borsa News",
+        "url": "https://www.alborsaanews.com/feed",
+        "language": "ar",
+        "focus": "markets",
+        "reliability": "high"
+    },
+    {
+        "name": "Google News Al Mal Egypt Stocks",
+        "url": "https://news.google.com/rss/search?q=site:almalnews.com+%D8%A8%D9%88%D8%B1%D8%B5%D8%A9+%D9%85%D8%B5%D8%B1&hl=ar&gl=EG&ceid=EG:ar",
+        "language": "ar",
+        "focus": "markets",
+        "reliability": "medium"
+    },
+    {
+        "name": "Google News Investing Egypt",
+        "url": "https://news.google.com/rss/search?q=site:sa.investing.com+egypt+stocks&hl=ar&gl=EG&ceid=EG:ar",
+        "language": "ar",
+        "focus": "markets",
+        "reliability": "medium"
+    },
 ]
 
 
