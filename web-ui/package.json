@@ -21,6 +21,6 @@
   },
   "optionalDependencies": {
     "sqlite3": "^5.1.7",
-    "yahoo-finance2": "^2.13.3"
+    "yahoo-finance2": "^2.14.0"
   }
 }

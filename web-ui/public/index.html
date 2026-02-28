@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="style.css?v=20260215a">
     <link rel="stylesheet" href="auth.css?v=20260215a">
     <link rel="stylesheet" href="performance-dashboard.css?v=20260215a">
-    <link rel="stylesheet" href="timemachine.css?v=20260218a">
+    <link rel="stylesheet" href="timemachine.css?v=20260228a">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.css">
 </head>
 
@@ -413,9 +413,18 @@
 
                     <!-- Mode toggle -->
                     <div class="fc-mode-toggle" role="group" aria-label="Forecast mode">
-                        <button class="fc-mode-btn fc-mode-active" id="fcModeAuto" data-translate="fcModeAuto">🤖 AI picks for me</button>
-                        <button class="fc-mode-btn" id="fcModeManual" data-translate="fcModeManual">🔍 I pick manually</button>
-                        <button class="fc-mode-btn" id="fcModePortfolio" data-translate="fcModePortfolio">📁 My Portfolios</button>
+                        <button class="fc-mode-btn fc-mode-active" id="fcModeAuto">
+                            <span class="fc-mode-name" data-translate="fcModeAuto">🤖 AI picks for me</span>
+                            <span class="fc-mode-desc" data-translate="fcModeAutoDesc">Auto-selects the best EGX30 stock for your date</span>
+                        </button>
+                        <button class="fc-mode-btn" id="fcModeManual">
+                            <span class="fc-mode-name" data-translate="fcModeManual">🔍 I pick manually</span>
+                            <span class="fc-mode-desc" data-translate="fcModeManualDesc">Pick 1–20 stocks and compare forecasts</span>
+                        </button>
+                        <button class="fc-mode-btn" id="fcModePortfolio">
+                            <span class="fc-mode-name" data-translate="fcModePortfolio">📁 My Portfolios</span>
+                            <span class="fc-mode-desc" data-translate="fcModePortfolioDesc">Run forecast on your saved portfolios</span>
+                        </button>
                     </div>
 
                     <!-- Investment amount (always visible) -->
@@ -467,17 +476,17 @@
                     <div class="tm-field">
                         <label data-translate="fcScenarioLabel">Scenario</label>
                         <div class="fc-scenario-row">
-                            <label class="fc-scenario-opt fc-scenario-active">
+                            <label class="fc-scenario-opt fc-scenario-active" data-scenario="base">
                                 <input type="radio" name="fcScenario" value="base" checked>
                                 <span class="fc-scenario-label" data-translate="fcBase">Base</span>
                                 <span class="fc-scenario-hint" data-translate="fcBaseHint">Historical drift</span>
                             </label>
-                            <label class="fc-scenario-opt">
+                            <label class="fc-scenario-opt" data-scenario="bull">
                                 <input type="radio" name="fcScenario" value="bull">
                                 <span class="fc-scenario-label" data-translate="fcBull">Bull</span>
                                 <span class="fc-scenario-hint" data-translate="fcBullHint">+2% drift boost</span>
                             </label>
-                            <label class="fc-scenario-opt">
+                            <label class="fc-scenario-opt" data-scenario="bear">
                                 <input type="radio" name="fcScenario" value="bear">
                                 <span class="fc-scenario-label" data-translate="fcBear">Bear</span>
                                 <span class="fc-scenario-hint" data-translate="fcBearHint">−2% drift drag</span>
@@ -525,19 +534,25 @@
                     </div>
                 </div>
 
+                <!-- Plain-English interpretation -->
+                <div id="fcInterpret" class="fc-interpret-card" style="display:none"></div>
+
                 <!-- Min / Max range -->
                 <div class="fc-range-card">
                     <div class="fc-range-item fc-range-worst">
                         <div class="fc-range-label" data-translate="fcWorstCase">Worst Case (5th pct)</div>
                         <div class="fc-range-value" id="fcWorstCase">—</div>
+                        <div class="fc-range-ret" id="fcWorstRet"></div>
                     </div>
                     <div class="fc-range-mid">
                         <div class="fc-range-label" data-translate="fcMedian">Median</div>
                         <div class="fc-range-value" id="fcMedian">—</div>
+                        <div class="fc-range-ret" id="fcMedianRet"></div>
                     </div>
                     <div class="fc-range-item fc-range-best">
                         <div class="fc-range-label" data-translate="fcBestCase">Best Case (95th pct)</div>
                         <div class="fc-range-value" id="fcBestCase">—</div>
+                        <div class="fc-range-ret" id="fcBestRet"></div>
                     </div>
                 </div>
 
@@ -577,6 +592,11 @@
                         <span class="fc-param-label" data-translate="fcSimCount">Simulations</span>
                         <span class="fc-param-value" id="fcSimCount">—</span>
                     </div>
+                </div>
+
+                <!-- Re-run button -->
+                <div class="fc-rerun-row">
+                    <button class="fc-rerun-btn" id="fcRerunBtn" data-translate="fcRerun">Modify &amp; Re-run ↑</button>
                 </div>
 
                 <!-- Disclaimer -->
@@ -663,8 +683,29 @@
             <!-- Forecast loading state -->
             <div id="fcLoading" class="tm-loading" style="display:none">
                 <div class="tm-spinner"></div>
-                <p data-translate="fcCalculating">Running 5,000 simulated futures…</p>
-                <p class="tm-loading-sub" data-translate="fcAnalyzing">Computing GBM parameters &amp; Monte Carlo paths</p>
+                <div class="fc-stages" id="fcStages">
+                    <div class="fc-stage" id="fcStage1">
+                        <div class="fc-stage-dot"></div>
+                        <div class="fc-stage-text">
+                            <span class="fc-stage-label" data-translate="fcStage1">Fetching price history…</span>
+                            <span class="fc-stage-sub" data-translate="fcStage1Sub">Loading historical EGX data</span>
+                        </div>
+                    </div>
+                    <div class="fc-stage" id="fcStage2">
+                        <div class="fc-stage-dot"></div>
+                        <div class="fc-stage-text">
+                            <span class="fc-stage-label" id="fcStage2Label" data-translate="fcStage2Auto">Scanning EGX30 stocks…</span>
+                            <span class="fc-stage-sub" data-translate="fcStage2Sub">Computing GBM parameters per stock</span>
+                        </div>
+                    </div>
+                    <div class="fc-stage" id="fcStage3">
+                        <div class="fc-stage-dot"></div>
+                        <div class="fc-stage-text">
+                            <span class="fc-stage-label" data-translate="fcStage3">Running 5,000 Monte Carlo paths…</span>
+                            <span class="fc-stage-sub" data-translate="fcStage3Sub">Projecting probabilistic outcomes</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             </div><!-- /tmTabFuture -->
@@ -723,7 +764,7 @@
     <script src="briefing.js?v=20260215a"></script>
     <script src="performance-dashboard.js?v=20260215a"></script>
     <script src="portfolioForecasts.js?v=20260225a"></script>
-    <script src="timemachine.js?v=20260225a"></script>
+    <script src="timemachine.js?v=20260228a"></script>
 </body>
 
 </html>

@@ -768,6 +768,67 @@
             runBtn._fcBound = true;
             runBtn.addEventListener('click', runForecast);
         }
+
+        // Re-run button: scroll back to form
+        const rerunBtn = document.getElementById('fcRerunBtn');
+        if (rerunBtn && !rerunBtn._rerunBound) {
+            rerunBtn._rerunBound = true;
+            rerunBtn.addEventListener('click', () => {
+                const inputCard = document.querySelector('#tmTabFuture .tm-input-card');
+                if (inputCard) inputCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+    }
+
+    // ─── Staged loading animation ─────────────────────────────
+    let _stageTimer = null;
+
+    function startStages(isAuto) {
+        const _t = typeof t === 'function' ? t : (k) => k;
+        clearStages();
+
+        // Update stage 2 label based on mode
+        const stage2Label = document.getElementById('fcStage2Label');
+        if (stage2Label) {
+            stage2Label.textContent = isAuto
+                ? (_t('fcStage2Auto') || 'Scanning EGX30 stocks...')
+                : (_t('fcStage2Manual') || 'Computing model parameters...');
+        }
+
+        const stages = [
+            document.getElementById('fcStage1'),
+            document.getElementById('fcStage2'),
+            document.getElementById('fcStage3'),
+        ];
+
+        let current = 0;
+        function activateStage(i) {
+            stages.forEach((s, idx) => {
+                if (!s) return;
+                s.classList.remove('fc-stage-active', 'fc-stage-done');
+                if (idx < i) s.classList.add('fc-stage-done');
+                else if (idx === i) s.classList.add('fc-stage-active');
+            });
+        }
+        activateStage(0);
+
+        _stageTimer = setInterval(() => {
+            current++;
+            if (current >= stages.length) {
+                clearInterval(_stageTimer);
+                _stageTimer = null;
+                return;
+            }
+            activateStage(current);
+        }, 2800);
+    }
+
+    function clearStages() {
+        if (_stageTimer) { clearInterval(_stageTimer); _stageTimer = null; }
+        ['fcStage1', 'fcStage2', 'fcStage3'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('fc-stage-active', 'fc-stage-done');
+        });
     }
 
     // ─── Run Monte Carlo forecast ─────────────────────────────
@@ -797,12 +858,8 @@
                 const multiDiv0 = document.getElementById('fcMultiResults');
                 if (resultsDiv) resultsDiv.style.display = 'none';
                 if (multiDiv0) multiDiv0.style.display = 'none';
-                // Update loading text to reflect multi-stock context
-                const fcCalcEl = loadingDiv?.querySelector('p:first-of-type');
-                const fcSubEl  = loadingDiv?.querySelector('.tm-loading-sub');
-                if (fcCalcEl) fcCalcEl.textContent = `Running forecasts for ${fcSelectedSymbols.length} stocks…`;
-                if (fcSubEl)  fcSubEl.textContent  = 'Running in parallel — this may take a moment';
                 if (loadingDiv) loadingDiv.style.display = 'flex';
+                startStages(false);
                 if (runBtn) runBtn.disabled = true;
                 try {
                     const multiResults = await Promise.all(
@@ -817,13 +874,9 @@
                     );
                     renderMultiForecastResults(multiResults, amount);
                 } finally {
+                    clearStages();
                     if (loadingDiv) loadingDiv.style.display = 'none';
                     if (runBtn) runBtn.disabled = false;
-                    // Restore default loading text for next single-stock run
-                    const fcCalcEl2 = loadingDiv?.querySelector('p:first-of-type');
-                    const fcSubEl2  = loadingDiv?.querySelector('.tm-loading-sub');
-                    if (fcCalcEl2) fcCalcEl2.textContent = 'Running 5,000 simulated futures…';
-                    if (fcSubEl2)  fcSubEl2.textContent  = 'Computing GBM parameters & Monte Carlo paths';
                 }
                 return;
             }
@@ -849,6 +902,7 @@
 
         if (resultsDiv) resultsDiv.style.display = 'none';
         if (loadingDiv) loadingDiv.style.display = 'flex';
+        startStages(fcMode === 'auto');
         if (runBtn) runBtn.disabled = true;
 
         try {
@@ -868,12 +922,13 @@
             if (resultsDiv) {
                 resultsDiv.style.display = 'block';
                 resultsDiv.innerHTML = `<div class="tm-empty-state">
-                    <div class="tm-empty-icon">📊</div>
+                    <div class="tm-empty-icon">&#x1F4CA;</div>
                     <h3>${escHtml(err.message)}</h3>
                     <p class="tm-empty-hint">${escHtml(_t('tmTryDifferent') || 'Try a different date or amount.')}</p>
                 </div>`;
             }
         } finally {
+            clearStages();
             if (loadingDiv) loadingDiv.style.display = 'none';
             if (runBtn) runBtn.disabled = false;
         }
@@ -935,11 +990,26 @@
             }
         }
 
-        // Expected value
+        // Expected value — animated counter (CountUp with EGP suffix)
         const evEl = document.getElementById('fcExpectedValue');
         if (evEl) {
-            evEl.textContent = fmtEGP(d.expected_value);
             evEl.className = 'fc-hero-value ' + (d.expected_return_pct >= 0 ? 'tm-pos' : 'tm-neg');
+            let animated = false;
+            try {
+                const CU = (typeof CountUp !== 'undefined') ? CountUp
+                    : (typeof countUp !== 'undefined' && countUp.CountUp) ? countUp.CountUp : null;
+                if (CU) {
+                    new CU(evEl, d.expected_value, {
+                        startVal: d.investment_amount,
+                        duration: 1.5,
+                        separator: ',',
+                        decimal: '.',
+                        suffix: ' EGP'
+                    }).start();
+                    animated = true;
+                }
+            } catch (e) { /* fallback below */ }
+            if (!animated) evEl.textContent = fmtEGP(d.expected_value);
         }
         const erEl = document.getElementById('fcExpectedReturn');
         if (erEl) {
@@ -966,10 +1036,41 @@
         const driftEl = document.getElementById('fcDriftUsed');
         if (driftEl) driftEl.textContent = 'Drift used: ' + fmtPct(d.drift_used_pct) + '/yr';
 
-        // Range row
+        // Plain-English interpretation card
+        const interpretEl = document.getElementById('fcInterpret');
+        if (interpretEl) {
+            const sym = d.symbol ? d.symbol.replace('.CA', '') : '';
+            const horizon = d.band_data ? d.band_data.length - 1 : '?';
+            const retPct = d.expected_return_pct >= 0
+                ? '+' + d.expected_return_pct.toFixed(1) + '%'
+                : d.expected_return_pct.toFixed(1) + '%';
+            const probWord = prob >= 70 ? (lang === 'ar' ? 'احتمال قوي' : 'strong chance')
+                           : prob >= 50 ? (lang === 'ar' ? 'احتمال' : 'chance')
+                           : (lang === 'ar' ? 'احتمال' : 'chance');
+            if (lang === 'ar') {
+                interpretEl.innerHTML = 'بناءً على 5\u060c000 محاكاة، يُتوقع أن يحقق <strong>' + escHtml(sym || d.symbol) + '</strong> عائداً بنسبة <strong>' + retPct + '</strong> خلال ' + horizon + ' يوم تداول. هناك <strong>' + prob + '%</strong> ' + probWord + ' أن يكون استثمارك مربحاً.';
+            } else {
+                interpretEl.innerHTML = 'Based on 5,000 simulations, <strong>' + escHtml(sym || d.symbol) + '</strong> is expected to return <strong>' + retPct + '</strong> over ' + horizon + ' trading days. There is a <strong>' + prob + '%</strong> ' + probWord + ' your investment will be profitable.';
+            }
+            interpretEl.style.display = '';
+        }
+
+        // Range row — with % return labels
+        const amount = d.investment_amount;
         setFcVal('fcWorstCase', fmtEGP(d.worst_case_value), false);
         setFcVal('fcMedian', fmtEGP(d.median_value), null);
         setFcVal('fcBestCase', fmtEGP(d.best_case_value), true);
+
+        function setRangeRet(id, value, isPos) {
+            const el = document.getElementById(id);
+            if (!el || value == null || amount == null) return;
+            const pct = ((value - amount) / amount * 100);
+            el.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%';
+            el.className = 'fc-range-ret ' + (isPos ? 'tm-pos' : isPos === false ? 'tm-neg' : '');
+        }
+        setRangeRet('fcWorstRet', d.worst_case_value, false);
+        setRangeRet('fcMedianRet', d.median_value, d.median_value > amount);
+        setRangeRet('fcBestRet', d.best_case_value, true);
 
         // Model params
         setFcText('fcDrift', fmtPct(d.drift_annual_pct) + '/yr');
