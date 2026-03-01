@@ -194,6 +194,33 @@ Answer concisely and cite the source document where relevant.`;
     }
 });
 
+// ── Static EGX market knowledge (injected into every /chat prompt) ───────────
+
+const EGX_MARKET_KNOWLEDGE = `
+EGYPTIAN EXCHANGE (EGX) — REFERENCE KNOWLEDGE
+==============================================
+The Egyptian Exchange (EGX) is the stock exchange of Egypt, one of the oldest in the region,
+established in 1883. It is headquartered in Cairo with a branch in Alexandria.
+
+Key Facts:
+- Full name: Egyptian Exchange (البورصة المصرية)
+- Website: https://www.egx.com.eg
+- Currency: Egyptian Pound (EGP / جنيه مصري)
+- Trading days: Sunday – Thursday (Friday/Saturday are weekends in Egypt)
+- Trading hours: 10:00 – 14:30 Cairo time (UTC+2)
+- Pre-open session: 09:30 – 10:00
+- Settlement: T+2
+- Main indices: EGX30 (top 30 by liquidity/activity), EGX70 (mid-cap), EGX100 (combined), EGX20 Capped
+- Symbol format: TICKER.CA  (e.g., COMI.CA for CIB, SWDY.CA for El-Sewedy Electric)
+- Regulator: Financial Regulatory Authority (FRA — الهيئة العامة للرقابة المالية)
+- ~250+ companies listed across 15+ sectors
+
+Major Sectors on EGX:
+Banking, Real Estate & Construction, Telecommunications, Food & Beverage,
+Chemicals & Petrochemicals, Steel & Industrial, Ports & Logistics,
+Healthcare, Fintech, Textiles, Energy, Cement, Tourism & Hospitality
+`.trim();
+
 // ── POST /api/rag/chat — General EGX research chat ──────────────────────────
 
 router.post('/chat', async (req, res) => {
@@ -208,7 +235,24 @@ router.post('/chat', async (req, res) => {
     try {
         const sources = [];
 
-        // 1. Keyword-match news from main DB (keyword = any word ≥ 4 chars in question)
+        // 1. Load EGX stock reference from DB
+        let stockReferenceBlock = '';
+        try {
+            const stocks = await dbAll(
+                `SELECT symbol, name_en, name_ar, sector_en FROM egx30_stocks ORDER BY symbol ASC`,
+                []
+            );
+            if (stocks.length > 0) {
+                const lines = stocks.map(s =>
+                    `  ${s.symbol.padEnd(12)} ${s.name_en} (${s.name_ar}) — ${s.sector_en || 'N/A'}`
+                ).join('\n');
+                stockReferenceBlock = `\nLISTED EGX STOCKS (${stocks.length} companies):\n${lines}`;
+            }
+        } catch (_e) {
+            // Table may not exist in older schema — skip silently
+        }
+
+        // 2. Keyword-match news from main DB (keyword = any word ≥ 4 chars in question)
         const words = question.trim().toLowerCase().match(/\b\w{4,}\b/g) || [];
         let newsRows = [];
         if (symbol) {
@@ -243,7 +287,7 @@ router.post('/chat', async (req, res) => {
             })));
         }
 
-        // 2. Try RAG chunks if any exist
+        // 3. Try RAG chunks if any exist
         let reportContext = '';
         try {
             const chunkCount = await dbGet(
@@ -278,15 +322,18 @@ router.post('/chat', async (req, res) => {
             // No chunks available — skip silently
         }
 
-        // 3. Build prompt and generate
+        // 4. Build prompt and generate
         const symbolNote = symbol ? `\nFocus on: ${symbol}` : '';
-        const prompt = `You are an expert EGX financial research assistant.
-Answer the user's question using the provided news and any report context.
-If insufficient data, say so honestly. Keep the answer concise (2-4 sentences).
+        const prompt = `You are an expert EGX financial research assistant with full knowledge of the Egyptian stock market.
+Use the EGX reference knowledge and stock list below to answer questions about any EGX stock, symbol, or market topic.
+Supplement with recent news when available. Keep answers concise (2-4 sentences) and factual.
 ${symbolNote}
 
+${EGX_MARKET_KNOWLEDGE}
+${stockReferenceBlock}
+
 Recent news:
-${newsContext || 'No recent news found.'}
+${newsContext || 'No recent news in database.'}
 ${reportContext}
 
 User question: ${question}`;
