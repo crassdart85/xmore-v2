@@ -5,15 +5,14 @@
  * POST /api/rag/ask              Q&A against embedded market reports
  * POST /api/rag/chat             General EGX research chat with news context
  * GET  /api/rag/embed/status     How many chunks are embedded
- * POST /api/rag/embed            Trigger Python embedder (admin)
+ * POST /api/rag/embed            Embed un-embedded reports (pure Node.js, no Python)
  * GET  /api/sentiment/:symbol/evidence  News articles that drove sentiment score
  */
 
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const { spawn } = require('child_process');
-const path = require('path');
+const { embedReports } = require('../lib/embedReports');
 
 let _db = null;
 let _isPostgres = false;
@@ -319,34 +318,23 @@ router.get('/embed/status', async (req, res) => {
     }
 });
 
-// ── POST /api/rag/embed — trigger Python embedder ────────────────────────────
+// ── POST /api/rag/embed — embed reports in Node.js (no Python needed) ────────
 
 router.post('/embed', (req, res) => {
     if (!GEMINI_API_KEY) {
         return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
     }
 
-    const projectRoot = path.join(__dirname, '..', '..');
-    const reportId = req.body && req.body.report_id ? String(req.body.report_id) : null;
-    const args = ['rag/embedder.py'];
-    if (reportId) args.push('--report-id', reportId);
+    const reportId = req.body && req.body.report_id
+        ? parseInt(req.body.report_id, 10) || null
+        : null;
 
-    const child = spawn('python', args, { cwd: projectRoot, timeout: 300000 });
+    // Respond immediately — embedding runs in background
+    res.json({ ok: true, message: 'Embedding started. Check status with GET /api/rag/embed/status' });
 
-    let stdout = '', stderr = '';
-    child.stdout.on('data', d => { stdout += d.toString(); });
-    child.stderr.on('data', d => { stderr += d.toString(); });
-
-    // Respond immediately — embedding runs async
-    res.json({ ok: true, message: 'Embedding started in background. Check server logs for progress.' });
-
-    child.on('close', code => {
-        if (code !== 0) {
-            console.error(`[RAG embed] exited ${code}: ${stderr.slice(-500)}`);
-        } else {
-            console.log(`[RAG embed] complete: ${stdout.slice(-300)}`);
-        }
-    });
+    embedReports(_db, _isPostgres, GEMINI_API_KEY, reportId)
+        .then(r => console.log(`[RAG embed] complete: ${r.chunksEmbedded} chunks, ${r.reportsProcessed} report(s)`))
+        .catch(err => console.error('[RAG embed] error:', err.message));
 });
 
 // ── GET /api/sentiment/:symbol/evidence — articles that drove the badge ──────

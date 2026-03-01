@@ -6,6 +6,7 @@ const multer = require('multer');
 const { PDFParse } = require('pdf-parse');
 const { createWorker } = require('tesseract.js');
 const { requireAdminSecret } = require('../middleware/admin');
+const { embedReports } = require('../lib/embedReports');
 
 const router = express.Router();
 
@@ -316,17 +317,38 @@ router.post('/reports/upload', upload.single('report'), async (req, res) => {
         const language = String(ingest.language || 'EN').toUpperCase() === 'AR' ? 'AR' : 'EN';
         const summary = buildSummary(extractedText, ingest.summary || '');
 
-        await dbRun(`
-            INSERT INTO market_reports (filename, upload_date, extracted_text, language, summary)
-            VALUES (${ph(1)}, CURRENT_TIMESTAMP, ${ph(2)}, ${ph(3)}, ${ph(4)})
-        `, [filename, extractedText, language, summary]);
+        // Insert report and get its ID for auto-embedding
+        let newReportId = null;
+        if (isPostgres) {
+            const row = await dbGet(`
+                INSERT INTO market_reports (filename, upload_date, extracted_text, language, summary)
+                VALUES (${ph(1)}, CURRENT_TIMESTAMP, ${ph(2)}, ${ph(3)}, ${ph(4)})
+                RETURNING id
+            `, [filename, extractedText, language, summary]);
+            newReportId = row ? row.id : null;
+        } else {
+            const result = await dbRun(`
+                INSERT INTO market_reports (filename, upload_date, extracted_text, language, summary)
+                VALUES (${ph(1)}, CURRENT_TIMESTAMP, ${ph(2)}, ${ph(3)}, ${ph(4)})
+            `, [filename, extractedText, language, summary]);
+            newReportId = result ? result.lastID : null;
+        }
+
+        // Auto-embed in background if Gemini API key is available
+        const apiKey = process.env.GOOGLE_API_KEY || '';
+        if (apiKey && newReportId && extractedText.trim()) {
+            embedReports(db, isPostgres, apiKey, newReportId)
+                .then(r => console.log(`[auto-embed] "${filename}": ${r.chunksEmbedded} chunks embedded`))
+                .catch(err => console.error(`[auto-embed] "${filename}" failed:`, err.message));
+        }
 
         return res.status(201).json({
             ok: true,
             filename,
             language,
             summary,
-            status: extractedText.trim() ? 'Processed' : 'Pending'
+            status: extractedText.trim() ? 'Processed' : 'Pending',
+            embedding: apiKey ? 'started' : 'skipped (no GOOGLE_API_KEY)'
         });
     } catch (err) {
         console.error('Admin upload error:', err);
