@@ -318,6 +318,31 @@ router.get('/embed/status', async (req, res) => {
     }
 });
 
+// ── GET /api/rag/documents — document index / audit trail ────────────────────
+
+router.get('/documents', async (req, res) => {
+    try {
+        const docs = await dbAll(`
+            SELECT
+                mr.id,
+                mr.filename,
+                mr.upload_date,
+                mr.language,
+                COUNT(rc.id)                                               AS total_chunks,
+                COUNT(CASE WHEN rc.embedding IS NOT NULL THEN 1 END)       AS embedded_chunks
+            FROM market_reports mr
+            LEFT JOIN rag_chunks rc
+                   ON rc.source_id = mr.id AND rc.source_type = ${ph(1)}
+            GROUP BY mr.id, mr.filename, mr.upload_date, mr.language
+            ORDER BY mr.upload_date DESC
+        `, ['market_report']);
+        res.json({ documents: docs });
+    } catch (err) {
+        console.error('RAG /documents error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── POST /api/rag/embed — embed reports in Node.js (no Python needed) ────────
 
 router.post('/embed', (req, res) => {

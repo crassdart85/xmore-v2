@@ -826,6 +826,7 @@ function bindPricesTab() {
         }
         if (btn && btn.dataset.tab === 'tab-ask-reports') {
             loadRagEmbedStatus();
+            loadRagDocuments();
         }
     });
 }
@@ -994,6 +995,43 @@ async function loadRagEmbedStatus() {
         statusEl.textContent = `${data.chunks || 0} chunks embedded from ${data.reports || 0} report(s).`;
     } catch (e) {
         statusEl.textContent = 'Could not load embed status.';
+    }
+}
+
+async function loadRagDocuments() {
+    const tbody = document.getElementById('ragDocsBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="6" class="admin-muted" style="text-align:center;padding:16px;">Loading…</td></tr>';
+    try {
+        const data = await fetchJson(`${RAG_BASE}/documents`);
+        const docs = data.documents || [];
+        if (!docs.length) {
+            tbody.innerHTML = '<tr><td colspan="6" class="no-data" style="text-align:center;padding:20px;">No documents uploaded yet. Upload a PDF in the Knowledge Base tab.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = docs.map((d, i) => {
+            const total = Number(d.total_chunks) || 0;
+            const embedded = Number(d.embedded_chunks) || 0;
+            let badge;
+            if (total === 0) {
+                badge = '<span class="admin-status-badge admin-status-pending">Not embedded</span>';
+            } else if (embedded < total) {
+                badge = `<span class="admin-status-badge" style="background:#f59e0b20;color:#f59e0b;border:1px solid #f59e0b40;">Partial ${embedded}/${total}</span>`;
+            } else {
+                badge = `<span class="admin-status-badge admin-status-processed">&#10003; ${total} chunks</span>`;
+            }
+            const langBadge = `<span class="admin-status-badge" style="background:var(--accent);color:#fff;opacity:.85;">${escapeHtml(d.language || 'EN')}</span>`;
+            return `<tr>
+                <td style="color:var(--text-muted);font-size:12px;">${d.id}</td>
+                <td style="font-weight:500;word-break:break-all;">${escapeHtml(d.filename)}</td>
+                <td style="white-space:nowrap;">${escapeHtml(formatDate(d.upload_date))}</td>
+                <td>${langBadge}</td>
+                <td style="text-align:center;">${total}</td>
+                <td>${badge}</td>
+            </tr>`;
+        }).join('');
+    } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="error-message" style="text-align:center;padding:16px;">${escapeHtml(err.message)}</td></tr>`;
     }
 }
 
