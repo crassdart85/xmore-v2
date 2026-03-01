@@ -1143,21 +1143,19 @@ function getCompanyName(symbol) {
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     try {
-        // ISO date-only strings (YYYY-MM-DD) are parsed as UTC midnight by JS,
-        // which shifts the displayed time by the local UTC offset (e.g. +02:00 Cairo).
-        // Appending T00:00:00 forces local-time parsing instead.
-        const normalized = /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr))
-            ? dateStr + 'T00:00:00'
-            : dateStr;
-        const date = new Date(normalized);
+        // PostgreSQL DATE columns serialize via JSON as full ISO timestamps
+        // (e.g. "2026-02-26T00:00:00.000Z"). Extracting just the YYYY-MM-DD
+        // portion and re-parsing as local midnight avoids the UTC+2 offset
+        // showing as "02:00" in Cairo.
+        const s = String(dateStr);
+        const dateMatch = s.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (!dateMatch) return dateStr;
+        const date = new Date(dateMatch[1] + 'T00:00:00');
         if (isNaN(date.getTime())) return dateStr;
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        if (hours === '00' && minutes === '00') return `${year}-${month}-${day}`;
-        return `${year}-${month}-${day} ${hours}:${minutes}`;
+        return `${year}-${month}-${day}`;
     } catch (e) {
         return dateStr;
     }
