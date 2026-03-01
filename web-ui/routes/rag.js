@@ -33,35 +33,25 @@ function adaptSql(sql) {
     return sql.replace(/\$\d+/g, () => { i++; return '?'; });
 }
 
+// The server.js db wrapper always exposes .all()/.get()/.run() regardless of backend.
+// PostgreSQL queries use $N placeholders (via ph()), SQLite uses ?.
+// The wrapper passes SQL directly to the underlying driver, so ph() ensures correct style.
+
 function dbAll(sql, params = []) {
     return new Promise((resolve, reject) => {
-        if (_isPostgres) {
-            _db.query(sql, params, (err, result) => {
-                if (err) return reject(err);
-                resolve(result.rows);
-            });
-        } else {
-            _db.all(sql, params, (err, rows) => {
-                if (err) return reject(err);
-                resolve(rows || []);
-            });
-        }
+        _db.all(sql, params, (err, rows) => {
+            if (err) return reject(err);
+            resolve(rows || []);
+        });
     });
 }
 
 function dbGet(sql, params = []) {
     return new Promise((resolve, reject) => {
-        if (_isPostgres) {
-            _db.query(sql, params, (err, result) => {
-                if (err) return reject(err);
-                resolve(result.rows[0] || null);
-            });
-        } else {
-            _db.get(sql, params, (err, row) => {
-                if (err) return reject(err);
-                resolve(row || null);
-            });
-        }
+        _db.get(sql, params, (err, row) => {
+            if (err) return reject(err);
+            resolve(row || null);
+        });
     });
 }
 
