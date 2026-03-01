@@ -190,7 +190,7 @@ def record_portfolio_daily_actuals():
         active_q = _adapt_sql("""
             SELECT DISTINCT r.portfolio_id, r.symbol, r.run_date
             FROM portfolio_forecast_results r
-            WHERE r.run_date <= ? AND r.target_date > ? AND r.ok = 1
+            WHERE r.run_date <= ? AND r.target_date > ? AND r.ok = TRUE
         """)
         cursor.execute(active_q, (today, today))
         columns = [desc[0] for desc in cursor.description] if cursor.description else []
@@ -286,7 +286,7 @@ def evaluate_portfolio_forecasts():
                    r.expected_return_pct, r.investment_amount, r.ok
             FROM portfolio_forecast_results r
             LEFT JOIN portfolio_forecast_evaluations e ON r.id = e.forecast_result_id
-            WHERE r.target_date <= ? AND e.id IS NULL AND r.ok = 1
+            WHERE r.target_date <= ? AND e.id IS NULL AND r.ok = TRUE
         """)
         cursor.execute(due_query, (today,))
         columns = [desc[0] for desc in cursor.description] if cursor.description else []
