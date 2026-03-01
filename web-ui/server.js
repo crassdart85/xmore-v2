@@ -140,6 +140,23 @@ app.use('/api', watchlistRouter);
 app.use('/api/trades', tradesRouter);
 app.use('/api/briefing', briefingRouter);
 app.use('/api/performance-v2', performanceRouter);
+// Admin login — public endpoint, not protected by requireAdminSecret
+app.post('/api/admin/login', express.json(), (req, res) => {
+  const { username, password } = req.body || {};
+  const expectedUser = process.env.ADMIN_USERNAME || 'admin';
+  const expectedPass = process.env.ADMIN_PASSWORD;
+  if (!expectedPass) {
+    return res.status(503).json({ error: 'Admin credentials not configured. Set ADMIN_PASSWORD environment variable.' });
+  }
+  if (!username || !password || username !== expectedUser || password !== expectedPass) {
+    return res.status(401).json({ error: 'Invalid username or password' });
+  }
+  const jwt = require('jsonwebtoken');
+  const jwtSecret = process.env.JWT_SECRET || 'dev-fallback-secret';
+  const token = jwt.sign({ role: 'admin', user: username }, jwtSecret, { expiresIn: '8h' });
+  res.json({ ok: true, token });
+});
+
 app.use('/api/admin', adminRouter);
 app.use('/api/timemachine', timemachineRouter);
 app.use('/api/portfolio-forecasts', portfolioForecastsRouter);

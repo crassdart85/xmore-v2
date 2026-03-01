@@ -9,18 +9,40 @@
 <body>
     <div class="container">
         <header class="admin-header">
-            <h1>Xmore Admin</h1>
-            <p class="subtitle">Market Intelligence Console</p>
+            <div class="admin-header-row">
+                <div>
+                    <h1>Xmore Admin</h1>
+                    <p class="subtitle">Market Intelligence Console</p>
+                </div>
+                <button id="adminLogoutBtn" class="admin-btn" style="display:none;" onclick="adminLogout()">Logout</button>
+            </div>
         </header>
 
-        <section class="section admin-secret-panel">
-            <h2>Admin Access</h2>
-            <div class="admin-secret-row">
-                <input id="adminSecretInput" type="password" placeholder="Enter ADMIN_SECRET">
-                <button id="saveSecretBtn" class="refresh-btn admin-btn">Save</button>
-                <span id="secretStatus" class="admin-muted"></span>
+        <!-- ================================================ -->
+        <!-- LOGIN PANEL — shown when not authenticated       -->
+        <!-- ================================================ -->
+        <section class="section admin-login-panel" id="adminLoginPanel">
+            <h2>Admin Login</h2>
+            <div class="admin-login-form">
+                <div class="admin-login-field">
+                    <label for="adminUsername">Username</label>
+                    <input id="adminUsername" type="text" placeholder="admin" autocomplete="username">
+                </div>
+                <div class="admin-login-field">
+                    <label for="adminPassword">Password</label>
+                    <input id="adminPassword" type="password" placeholder="Password" autocomplete="current-password">
+                </div>
+                <div class="admin-login-actions">
+                    <button id="adminLoginBtn" class="refresh-btn admin-btn">Login</button>
+                    <span id="loginStatus" class="admin-muted"></span>
+                </div>
             </div>
         </section>
+
+        <!-- ================================================ -->
+        <!-- MAIN CONTENT — hidden until logged in            -->
+        <!-- ================================================ -->
+        <div id="adminMainContent" style="display:none;">
 
         <!-- ================================================ -->
         <!-- TAB NAVIGATION BAR                               -->
@@ -438,7 +460,9 @@
                 </table>
             </div>
         </section>
-    </div>
+
+        </div><!-- /#adminMainContent -->
+    </div><!-- /.container -->
 
     <script src="admin.js"></script>
 </body>

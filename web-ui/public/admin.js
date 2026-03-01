@@ -1,16 +1,12 @@
 const API_BASE = '/api/admin';
-const SECRET_KEY = 'admin_secret';
+const TOKEN_KEY = 'admin_token';
 const LANG_KEY = 'lang';
 const THEME_KEY = 'theme';
-const SECRET_COOKIE_NAME = 'xmore_admin_secret';
 
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const uploadStatus = document.getElementById('uploadStatus');
 const reportRows = document.getElementById('reportRows');
-const adminSecretInput = document.getElementById('adminSecretInput');
-const saveSecretBtn = document.getElementById('saveSecretBtn');
-const secretStatus = document.getElementById('secretStatus');
 const auditHealth = document.getElementById('auditHealth');
 const agentHealth = document.getElementById('agentHealth');
 
@@ -23,22 +19,95 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-function getSecret() {
-    return localStorage.getItem(SECRET_KEY) || '';
+function getToken() {
+    return sessionStorage.getItem(TOKEN_KEY) || '';
 }
 
-function setSecret(secret) {
-    const normalized = String(secret || '').trim();
-    localStorage.setItem(SECRET_KEY, normalized);
-    adminSecretInput.value = normalized;
-    document.cookie = `${SECRET_COOKIE_NAME}=${encodeURIComponent(normalized)}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+function setToken(token) {
+    if (token) {
+        sessionStorage.setItem(TOKEN_KEY, token);
+    } else {
+        sessionStorage.removeItem(TOKEN_KEY);
+    }
 }
 
 function apiHeaders(extra = {}) {
     const headers = { ...extra };
-    const secret = getSecret();
-    if (secret) headers['x-admin-secret'] = secret;
+    const token = getToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     return headers;
+}
+
+function showLoginForm(message) {
+    document.getElementById('adminLoginPanel').style.display = '';
+    document.getElementById('adminMainContent').style.display = 'none';
+    document.getElementById('adminLogoutBtn').style.display = 'none';
+    document.getElementById('adminPassword').value = '';
+    const status = document.getElementById('loginStatus');
+    status.textContent = message || '';
+    status.style.color = message ? '#ef4444' : '';
+}
+
+function showMainContent() {
+    document.getElementById('adminLoginPanel').style.display = 'none';
+    document.getElementById('adminMainContent').style.display = '';
+    document.getElementById('adminLogoutBtn').style.display = '';
+}
+
+async function adminLogin() {
+    const username = (document.getElementById('adminUsername').value || '').trim();
+    const password = document.getElementById('adminPassword').value || '';
+    const loginStatus = document.getElementById('loginStatus');
+    const loginBtn = document.getElementById('adminLoginBtn');
+
+    if (!username || !password) {
+        loginStatus.textContent = 'Please enter username and password.';
+        loginStatus.style.color = '#ef4444';
+        return;
+    }
+
+    loginBtn.disabled = true;
+    loginStatus.textContent = 'Logging in…';
+    loginStatus.style.color = '';
+
+    try {
+        const resp = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const data = await resp.json();
+        if (!resp.ok) {
+            loginStatus.textContent = data.error || 'Login failed';
+            loginStatus.style.color = '#ef4444';
+            return;
+        }
+        setToken(data.token);
+        showMainContent();
+        await Promise.all([loadSystemHealth(), loadReports(), loadSources()]);
+        const activePanel = document.querySelector('.admin-tab-panel.active');
+        if (activePanel && activePanel.id === 'tab-prices') loadPrices();
+    } catch (_e) {
+        loginStatus.textContent = 'Connection error. Try again.';
+        loginStatus.style.color = '#ef4444';
+    } finally {
+        loginBtn.disabled = false;
+    }
+}
+
+function adminLogout() {
+    setToken('');
+    showLoginForm();
+}
+
+function bindLoginForm() {
+    document.getElementById('adminLoginBtn').addEventListener('click', adminLogin);
+    document.getElementById('adminPassword').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') adminLogin();
+    });
+    document.getElementById('adminUsername').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') document.getElementById('adminPassword').focus();
+    });
 }
 
 function applyThemeAndLanguage() {
@@ -67,12 +136,16 @@ function setUploadMessage(message, isError = false) {
 
 async function fetchJson(url, options = {}) {
     const response = await fetch(url, {
-        credentials: 'include',
         ...options,
         headers: apiHeaders(options.headers || {})
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            setToken('');
+            showLoginForm('Session expired. Please log in again.');
+            throw new Error('Session expired. Please log in again.');
+        }
         let details = '';
         try {
             const data = await response.json();
@@ -210,20 +283,6 @@ function bindDropZone() {
     });
 }
 
-function bindSecretInput() {
-    const save = () => {
-        setSecret(adminSecretInput.value);
-        secretStatus.textContent = getSecret() ? 'Secret saved in browser storage.' : 'Secret cleared.';
-        loadSystemHealth();
-        loadReports();
-        loadSources();
-    };
-
-    adminSecretInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') save();
-    });
-    saveSecretBtn.addEventListener('click', save);
-}
 
 // ============================================================
 // CUSTOM NEWS SOURCES
@@ -997,27 +1056,25 @@ async function askReports() {
 
 async function bootstrap() {
     applyThemeAndLanguage();
-    adminSecretInput.value = getSecret();
     initInfoBanners();
+    // Always bind UI (event listeners are harmless before content is visible)
     initTabs();
     bindDropZone();
-    bindSecretInput();
+    bindLoginForm();
     bindSourceForm();
     bindWaDropZone();
     bindPricesTab();
     renderFrontendTabToggles();
     bindSettingsTab();
-    if (getSecret()) {
+
+    if (getToken()) {
+        showMainContent();
         await Promise.all([loadSystemHealth(), loadReports(), loadSources()]);
+        const activePanel = document.querySelector('.admin-tab-panel.active');
+        if (activePanel && activePanel.id === 'tab-prices') loadPrices();
     } else {
-        auditHealth.innerHTML = '<p class="no-data">Enter admin secret above to load data.</p>';
-        agentHealth.innerHTML = '<p class="no-data">Enter admin secret above to load data.</p>';
-        reportRows.innerHTML = '<tr><td colspan="5" class="no-data">Enter admin secret above to load data.</td></tr>';
-        sourceRows.innerHTML = '<tr><td colspan="8" class="no-data">Enter admin secret above to load data.</td></tr>';
+        showLoginForm();
     }
-    // Load prices if the Prices tab is the initial active tab
-    const activePanel = document.querySelector('.admin-tab-panel.active');
-    if (activePanel && activePanel.id === 'tab-prices') loadPrices();
 }
 
 bootstrap();

@@ -3095,29 +3095,62 @@ button:active, .btn:active, .tab-btn:active {
    ADMIN DASHBOARD
    ============================================ */
 .admin-header {
-    padding: 56px 20px;
+    padding: 40px 20px 28px;
 }
 
-.admin-secret-panel {
-    margin-bottom: 24px;
-}
-
-.admin-secret-row {
+.admin-header-row {
     display: flex;
-    gap: 10px;
+    justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+    gap: 16px;
 }
 
-.admin-secret-row input {
-    min-width: 280px;
-    max-width: 460px;
-    flex: 1;
+/* Login panel */
+.admin-login-panel {
+    max-width: 420px;
+    margin: 0 auto 32px;
+}
+
+.admin-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.admin-login-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.admin-login-field label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.admin-login-field input {
     padding: 12px 14px;
     border: 1px solid var(--input-border);
     border-radius: 10px;
     background: var(--input-bg);
     color: var(--text-primary);
+    font-size: 15px;
+}
+
+.admin-login-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.admin-login-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 4px;
 }
 
 .admin-btn {

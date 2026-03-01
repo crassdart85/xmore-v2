@@ -1,30 +1,23 @@
-const ADMIN_COOKIE_NAME = 'xmore_admin_secret';
-
-function getAdminSecretFromRequest(req) {
-    const headerSecret = req.headers['x-admin-secret'];
-    const cookieSecret = req.cookies ? req.cookies[ADMIN_COOKIE_NAME] : null;
-    return headerSecret || cookieSecret || null;
-}
+const jwt = require('jsonwebtoken');
 
 function requireAdminSecret(req, res, next) {
-    const expectedSecret = process.env.ADMIN_SECRET;
-    if (!expectedSecret) {
-        return res.status(503).json({
-            error: 'Admin interface is not configured',
-            details: 'Set ADMIN_SECRET in environment variables'
-        });
+    const auth = req.headers['authorization'] || '';
+    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+
+    if (!token) {
+        return res.status(401).json({ error: 'Not authenticated. Please log in.' });
     }
 
-    const providedSecret = getAdminSecretFromRequest(req);
-    if (!providedSecret || providedSecret !== expectedSecret) {
-        return res.status(403).json({ error: 'Admin access denied' });
+    try {
+        const jwtSecret = process.env.JWT_SECRET || 'dev-fallback-secret';
+        const payload = jwt.verify(token, jwtSecret);
+        if (!payload || payload.role !== 'admin') {
+            return res.status(403).json({ error: 'Admin access denied' });
+        }
+        next();
+    } catch (_e) {
+        return res.status(401).json({ error: 'Session expired. Please log in again.' });
     }
-
-    next();
 }
 
-module.exports = {
-    ADMIN_COOKIE_NAME,
-    getAdminSecretFromRequest,
-    requireAdminSecret
-};
+module.exports = { requireAdminSecret };

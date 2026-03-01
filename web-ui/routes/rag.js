@@ -86,7 +86,7 @@ function geminiRequest(path, body) {
 async function embedText(text) {
     const result = await geminiRequest(
         '/v1beta/models/text-embedding-004:embedContent',
-        { model: 'models/text-embedding-004', content: { parts: [{ text }] } }
+        { content: { parts: [{ text }] } }
     );
     if (!result.embedding || !result.embedding.values) {
         throw new Error(`Embed API error: ${JSON.stringify(result).slice(0, 300)}`);
