@@ -1143,7 +1143,13 @@ function getCompanyName(symbol) {
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A';
     try {
-        const date = new Date(dateStr);
+        // ISO date-only strings (YYYY-MM-DD) are parsed as UTC midnight by JS,
+        // which shifts the displayed time by the local UTC offset (e.g. +02:00 Cairo).
+        // Appending T00:00:00 forces local-time parsing instead.
+        const normalized = /^\d{4}-\d{2}-\d{2}$/.test(String(dateStr))
+            ? dateStr + 'T00:00:00'
+            : dateStr;
+        const date = new Date(normalized);
         if (isNaN(date.getTime())) return dateStr;
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
