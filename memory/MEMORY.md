@@ -121,6 +121,13 @@
 - `engines/simulation_core.py`: `_apply_news_drift_adjustments()` in `fit()` — graceful fallback
 - New dep: `trafilatura>=1.8.0` (both requirements files)
 
+## AI Research Assistant — EGX Knowledge (Mar 2, 2026)
+- `web-ui/routes/rag.js` `/api/rag/chat` endpoint enriched with EGX context
+- `EGX_MARKET_KNOWLEDGE` static block: market facts, trading hours (10:00–14:30 Cairo Sun–Thu), currency (EGP), indices (EGX30/70/100), symbol format (TICKER.CA), regulator (FRA), 250+ companies, 15+ sectors
+- Stock reference: queries `egx30_stocks` DB table (190 stocks: symbol, name_en, name_ar, sector_en) → compact list injected into every chat prompt
+- Graceful fallback: stock query wrapped in try/catch — if table missing (local SQLite), static EGX block still included
+- Before: assistant said "I cannot provide information about comi.ca" — After: knows all 190 EGX stocks and basic market facts
+
 ## Known Patterns
 - Always check `db._isPostgres` for date/boolean/syntax differences between PG and SQLite
 - Tab buttons need entries in both `TRANSLATIONS` and `applyLanguage()` loop
