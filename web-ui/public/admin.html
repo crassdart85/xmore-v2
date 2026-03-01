@@ -34,6 +34,7 @@
                 <button class="admin-tab-btn" data-tab="tab-sources" role="tab">News Sources</button>
                 <button class="admin-tab-btn" data-tab="tab-telegram" role="tab">Telegram Feed</button>
                 <button class="admin-tab-btn" data-tab="tab-forecast-accuracy" role="tab">Forecast Accuracy</button>
+                <button class="admin-tab-btn" data-tab="tab-ask-reports" role="tab">Ask Reports</button>
                 <button class="admin-tab-btn" data-tab="tab-settings" role="tab">Settings</button>
             </div>
             <div class="admin-tab-config-wrap">
@@ -321,6 +322,40 @@
                 </div>
             </div>
             <div id="waStatus" class="admin-upload-status"></div>
+        </section>
+
+        <!-- ================================================ -->
+        <!-- ASK REPORTS (RAG Q&A against market reports)    -->
+        <!-- ================================================ -->
+        <section class="section admin-tab-panel" id="tab-ask-reports" role="tabpanel">
+            <h2>Ask Reports</h2>
+            <p class="admin-muted">Ask natural language questions answered from your uploaded market reports using AI (RAG).</p>
+
+            <!-- Embed status + trigger -->
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+                <span id="ragEmbedStatus" style="color:var(--text-muted);font-size:13px;">Checking embed status…</span>
+                <button class="refresh-btn" id="ragEmbedBtn" onclick="triggerEmbed()" style="font-size:13px;padding:8px 18px;">
+                    &#128257; Embed Documents
+                </button>
+            </div>
+
+            <!-- Question input -->
+            <div class="admin-form-row" style="margin-bottom:16px;">
+                <label for="ragQuestion" style="font-weight:600;color:var(--text-primary);">Your Question</label>
+                <div style="display:flex;gap:10px;margin-top:8px;">
+                    <textarea id="ragQuestion" rows="3" placeholder="e.g. What are the CBE interest rate projections? What sectors did the latest report highlight?"
+                        style="flex:1;padding:10px 14px;border:1px solid var(--border-color);border-radius:8px;background:var(--input-bg);color:var(--text-primary);font-size:14px;resize:vertical;"></textarea>
+                    <button class="refresh-btn" id="ragAskBtn" onclick="askReports()" style="align-self:flex-start;padding:10px 20px;">Ask</button>
+                </div>
+            </div>
+
+            <!-- Answer display -->
+            <div id="ragAnswerBox" style="display:none;">
+                <h3 style="margin-bottom:10px;color:var(--text-primary);">Answer</h3>
+                <div id="ragAnswer" style="background:var(--input-bg);border:1px solid var(--border-color);border-radius:10px;padding:16px;color:var(--text-primary);font-size:14px;line-height:1.7;white-space:pre-wrap;margin-bottom:14px;"></div>
+                <div id="ragSources" style="font-size:13px;color:var(--text-muted);"></div>
+            </div>
+            <div id="ragError" style="display:none;color:#ef4444;font-size:13px;margin-top:8px;"></div>
         </section>
 
         <!-- ================================================ -->

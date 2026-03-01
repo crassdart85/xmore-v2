@@ -14,6 +14,7 @@ consensus engine, so no changes are needed to those interfaces.
 import os
 import json
 import logging
+import sqlite3
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
@@ -86,6 +87,7 @@ class GeminiAgent:
         try:
             prompt = self._build_prompt(symbol, df, sentiment, other_signals)
             response_text = self._call_gemini(prompt)
+
             result = self._parse_response(response_text)
 
             prediction = _SIGNAL_MAP.get(result.get("signal", "hold").lower(), "HOLD")
@@ -152,6 +154,37 @@ class GeminiAgent:
                 "confidence": round(float(s.get("confidence", 0)), 1),
             })
 
+        news_context = self._fetch_recent_news(symbol)
+
+        # Build a compact summary for embedding + pattern matching
+        context_summary = {
+            "trend": trend_text,
+            "sentiment": sentiment_text,
+            "signals": [f"{s.get('agent','?')}:{s.get('prediction','?')}@{s.get('confidence',0):.0f}" for s in signals_summary],
+        }
+        context_summary_text = json.dumps(context_summary)
+        current_embedding = self._embed_text(context_summary_text) if self._client else None
+
+        # Save context for future pattern matching (fire-and-forget, no crash if fails)
+        self._save_prediction_context(symbol, context_summary, current_embedding)
+
+        # Retrieve similar past outcomes (>0.7 similarity, only if has actual outcomes)
+        pattern_context = self._get_similar_contexts(symbol, current_embedding)
+
+        parts = []
+        if news_context:
+            parts.append(news_context)
+        if pattern_context:
+            parts.append(pattern_context)
+        extra_context = ("\n\n" + "\n\n".join(parts)) if parts else ""
+
+        context_labels = ["price trend", "volume", "sentiment", "agent signals"]
+        if news_context:
+            context_labels.append("recent news")
+        if pattern_context:
+            context_labels.append("historical patterns")
+        based_on = ", ".join(context_labels)
+
         return f"""You are an expert analyst for the Egyptian Exchange (EGX).
 Market: EGX trades Sunday–Thursday, 09:00–14:00 Cairo time (UTC+2).
 
@@ -164,9 +197,9 @@ Last 20 days of closing prices and volumes:
 Current news sentiment: {sentiment_text}
 
 Signals from other AI agents today:
-{json.dumps(signals_summary, indent=2)}
+{json.dumps(signals_summary, indent=2)}{extra_context}
 
-Based on the price trend, volume, sentiment, and agent signals, give your trading recommendation.
+Based on the {based_on}, give your trading recommendation.
 
 Respond with ONLY valid JSON in this exact format — no extra text:
 {{"signal": "buy", "confidence": 0.72, "reasoning": "Your 1-2 sentence explanation here"}}
@@ -178,6 +211,161 @@ Rules:
 - Account for EGX-specific context: lower liquidity than US markets, EGP currency
 - Be conservative: when uncertain, prefer "hold"
 """
+
+    # ──────────────────────────────────────────────────────────────────────
+    # Feature 5: Historical Pattern Matching
+    # ──────────────────────────────────────────────────────────────────────
+
+    def _embed_text(self, text: str):
+        """Embed text via Gemini text-embedding-004. Returns float list or None."""
+        try:
+            result = self._client.models.embed_content(model='text-embedding-004', contents=text)
+            return result.embeddings[0].values
+        except Exception as e:
+            logger.debug(f"Embed failed: {e}")
+            return None
+
+    def _cosine_similarity(self, a: list, b: list) -> float:
+        import math
+        if not a or not b or len(a) != len(b):
+            return 0.0
+        dot = sum(x * y for x, y in zip(a, b))
+        na = math.sqrt(sum(x * x for x in a))
+        nb = math.sqrt(sum(x * x for x in b))
+        return dot / (na * nb) if na and nb else 0.0
+
+    def _save_prediction_context(self, symbol: str, context_summary: dict, embedding):
+        """Save current context snapshot + embedding to prediction_contexts."""
+        try:
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+            from database import get_connection, _adapt_sql, DATABASE_URL
+            today = datetime.utcnow().date().isoformat()
+            ctx_json = json.dumps(context_summary)
+            emb_json = json.dumps(embedding) if embedding else None
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                if DATABASE_URL:
+                    cursor.execute("""
+                        INSERT INTO prediction_contexts (symbol, prediction_date, context_json, embedding)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (symbol, prediction_date)
+                        DO UPDATE SET context_json = EXCLUDED.context_json, embedding = EXCLUDED.embedding
+                    """, (symbol, today, ctx_json, emb_json))
+                else:
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO prediction_contexts
+                          (symbol, prediction_date, context_json, embedding)
+                        VALUES (?, ?, ?, ?)
+                    """, (symbol, today, ctx_json, emb_json))
+        except Exception as e:
+            logger.debug(f"Save prediction context failed for {symbol}: {e}")
+
+    def _get_similar_contexts(self, symbol: str, current_embedding) -> str:
+        """Retrieve top-3 similar past prediction contexts that have known outcomes."""
+        if not current_embedding:
+            return ""
+        try:
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+            from database import get_connection, _adapt_sql
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    _adapt_sql("""
+                        SELECT prediction_date, context_json, embedding, actual_outcome, actual_change_pct
+                        FROM prediction_contexts
+                        WHERE symbol = ? AND actual_outcome IS NOT NULL AND embedding IS NOT NULL
+                        ORDER BY prediction_date DESC
+                        LIMIT 30
+                    """),
+                    (symbol,)
+                )
+                rows = cursor.fetchall()
+
+            if not rows:
+                return ""
+
+            scored = []
+            for row in rows:
+                r = dict(row) if hasattr(row, 'keys') else {
+                    "prediction_date": row[0], "context_json": row[1],
+                    "embedding": row[2], "actual_outcome": row[3], "actual_change_pct": row[4]
+                }
+                try:
+                    emb = json.loads(r["embedding"])
+                    sim = self._cosine_similarity(current_embedding, emb)
+                    scored.append({**r, "similarity": sim})
+                except Exception:
+                    continue
+
+            scored.sort(key=lambda x: x["similarity"], reverse=True)
+            top3 = [s for s in scored[:3] if s["similarity"] > 0.7]
+            if not top3:
+                return ""
+
+            lines = ["Similar historical market situations (by price/signal pattern):"]
+            for s in top3:
+                chg = f"{s['actual_change_pct']:+.1f}%" if s.get('actual_change_pct') is not None else "N/A"
+                lines.append(f"  - {s['prediction_date']}: actual {s['actual_outcome']} ({chg})")
+            return "\n".join(lines)
+        except Exception as e:
+            logger.debug(f"Get similar contexts failed for {symbol}: {e}")
+            return ""
+
+    def _fetch_recent_news(self, symbol: str) -> str:
+        """Fetch recent news headlines for a symbol from xmore_news.db and the main news table."""
+        headlines = []
+
+        # Source 1: xmore_news.db (standalone reliable news layer)
+        xmore_db = os.path.join(os.path.dirname(__file__), '..', 'xmore_news_reliable', 'xmore_news.db')
+        try:
+            if os.path.exists(xmore_db):
+                conn = sqlite3.connect(xmore_db)
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(
+                    "SELECT title, source, published_at FROM articles "
+                    "WHERE detected_symbols LIKE ? ORDER BY published_at DESC LIMIT 5",
+                    (f'%"{symbol}"%',)
+                ).fetchall()
+                conn.close()
+                for r in rows:
+                    headlines.append({"headline": r["title"], "source": r["source"], "date": str(r["published_at"] or "")})
+        except Exception as e:
+            logger.debug(f"xmore_news.db query skipped for {symbol}: {e}")
+
+        # Source 2: main DB news table
+        try:
+            import sys
+            sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+            from database import get_connection, _adapt_sql, DATABASE_URL
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    _adapt_sql("SELECT headline, source, date FROM news WHERE symbol = ? ORDER BY date DESC LIMIT 5"),
+                    (symbol,)
+                )
+                for row in cursor.fetchall():
+                    d = dict(row) if hasattr(row, 'keys') else {"headline": row[0], "source": row[1], "date": str(row[2])}
+                    headlines.append(d)
+        except Exception as e:
+            logger.debug(f"main DB news query skipped for {symbol}: {e}")
+
+        # Deduplicate by headline prefix
+        seen, unique = set(), []
+        for item in headlines:
+            key = item.get("headline", "").strip().lower()[:80]
+            if key and key not in seen:
+                seen.add(key)
+                unique.append(item)
+
+        if not unique:
+            return ""
+
+        lines = ["Recent news headlines:"]
+        for item in unique[:10]:
+            lines.append(f"  - [{item.get('date','?')}] {item.get('headline','')} ({item.get('source','')})")
+        return "\n".join(lines)
 
     def _call_gemini(self, prompt: str) -> str:
         response = self._client.models.generate_content(

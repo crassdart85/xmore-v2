@@ -1192,7 +1192,75 @@ function getSentimentBadge(symbol) {
     const label = sentiment.sentiment_label.toLowerCase();
     const displayLabel = t(label) || sentiment.sentiment_label;
     const score = sentiment.avg_sentiment ? sentiment.avg_sentiment.toFixed(2) : '0.00';
-    return `<span class="sentiment-badge sentiment-${label}" title="Score: ${score}">${displayLabel}</span>`;
+    return `<span class="sentiment-badge sentiment-${label} sentiment-badge-clickable"
+        title="Score: ${score} — Click for details"
+        onclick="showSentimentEvidence('${symbol}')">${displayLabel}</span>`;
+}
+
+// ── Sentiment Evidence Modal ──────────────────────────────────────────────────
+
+async function showSentimentEvidence(symbol) {
+    const modal = document.getElementById('sentimentModal');
+    const titleEl = document.getElementById('smTitle');
+    const bodyEl = document.getElementById('smBody');
+    if (!modal || !titleEl || !bodyEl) return;
+
+    titleEl.textContent = `Sentiment Evidence \u2014 ${symbol}`;
+    bodyEl.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-muted);">Loading\u2026</p>';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+
+    try {
+        const res = await fetch(`/api/rag/sentiment/${encodeURIComponent(symbol)}/evidence`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        const label = (data.sentiment_label || 'N/A').toLowerCase();
+        const score = data.avg_sentiment != null ? Number(data.avg_sentiment).toFixed(2) : 'N/A';
+        const articles = data.articles || [];
+
+        let html = `
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                <span class="sentiment-badge sentiment-${label}" style="font-size:15px;padding:6px 16px;">${data.sentiment_label || 'N/A'}</span>
+                <span style="color:var(--text-muted);font-size:13px;">Score: ${score} &nbsp;|&nbsp; ${data.article_count || 0} articles</span>
+                <span style="color:var(--text-muted);font-size:12px;">(${data.date || ''})</span>
+            </div>`;
+
+        if (articles.length === 0) {
+            html += `<p style="color:var(--text-muted);font-size:13px;">No individual articles found for this date.</p>`;
+        } else {
+            html += `<div style="display:flex;flex-direction:column;gap:10px;">`;
+            articles.forEach(a => {
+                const aLabel = (a.sentiment_label || 'Neutral').toLowerCase();
+                const link = a.url
+                    ? `<a href="${a.url}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none;font-weight:600;">${escHtml(a.headline)}</a>`
+                    : `<span style="font-weight:600;color:var(--text-primary);">${escHtml(a.headline)}</span>`;
+                html += `
+                    <div style="border:1px solid var(--border-color);border-radius:8px;padding:10px 14px;background:var(--input-bg);">
+                        <div style="margin-bottom:6px;">${link}</div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                            <span class="sentiment-badge sentiment-${aLabel}" style="font-size:11px;padding:2px 8px;">${a.sentiment_label || 'Neutral'}</span>
+                            <span style="color:var(--text-muted);font-size:12px;">${escHtml(a.source || '')} &nbsp;${escHtml(String(a.date || ''))}</span>
+                        </div>
+                    </div>`;
+            });
+            html += `</div>`;
+        }
+
+        bodyEl.innerHTML = html;
+    } catch (e) {
+        bodyEl.innerHTML = `<p style="color:#ef4444;font-size:13px;">Error: ${e.message}</p>`;
+    }
+}
+
+function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function closeSentimentModal() {
+    const modal = document.getElementById('sentimentModal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 // ============================================
@@ -2234,4 +2302,126 @@ function renderConsensusCard(item) {
         </div>
     </div>`;
 }
+
+// ============================================================
+// RESEARCH CHAT WIDGET
+// ============================================================
+
+let _chatOpen = false;
+const _chatHistory = [];
+
+function initChatWidget() {
+    const toggleBtn = document.getElementById('chatToggleBtn');
+    const closeBtn = document.getElementById('chatClose');
+    const input = document.getElementById('chatInput');
+    if (!toggleBtn) return;
+
+    toggleBtn.addEventListener('click', () => {
+        _chatOpen ? closeChatPanel() : openChatPanel();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closeChatPanel);
+    if (input) {
+        input.addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+        });
+    }
+
+    // Close panel if clicking the backdrop (on mobile the chat doesn't have one, but close on ESC)
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeChatPanel(); closeSentimentModal(); } });
+
+    // Add welcome message
+    appendChatMessage('ai', currentLang === 'ar'
+        ? 'مرحباً! أنا مساعد البحث لسوق البورصة المصرية. اسألني عن أي سهم أو أخبار أو تقرير.'
+        : 'Hello! I\'m your EGX research assistant. Ask me about any stock, news, or market report.');
+}
+
+function openChatPanel() {
+    const panel = document.getElementById('chatPanel');
+    if (panel) { panel.classList.remove('chat-hidden'); }
+    _chatOpen = true;
+    const input = document.getElementById('chatInput');
+    if (input) setTimeout(() => input.focus(), 100);
+    // Update title for language
+    const titleEl = document.getElementById('chatTitle');
+    if (titleEl) titleEl.textContent = currentLang === 'ar' ? 'مساعد البحث' : 'AI Research Assistant';
+    const inputEl = document.getElementById('chatInput');
+    if (inputEl) inputEl.placeholder = currentLang === 'ar' ? 'اسأل عن أي سهم في البورصة المصرية…' : 'Ask about any EGX stock…';
+}
+
+function closeChatPanel() {
+    const panel = document.getElementById('chatPanel');
+    if (panel) { panel.classList.add('chat-hidden'); }
+    _chatOpen = false;
+}
+
+function appendChatMessage(role, text, sources) {
+    const messages = document.getElementById('chatMessages');
+    if (!messages) return;
+
+    const div = document.createElement('div');
+    div.className = `chat-msg chat-msg-${role}`;
+    div.textContent = text;
+
+    if (sources && sources.length > 0) {
+        const srcDiv = document.createElement('div');
+        srcDiv.className = 'chat-sources';
+        srcDiv.innerHTML = sources.slice(0, 4).map(s =>
+            `<span class="chat-source-pill">${escHtml(s.title || s.source || 'Source')}</span>`
+        ).join(' ');
+        div.appendChild(srcDiv);
+    }
+
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('chatSend');
+    if (!input) return;
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    input.value = '';
+    appendChatMessage('user', question);
+    if (sendBtn) { sendBtn.disabled = true; }
+
+    // Typing indicator
+    const typingId = 'chat-typing-' + Date.now();
+    const messages = document.getElementById('chatMessages');
+    if (messages) {
+        const typing = document.createElement('div');
+        typing.id = typingId;
+        typing.className = 'chat-msg chat-msg-ai chat-typing';
+        typing.textContent = currentLang === 'ar' ? 'جاري التفكير…' : 'Thinking…';
+        messages.appendChild(typing);
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    try {
+        const res = await fetch('/api/rag/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+        const data = await res.json();
+        // Remove typing indicator
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+
+        if (data.error) throw new Error(data.error);
+        appendChatMessage('ai', data.answer || '(No response)', data.sources || []);
+    } catch (e) {
+        const typingEl = document.getElementById(typingId);
+        if (typingEl) typingEl.remove();
+        appendChatMessage('ai', `Error: ${e.message}`);
+    } finally {
+        if (sendBtn) { sendBtn.disabled = false; }
+        if (input) input.focus();
+    }
+}
+
+// Initialise chat widget when DOM is ready
+document.addEventListener('DOMContentLoaded', () => { initChatWidget(); });
 

@@ -452,6 +452,38 @@ async function initializeDatabase() {
     `);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)');
 
+    // Table 21: RAG Chunks (embedded text segments from market_reports)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rag_chunks (
+        id          SERIAL PRIMARY KEY,
+        source_type TEXT NOT NULL DEFAULT 'market_report',
+        source_id   INTEGER NOT NULL,
+        chunk_index INTEGER NOT NULL,
+        chunk_text  TEXT NOT NULL,
+        embedding   TEXT,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(source_type, source_id, chunk_index)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)');
+
+    // Table 22: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS prediction_contexts (
+        id                SERIAL PRIMARY KEY,
+        symbol            TEXT NOT NULL,
+        prediction_date   DATE NOT NULL,
+        context_json      TEXT NOT NULL,
+        embedding         TEXT,
+        actual_outcome    TEXT,
+        actual_change_pct REAL,
+        created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(symbol, prediction_date)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)');
+
     // Seed ALL EGX stocks (~190)
     console.log('🌱 Seeding EGX stocks...');
     await pool.query(`

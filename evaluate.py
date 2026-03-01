@@ -20,6 +20,20 @@ def _adapt_sql(sql):
         sql = sql.replace('?', '%s')
     return sql
 
+
+def _update_rag_context_outcome(symbol: str, prediction_date: str, actual_outcome: str, actual_change_pct: float):
+    """Update prediction_contexts row with actual outcome (for Feature 5 pattern matching)."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(_adapt_sql("""
+                UPDATE prediction_contexts
+                SET actual_outcome = ?, actual_change_pct = ?
+                WHERE symbol = ? AND prediction_date = ?
+            """), (actual_outcome, actual_change_pct, symbol, prediction_date))
+    except Exception as e:
+        pass  # Table may not exist on older installs — safe to ignore
+
 def evaluate_predictions():
     """
     Compare resolved predictions against actual stock price movements.
@@ -107,6 +121,9 @@ def evaluate_predictions():
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """), (int(pred['id']), symbol, pred['agent_name'], predicted, actual_outcome, bool(was_correct), float(pct_change)))
             
+            # Update RAG pattern-matching context with actual outcome
+            _update_rag_context_outcome(symbol, str(pred['prediction_date']), actual_outcome, float(pct_change))
+
             status_icon = "✅" if was_correct else "❌"
             print(f"{status_icon} Evaluated {symbol} ({pred['agent_name']}): Pred {predicted} vs Actual {actual_outcome} ({pct_change:.2f}%)")
 

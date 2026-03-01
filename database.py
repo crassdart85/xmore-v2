@@ -582,6 +582,38 @@ def create_tables():
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)")
 
+        # Table 21: RAG Chunks (embedded text segments from market_reports)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS rag_chunks (
+                id          {auto_id},
+                source_type TEXT NOT NULL DEFAULT 'market_report',
+                source_id   INTEGER NOT NULL,
+                chunk_index INTEGER NOT NULL,
+                chunk_text  TEXT NOT NULL,
+                embedding   TEXT,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(source_type, source_id, chunk_index)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)")
+
+        # Table 22: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS prediction_contexts (
+                id                {auto_id},
+                symbol            TEXT NOT NULL,
+                prediction_date   DATE NOT NULL,
+                context_json      TEXT NOT NULL,
+                embedding         TEXT,
+                actual_outcome    TEXT,
+                actual_change_pct REAL,
+                created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, prediction_date)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)")
+
         # Create indexes for common queries
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")

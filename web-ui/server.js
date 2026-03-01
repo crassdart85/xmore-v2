@@ -14,6 +14,7 @@ const { router: performanceRouter, attachDb: attachPerformanceDb } = require('./
 const { router: adminRouter, attachDb: attachAdminDb } = require('./routes/admin');
 const { router: timemachineRouter, attachDb: attachTimemachineDb } = require('./routes/timemachine');
 const { router: portfolioForecastsRouter, attachDb: attachPortfolioForecastsDb } = require('./routes/portfolioForecasts');
+const { router: ragRouter, attachDb: attachRagDb } = require('./routes/rag');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -131,6 +132,7 @@ attachPerformanceDb(db, isPostgres);
 attachAdminDb(db, isPostgres);
 attachTimemachineDb(db, isPostgres);
 attachPortfolioForecastsDb(db, isPostgres);
+attachRagDb(db, isPostgres);
 
 app.use('/api', authRouter);
 app.use('/api', stocksRouter);
@@ -141,6 +143,7 @@ app.use('/api/performance-v2', performanceRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/timemachine', timemachineRouter);
 app.use('/api/portfolio-forecasts', portfolioForecastsRouter);
+app.use('/api/rag', ragRouter);
 
 // ============================================
 // API ENDPOINTS

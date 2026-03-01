@@ -527,6 +527,7 @@ const TAB_DEFS = [
     { id: 'tab-sources',           label: 'News Sources' },
     { id: 'tab-telegram',          label: 'Telegram Feed' },
     { id: 'tab-forecast-accuracy', label: 'Forecast Accuracy' },
+    { id: 'tab-ask-reports',       label: 'Ask Reports' },
     { id: 'tab-settings',          label: 'Settings' },
 ];
 
@@ -764,6 +765,9 @@ function bindPricesTab() {
         if (btn && btn.dataset.tab === 'tab-forecast-accuracy') {
             loadForecastAccuracy();
         }
+        if (btn && btn.dataset.tab === 'tab-ask-reports') {
+            loadRagEmbedStatus();
+        }
     });
 }
 
@@ -916,6 +920,78 @@ function bindSettingsTab() {
         if (btn && btn.dataset.tab === 'tab-settings') renderFrontendTabToggles();
     });
 }
+
+// ============================================================
+// RAG — ASK REPORTS TAB
+// ============================================================
+
+const RAG_BASE = '/api/rag';
+
+async function loadRagEmbedStatus() {
+    const statusEl = document.getElementById('ragEmbedStatus');
+    if (!statusEl) return;
+    try {
+        const data = await fetchJson(`${RAG_BASE}/embed/status`);
+        statusEl.textContent = `${data.chunks || 0} chunks embedded from ${data.reports || 0} report(s).`;
+    } catch (e) {
+        statusEl.textContent = 'Could not load embed status.';
+    }
+}
+
+async function triggerEmbed() {
+    const btn = document.getElementById('ragEmbedBtn');
+    const statusEl = document.getElementById('ragEmbedStatus');
+    if (btn) { btn.disabled = true; btn.textContent = 'Embedding…'; }
+    try {
+        await fetchJson(`${RAG_BASE}/embed`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        if (statusEl) statusEl.textContent = 'Embedding started — check server logs. Refresh status in a minute.';
+    } catch (e) {
+        if (statusEl) statusEl.textContent = `Embed error: ${e.message}`;
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '↻ Embed Documents'; }
+    }
+}
+
+async function askReports() {
+    const questionEl = document.getElementById('ragQuestion');
+    const answerBox = document.getElementById('ragAnswerBox');
+    const answerEl = document.getElementById('ragAnswer');
+    const sourcesEl = document.getElementById('ragSources');
+    const errorEl = document.getElementById('ragError');
+    const askBtn = document.getElementById('ragAskBtn');
+
+    const question = questionEl ? questionEl.value.trim() : '';
+    if (!question) return;
+
+    if (askBtn) { askBtn.disabled = true; askBtn.textContent = 'Thinking…'; }
+    if (answerBox) answerBox.style.display = 'none';
+    if (errorEl) errorEl.style.display = 'none';
+
+    try {
+        const data = await fetchJson(`${RAG_BASE}/ask`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question })
+        });
+
+        if (answerEl) answerEl.textContent = data.answer || '(No answer returned)';
+        if (sourcesEl) {
+            const srcs = (data.sources || []).map(s =>
+                `<span style="display:inline-block;margin-right:12px;">📄 ${escapeHtml(s.filename)} (similarity: ${s.similarity})</span>`
+            ).join('');
+            sourcesEl.innerHTML = srcs ? `<strong>Sources:</strong> ${srcs}` : '';
+        }
+        if (answerBox) answerBox.style.display = 'block';
+    } catch (e) {
+        if (errorEl) { errorEl.textContent = `Error: ${e.message}`; errorEl.style.display = 'block'; }
+    } finally {
+        if (askBtn) { askBtn.disabled = false; askBtn.textContent = 'Ask'; }
+    }
+}
+
+// ============================================================
+// ADMIN TAB CONFIG (Settings tab registry)
+// ============================================================
 
 // ============================================================
 
