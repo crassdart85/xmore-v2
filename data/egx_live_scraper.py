@@ -168,6 +168,10 @@ def _map_columns(df):
 
     df = df.rename(columns=new_columns)
 
+    # Drop duplicate columns that arose from multiple Arabic variants mapping
+    # to the same English name — keeps the first occurrence of each column.
+    df = df.loc[:, ~df.columns.duplicated()]
+
     # Convert numeric columns
     numeric_cols = ['last_price', 'close', 'prev_close', 'change', 'change_pct',
                     'high', 'low', 'high_52w', 'low_52w', 'bid', 'ask', 'volume']
