@@ -106,6 +106,12 @@ jobs:
         continue-on-error: true
         run: python xmore_news_reliable/main.py --run-all
 
+      - name: News RAG ingestion (embed + classify + drift adjustment)
+        continue-on-error: true
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: python news/ingest_cli.py
+
   # ──────────────────────────────────────────────
   # Job 3: Post-market pipeline (30 min after EGX close — 14:30 Cairo = 12:30 UTC)
   # Runs same-day predictions so the dashboard shows fresh signals by afternoon

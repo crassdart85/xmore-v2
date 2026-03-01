@@ -484,6 +484,55 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)');
 
+    // Table 23: News RAG Chunks (live news feed integration — embedded articles with metadata)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS news_rag_chunks (
+        id               TEXT PRIMARY KEY,
+        article_url      TEXT NOT NULL,
+        source_name      TEXT NOT NULL,
+        title            TEXT NOT NULL,
+        content          TEXT NOT NULL,
+        chunk_index      INTEGER NOT NULL DEFAULT 0,
+        published_at     TIMESTAMPTZ NOT NULL,
+        ingested_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        language         TEXT NOT NULL DEFAULT 'en',
+        market_tag       TEXT NOT NULL DEFAULT 'UNKNOWN',
+        event_type       TEXT NOT NULL DEFAULT 'GENERAL',
+        affected_assets  TEXT NOT NULL DEFAULT '[]',
+        affected_sectors TEXT NOT NULL DEFAULT '[]',
+        drift_direction  TEXT NOT NULL DEFAULT 'UNCERTAIN',
+        drift_magnitude_estimate REAL,
+        embedding        TEXT
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_published ON news_rag_chunks(published_at DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_market    ON news_rag_chunks(market_tag)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_event     ON news_rag_chunks(event_type)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_url       ON news_rag_chunks(article_url)');
+
+    // Table 24: Drift Adjustment Log (immutable audit trail for simulation drift recalibration)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS drift_adjustment_log (
+        adjustment_id       TEXT PRIMARY KEY,
+        chunk_id            TEXT NOT NULL,
+        asset_ticker        TEXT NOT NULL,
+        original_drift      REAL NOT NULL,
+        adjustment_bps      REAL NOT NULL,
+        adjusted_drift      REAL NOT NULL,
+        decay_halflife_days INTEGER NOT NULL,
+        applied_at          TIMESTAMPTZ NOT NULL,
+        expires_at          TIMESTAMPTZ NOT NULL,
+        event_type          TEXT NOT NULL,
+        source_headline     TEXT NOT NULL,
+        confidence          REAL NOT NULL,
+        applied_by          TEXT NOT NULL DEFAULT 'news_drift_engine',
+        audit_hash          TEXT NOT NULL
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_drift_log_ticker     ON drift_adjustment_log(asset_ticker)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_drift_log_applied_at ON drift_adjustment_log(applied_at DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_drift_log_expires_at ON drift_adjustment_log(expires_at)');
+
     // Seed ALL EGX stocks (~190)
     console.log('🌱 Seeding EGX stocks...');
     await pool.query(`

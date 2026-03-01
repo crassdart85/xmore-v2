@@ -428,4 +428,163 @@ router.get('/sentiment/:symbol/evidence', async (req, res) => {
     }
 });
 
+// ── News Q&A and drift adjustment endpoints ───────────────────────────────────
+// These call the Python news/ package via child_process.spawn, following
+// the same pattern used by timemachine.js (JSON stdout from Python CLI).
+
+const { spawn } = require('child_process');
+const path = require('path');
+
+const NEWS_PROJECT_ROOT = path.resolve(__dirname, '..', '..');
+const PYTHON_BIN = process.platform === 'win32' ? 'python' : 'python3';
+
+function spawnPythonCli(scriptRelPath, argObj, timeoutMs = 30000) {
+    return new Promise((resolve, reject) => {
+        const scriptAbs = path.join(NEWS_PROJECT_ROOT, scriptRelPath);
+        const argStr = JSON.stringify(argObj);
+        const child = spawn(PYTHON_BIN, [scriptAbs, argStr], {
+            cwd: NEWS_PROJECT_ROOT,
+            env: { ...process.env },
+        });
+
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', d => { stdout += d; });
+        child.stderr.on('data', d => { stderr += d; });
+
+        const timer = setTimeout(() => {
+            child.kill();
+            reject(new Error('Python CLI timeout'));
+        }, timeoutMs);
+
+        child.on('close', code => {
+            clearTimeout(timer);
+            if (!stdout.trim()) {
+                return reject(new Error(`No output from Python (exit ${code}): ${stderr.slice(0, 300)}`));
+            }
+            try {
+                resolve(JSON.parse(stdout.trim()));
+            } catch (e) {
+                reject(new Error(`JSON parse error: ${stdout.slice(0, 200)}`));
+            }
+        });
+    });
+}
+
+// ── POST /api/rag/news/ask — recency-weighted news Q&A ───────────────────────
+// Body: { question, market?, portfolio?, language?, source_mode?, max_age_hours? }
+router.post('/news/ask', async (req, res) => {
+    const { question, market, portfolio, language, source_mode, max_age_hours } = req.body || {};
+    if (!question || !question.trim()) {
+        return res.status(400).json({ error: 'question is required' });
+    }
+    if (!GEMINI_API_KEY) {
+        return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+    }
+
+    try {
+        const result = await spawnPythonCli('news/ask_cli.py', {
+            question: question.trim(),
+            market: market || null,
+            portfolio: Array.isArray(portfolio) ? portfolio : [],
+            language: language || 'en',
+            source_mode: source_mode || 'news',
+            max_age_hours: max_age_hours || 168,
+            top_k: 8,
+        }, 45000);
+
+        if (!result.ok) {
+            return res.status(500).json({ error: result.error || 'News Q&A failed' });
+        }
+        res.json(result);
+    } catch (err) {
+        console.error('RAG /news/ask error:', err.stack || err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/rag/news/chunks — recent ingested chunks (for audit / debug) ────
+// Query params: market, event_type, limit (default 20)
+router.get('/news/chunks', async (req, res) => {
+    const { market, event_type, limit = 20 } = req.query;
+    try {
+        let conditions = [];
+        let params = [];
+        let p = 1;
+
+        if (market) {
+            conditions.push(`market_tag = ${ph(p++)}`);
+            params.push(market.toUpperCase());
+        }
+        if (event_type) {
+            conditions.push(`event_type = ${ph(p++)}`);
+            params.push(event_type.toUpperCase());
+        }
+
+        const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+        const rows = await dbAll(
+            `SELECT id, title, source_name, published_at, market_tag, event_type,
+                    drift_direction, affected_assets, chunk_index
+             FROM news_rag_chunks
+             ${where}
+             ORDER BY published_at DESC
+             LIMIT ${ph(p)}`,
+            [...params, parseInt(limit, 10) || 20]
+        );
+        res.json({ ok: true, count: rows.length, chunks: rows });
+    } catch (err) {
+        console.error('RAG /news/chunks error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/rag/news/ingest — trigger manual ingestion cycle ─────────────────
+// Returns immediately; ingestion runs in background.
+router.post('/news/ingest', (req, res) => {
+    if (!GEMINI_API_KEY) {
+        return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+    }
+    res.json({ ok: true, message: 'Ingestion started in background. Check /news/chunks for results.' });
+
+    spawnPythonCli('news/ingest_cli.py', {}, 300000)
+        .then(r => console.log('[news/ingest] complete:', JSON.stringify(r).slice(0, 200)))
+        .catch(err => console.error('[news/ingest] error:', err.message));
+});
+
+// ── GET /api/rag/drift/:ticker — current drift adjustments for a ticker ───────
+router.get('/drift/:ticker', async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    try {
+        const result = await spawnPythonCli('news/drift_cli.py', { ticker }, 20000);
+        if (!result.ok) return res.status(500).json({ error: result.error });
+        res.json(result);
+    } catch (err) {
+        console.error('RAG /drift error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/rag/drift — recent drift adjustments (all tickers) ───────────────
+router.get('/drift', async (req, res) => {
+    const limit = parseInt(req.query.limit, 10) || 50;
+    try {
+        const result = await spawnPythonCli('news/drift_cli.py', { recent: true, limit }, 20000);
+        if (!result.ok) return res.status(500).json({ error: result.error });
+        res.json(result);
+    } catch (err) {
+        console.error('RAG /drift list error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── GET /api/rag/drift/verify/:id — audit hash integrity check ────────────────
+router.get('/drift/verify/:id', async (req, res) => {
+    try {
+        const result = await spawnPythonCli('news/drift_cli.py', { verify: req.params.id }, 15000);
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = { router, attachDb };

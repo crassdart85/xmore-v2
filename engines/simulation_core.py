@@ -211,7 +211,55 @@ class SimulationEngine:
                         self._regime.get_regime_state().summary())
 
         self._is_fitted = True
+
+        # Apply news-driven drift adjustments if the news module is available.
+        # This adds the current net recency-decayed adjustment from the
+        # drift_adjustment_log to the historical drift estimates.
+        self._apply_news_drift_adjustments()
+
         return self
+
+    # ── News drift integration ─────────────────────────────────────────────────
+
+    def _apply_news_drift_adjustments(self) -> None:
+        """
+        Query the news drift adjustment engine for each asset and add
+        the current (decayed) adjustment to the static drift estimate.
+
+        Only modifies self._static_mu (used by both static and GARCH paths
+        as the baseline drift). GARCH conditional variance paths are
+        unaffected — news drift shifts the mean, not the vol.
+
+        Silently skips if the news module is not installed or the DB is
+        unreachable (graceful degradation — simulation still runs).
+        """
+        if self._static_mu is None or not self._symbols:
+            return
+        try:
+            from news.drift.adjustment_engine import get_net_drift_adjustment
+        except ImportError:
+            return   # news module not installed
+
+        adjustments_applied = 0
+        for i, symbol in enumerate(self._symbols):
+            try:
+                adj_bps = get_net_drift_adjustment(symbol)
+                if abs(adj_bps) > 0.01:   # Skip negligible adjustments
+                    adj_daily = (adj_bps / 10_000) / 252.0   # Annualised bps → daily
+                    self._static_mu[i] += adj_daily
+                    adjustments_applied += 1
+                    logger.info(
+                        "News drift applied: %s %+.2f bps (daily: %+.6f)",
+                        symbol, adj_bps, adj_daily
+                    )
+            except Exception as exc:
+                logger.debug("News drift query failed for %s: %s", symbol, exc)
+
+        if adjustments_applied:
+            logger.info(
+                "News drift adjustments applied to %d/%d assets.",
+                adjustments_applied, len(self._symbols)
+            )
 
     # ── Simulation (primary entry point) ──────────────────────────────────────
 
