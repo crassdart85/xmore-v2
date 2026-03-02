@@ -452,7 +452,16 @@ async function initializeDatabase() {
     `);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)');
 
-    // Table 21: RAG Chunks (embedded text segments from market_reports)
+    // pgvector extension — enables fast vector similarity search
+    // Graceful: skips silently if extension is unavailable on this PostgreSQL instance
+    try {
+      await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
+      console.log('✅ pgvector extension ready');
+    } catch (e) {
+      console.log('⚠️  pgvector extension not available — will use in-app cosine similarity fallback');
+    }
+
+    // Table 21: RAG Chunks (embedded text from market_reports, news_article, event_intel)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS rag_chunks (
         id          SERIAL PRIMARY KEY,
@@ -461,11 +470,22 @@ async function initializeDatabase() {
         chunk_index INTEGER NOT NULL,
         chunk_text  TEXT NOT NULL,
         embedding   TEXT,
+        source_meta TEXT,
         created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         UNIQUE(source_type, source_id, chunk_index)
       )
     `);
     await pool.query('CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)');
+
+    // Add source_meta + pgvector column to existing installs
+    try { await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS source_meta TEXT'); } catch(_) {}
+    try {
+      await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS embedding_vec vector(768)');
+      await pool.query('CREATE INDEX IF NOT EXISTS idx_rag_chunks_vec ON rag_chunks USING ivfflat (embedding_vec vector_cosine_ops) WITH (lists = 100)');
+      console.log('✅ pgvector column + index on rag_chunks ready');
+    } catch(_) {
+      console.log('⚠️  pgvector column not added — extension may be unavailable');
+    }
 
     // Table 22: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
     await pool.query(`

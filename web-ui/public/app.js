@@ -1658,6 +1658,9 @@ function renderPredictionTable(grouped, symbols, tableId) {
                             </div>
                         `).join('')}
                     </div>
+                    <div class="why-signal-btn-row">
+                        <button class="perf-action-btn why-signal-btn" onclick="showWhySignal('${symbol}','${consensusKey}')">💡 AI Insight</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -2428,4 +2431,59 @@ async function sendChatMessage() {
 
 // Initialise chat widget when DOM is ready
 document.addEventListener('DOMContentLoaded', () => { initChatWidget(); });
+
+// ── Why This Signal? Modal ────────────────────────────────────────────────────
+
+async function showWhySignal(symbol, signal) {
+    const modal   = document.getElementById('whySignalModal');
+    const title   = document.getElementById('whyModalTitle');
+    const loading = document.getElementById('whyModalLoading');
+    const content = document.getElementById('whyModalContent');
+    const expl    = document.getElementById('whyModalExplanation');
+    const srcs    = document.getElementById('whyModalSources');
+
+    if (!modal) return;
+
+    // Reset and show modal
+    title.textContent = `💡 AI Insight — ${symbol}`;
+    loading.style.display = '';
+    content.style.display = 'none';
+    expl.innerHTML = '';
+    srcs.innerHTML = '';
+    modal.style.display = 'flex';
+
+    try {
+        const res  = await fetch('/api/rag/why-signal', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ symbol, signal }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Request failed');
+
+        expl.innerHTML = `<p>${(data.explanation || '').replace(/\n/g, '<br>')}</p>`;
+
+        if (data.sources && data.sources.length) {
+            srcs.innerHTML = '<div class="why-sources-title">Sources</div>' +
+                data.sources.map(s => {
+                    const meta    = s.source_meta || {};
+                    const label   = meta.filename || meta.headline || `Chunk ${s.chunk_index ?? ''}`;
+                    const subline = meta.date ? ` · ${meta.date}` : '';
+                    const pct     = s.similarity != null ? ` (${(s.similarity * 100).toFixed(0)}% match)` : '';
+                    return `<div class="why-source-item"><span class="why-source-type">${s.source_type || ''}</span> ${label}${subline}${pct}</div>`;
+                }).join('');
+        }
+
+        loading.style.display = 'none';
+        content.style.display = '';
+    } catch (err) {
+        loading.textContent = `Error: ${err.message}`;
+    }
+}
+
+function closeWhyModal() {
+    const modal = document.getElementById('whySignalModal');
+    if (modal) modal.style.display = 'none';
+}
 

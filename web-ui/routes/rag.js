@@ -12,7 +12,7 @@
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const { embedReports } = require('../lib/embedReports');
+const { embedReports, embedNewsArticles } = require('../lib/embedReports');
 
 let _db = null;
 let _isPostgres = false;
@@ -52,6 +52,105 @@ function dbGet(sql, params = []) {
             resolve(row || null);
         });
     });
+}
+
+function dbRun(sql, params = []) {
+    return new Promise((resolve, reject) => {
+        _db.run(sql, params, (err) => {
+            if (err) return reject(err);
+            resolve();
+        });
+    });
+}
+
+// ── pgvector availability flag (set once on first use) ────────────────────────
+
+let _pgvectorAvailable = null;
+
+async function hasPgvector() {
+    if (!_isPostgres) return false;
+    if (_pgvectorAvailable !== null) return _pgvectorAvailable;
+    try {
+        // If embedding_vec column exists, pgvector is available
+        await dbGet(
+            `SELECT embedding_vec FROM rag_chunks WHERE embedding_vec IS NOT NULL LIMIT 1`
+        );
+        _pgvectorAvailable = true;
+    } catch (_) {
+        _pgvectorAvailable = false;
+    }
+    return _pgvectorAvailable;
+}
+
+// ── Unified top-K retrieval (pgvector if available, in-memory cosine fallback) ──
+
+/**
+ * Retrieve the top-K most similar chunks to a query embedding.
+ *
+ * @param {number[]}  qEmbedding   - 768-dim query embedding
+ * @param {number}    topK         - how many chunks to return
+ * @param {string[]}  sourceTypes  - filter by source_type(s), or null for all
+ * @returns {Promise<Array>}
+ */
+async function retrieveTopChunks(qEmbedding, topK = 5, sourceTypes = null) {
+    const useVec = await hasPgvector();
+
+    if (useVec) {
+        // pgvector path — O(log n) with IVFFlat index
+        const vecStr = '[' + qEmbedding.join(',') + ']';
+        let sql, params;
+        if (sourceTypes && sourceTypes.length > 0) {
+            sql = `
+                SELECT source_type, source_id, chunk_index, chunk_text, source_meta,
+                       1 - (embedding_vec <=> $1::vector) AS similarity
+                FROM rag_chunks
+                WHERE embedding_vec IS NOT NULL
+                  AND source_type = ANY($2::text[])
+                ORDER BY embedding_vec <=> $1::vector
+                LIMIT $3
+            `;
+            params = [vecStr, '{' + sourceTypes.join(',') + '}', topK];
+        } else {
+            sql = `
+                SELECT source_type, source_id, chunk_index, chunk_text, source_meta,
+                       1 - (embedding_vec <=> $1::vector) AS similarity
+                FROM rag_chunks
+                WHERE embedding_vec IS NOT NULL
+                ORDER BY embedding_vec <=> $1::vector
+                LIMIT $2
+            `;
+            params = [vecStr, topK];
+        }
+        const rows = await dbAll(sql, params);
+        return rows.map(r => ({
+            ...r,
+            similarity: Math.round((r.similarity || 0) * 1000) / 1000,
+            source_meta: _parseMeta(r.source_meta),
+        }));
+    }
+
+    // In-memory cosine fallback (SQLite or pgvector unavailable)
+    let sql = `SELECT source_type, source_id, chunk_index, chunk_text, source_meta, embedding
+               FROM rag_chunks WHERE embedding IS NOT NULL`;
+    const params = [];
+    if (sourceTypes && sourceTypes.length > 0) {
+        const placeholders = sourceTypes.map((_, i) => ph(i + 1)).join(',');
+        sql += ` AND source_type IN (${placeholders})`;
+        params.push(...sourceTypes);
+    }
+    const rows = await dbAll(sql, params);
+
+    const scored = rows.map(r => {
+        let emb; try { emb = JSON.parse(r.embedding); } catch { emb = null; }
+        return { ...r, similarity: cosineSim(qEmbedding, emb), source_meta: _parseMeta(r.source_meta) };
+    });
+    scored.sort((a, b) => b.similarity - a.similarity);
+    return scored.slice(0, topK);
+}
+
+function _parseMeta(metaStr) {
+    if (!metaStr) return {};
+    try { return JSON.parse(metaStr); } catch { return {}; }
 }
 
 // ── Gemini API helpers ───────────────────────────────────────────────────────
@@ -135,57 +234,49 @@ router.post('/ask', async (req, res) => {
         // 1. Embed the question
         const qEmbedding = await embedText(question.trim());
 
-        // 2. Load all embedded chunks from market_reports
-        const chunks = await dbAll(
-            `SELECT rc.source_id, rc.chunk_index, rc.chunk_text, rc.embedding,
-                    mr.filename
-             FROM rag_chunks rc
-             LEFT JOIN market_reports mr ON mr.id = rc.source_id
-             WHERE rc.source_type = ${ph(1)} AND rc.embedding IS NOT NULL`,
-            ['market_report']
-        );
+        // 2. Retrieve top chunks across all embedded source types
+        const scored = await retrieveTopChunks(qEmbedding, 5, null);
 
-        if (chunks.length === 0) {
+        if (scored.length === 0) {
             return res.json({
                 answer: 'No embedded documents found. Please upload market reports and click "Embed Documents" in the admin panel.',
                 sources: []
             });
         }
 
-        // 3. Score and pick top 5
-        const scored = chunks.map(c => {
-            let emb;
-            try { emb = JSON.parse(c.embedding); } catch { emb = null; }
-            return { ...c, similarity: cosineSim(qEmbedding, emb) };
-        }).sort((a, b) => b.similarity - a.similarity).slice(0, 5);
-
-        // 4. Build RAG prompt
-        const contextBlock = scored.map((c, i) =>
-            `[Source ${i + 1}: ${c.filename || 'Report ' + c.source_id}]\n${c.chunk_text}`
-        ).join('\n\n---\n\n');
+        // 3. Build RAG prompt
+        const contextBlock = scored.map((c, i) => {
+            const meta = c.source_meta || {};
+            const label = meta.filename || meta.headline || meta.title || `${c.source_type} ${c.source_id}`;
+            return `[Source ${i + 1}: ${label}]\n${c.chunk_text}`;
+        }).join('\n\n---\n\n');
 
         const prompt = `You are an expert financial analyst for the Egyptian Exchange (EGX).
-Use ONLY the provided document excerpts to answer the question.
-If the answer is not in the excerpts, say "I cannot find this in the uploaded reports."
+Use ONLY the provided document and news excerpts to answer the question.
+If the answer is not in the excerpts, say "I cannot find this in the available sources."
 
-Document excerpts:
+Excerpts:
 ${contextBlock}
 
 Question: ${question}
 
-Answer concisely and cite the source document where relevant.`;
+Answer concisely and cite the source where relevant.`;
 
-        // 5. Generate answer
+        // 4. Generate answer
         const answer = await geminiGenerate(prompt, 0.1);
 
         res.json({
             answer,
-            sources: scored.map(c => ({
-                source_id: c.source_id,
-                filename: c.filename || `Report ${c.source_id}`,
-                preview: c.chunk_text.slice(0, 120) + (c.chunk_text.length > 120 ? '...' : ''),
-                similarity: Math.round(c.similarity * 100) / 100,
-            }))
+            sources: scored.map(c => {
+                const meta = c.source_meta || {};
+                return {
+                    source_type: c.source_type,
+                    source_id:   c.source_id,
+                    label:       meta.filename || meta.headline || meta.title || `${c.source_type} ${c.source_id}`,
+                    preview:     c.chunk_text.slice(0, 120) + (c.chunk_text.length > 120 ? '...' : ''),
+                    similarity:  Math.round(c.similarity * 100) / 100,
+                };
+            })
         });
 
     } catch (err) {
@@ -351,15 +442,22 @@ User question: ${question}`;
 
 router.get('/embed/status', async (req, res) => {
     try {
-        const row = await dbGet(
-            `SELECT COUNT(*) as total,
-                    COUNT(DISTINCT source_id) as reports
-             FROM rag_chunks WHERE source_type = ${ph(1)}`,
-            ['market_report']
+        const rows = await dbAll(
+            `SELECT source_type,
+                    COUNT(*)                    AS chunks,
+                    COUNT(DISTINCT source_id)   AS sources
+             FROM rag_chunks
+             GROUP BY source_type`
         );
-        const total = row ? (row.total || row['COUNT(*)'] || 0) : 0;
-        const reports = row ? (row.reports || 0) : 0;
-        res.json({ ok: true, chunks: total, reports });
+        const breakdown = {};
+        let totalChunks = 0;
+        for (const r of rows) {
+            breakdown[r.source_type] = { chunks: Number(r.chunks || 0), sources: Number(r.sources || 0) };
+            totalChunks += Number(r.chunks || 0);
+        }
+        // Backwards-compatible top-level fields
+        const rp = breakdown['market_report'] || { chunks: 0, sources: 0 };
+        res.json({ ok: true, chunks: rp.chunks, reports: rp.sources, total_chunks: totalChunks, breakdown });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -402,11 +500,104 @@ router.post('/embed', (req, res) => {
         : null;
 
     // Respond immediately — embedding runs in background
-    res.json({ ok: true, message: 'Embedding started. Check status with GET /api/rag/embed/status' });
+    res.json({ ok: true, message: 'Embedding started (reports + recent news). Check status with GET /api/rag/embed/status' });
+
+    // Reset pgvector availability cache so it re-checks after potentially adding the column
+    _pgvectorAvailable = null;
 
     embedReports(_db, _isPostgres, GEMINI_API_KEY, reportId)
-        .then(r => console.log(`[RAG embed] complete: ${r.chunksEmbedded} chunks, ${r.reportsProcessed} report(s)`))
+        .then(r => {
+            console.log(`[RAG embed] reports: ${r.chunksEmbedded} chunks, ${r.reportsProcessed} report(s)`);
+            // After reports, embed recent news headlines too (unless specific reportId requested)
+            if (!reportId) {
+                return embedNewsArticles(_db, _isPostgres, GEMINI_API_KEY, { days: 30, limit: 200 });
+            }
+        })
+        .then(r => { if (r) console.log(`[RAG embed] news: ${r.chunksEmbedded} headlines`); })
         .catch(err => console.error('[RAG embed] error:', err.message));
+});
+
+// ── POST /api/rag/why-signal — "Why This Signal?" explanation ────────────────
+//
+// Body: { symbol, signal, agent_name? }
+// Returns: { explanation, sources }
+
+router.post('/why-signal', async (req, res) => {
+    const { symbol, signal, agent_name } = req.body || {};
+    if (!symbol || !signal) {
+        return res.status(400).json({ error: 'symbol and signal are required' });
+    }
+    if (!GEMINI_API_KEY) {
+        return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+    }
+
+    try {
+        const sym    = symbol.toUpperCase();
+        const sig    = signal.toUpperCase();
+        const agent  = agent_name || '';
+        const sigWord = sig === 'UP' ? 'bullish' : sig === 'DOWN' ? 'bearish' : 'neutral';
+
+        // Semantically rich query covering the stock + signal direction
+        const query  = `${sym} stock ${sigWord} signal Egypt EGX ${agent}`.trim();
+        const qEmbedding = await embedText(query);
+
+        // Top chunks across ALL source types (reports + news_article + event_intel)
+        const chunks = await retrieveTopChunks(qEmbedding, 6, null);
+
+        // Recent news headlines for extra recency context (keyword, not semantic)
+        const recentNews = await dbAll(
+            `SELECT headline, source, date FROM news
+             WHERE symbol = ${ph(1)} ORDER BY date DESC LIMIT 5`,
+            [sym]
+        );
+
+        const chunksBlock = chunks.length > 0
+            ? chunks.map((c, i) => {
+                const meta  = c.source_meta || {};
+                const label = meta.filename || meta.headline || meta.title || `${c.source_type} ${c.source_id}`;
+                return `[Evidence ${i + 1}: ${label}]\n${c.chunk_text.slice(0, 400)}`;
+              }).join('\n\n---\n\n')
+            : 'No embedded knowledge base articles available.';
+
+        const newsBlock = recentNews.length > 0
+            ? recentNews.map(n => `- [${n.date}] ${n.headline} (${n.source || '?'})`).join('\n')
+            : 'No recent news found for this stock.';
+
+        const prompt =
+`You are a concise EGX financial analyst. Explain in 3-4 bullet points why ${sym} has a ${sig} signal today.
+Draw on the evidence below. Be specific — mention concrete facts where present.
+If evidence is insufficient, say so honestly.
+
+Knowledge base evidence:
+${chunksBlock}
+
+Recent news for ${sym}:
+${newsBlock}
+${agent ? `\nSignal generated by: ${agent}.` : ''}
+
+Explain the ${sig} signal for ${sym}:`;
+
+        const explanation = await geminiGenerate(prompt, 0.2);
+
+        res.json({
+            symbol: sym,
+            signal: sig,
+            explanation,
+            sources: chunks.map(c => {
+                const meta = c.source_meta || {};
+                return {
+                    source_type: c.source_type,
+                    label:       meta.filename || meta.headline || meta.title || `${c.source_type} ${c.source_id}`,
+                    date:        meta.date || meta.upload_date || meta.published_at || null,
+                    similarity:  Math.round(c.similarity * 1000) / 1000,
+                };
+            }),
+        });
+
+    } catch (err) {
+        console.error('RAG /why-signal error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // ── GET /api/sentiment/:symbol/evidence — articles that drove the badge ──────

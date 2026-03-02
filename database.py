@@ -596,7 +596,7 @@ def create_tables():
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_market_reports_upload_date ON market_reports(upload_date DESC)")
 
-        # Table 22: RAG Chunks (embedded text segments from market_reports)
+        # Table 22: RAG Chunks (embedded text from market_reports, news, event_intel)
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS rag_chunks (
                 id          {auto_id},
@@ -605,11 +605,14 @@ def create_tables():
                 chunk_index INTEGER NOT NULL,
                 chunk_text  TEXT NOT NULL,
                 embedding   TEXT,
+                source_meta TEXT,
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(source_type, source_id, chunk_index)
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)")
+        # Add source_meta to existing installs that predate this column
+        _safe_add_column(cursor, 'rag_chunks', 'source_meta', 'TEXT')
 
         # Table 23: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
         cursor.execute(f"""

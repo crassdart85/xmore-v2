@@ -1,8 +1,11 @@
 'use strict';
 /**
- * lib/embedReports.js — Pure Node.js market-report chunker + embedder.
+ * lib/embedReports.js — Pure Node.js multi-source embedder.
  *
- * Works on Render (no Python required).
+ * Works on Render (no Python required). Embeds:
+ *   - market_reports  (PDFs/images uploaded via admin)
+ *   - news_article    (recent headlines from main `news` table)
+ *
  * Used by:
  *   - routes/rag.js   POST /api/rag/embed
  *   - routes/admin.js auto-embed after upload
@@ -76,17 +79,62 @@ function makeHelpers(db, isPostgres) {
         return new Promise((resolve, reject) =>
             db.all(adapt(sql), params, (err, rows) => err ? reject(err) : resolve(rows || [])));
     }
+    function dbGet(sql, params = []) {
+        return new Promise((resolve, reject) =>
+            db.get(adapt(sql), params, (err, row) => err ? reject(err) : resolve(row || null)));
+    }
     function dbRun(sql, params = []) {
         return new Promise((resolve, reject) =>
             db.run(adapt(sql), params, (err) => err ? reject(err) : resolve()));
     }
-    return { dbAll, dbRun };
+    return { dbAll, dbGet, dbRun };
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
+// ── Upsert one chunk (with source_meta + pgvector fallback) ──────────────────
+
+async function upsertChunk(db, isPostgres, sourceType, sourceId, chunkIndex, chunkText, embedding, sourceMeta) {
+    const { dbRun } = makeHelpers(db, isPostgres);
+    const embJson  = JSON.stringify(embedding);
+    const metaJson = JSON.stringify(sourceMeta || {});
+
+    if (isPostgres) {
+        const vecStr = '[' + embedding.join(',') + ']';
+        try {
+            await dbRun(`
+                INSERT INTO rag_chunks
+                  (source_type, source_id, chunk_index, chunk_text, embedding, source_meta, embedding_vec)
+                VALUES ($1, $2, $3, $4, $5, $6, $7::vector)
+                ON CONFLICT (source_type, source_id, chunk_index)
+                DO UPDATE SET chunk_text    = EXCLUDED.chunk_text,
+                              embedding     = EXCLUDED.embedding,
+                              source_meta   = EXCLUDED.source_meta,
+                              embedding_vec = EXCLUDED.embedding_vec
+            `, [sourceType, sourceId, chunkIndex, chunkText, embJson, metaJson, vecStr]);
+        } catch (_) {
+            // pgvector column may not exist on this instance — fall back without it
+            await dbRun(`
+                INSERT INTO rag_chunks
+                  (source_type, source_id, chunk_index, chunk_text, embedding, source_meta)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (source_type, source_id, chunk_index)
+                DO UPDATE SET chunk_text  = EXCLUDED.chunk_text,
+                              embedding   = EXCLUDED.embedding,
+                              source_meta = EXCLUDED.source_meta
+            `, [sourceType, sourceId, chunkIndex, chunkText, embJson, metaJson]);
+        }
+    } else {
+        await dbRun(`
+            INSERT OR REPLACE INTO rag_chunks
+              (source_type, source_id, chunk_index, chunk_text, embedding, source_meta)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `, [sourceType, sourceId, chunkIndex, chunkText, embJson, metaJson]);
+    }
+}
+
+// ── embedReports — market_reports ─────────────────────────────────────────────
 
 /**
- * Embed market reports into rag_chunks using Node.js + Gemini REST API.
+ * Embed market reports into rag_chunks.
  *
  * @param {object}      db          - server.js db wrapper (.all/.get/.run)
  * @param {boolean}     isPostgres  - true for Render/PostgreSQL
@@ -99,14 +147,12 @@ async function embedReports(db, isPostgres, apiKey, reportId = null) {
 
     const { dbAll, dbRun } = makeHelpers(db, isPostgres);
 
-    // Fetch target reports
     let reports;
     if (reportId != null) {
         reports = await dbAll(
-            `SELECT id, filename, extracted_text FROM market_reports WHERE id = $1`,
+            `SELECT id, filename, extracted_text, upload_date FROM market_reports WHERE id = $1`,
             [reportId]
         );
-        // Delete existing chunks so re-embed is clean
         if (reports.length) {
             await dbRun(
                 `DELETE FROM rag_chunks WHERE source_type = $1 AND source_id = $2`,
@@ -115,7 +161,7 @@ async function embedReports(db, isPostgres, apiKey, reportId = null) {
         }
     } else {
         reports = await dbAll(`
-            SELECT mr.id, mr.filename, mr.extracted_text
+            SELECT mr.id, mr.filename, mr.extracted_text, mr.upload_date
             FROM market_reports mr
             WHERE mr.extracted_text IS NOT NULL AND TRIM(mr.extracted_text) != ''
               AND mr.id NOT IN (
@@ -126,54 +172,105 @@ async function embedReports(db, isPostgres, apiKey, reportId = null) {
     }
 
     if (!reports.length) {
-        console.log('[embedReports] No reports to embed.');
+        console.log('[embedReports] No market reports to embed.');
         return { chunksEmbedded: 0, reportsProcessed: 0 };
     }
 
     let totalChunks = 0;
     for (const report of reports) {
         const chunks = chunkText(report.extracted_text || '');
-        if (!chunks.length) {
-            console.log(`[embedReports] ${report.filename}: no text to chunk, skipping.`);
-            continue;
-        }
+        if (!chunks.length) continue;
         console.log(`[embedReports] ${report.filename}: embedding ${chunks.length} chunks…`);
 
+        const sourceMeta = {
+            filename:    report.filename,
+            upload_date: report.upload_date ? String(report.upload_date).slice(0, 10) : '',
+        };
+
         for (let idx = 0; idx < chunks.length; idx++) {
-            const text = chunks[idx];
             try {
-                const embedding = await geminiEmbed(text, apiKey);
-                const embJson = JSON.stringify(embedding);
-
-                if (isPostgres) {
-                    await dbRun(`
-                        INSERT INTO rag_chunks (source_type, source_id, chunk_index, chunk_text, embedding)
-                        VALUES ($1, $2, $3, $4, $5)
-                        ON CONFLICT (source_type, source_id, chunk_index)
-                        DO UPDATE SET chunk_text = EXCLUDED.chunk_text, embedding = EXCLUDED.embedding
-                    `, ['market_report', report.id, idx, text, embJson]);
-                } else {
-                    await dbRun(`
-                        INSERT OR REPLACE INTO rag_chunks
-                          (source_type, source_id, chunk_index, chunk_text, embedding)
-                        VALUES ($1, $2, $3, $4, $5)
-                    `, ['market_report', report.id, idx, text, embJson]);
-                }
-
+                const embedding = await geminiEmbed(chunks[idx], apiKey);
+                await upsertChunk(db, isPostgres, 'market_report', report.id, idx, chunks[idx], embedding, sourceMeta);
                 totalChunks++;
-                // Rate-limit between chunks (skip sleep after last chunk of report)
                 if (idx < chunks.length - 1) await sleep(RATE_LIMIT_MS);
-
             } catch (err) {
                 console.error(`[embedReports] chunk ${idx} of "${report.filename}" failed: ${err.message}`);
-                // Continue with next chunk rather than aborting the whole report
             }
         }
-        console.log(`[embedReports] done: ${report.filename} (${chunks.length} chunks)`);
+        console.log(`[embedReports] done: ${report.filename}`);
     }
 
     console.log(`[embedReports] complete — ${totalChunks} chunks across ${reports.length} report(s).`);
     return { chunksEmbedded: totalChunks, reportsProcessed: reports.length };
 }
 
-module.exports = { embedReports };
+// ── embedNewsArticles — news headlines ────────────────────────────────────────
+
+/**
+ * Embed recent news headlines from the main `news` table into rag_chunks.
+ *
+ * @param {object}  db          - server.js db wrapper
+ * @param {boolean} isPostgres  - true for Render/PostgreSQL
+ * @param {string}  apiKey      - GOOGLE_API_KEY
+ * @param {object}  [opts]      - { days: number (default 30), limit: number (default 300) }
+ * @returns {Promise<{chunksEmbedded: number}>}
+ */
+async function embedNewsArticles(db, isPostgres, apiKey, opts = {}) {
+    if (!apiKey) throw new Error('GOOGLE_API_KEY not set');
+
+    const days  = opts.days  || 30;
+    const limit = opts.limit || 300;
+    const { dbAll } = makeHelpers(db, isPostgres);
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+    const articles = await dbAll(`
+        SELECT n.id, n.symbol, n.date, n.headline, n.source, n.sentiment_label
+        FROM news n
+        WHERE n.headline IS NOT NULL
+          AND n.date >= $1
+          AND n.id NOT IN (
+              SELECT DISTINCT source_id FROM rag_chunks WHERE source_type = $2
+          )
+        ORDER BY n.date DESC
+        LIMIT $3
+    `, [cutoffStr, 'news_article', limit]);
+
+    if (!articles.length) {
+        console.log('[embedNews] No new headlines to embed.');
+        return { chunksEmbedded: 0 };
+    }
+
+    console.log(`[embedNews] Embedding ${articles.length} headlines…`);
+    let total = 0;
+
+    for (const article of articles) {
+        const text = (
+            `[${article.date}] ${article.headline}\n` +
+            `Symbol: ${article.symbol} | Source: ${article.source || '?'} | ` +
+            `Sentiment: ${article.sentiment_label || '?'}`
+        );
+        const sourceMeta = {
+            symbol:          article.symbol,
+            headline:        article.headline,
+            source:          article.source  || '',
+            date:            String(article.date || ''),
+            sentiment_label: article.sentiment_label || '',
+        };
+        try {
+            const embedding = await geminiEmbed(text, apiKey);
+            await upsertChunk(db, isPostgres, 'news_article', article.id, 0, text, embedding, sourceMeta);
+            total++;
+            await sleep(RATE_LIMIT_MS);
+        } catch (err) {
+            console.error(`[embedNews] article ${article.id} failed: ${err.message}`);
+        }
+    }
+
+    console.log(`[embedNews] complete — ${total} headlines embedded.`);
+    return { chunksEmbedded: total };
+}
+
+module.exports = { embedReports, embedNewsArticles };
