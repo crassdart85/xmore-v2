@@ -76,6 +76,7 @@
             <button class="tab-btn" data-tab="results" id="tabResults" role="tab" aria-selected="false" aria-controls="tab-results">Results</button>
             <button class="tab-btn" data-tab="prices" id="tabPrices" role="tab" aria-selected="false" aria-controls="tab-prices">Prices</button>
             <button class="tab-btn" data-tab="timemachine" id="tabTimeMachine" role="tab" aria-selected="false" aria-controls="tab-timemachine">Time Machine</button>
+            <button class="tab-btn" data-tab="etf" id="tabEtf" role="tab" aria-selected="false" aria-controls="tab-etf">ETFs</button>
         </nav>
 
         <!-- Tab: Watchlist (requires login) -->
@@ -712,6 +713,45 @@
 
         </section>
 
+        <!-- Tab: ETFs -->
+        <section id="tab-etf" class="tab-content" role="tabpanel" aria-labelledby="tabEtf">
+            <div class="section-header">
+                <h2 class="section-title">ETF Tracker</h2>
+            </div>
+
+            <!-- EGX Local ETFs -->
+            <div id="etfLocalSection">
+                <h3 class="etf-section-heading">EGX Local ETFs</h3>
+                <div id="etfLocalLoading" class="etf-loading">Loading ETF data…</div>
+                <div id="etfLocalGrid" class="etf-grid"></div>
+            </div>
+
+            <!-- Global ETFs with Egypt Exposure -->
+            <div id="etfGlobalSection" style="margin-top:32px;">
+                <h3 class="etf-section-heading">Global ETFs — Egypt Exposure</h3>
+                <div id="etfGlobalLoading" class="etf-loading" style="display:none;">Loading global ETFs…</div>
+                <div id="etfGlobalTableWrap" class="etf-global-table-wrap">
+                    <table class="etf-global-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Exchange</th>
+                                <th>Egypt %</th>
+                                <th>Close</th>
+                                <th>Change %</th>
+                                <th>NAV</th>
+                                <th>Premium/Discount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="etfGlobalBody">
+                            <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No data yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <footer>
             <button id="refreshBtn" class="refresh-btn">Refresh Data</button>
             <div class="disclaimer-block">
@@ -793,6 +833,30 @@
                 <div id="whyModalContent" style="display:none;">
                     <div id="whyModalExplanation" style="line-height:1.7;color:var(--text-primary);margin-bottom:16px;white-space:pre-wrap;"></div>
                     <div id="whyModalSources" style="border-top:1px solid var(--border-color);padding-top:12px;font-size:12px;color:var(--text-muted);"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================ -->
+    <!-- ETF HOLDINGS MODAL                              -->
+    <!-- ================================================ -->
+    <div id="etfHoldingsModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.55);align-items:center;justify-content:center;padding:16px;" onclick="if(event.target===this)closeEtfModal()">
+        <div style="background:var(--card-bg);border:1px solid var(--border-color);border-radius:16px;max-width:700px;width:100%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.4);">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border-color);">
+                <h3 id="etfModalTitle" style="margin:0;font-size:16px;color:var(--text-primary);">ETF Holdings</h3>
+                <button onclick="closeEtfModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;padding:2px 6px;" aria-label="Close">&times;</button>
+            </div>
+            <div id="etfModalBody" style="overflow-y:auto;padding:20px;flex:1;">
+                <div id="etfModalLoading" style="text-align:center;padding:40px;color:var(--text-muted);">Loading holdings…</div>
+                <div id="etfModalContent" style="display:none;">
+                    <div id="etfModalMeta" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
+                    <table class="etf-holdings-table">
+                        <thead>
+                            <tr><th>#</th><th>Holding</th><th>ISIN</th><th>Country</th><th>Sector</th><th>Weight %</th></tr>
+                        </thead>
+                        <tbody id="etfModalLines"></tbody>
+                    </table>
                 </div>
             </div>
         </div>

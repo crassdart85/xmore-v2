@@ -631,6 +631,196 @@ def create_tables():
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)")
 
+        # ── ETF / Instrument tables (Tables 24–35) ──────────────────────────────
+
+        # Table 24: Instrument master (ETFs, equities — local EGX + global)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS instrument (
+                id               {auto_id},
+                type             TEXT NOT NULL DEFAULT 'ETF',
+                region           TEXT,
+                symbol           TEXT NOT NULL,
+                isin             TEXT,
+                name             TEXT,
+                exchange         TEXT,
+                currency         TEXT,
+                country          TEXT,
+                issuer           TEXT,
+                underlying_index TEXT,
+                inception_date   DATE,
+                is_active        INTEGER NOT NULL DEFAULT 1,
+                created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(exchange, symbol)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_instrument_symbol ON instrument(symbol)")
+
+        # Table 25: Instrument aliases (AR/EN name variants, ticker variants)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS instrument_alias (
+                id            {auto_id},
+                instrument_id INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                alias         TEXT NOT NULL,
+                alias_type    TEXT NOT NULL DEFAULT 'GENERAL',
+                UNIQUE(instrument_id, alias)
+            )
+        """)
+
+        # Table 26: ETF daily trading tape (OHLCV + trades + market cap)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_price_daily (
+                instrument_id INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                trade_date    DATE NOT NULL,
+                open_price    REAL,
+                high_price    REAL,
+                low_price     REAL,
+                close_price   REAL,
+                last_price    REAL,
+                pct_change    REAL,
+                value_traded  REAL,
+                volume        REAL,
+                trades        INTEGER,
+                market_cap_mn REAL,
+                source_url    TEXT NOT NULL,
+                ingested_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (instrument_id, trade_date)
+            )
+        """)
+
+        # Table 27: ETF NAV per unit
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_nav (
+                instrument_id   INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                nav_date        DATE NOT NULL,
+                nav_value       REAL NOT NULL,
+                last_update_raw TEXT,
+                source_url      TEXT NOT NULL,
+                ingested_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (instrument_id, nav_date)
+            )
+        """)
+
+        # Table 28: ETF intraday NAV + tracking error
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_inav (
+                instrument_id  INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                ts             TIMESTAMP NOT NULL,
+                inav_value     REAL,
+                tracking_error REAL,
+                source_url     TEXT NOT NULL,
+                ingested_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (instrument_id, ts)
+            )
+        """)
+
+        # Table 29: ETF premium/discount (computed: market price vs NAV)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_premium_discount_daily (
+                instrument_id    INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                asof_date        DATE NOT NULL,
+                market_price     REAL NOT NULL,
+                nav_value        REAL NOT NULL,
+                premium_discount REAL NOT NULL,
+                nav_date_used    DATE NOT NULL,
+                calc_notes       TEXT,
+                created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (instrument_id, asof_date)
+            )
+        """)
+
+        # Table 30: ETF fund volume (AUM proxy: fund size, net subs, units)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_fund_volume (
+                instrument_id   INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                asof_date       DATE NOT NULL,
+                fund_size       REAL,
+                net_subs        REAL,
+                no_units        REAL,
+                last_update_raw TEXT,
+                source_url      TEXT NOT NULL,
+                ingested_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (instrument_id, asof_date)
+            )
+        """)
+
+        # Table 31: ETF holdings snapshot header
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_holdings_snapshot (
+                id            {auto_id},
+                instrument_id INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                snapshot_date DATE NOT NULL,
+                source        TEXT NOT NULL,
+                source_url    TEXT NOT NULL,
+                currency      TEXT,
+                total_weight  REAL,
+                ingested_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(instrument_id, snapshot_date, source)
+            )
+        """)
+
+        # Table 32: ETF holding lines (constituents + weights)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_holding_line (
+                snapshot_id    INTEGER NOT NULL REFERENCES etf_holdings_snapshot(id) ON DELETE CASCADE,
+                line_no        INTEGER NOT NULL,
+                holding_symbol TEXT,
+                holding_name   TEXT NOT NULL,
+                holding_isin   TEXT,
+                weight_pct     REAL NOT NULL,
+                country        TEXT,
+                sector         TEXT,
+                asset_type     TEXT,
+                PRIMARY KEY (snapshot_id, line_no)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_holding_line_symbol ON etf_holding_line(holding_symbol)")
+
+        # Table 33: ETF country exposure (for global ETFs: Egypt weight, etc.)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS etf_country_exposure (
+                instrument_id INTEGER NOT NULL REFERENCES instrument(id) ON DELETE CASCADE,
+                asof_date     DATE NOT NULL,
+                country       TEXT NOT NULL,
+                weight_pct    REAL NOT NULL,
+                source_url    TEXT NOT NULL,
+                ingested_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (instrument_id, asof_date, country)
+            )
+        """)
+
+        # Table 34: RAG document metadata (PDFs: prospectuses, factsheets, info sheets)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS rag_document (
+                id            {auto_id},
+                instrument_id INTEGER REFERENCES instrument(id) ON DELETE SET NULL,
+                doc_type      TEXT NOT NULL,
+                title         TEXT NOT NULL,
+                publisher     TEXT,
+                language      TEXT,
+                publish_date  DATE,
+                url           TEXT NOT NULL,
+                content_hash  TEXT,
+                storage_uri   TEXT,
+                fetched_at    TIMESTAMP,
+                ingested_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(url)
+            )
+        """)
+
+        # Table 35: RAG embedding job queue
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS rag_embedding_job (
+                id            {auto_id},
+                doc_id        INTEGER NOT NULL REFERENCES rag_document(id) ON DELETE CASCADE,
+                embed_model   TEXT NOT NULL DEFAULT 'text-embedding-004',
+                status        TEXT NOT NULL DEFAULT 'PENDING',
+                started_at    TIMESTAMP,
+                finished_at   TIMESTAMP,
+                error_message TEXT
+            )
+        """)
+
         # Create indexes for common queries
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")

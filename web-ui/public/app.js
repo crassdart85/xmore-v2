@@ -1029,6 +1029,7 @@ function switchToTab(tabId, updateHash) {
     if (tabId === 'portfolio' && typeof loadPortfolio === 'function') loadPortfolio();
     if (tabId === 'performance' && typeof loadPerformanceDashboard === 'function') loadPerformanceDashboard();
     if (tabId === 'timemachine' && typeof loadTimeMachine === 'function') loadTimeMachine();
+    if (tabId === 'etf' && typeof loadEtfTab === 'function') loadEtfTab();
 }
 
 // Key shared with admin dashboard for frontend tab visibility
@@ -2484,6 +2485,162 @@ async function showWhySignal(symbol, signal) {
 
 function closeWhyModal() {
     const modal = document.getElementById('whySignalModal');
+    if (modal) modal.style.display = 'none';
+}
+
+// ── ETF Tab ────────────────────────────────────────────────────────────────────
+
+let etfLoaded = false;
+
+async function loadEtfTab() {
+    if (etfLoaded) return;
+    etfLoaded = true;
+    try {
+        const instruments = await fetch('/api/etf/instruments').then(r => r.json());
+        const local  = instruments.filter(i => i.region && i.region.includes('EGX'));
+        const global = instruments.filter(i => i.region && !i.region.includes('EGX'));
+        renderLocalEtfs(local);
+        renderGlobalEtfs(global, instruments);
+    } catch (err) {
+        const el = document.getElementById('etfLocalLoading');
+        if (el) el.textContent = 'Could not load ETF data.';
+    }
+}
+
+function _fmtPct(val) {
+    if (val == null) return '—';
+    const n = parseFloat(val);
+    if (isNaN(n)) return '—';
+    return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+}
+
+function _fmtNum(val, decimals = 2) {
+    if (val == null) return '—';
+    const n = parseFloat(val);
+    if (isNaN(n)) return '—';
+    return n.toFixed(decimals);
+}
+
+function renderLocalEtfs(instruments) {
+    const loading = document.getElementById('etfLocalLoading');
+    const grid    = document.getElementById('etfLocalGrid');
+    if (!grid) return;
+    if (loading) loading.style.display = 'none';
+
+    if (!instruments.length) {
+        grid.innerHTML = '<p style="color:var(--text-muted);padding:16px;">No local ETF data yet. Run etf_egx_tape.py to populate.</p>';
+        return;
+    }
+
+    grid.innerHTML = instruments.map(i => {
+        const pct    = parseFloat(i.pct_change);
+        const pctCls = isNaN(pct) ? '' : pct >= 0 ? 'etf-pos' : 'etf-neg';
+        const pd     = parseFloat(i.premium_discount);
+        const pdCls  = isNaN(pd) ? '' : pd >= 0 ? 'prem-positive' : 'prem-negative';
+        const pdLabel = isNaN(pd) ? '—' : (pd >= 0 ? '+' : '') + (pd * 100).toFixed(2) + '%';
+        return `
+        <div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+            <div class="etf-card-header">
+                <span class="etf-symbol">${i.symbol}</span>
+                <span class="etf-exchange">${i.exchange || ''}</span>
+            </div>
+            <div class="etf-card-name">${i.name || ''}</div>
+            <div class="etf-card-row">
+                <span class="etf-label">Close</span>
+                <span class="etf-value">${_fmtNum(i.close_price || i.last_price)}</span>
+            </div>
+            <div class="etf-card-row">
+                <span class="etf-label">Change</span>
+                <span class="etf-value ${pctCls}">${_fmtPct(i.pct_change)}</span>
+            </div>
+            <div class="etf-card-row">
+                <span class="etf-label">NAV</span>
+                <span class="etf-value">${_fmtNum(i.nav_value)}</span>
+            </div>
+            <div class="etf-card-row">
+                <span class="etf-label">Prem/Disc</span>
+                <span class="etf-value ${pdCls}">${pdLabel}</span>
+            </div>
+            <div class="etf-card-footer">Click for holdings</div>
+        </div>`;
+    }).join('');
+}
+
+function renderGlobalEtfs(globalInstruments, allInstruments) {
+    const tbody = document.getElementById('etfGlobalBody');
+    if (!tbody) return;
+
+    // Country exposure is loaded separately; if no global instruments use all non-local
+    const instruments = globalInstruments.length ? globalInstruments : allInstruments.filter(i => !i.region || !i.region.includes('EGX'));
+
+    if (!instruments.length) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No global ETF data yet.</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = instruments.map(i => {
+        const pct  = parseFloat(i.pct_change);
+        const pctCls = isNaN(pct) ? '' : pct >= 0 ? 'etf-pos' : 'etf-neg';
+        const pd   = parseFloat(i.premium_discount);
+        const pdCls  = isNaN(pd) ? '' : pd >= 0 ? 'prem-positive' : 'prem-negative';
+        const pdLabel = isNaN(pd) ? '—' : (pd >= 0 ? '+' : '') + (pd * 100).toFixed(2) + '%';
+        return `<tr>
+            <td><strong>${i.symbol}</strong></td>
+            <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${i.name || ''}">${i.name || '—'}</td>
+            <td>${i.exchange || '—'}</td>
+            <td>${i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—'}</td>
+            <td>${_fmtNum(i.close_price || i.last_price)}</td>
+            <td class="${pctCls}">${_fmtPct(i.pct_change)}</td>
+            <td>${_fmtNum(i.nav_value)}</td>
+            <td class="${pdCls}">${pdLabel}</td>
+        </tr>`;
+    }).join('');
+}
+
+async function showEtfHoldings(symbol) {
+    const modal   = document.getElementById('etfHoldingsModal');
+    const title   = document.getElementById('etfModalTitle');
+    const loading = document.getElementById('etfModalLoading');
+    const content = document.getElementById('etfModalContent');
+    const meta    = document.getElementById('etfModalMeta');
+    const lines   = document.getElementById('etfModalLines');
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+    if (title)   title.textContent = `${symbol} — Holdings`;
+    if (loading) loading.style.display = 'block';
+    if (content) content.style.display = 'none';
+
+    try {
+        const data = await fetch(`/api/etf/holdings/${symbol}`).then(r => r.json());
+        if (loading) loading.style.display = 'none';
+        if (!data || !data.snapshot) {
+            if (content) { content.style.display = 'block'; }
+            if (meta) meta.textContent = 'No holdings data available.';
+            if (lines) lines.innerHTML = '';
+            return;
+        }
+        const snap = data.snapshot;
+        if (meta) meta.textContent = `As of ${snap.snapshot_date} · Source: ${snap.source} · ${snap.currency || ''} · Total weight: ${snap.total_weight != null ? parseFloat(snap.total_weight).toFixed(1) + '%' : '—'}`;
+        if (lines) {
+            lines.innerHTML = (data.lines || []).map(l => `
+                <tr>
+                    <td>${l.line_no}</td>
+                    <td>${l.holding_name || l.holding_symbol || '—'}</td>
+                    <td style="font-size:11px;color:var(--text-muted);">${l.holding_isin || ''}</td>
+                    <td>${l.country || '—'}</td>
+                    <td>${l.sector || '—'}</td>
+                    <td><strong>${l.weight_pct != null ? parseFloat(l.weight_pct).toFixed(2) + '%' : '—'}</strong></td>
+                </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No holding lines.</td></tr>';
+        }
+        if (content) content.style.display = 'block';
+    } catch (err) {
+        if (loading) loading.textContent = `Error: ${err.message}`;
+    }
+}
+
+function closeEtfModal() {
+    const modal = document.getElementById('etfHoldingsModal');
     if (modal) modal.style.display = 'none';
 }
 

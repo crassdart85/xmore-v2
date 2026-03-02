@@ -58,6 +58,7 @@
                 <button class="admin-tab-btn" data-tab="tab-forecast-accuracy" role="tab">Forecast Accuracy</button>
                 <button class="admin-tab-btn" data-tab="tab-ask-reports" role="tab">Ask Reports</button>
                 <button class="admin-tab-btn" data-tab="tab-settings" role="tab">Settings</button>
+                <button class="admin-tab-btn" data-tab="tab-etf-docs" role="tab">ETF Docs</button>
             </div>
             <div class="admin-tab-config-wrap">
                 <button class="admin-tab-config-btn" id="tabConfigBtn" title="Show / hide tabs" aria-expanded="false" aria-controls="tabConfigPanel">&#9881;</button>
@@ -482,6 +483,36 @@
                         </tr>
                     </thead>
                     <tbody id="faRecentTableBody"><tr><td colspan="7" class="admin-muted" style="text-align:center;padding:20px;">Loading…</td></tr></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ETF DOCS                                         -->
+        <!-- ================================================ -->
+        <section class="section admin-tab-panel" id="tab-etf-docs" role="tabpanel">
+            <h2>ETF Documents</h2>
+            <p class="admin-muted">RAG documents and embedding jobs for ETF PDFs (prospectuses, fund sheets, etc.).</p>
+
+            <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+                <button id="etfDocsRefreshBtn" class="admin-btn" onclick="loadEtfDocs()">Refresh</button>
+                <span id="etfDocsCount" class="admin-muted" style="font-size:13px;"></span>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Instrument</th>
+                            <th>Fetched</th>
+                            <th>Embedding</th>
+                            <th>Error</th>
+                        </tr>
+                    </thead>
+                    <tbody id="etfDocsTableBody">
+                        <tr><td colspan="6" class="no-data">Click Refresh to load</td></tr>
+                    </tbody>
                 </table>
             </div>
         </section>

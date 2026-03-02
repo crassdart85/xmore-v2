@@ -588,6 +588,7 @@ const TAB_DEFS = [
     { id: 'tab-forecast-accuracy', label: 'Forecast Accuracy' },
     { id: 'tab-ask-reports',       label: 'Ask Reports' },
     { id: 'tab-settings',          label: 'Settings' },
+    { id: 'tab-etf-docs',          label: 'ETF Docs' },
 ];
 
 const HIDDEN_TABS_KEY = 'admin_hidden_tabs';
@@ -827,6 +828,9 @@ function bindPricesTab() {
         if (btn && btn.dataset.tab === 'tab-ask-reports') {
             loadRagEmbedStatus();
             loadRagDocuments();
+        }
+        if (btn && btn.dataset.tab === 'tab-etf-docs') {
+            loadEtfDocs();
         }
     });
 }
@@ -1116,3 +1120,42 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+// ── ETF Docs ───────────────────────────────────────────────────────────────
+
+const _EMBED_STATUS_COLORS = {
+    PENDING: 'color:#9ca3af;',
+    RUNNING: 'color:#f59e0b;font-weight:600;',
+    SUCCESS: 'color:#22c55e;font-weight:600;',
+    FAILED:  'color:#ef4444;font-weight:600;',
+};
+
+async function loadEtfDocs() {
+    const tbody  = document.getElementById('etfDocsTableBody');
+    const count  = document.getElementById('etfDocsCount');
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="no-data">Loading…</td></tr>';
+    try {
+        const rows = await fetchJson('/api/etf/documents');
+        if (count) count.textContent = `${rows.length} document${rows.length === 1 ? '' : 's'}`;
+        if (!rows.length) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="no-data">No ETF documents yet. Run etf_docs_ingest.py to populate.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = rows.map(r => {
+            const statusStyle = _EMBED_STATUS_COLORS[r.embed_status] || 'color:var(--text-muted);';
+            const fetched = r.fetched_at ? r.fetched_at.toString().slice(0, 10) : '—';
+            const title   = escapeHtml(r.title || r.url || '—');
+            const errMsg  = r.embed_error ? `<span title="${escapeHtml(r.embed_error)}" style="cursor:help;">&#9888; ${escapeHtml(r.embed_error.slice(0, 40))}…</span>` : '—';
+            return `<tr>
+                <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${title}">${title}</td>
+                <td>${escapeHtml(r.doc_type || '—')}</td>
+                <td>${escapeHtml(r.instrument_symbol || '—')}</td>
+                <td style="font-size:12px;color:var(--text-muted);">${fetched}</td>
+                <td style="${statusStyle}">${r.embed_status || '—'}</td>
+                <td style="font-size:12px;">${r.embed_error ? errMsg : '—'}</td>
+            </tr>`;
+        }).join('');
+    } catch (err) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="error-message">${escapeHtml(err.message)}</td></tr>`;
+    }
+}

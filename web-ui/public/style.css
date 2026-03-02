@@ -4623,3 +4623,166 @@ button:active, .btn:active, .tab-btn:active {
 @media (max-width: 480px) {
     .why-modal-card { padding: 18px 14px; width: 96%; }
 }
+
+/* ── ETF Tab ──────────────────────────────────────────────────────────────── */
+
+.etf-section-heading {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.etf-loading {
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 16px 0;
+}
+
+.etf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 14px;
+}
+
+.etf-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.etf-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.etf-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.etf-symbol {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.etf-exchange {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--input-bg);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+.etf-card-name {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.etf-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 3px 0;
+}
+
+.etf-label {
+    color: var(--text-muted);
+    font-size: 11px;
+}
+
+.etf-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.etf-card-footer {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    text-align: center;
+    letter-spacing: 0.3px;
+}
+
+.etf-pos { color: #22c55e; }
+.etf-neg { color: #ef4444; }
+
+.prem-positive { color: #f59e0b; }   /* trading above NAV — amber */
+.prem-negative { color: #22c55e; }   /* trading at discount — green */
+
+/* Global ETF table */
+.etf-global-table-wrap {
+    overflow-x: auto;
+}
+
+.etf-global-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.etf-global-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.etf-global-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.etf-global-table tr:hover td {
+    background: var(--input-bg);
+}
+
+/* Holdings modal table */
+.etf-holdings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.etf-holdings-table th {
+    text-align: left;
+    padding: 7px 10px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.etf-holdings-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.etf-holdings-table tr:hover td {
+    background: var(--input-bg);
+}
+
+@media (max-width: 600px) {
+    .etf-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .etf-global-table th:nth-child(3),
+    .etf-global-table td:nth-child(3) { display: none; }
+}
