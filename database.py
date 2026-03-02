@@ -582,7 +582,21 @@ def create_tables():
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)")
 
-        # Table 21: RAG Chunks (embedded text segments from market_reports)
+        # Table 21: Market Reports (PDF/image knowledge base, uploaded via Admin)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS market_reports (
+                id           {auto_id},
+                filename     TEXT NOT NULL,
+                upload_date  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                extracted_text TEXT,
+                language     TEXT NOT NULL DEFAULT 'EN',
+                summary      TEXT,
+                created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_market_reports_upload_date ON market_reports(upload_date DESC)")
+
+        # Table 22: RAG Chunks (embedded text segments from market_reports)
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS rag_chunks (
                 id          {auto_id},
@@ -597,7 +611,7 @@ def create_tables():
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)")
 
-        # Table 22: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
+        # Table 23: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS prediction_contexts (
                 id                {auto_id},
