@@ -4626,19 +4626,80 @@ button:active, .btn:active, .tab-btn:active {
 
 /* ── ETF Tab ──────────────────────────────────────────────────────────────── */
 
-.etf-section-heading {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin: 0 0 16px;
-    padding-bottom: 8px;
+/* ETF Panel (card wrapper for each section) */
+.etf-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+}
+
+.etf-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--border-color);
 }
 
-.etf-loading {
-    color: var(--text-muted);
+.etf-panel-title {
     font-size: 14px;
-    padding: 16px 0;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.etf-panel-badge {
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 8px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.etf-state-msg {
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 8px 0;
+}
+
+/* Empty state */
+.etf-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 36px 16px;
+    color: var(--text-muted);
+    text-align: center;
+}
+.etf-empty-state p {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0;
+    color: var(--text-secondary);
+}
+.etf-empty-state span {
+    font-size: 12px;
+}
+.etf-empty-state code {
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: monospace;
+    font-size: 11px;
+}
+
+.etf-table-empty {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 32px !important;
+    font-size: 13px;
 }
 
 .etf-grid {
@@ -4782,6 +4843,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 @media (max-width: 600px) {
+    .etf-panel { padding: 14px; }
     .etf-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
     .etf-global-table th:nth-child(3),
     .etf-global-table td:nth-child(3) { display: none; }

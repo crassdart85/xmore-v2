@@ -2523,14 +2523,18 @@ function _fmtNum(val, decimals = 2) {
 
 function renderLocalEtfs(instruments) {
     const loading = document.getElementById('etfLocalLoading');
+    const empty   = document.getElementById('etfLocalEmpty');
+    const badge   = document.getElementById('etfLocalBadge');
     const grid    = document.getElementById('etfLocalGrid');
     if (!grid) return;
     if (loading) loading.style.display = 'none';
 
     if (!instruments.length) {
-        grid.innerHTML = '<p style="color:var(--text-muted);padding:16px;">No local ETF data yet. Run etf_egx_tape.py to populate.</p>';
+        if (empty) empty.style.display = 'flex';
         return;
     }
+    if (empty) empty.style.display = 'none';
+    if (badge) { badge.textContent = instruments.length; badge.style.display = 'inline-block'; }
 
     grid.innerHTML = instruments.map(i => {
         const pct    = parseFloat(i.pct_change);
@@ -2568,15 +2572,17 @@ function renderLocalEtfs(instruments) {
 
 function renderGlobalEtfs(globalInstruments, allInstruments) {
     const tbody = document.getElementById('etfGlobalBody');
+    const badge = document.getElementById('etfGlobalBadge');
     if (!tbody) return;
 
     // Country exposure is loaded separately; if no global instruments use all non-local
     const instruments = globalInstruments.length ? globalInstruments : allInstruments.filter(i => !i.region || !i.region.includes('EGX'));
 
     if (!instruments.length) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No global ETF data yet.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" class="etf-table-empty">No global ETF data yet</td></tr>';
         return;
     }
+    if (badge) { badge.textContent = instruments.length; badge.style.display = 'inline-block'; }
 
     tbody.innerHTML = instruments.map(i => {
         const pct  = parseFloat(i.pct_change);

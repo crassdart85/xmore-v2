@@ -717,19 +717,30 @@
         <section id="tab-etf" class="tab-content" role="tabpanel" aria-labelledby="tabEtf">
             <div class="section-header">
                 <h2 class="section-title">ETF Tracker</h2>
+                <p class="section-subtitle">Track Egyptian ETFs — prices, NAV, premium/discount, and holdings.</p>
             </div>
 
             <!-- EGX Local ETFs -->
-            <div id="etfLocalSection">
-                <h3 class="etf-section-heading">EGX Local ETFs</h3>
-                <div id="etfLocalLoading" class="etf-loading">Loading ETF data…</div>
+            <div id="etfLocalSection" class="etf-panel">
+                <div class="etf-panel-header">
+                    <span class="etf-panel-title">EGX Local ETFs</span>
+                    <span class="etf-panel-badge" id="etfLocalBadge" style="display:none;"></span>
+                </div>
+                <div id="etfLocalLoading" class="etf-state-msg">Loading ETF data…</div>
+                <div id="etfLocalEmpty" class="etf-empty-state" style="display:none;">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+                    <p>No local ETF data yet</p>
+                    <span>Run <code>etf_egx_tape.py</code> to populate</span>
+                </div>
                 <div id="etfLocalGrid" class="etf-grid"></div>
             </div>
 
             <!-- Global ETFs with Egypt Exposure -->
-            <div id="etfGlobalSection" style="margin-top:32px;">
-                <h3 class="etf-section-heading">Global ETFs — Egypt Exposure</h3>
-                <div id="etfGlobalLoading" class="etf-loading" style="display:none;">Loading global ETFs…</div>
+            <div id="etfGlobalSection" class="etf-panel" style="margin-top:20px;">
+                <div class="etf-panel-header">
+                    <span class="etf-panel-title">Global ETFs — Egypt Exposure</span>
+                    <span class="etf-panel-badge" id="etfGlobalBadge" style="display:none;"></span>
+                </div>
                 <div id="etfGlobalTableWrap" class="etf-global-table-wrap">
                     <table class="etf-global-table">
                         <thead>
@@ -741,11 +752,11 @@
                                 <th>Close</th>
                                 <th>Change %</th>
                                 <th>NAV</th>
-                                <th>Premium/Discount</th>
+                                <th>Prem/Disc</th>
                             </tr>
                         </thead>
                         <tbody id="etfGlobalBody">
-                            <tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:24px;">No data yet</td></tr>
+                            <tr><td colspan="8" class="etf-table-empty">No global ETF data yet</td></tr>
                         </tbody>
                     </table>
                 </div>
