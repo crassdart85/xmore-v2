@@ -86,10 +86,16 @@ def evaluate_predictions():
                 print(f"⚠️ Missing price data to evaluate {symbol} for {pred['prediction_date']}")
                 continue
             if not end_price_row:
-                # This could happen if it's a holiday or weekend. We might want to check data quality here.
+                # Target date may be a weekend/holiday — use nearest next trading day
+                near_query = _adapt_sql(
+                    "SELECT close FROM prices WHERE symbol = ? AND date >= ? ORDER BY date ASC LIMIT 1"
+                )
+                cursor.execute(near_query, (symbol, pred['target_date']))
+                end_price_row = cursor.fetchone()
+            if not end_price_row:
                 print(f"⚠️ Missing price data to evaluate {symbol} for {pred['target_date']}")
                 continue
-                
+
             start_price = start_price_row['close']
             end_price = end_price_row['close']
             

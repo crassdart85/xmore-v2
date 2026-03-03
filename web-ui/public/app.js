@@ -1775,8 +1775,8 @@ async function loadPerformanceDetailed() {
 
         // Update overall accuracy in stats bar (avoids duplicate API call)
         const acc = data?.overall?.directional_accuracy;
-        if (acc) {
-            animateValue('overallAccuracy', acc, { decimalPlaces: 1, suffix: '%' });
+        if (data?.overall?.total_predictions > 0) {
+            animateValue('overallAccuracy', acc ?? 0, { decimalPlaces: 1, suffix: '%' });
         }
 
         // Render overall stats
