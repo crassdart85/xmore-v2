@@ -101,8 +101,9 @@ def run():
         with get_connection() as conn:
             cur = conn.cursor()
             # Check if snapshot already exists
+            snap_pk = 'snapshot_id' if is_pg else 'id'
             cur.execute(_adapt_sql(
-                f"SELECT snapshot_id FROM etf_holdings_snapshot "
+                f"SELECT {snap_pk} FROM etf_holdings_snapshot "
                 f"WHERE instrument_id={ph} AND snapshot_date={ph} AND source={ph}"
             ), (inst_id, today, 'YAHOO'))
             if cur.fetchone():

@@ -146,8 +146,9 @@ def run():
 
     with get_connection() as conn:
         cur = conn.cursor()
+        doc_pk = 'doc_id' if is_pg else 'id'
         cur.execute(_adapt_sql(
-            "SELECT {'doc_id' if is_pg else 'id'} AS id, url, title, doc_type FROM rag_document WHERE fetched_at IS NULL"
+            f"SELECT {doc_pk} AS id, url, title, doc_type FROM rag_document WHERE fetched_at IS NULL"
         ))
         for row in cur.fetchall():
             url = row['url'] if hasattr(row, 'keys') else row[1]
