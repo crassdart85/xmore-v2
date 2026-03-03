@@ -1,15 +1,20 @@
 name: Trading System Automation
 
 # EGX market hours: 09:00–14:00 Cairo (UTC+2) = 07:00–12:00 UTC, Sun–Thu
+# NYSE/NASDAQ market hours: Mon–Fri
 # ─────────────────────────────────────────────────────────────────────────
 # Schedule overview (all times UTC):
 #
-#  07,08,09,10,11,12  Sun–Thu  intraday-price-update   (hourly prices, 09:00–14:00 Cairo)
-#  07,09,11           Sun–Thu  intraday-news-update     (news+RSS 3× during trading day)
-#  12:30              Sun–Thu  post-market-pipeline     (close prices→sentiment→agents→eval)
-#  14:00              Sun–Thu  egx-daily-snapshot       (backup EGX data export, 16:00 Cairo)
-#  22:00              Sun–Fri  daily-pipeline           (full nightly: briefing, portfolios)
-#  06,12,18           Daily    catchup-evaluation       (resolve expired predictions)
+#  07,08,09,10,11,12  Sun–Thu  intraday-price-update         (hourly prices, 09:00–14:00 Cairo)
+#  07,09,11           Sun–Thu  intraday-news-update           (news+RSS 3× during trading day)
+#  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
+#  14:00              Sun–Thu  egx-daily-snapshot             (backup EGX data export, 16:00 Cairo)
+#  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
+#  06,12,18           Daily    catchup-evaluation             (resolve expired predictions)
+#  12:35–13:20        Sun–Thu  etf-egx-tape/nav/holdings/fv/pd (EGX ETF post-close scrape)
+#  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
+#  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
+#  :15                Hourly   etf-rag-embedding
 
 on:
   schedule:
@@ -33,19 +38,19 @@ on:
     - cron: '0 6,12,18 * * *'
 
     # ── ETF jobs (EGX post-close, Africa/Cairo UTC+2) ──
-    # EGX ETF tape (14:35 Cairo = 12:35 UTC, Mon–Fri)
-    - cron: '35 12 * * 1-5'
-    # EGX ETF NAV (14:45 Cairo = 12:45 UTC, Mon–Fri)
-    - cron: '45 12 * * 1-5'
-    # EGX ETF holdings (15:00 Cairo = 13:00 UTC, Mon–Fri)
-    - cron: '0 13 * * 1-5'
-    # EGX ETF fund volume (15:10 Cairo = 13:10 UTC, Mon–Fri)
-    - cron: '10 13 * * 1-5'
-    # ETF premium/discount compute (15:20 Cairo = 13:20 UTC, Mon–Fri)
-    - cron: '20 13 * * 1-5'
-    # Global ETF prices night run (23:30 Cairo = 21:30 UTC, Mon–Fri)
+    # EGX ETF tape (14:35 Cairo = 12:35 UTC, Sun–Thu)
+    - cron: '35 12 * * 0-4'
+    # EGX ETF NAV (14:45 Cairo = 12:45 UTC, Sun–Thu)
+    - cron: '45 12 * * 0-4'
+    # EGX ETF holdings (15:00 Cairo = 13:00 UTC, Sun–Thu)
+    - cron: '0 13 * * 0-4'
+    # EGX ETF fund volume (15:10 Cairo = 13:10 UTC, Sun–Thu)
+    - cron: '10 13 * * 0-4'
+    # ETF premium/discount compute (15:20 Cairo = 13:20 UTC, Sun–Thu)
+    - cron: '20 13 * * 0-4'
+    # Global ETF prices night run (23:30 Cairo = 21:30 UTC, Mon–Fri — NYSE/NASDAQ)
     - cron: '30 21 * * 1-5'
-    # Global ETF prices morning backstop (06:30 Cairo = 04:30 UTC, Mon–Fri)
+    # Global ETF prices morning backstop (06:30 Cairo = 04:30 UTC, Mon–Fri — NYSE/NASDAQ)
     - cron: '30 4 * * 1-5'
     # Global ETF universe refresh (07:00 Cairo Sun = 05:00 UTC)
     - cron: '0 5 * * 0'
@@ -321,10 +326,10 @@ jobs:
   # ══════════════════════════════════════════════════
 
   # ─────────────────────────────────────
-  # ETF Job 1: EGX trading tape (14:35 Cairo = 12:35 UTC)
+  # ETF Job 1: EGX trading tape (14:35 Cairo = 12:35 UTC, Sun–Thu)
   # ─────────────────────────────────────
   etf-egx-tape:
-    if: github.event.schedule == '35 12 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '35 12 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -340,10 +345,10 @@ jobs:
         run: python -m engines.etf_egx_tape
 
   # ─────────────────────────────────────
-  # ETF Job 2: EGX NAV (14:45 Cairo = 12:45 UTC)
+  # ETF Job 2: EGX NAV (14:45 Cairo = 12:45 UTC, Sun–Thu)
   # ─────────────────────────────────────
   etf-egx-nav:
-    if: github.event.schedule == '45 12 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '45 12 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -359,10 +364,10 @@ jobs:
         run: python -m engines.etf_egx_nav
 
   # ─────────────────────────────────────
-  # ETF Job 3: EGX holdings (15:00 Cairo = 13:00 UTC)
+  # ETF Job 3: EGX holdings (15:00 Cairo = 13:00 UTC, Sun–Thu)
   # ─────────────────────────────────────
   etf-egx-holdings:
-    if: github.event.schedule == '0 13 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 13 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -378,10 +383,10 @@ jobs:
         run: python -m engines.etf_egx_holdings
 
   # ─────────────────────────────────────
-  # ETF Job 4: EGX fund volume (15:10 Cairo = 13:10 UTC)
+  # ETF Job 4: EGX fund volume (15:10 Cairo = 13:10 UTC, Sun–Thu)
   # ─────────────────────────────────────
   etf-egx-fund-volume:
-    if: github.event.schedule == '10 13 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '10 13 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -397,10 +402,10 @@ jobs:
         run: python -m engines.etf_egx_fund_volume
 
   # ─────────────────────────────────────
-  # ETF Job 5: Premium/discount compute (15:20 Cairo = 13:20 UTC)
+  # ETF Job 5: Premium/discount compute (15:20 Cairo = 13:20 UTC, Sun–Thu)
   # ─────────────────────────────────────
   etf-premium-discount:
-    if: github.event.schedule == '20 13 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '20 13 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
