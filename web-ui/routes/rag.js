@@ -413,15 +413,116 @@ router.post('/chat', async (req, res) => {
             // No chunks available — skip silently
         }
 
-        // 4. Build prompt and generate
+        // 4. Live market data context
+        let marketDataBlock = '';
+        try {
+            // 4a. Latest prices — top gainers / losers / most active
+            const priceRows = await dbAll(
+                _isPostgres
+                ? `SELECT DISTINCT ON (p.symbol) p.symbol, p.date, p.close, p.open,
+                     ROUND(((p.close - p.open) / NULLIF(p.open, 0) * 100)::numeric, 2) AS change_pct,
+                     p.volume
+                   FROM prices p ORDER BY p.symbol, p.date DESC`
+                : `SELECT p.symbol, p.date, p.close, p.open,
+                     ROUND((p.close - p.open) / NULLIF(p.open, 0) * 100, 2) AS change_pct,
+                     p.volume
+                   FROM prices p
+                   INNER JOIN (SELECT symbol, MAX(date) AS md FROM prices GROUP BY symbol) l
+                     ON p.symbol = l.symbol AND p.date = l.md`,
+                []
+            );
+            if (priceRows.length > 0) {
+                const latestDate = priceRows[0]?.date || 'N/A';
+                const sorted  = [...priceRows].sort((a, b) => (b.change_pct || 0) - (a.change_pct || 0));
+                const gainers = sorted.slice(0, 5).filter(p => (p.change_pct || 0) > 0);
+                const losers  = [...sorted].reverse().slice(0, 5).filter(p => (p.change_pct || 0) < 0);
+                const byVol   = [...priceRows].sort((a, b) => (b.volume || 0) - (a.volume || 0)).slice(0, 5);
+                const lines   = [`LIVE EGX MARKET DATA (${latestDate}, ${priceRows.length} stocks):`];
+                if (gainers.length) lines.push(`  Top Gainers: ${gainers.map(p => `${p.symbol} +${p.change_pct}%`).join(', ')}`);
+                if (losers.length)  lines.push(`  Top Losers:  ${losers.map(p => `${p.symbol} ${p.change_pct}%`).join(', ')}`);
+                if (byVol.length)   lines.push(`  Most Active: ${byVol.map(p => p.symbol).join(', ')}`);
+                if (symbol) {
+                    const sp = priceRows.find(p => p.symbol === symbol.toUpperCase());
+                    if (sp) lines.push(`  ${symbol}: Close=${sp.close}, Change=${sp.change_pct}%, Vol=${sp.volume}`);
+                }
+                marketDataBlock += lines.join('\n');
+            }
+
+            // 4b. Sentiment summary
+            const sentRows = await dbAll(
+                _isPostgres
+                ? `SELECT DISTINCT ON (symbol) symbol, sentiment_label
+                   FROM sentiment_scores ORDER BY symbol, date DESC`
+                : `SELECT s.symbol, s.sentiment_label
+                   FROM sentiment_scores s
+                   INNER JOIN (SELECT symbol, MAX(date) AS md FROM sentiment_scores GROUP BY symbol) l
+                     ON s.symbol = l.symbol AND s.date = l.md`,
+                []
+            );
+            if (sentRows.length > 0) {
+                const bullish = sentRows.filter(s => s.sentiment_label === 'positive').map(s => s.symbol).slice(0, 8);
+                const bearish = sentRows.filter(s => s.sentiment_label === 'negative').map(s => s.symbol).slice(0, 8);
+                if (bullish.length) marketDataBlock += `\n  Bullish Sentiment: ${bullish.join(', ')}`;
+                if (bearish.length) marketDataBlock += `\n  Bearish Sentiment: ${bearish.join(', ')}`;
+            }
+
+            // 4c. Consensus signals
+            const consensusRows = await dbAll(
+                _isPostgres
+                ? `SELECT DISTINCT ON (symbol) symbol, final_signal
+                   FROM consensus_results ORDER BY symbol, prediction_date DESC`
+                : `SELECT c.symbol, c.final_signal
+                   FROM consensus_results c
+                   INNER JOIN (SELECT symbol, MAX(prediction_date) AS md FROM consensus_results GROUP BY symbol) l
+                     ON c.symbol = l.symbol AND c.prediction_date = l.md`,
+                []
+            );
+            if (consensusRows.length > 0) {
+                const strongBuy  = consensusRows.filter(c => c.final_signal === 'STRONG_BUY').map(c => c.symbol).slice(0, 6);
+                const buy        = consensusRows.filter(c => c.final_signal === 'BUY').map(c => c.symbol).slice(0, 6);
+                const strongSell = consensusRows.filter(c => c.final_signal === 'STRONG_SELL').map(c => c.symbol).slice(0, 6);
+                const sell       = consensusRows.filter(c => c.final_signal === 'SELL').map(c => c.symbol).slice(0, 6);
+                if (strongBuy.length)  marketDataBlock += `\n  STRONG BUY signals: ${strongBuy.join(', ')}`;
+                if (buy.length)        marketDataBlock += `\n  BUY signals: ${buy.join(', ')}`;
+                if (strongSell.length) marketDataBlock += `\n  STRONG SELL signals: ${strongSell.join(', ')}`;
+                if (sell.length)       marketDataBlock += `\n  SELL signals: ${sell.join(', ')}`;
+            }
+
+            // 4d. ETF prices
+            const etfRows = await dbAll(
+                _isPostgres
+                ? `SELECT DISTINCT ON (i.symbol) i.symbol, p.close_price, p.pct_change, p.trade_date
+                   FROM instrument i
+                   JOIN etf_price_daily p ON p.instrument_id = i.instrument_id
+                   WHERE i.is_active = TRUE ORDER BY i.symbol, p.trade_date DESC`
+                : `SELECT i.symbol, p.close_price, p.pct_change, p.trade_date
+                   FROM instrument i
+                   JOIN etf_price_daily p ON p.instrument_id = i.id
+                     AND p.trade_date = (SELECT MAX(trade_date) FROM etf_price_daily WHERE instrument_id = i.id)
+                   WHERE i.is_active = 1 ORDER BY i.symbol`,
+                []
+            );
+            if (etfRows.length > 0) {
+                const etfLine = etfRows.map(e => {
+                    const chg = e.pct_change != null
+                        ? ` (${e.pct_change >= 0 ? '+' : ''}${parseFloat(e.pct_change).toFixed(2)}%)`
+                        : '';
+                    return `${e.symbol} ${e.close_price}${chg}`;
+                }).join(', ');
+                marketDataBlock += `\n  ETF Prices: ${etfLine}`;
+            }
+        } catch (_e) { /* silently skip if tables missing */ }
+
+        // 5. Build prompt and generate
         const symbolNote = symbol ? `\nFocus on: ${symbol}` : '';
-        const prompt = `You are an expert EGX financial research assistant with full knowledge of the Egyptian stock market.
-Use the EGX reference knowledge and stock list below to answer questions about any EGX stock, symbol, or market topic.
-Supplement with recent news when available. Keep answers concise (2-4 sentences) and factual.
+        const prompt = `You are an expert EGX financial research assistant with access to live market data.
+Use the live market data, stock reference, EGX knowledge, and recent news to answer questions.
+Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
 ${symbolNote}
 
 ${EGX_MARKET_KNOWLEDGE}
 ${stockReferenceBlock}
+${marketDataBlock ? '\n' + marketDataBlock : ''}
 
 Recent news:
 ${newsContext || 'No recent news in database.'}
