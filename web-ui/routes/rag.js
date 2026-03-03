@@ -13,6 +13,7 @@ const express = require('express');
 const router = express.Router();
 const https = require('https');
 const { embedReports, embedNewsArticles } = require('../lib/embedReports');
+const { optionalAuth } = require('../middleware/auth');
 
 let _db = null;
 let _isPostgres = false;
@@ -334,7 +335,7 @@ Healthcare, Fintech, Textiles, Energy, Cement, Tourism & Hospitality
 
 // ── POST /api/rag/chat — General EGX research chat ──────────────────────────
 
-router.post('/chat', async (req, res) => {
+router.post('/chat', optionalAuth, async (req, res) => {
     const { question, symbol } = req.body || {};
     if (!question || !question.trim()) {
         return res.status(400).json({ error: 'question is required' });
@@ -543,16 +544,72 @@ router.post('/chat', async (req, res) => {
             }
         } catch (_e) { /* silently skip if tables missing */ }
 
-        // 5. Build prompt and generate
+        // 5. Portfolio context for logged-in user
+        let portfolioBlock = '';
+        if (req.userId) {
+            try {
+                const pfRows = await dbAll(
+                    `SELECT fp.id, fp.name, fp.symbols_json, fp.horizon_days, fp.scenario, fp.investment_amount,
+                            fp.updated_at
+                     FROM forecast_portfolios fp
+                     WHERE fp.user_id = ${ph(1)}
+                     ORDER BY fp.updated_at DESC LIMIT 10`,
+                    [req.userId]
+                );
+                if (pfRows.length > 0) {
+                    const pfDetails = [];
+                    for (const pf of pfRows) {
+                        const symbols = (() => { try { return JSON.parse(pf.symbols_json) || []; } catch { return []; } })();
+                        // Latest forecast results for this portfolio
+                        const results = await dbAll(
+                            `SELECT r.symbol, r.expected_return_pct, r.probability_positive,
+                                    r.worst_case_pct, r.median_pct, r.best_case_pct,
+                                    r.run_date, r.target_date,
+                                    da.return_pct_from_start as actual_so_far, da.date as actual_date
+                             FROM portfolio_forecast_results r
+                             LEFT JOIN portfolio_daily_actuals da ON da.portfolio_id = r.portfolio_id
+                               AND da.symbol = r.symbol
+                               AND da.date = (SELECT MAX(d2.date) FROM portfolio_daily_actuals d2
+                                              WHERE d2.portfolio_id = r.portfolio_id AND d2.symbol = r.symbol)
+                             WHERE r.portfolio_id = ${ph(1)}
+                               AND r.run_date = (SELECT MAX(run_date) FROM portfolio_forecast_results WHERE portfolio_id = ${ph(2)})
+                             ORDER BY r.expected_return_pct DESC NULLS LAST`,
+                            [pf.id, pf.id]
+                        );
+                        const today = new Date().toISOString().split('T')[0];
+                        const startDate = results[0]?.run_date;
+                        const daysElapsed = startDate
+                            ? Math.max(0, Math.round((new Date(today) - new Date(startDate)) / 86400000))
+                            : null;
+                        const stockLines = results.map(r => {
+                            const forecast = `forecast +${(r.expected_return_pct || 0).toFixed(1)}%`;
+                            const actual   = r.actual_so_far != null
+                                ? `, actual so far ${r.actual_so_far >= 0 ? '+' : ''}${parseFloat(r.actual_so_far).toFixed(1)}% (day ${daysElapsed}/${pf.horizon_days})`
+                                : '';
+                            const prob = r.probability_positive != null ? `, ${Math.round(r.probability_positive * 100)}% prob positive` : '';
+                            return `    ${r.symbol}: ${forecast}${prob}${actual}`;
+                        }).join('\n') || '    (no forecast results yet)';
+                        pfDetails.push(
+                            `  Portfolio "${pf.name}" — ${symbols.length} stock(s), ${pf.horizon_days}d ${pf.scenario} horizon, ${pf.investment_amount} EGP\n${stockLines}`
+                        );
+                    }
+                    portfolioBlock = `\nUSER'S FORECAST PORTFOLIOS:\n${pfDetails.join('\n')}`;
+                }
+            } catch (_e) { /* silently skip if tables missing */ }
+        }
+
+        // 6. Build prompt and generate
         const symbolNote = symbol ? `\nFocus on: ${symbol}` : '';
         const prompt = `You are an expert EGX financial research assistant with access to live market data.
 Use the live market data, stock reference, EGX knowledge, and recent news to answer questions.
+When discussing the user's portfolios, use the portfolio data provided — show actual vs forecast performance.
 Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
 ${symbolNote}
 
 ${EGX_MARKET_KNOWLEDGE}
 ${stockReferenceBlock}
 ${marketDataBlock ? '\n' + marketDataBlock : ''}
+${portfolioBlock}
 
 Recent news:
 ${newsContext || 'No recent news in database.'}
