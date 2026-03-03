@@ -363,8 +363,9 @@ router.post('/chat', async (req, res) => {
             // Table may not exist in older schema — skip silently
         }
 
-        // 2. Keyword-match news from main DB (keyword = any word ≥ 4 chars in question)
-        const words = question.trim().toLowerCase().match(/\b\w{4,}\b/g) || [];
+        // 2. Keyword-match news from main DB
+        // Use Unicode-aware word extraction (handles Arabic + Latin)
+        const words = question.trim().toLowerCase().match(/[\w\u0600-\u06FF]{4,}/g) || [];
         let newsRows = [];
         if (symbol) {
             // Symbol-specific first
@@ -375,18 +376,27 @@ router.post('/chat', async (req, res) => {
             );
         }
         if (newsRows.length < 5 && words.length > 0) {
-            // Keyword search in headlines
-            const likeClause = words.slice(0, 3).map((w, i) => `headline LIKE ${ph(i + (symbol ? 2 : 1))}`).join(' OR ');
-            const likeParams = words.slice(0, 3).map(w => `%${w}%`);
-            const extraRows = await dbAll(
-                `SELECT headline, source, date, url FROM news WHERE ${likeClause} ORDER BY date DESC LIMIT 10`,
-                likeParams
-            );
-            // Merge, deduplicate by headline
-            const seen = new Set(newsRows.map(r => r.headline));
-            for (const r of extraRows) {
-                if (!seen.has(r.headline)) { newsRows.push(r); seen.add(r.headline); }
+            // Keyword search in headlines (Latin keywords only — SQL LIKE is ASCII-safe)
+            const latinWords = words.filter(w => /[a-z]/.test(w)).slice(0, 3);
+            if (latinWords.length > 0) {
+                const likeClause = latinWords.map((w, i) => `headline LIKE ${ph(i + (symbol ? 2 : 1))}`).join(' OR ');
+                const likeParams = latinWords.map(w => `%${w}%`);
+                const extraRows = await dbAll(
+                    `SELECT headline, source, date, url FROM news WHERE ${likeClause} ORDER BY date DESC LIMIT 10`,
+                    likeParams
+                );
+                const seen = new Set(newsRows.map(r => r.headline));
+                for (const r of extraRows) {
+                    if (!seen.has(r.headline)) { newsRows.push(r); seen.add(r.headline); }
+                }
             }
+        }
+        // Fallback: for general news questions (no symbol, nothing matched), return latest headlines
+        if (newsRows.length === 0 && !symbol) {
+            newsRows = await dbAll(
+                `SELECT headline, source, date, url FROM news ORDER BY date DESC LIMIT 10`,
+                []
+            );
         }
         const newsContext = newsRows.slice(0, 8).map(r =>
             `- [${r.date}] ${r.headline} (${r.source})`
