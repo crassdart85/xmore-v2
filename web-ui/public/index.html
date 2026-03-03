@@ -883,6 +883,11 @@
             <button id="chatClose" onclick="closeChatPanel()" aria-label="Close chat">&times;</button>
         </div>
         <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+        <div class="chat-quick-chips">
+            <button class="chat-chip" onclick="sendMacroRead()">📊 Macro Brief</button>
+            <button class="chat-chip" onclick="sendChatMessage('What are the top movers on EGX today?')">📈 Top Movers</button>
+            <button class="chat-chip" onclick="sendChatMessage('What are the strong buy signals today?')">🎯 Buy Signals</button>
+        </div>
         <div class="chat-input-row">
             <input id="chatInput" type="text" placeholder="Ask about any EGX stock…" autocomplete="off" maxlength="400">
             <button id="chatSend" onclick="sendChatMessage()">&#10148;</button>

@@ -205,6 +205,26 @@ async function geminiGenerate(prompt, temperature = 0.2) {
     return candidate.content.parts[0].text.trim();
 }
 
+async function geminiGenerateGrounded(prompt, temperature = 0.3) {
+    const result = await geminiRequest(
+        '/v1beta/models/gemini-2.5-flash:generateContent',
+        {
+            contents: [{ parts: [{ text: prompt }] }],
+            tools: [{ google_search: {} }],
+            generationConfig: { temperature }
+        }
+    );
+    const candidate = result.candidates && result.candidates[0];
+    if (!candidate) throw new Error(`Grounded generate error: ${JSON.stringify(result).slice(0, 300)}`);
+    const text = (candidate.content.parts || []).map(p => p.text || '').join('').trim();
+    const sources = [];
+    const chunks = (candidate.groundingMetadata || {}).groundingChunks || [];
+    for (const chunk of chunks) {
+        if (chunk.web) sources.push({ type: 'web', title: chunk.web.title || chunk.web.uri, url: chunk.web.uri });
+    }
+    return { text, sources };
+}
+
 // ── Cosine similarity (pure JS) ──────────────────────────────────────────────
 
 function cosineSim(a, b) {
@@ -536,6 +556,107 @@ User question: ${question}`;
     } catch (err) {
         console.error('RAG /chat error:', err.message);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ── POST /api/rag/macro — EGX Macro Driver Read with Google Search grounding ──
+
+router.post('/macro', async (req, res) => {
+    if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
+
+    // Today's date in Cairo time (UTC+2)
+    const cairoNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
+    const today    = cairoNow.toISOString().slice(0, 10);
+    const dayName  = cairoNow.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Africa/Cairo' });
+
+    // Lightweight DB snapshot to anchor the analysis
+    let dbSnapshot = '';
+    try {
+        const priceRows = await dbAll(
+            _isPostgres
+            ? `SELECT DISTINCT ON (p.symbol) p.symbol, p.close,
+                 ROUND(((p.close - p.open) / NULLIF(p.open, 0) * 100)::numeric, 2) AS chg
+               FROM prices p ORDER BY p.symbol, p.date DESC`
+            : `SELECT p.symbol, p.close,
+                 ROUND((p.close - p.open) / NULLIF(p.open, 0) * 100, 2) AS chg
+               FROM prices p
+               INNER JOIN (SELECT symbol, MAX(date) AS md FROM prices GROUP BY symbol) l
+                 ON p.symbol = l.symbol AND p.date = l.md`,
+            []
+        );
+        if (priceRows.length > 0) {
+            const sorted  = [...priceRows].sort((a, b) => (b.chg || 0) - (a.chg || 0));
+            const gainers = sorted.slice(0, 3).filter(p => (p.chg || 0) > 0).map(p => `${p.symbol}(+${p.chg}%)`);
+            const losers  = [...sorted].reverse().slice(0, 3).filter(p => (p.chg || 0) < 0).map(p => `${p.symbol}(${p.chg}%)`);
+            if (gainers.length || losers.length) {
+                dbSnapshot += `\nDB Market Snapshot (${today}):`;
+                if (gainers.length) dbSnapshot += ` Gainers: ${gainers.join(', ')}`;
+                if (losers.length)  dbSnapshot += ` | Losers: ${losers.join(', ')}`;
+            }
+        }
+        const etfRows = await dbAll(
+            _isPostgres
+            ? `SELECT DISTINCT ON (i.symbol) i.symbol, p.close_price, p.pct_change
+               FROM instrument i JOIN etf_price_daily p ON p.instrument_id = i.instrument_id
+               WHERE i.is_active = TRUE ORDER BY i.symbol, p.trade_date DESC`
+            : `SELECT i.symbol, p.close_price, p.pct_change
+               FROM instrument i JOIN etf_price_daily p ON p.instrument_id = i.id
+                 AND p.trade_date = (SELECT MAX(trade_date) FROM etf_price_daily WHERE instrument_id = i.id)
+               WHERE i.is_active = 1 ORDER BY i.symbol`,
+            []
+        );
+        if (etfRows.length > 0) {
+            dbSnapshot += `\n  ETFs: ` + etfRows.map(e => {
+                const chg = e.pct_change != null ? `(${e.pct_change >= 0 ? '+' : ''}${parseFloat(e.pct_change).toFixed(2)}%)` : '';
+                return `${e.symbol} ${e.close_price}${chg}`;
+            }).join(', ');
+        }
+    } catch (_e) { /* silently skip */ }
+
+    const prompt = `You are an EGX macro analyst. Today is ${dayName}, ${today} (Africa/Cairo, UTC+2).
+
+Use Google Search to find CURRENT data. Search for:
+- "Central Bank of Egypt MPC decision 2026" (latest policy rate)
+- "IMF Egypt 2026 disbursement" (latest review/tranche)
+- "USD EGP exchange rate ${today}" (FX level)
+- "oil price ${today}" and "Egypt EGX market ${today}" (global shocks)
+
+Provide a concise EGX Macro Driver Read:
+
+## 1. Rates (CBE)
+Latest MPC decision: rate levels, direction, implication for EGX valuations (rate-sensitive sectors).
+
+## 2. IMF / External Financing
+Latest IMF program status, any recent disbursement, implication for FX confidence and bank funding.
+
+## 3. FX (USD/EGP)
+Current approximate exchange rate. Signal: stability or pressure?
+
+## 4. Global Shocks (last 48h)
+Dominant global macro shock (oil, EM risk-off, regional events) and Egypt-specific impact (Suez, imported inflation, foreign flows).
+
+## 5. Sector Lens
+Given the macro mix: which EGX sectors have a tailwind vs headwind today?
+(Banks / Real Estate / Energy-exporters / Consumer-import-heavy / Industrials)
+
+## 6. Net Tone
+One sentence: overall macro tone for EGX today — supportive / neutral / cautious — and why.
+${dbSnapshot ? '\n' + dbSnapshot : ''}
+
+Keep each section 2-3 sentences. Cite the source searched. Flag any data that is delayed or unavailable.`;
+
+    try {
+        const { text, sources } = await geminiGenerateGrounded(prompt, 0.2);
+        res.json({ answer: text, sources });
+    } catch (err) {
+        // Fallback: grounding may not be available for all API keys
+        try {
+            const text = await geminiGenerate(prompt, 0.2);
+            res.json({ answer: text, sources: [], note: 'grounding_unavailable' });
+        } catch (err2) {
+            console.error('RAG /macro error:', err2.message);
+            res.status(500).json({ error: err2.message });
+        }
     }
 });
 

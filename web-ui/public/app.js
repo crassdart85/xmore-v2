@@ -2373,9 +2373,14 @@ function appendChatMessage(role, text, sources) {
     if (sources && sources.length > 0) {
         const srcDiv = document.createElement('div');
         srcDiv.className = 'chat-sources';
-        srcDiv.innerHTML = sources.slice(0, 4).map(s =>
-            `<span class="chat-source-pill">${escHtml(s.title || s.source || 'Source')}</span>`
-        ).join(' ');
+        srcDiv.innerHTML = sources.slice(0, 5).map(s => {
+            const isWeb = s.type === 'web';
+            const cls   = isWeb ? 'chat-source-pill chat-source-web' : 'chat-source-pill';
+            const label = escHtml(s.title || s.source || 'Source');
+            return isWeb && s.url
+                ? `<a class="${cls}" href="${escHtml(s.url)}" target="_blank" rel="noopener">${label}</a>`
+                : `<span class="${cls}">${label}</span>`;
+        }).join(' ');
         div.appendChild(srcDiv);
     }
 
@@ -2383,11 +2388,12 @@ function appendChatMessage(role, text, sources) {
     messages.scrollTop = messages.scrollHeight;
 }
 
-async function sendChatMessage() {
+async function sendChatMessage(prefill) {
     const input = document.getElementById('chatInput');
     const sendBtn = document.getElementById('chatSend');
     if (!input) return;
 
+    if (prefill) input.value = prefill;
     const question = input.value.trim();
     if (!question) return;
 
@@ -2427,6 +2433,36 @@ async function sendChatMessage() {
     } finally {
         if (sendBtn) { sendBtn.disabled = false; }
         if (input) input.focus();
+    }
+}
+
+async function sendMacroRead() {
+    const sendBtn = document.getElementById('chatSend');
+    appendChatMessage('user', '📊 EGX Macro Brief for today');
+
+    const typingId = 'chat-typing-' + Date.now();
+    const messages = document.getElementById('chatMessages');
+    if (messages) {
+        const t = document.createElement('div');
+        t.id = typingId;
+        t.className = 'chat-msg chat-msg-ai chat-typing';
+        t.textContent = 'Searching live macro data…';
+        messages.appendChild(t);
+        messages.scrollTop = messages.scrollHeight;
+    }
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+        const res  = await fetch('/api/rag/macro', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        const el = document.getElementById(typingId); if (el) el.remove();
+        if (data.error) throw new Error(data.error);
+        appendChatMessage('ai', data.answer || '(No response)', data.sources || []);
+    } catch (e) {
+        const el = document.getElementById(typingId); if (el) el.remove();
+        appendChatMessage('ai', `Error: ${e.message}`);
+    } finally {
+        if (sendBtn) sendBtn.disabled = false;
     }
 }
 

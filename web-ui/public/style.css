@@ -4510,6 +4510,40 @@ button:active, .btn:active, .tab-btn:active {
 .chat-input-row button:hover { opacity: 0.88; }
 .chat-input-row button:disabled { opacity: 0.45; cursor: default; }
 
+/* Quick-action chips */
+.chat-quick-chips {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px 2px;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border-color);
+}
+.chat-chip {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.15s, color 0.15s;
+    line-height: 1.4;
+}
+.chat-chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Web source pills (grounded search results) */
+.chat-source-web {
+    color: #3b82f6 !important;
+    border-color: rgba(59,130,246,0.4) !important;
+    text-decoration: none;
+    display: inline-block;
+}
+.chat-source-web:hover { opacity: 0.8; }
+
 /* Mobile: full-screen chat on small screens */
 @media (max-width: 480px) {
     .chat-toggle-btn { bottom: 16px; right: 16px; width: 48px; height: 48px; font-size: 20px; }
