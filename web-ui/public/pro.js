@@ -49,6 +49,89 @@
   container.appendChild(wrapper);
 })();
 
+// ── EGX 30 Intraday Chart ────────────────────────────────────────────────────
+(function loadEGX30Chart() {
+  const container = document.getElementById('egx30ChartWidget');
+  if (!container) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  wrapper.style.cssText = 'height:100%;width:100%';
+
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.cssText = 'height:calc(100% - 32px);width:100%';
+  wrapper.appendChild(inner);
+
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    autosize: true,
+    symbol: 'EGX:EGX30',
+    interval: '5',
+    timezone: 'Africa/Cairo',
+    theme: 'dark',
+    style: '2',        // area chart
+    locale: 'en',
+    backgroundColor: '#141414',
+    gridColor: 'rgba(42,42,42,0.4)',
+    hide_top_toolbar: false,
+    hide_legend: true,
+    save_image: false,
+    hide_volume: false,
+    support_host: 'https://www.tradingview.com',
+  });
+  wrapper.appendChild(script);
+  container.appendChild(wrapper);
+})();
+
+// ── EGX Market Indices ────────────────────────────────────────────────────────
+(function loadEGXIndices() {
+  const container = document.getElementById('egxIndicesWidget');
+  if (!container) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'tradingview-widget-container';
+  wrapper.style.cssText = 'height:100%;width:100%';
+
+  const inner = document.createElement('div');
+  inner.className = 'tradingview-widget-container__widget';
+  inner.style.cssText = 'height:100%;width:100%';
+  wrapper.appendChild(inner);
+
+  const script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
+  script.async = true;
+  script.innerHTML = JSON.stringify({
+    colorTheme: 'dark',
+    dateRange: '1D',
+    showChart: true,
+    locale: 'en',
+    isTransparent: true,
+    showSymbolLogo: false,
+    showFloatingTooltip: false,
+    width: '100%',
+    height: '100%',
+    tabs: [
+      {
+        title: 'EGX Indices',
+        symbols: [
+          { s: 'EGX:EGX30',  d: 'EGX 30'  },
+          { s: 'EGX:EGX35',  d: 'EGX 35'  },
+          { s: 'EGX:EGX70',  d: 'EGX 70'  },
+          { s: 'EGX:EGX100', d: 'EGX 100' },
+        ],
+        originalTitle: 'EGX Indices',
+      },
+    ],
+  });
+  wrapper.appendChild(script);
+  container.appendChild(wrapper);
+})();
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtChg(val) {
   if (val === null || val === undefined || isNaN(val)) return '—';
@@ -278,4 +361,151 @@ async function loadMacroBrief() {
     btn.textContent = "📊 Load Today's Read";
     btn.disabled = false;
   }
+}
+
+// ── Portfolio Performance ─────────────────────────────────────────────────────
+
+let _portfolios = [];
+let _portfolioChart = null;
+
+// Check if user is logged in; if yes, load portfolios
+(async function initPortfolios() {
+  try {
+    const me = await fetch('/api/auth/me', { credentials: 'include' });
+    if (!me.ok) return; // not logged in — panel stays hidden
+
+    const pfRes = await fetch('/api/portfolio-forecasts', { credentials: 'include' });
+    if (!pfRes.ok) return;
+    const data = await pfRes.json();
+    _portfolios = data.portfolios || [];
+    if (!_portfolios.length) return;
+
+    // Show panel and populate selector
+    const panel = document.getElementById('portfolioPanel');
+    const sel   = document.getElementById('portfolioSelect');
+    if (panel) panel.style.display = '';
+    if (sel) {
+      sel.innerHTML = _portfolios.map(p =>
+        `<option value="${p.id}">${escHtml(p.name)} (${p.horizon_days}d)</option>`
+      ).join('');
+    }
+
+    // Load first portfolio
+    await loadPortfolioChart(_portfolios[0].id);
+  } catch (_) { /* silent — unauthenticated or no portfolios */ }
+})();
+
+async function onPortfolioChange() {
+  const sel = document.getElementById('portfolioSelect');
+  if (sel) await loadPortfolioChart(parseInt(sel.value));
+}
+
+async function loadPortfolioChart(portfolioId) {
+  try {
+    const res  = await fetch(`/api/portfolio-forecasts/${portfolioId}/results`, { credentials: 'include' });
+    const data = await res.json();
+    if (!data.results || !data.results.length) return;
+
+    renderPortfolioChart(data.portfolio, data.results, data.run_date);
+  } catch (_) { /* silent */ }
+}
+
+function renderPortfolioChart(portfolio, results, runDate) {
+  // Filter to rows with at least an expected return
+  const rows = results.filter(r => r.expected_return_pct != null);
+  if (!rows.length) return;
+
+  const labels    = rows.map(r => r.symbol.replace('.CA', ''));
+  const expected  = rows.map(r => parseFloat(r.expected_return_pct).toFixed(2));
+  const actual    = rows.map(r => {
+    // Use final actual if evaluated, otherwise daily actual so far
+    const v = r.actual_return_pct != null ? r.actual_return_pct : r.daily_return_pct;
+    return v != null ? parseFloat(v).toFixed(2) : null;
+  });
+
+  // Colour each actual bar green/red based on sign
+  const actualColors = actual.map(v => v === null ? 'transparent' :
+    parseFloat(v) >= 0 ? 'rgba(0,200,83,0.75)' : 'rgba(255,23,68,0.75)');
+
+  // Render portfolio meta info
+  const meta = document.getElementById('portfolioMeta');
+  if (meta) {
+    const rd     = runDate ? String(runDate).slice(0, 10) : '—';
+    const target = results[0] ? String(results[0].target_date || '').slice(0, 10) : '—';
+    const daysEl = results[0] ? results[0].days_elapsed : '—';
+    const horiz  = portfolio.horizon_days || '—';
+    const invest = portfolio.investment_amount
+      ? 'EGP ' + parseInt(portfolio.investment_amount).toLocaleString()
+      : '—';
+    meta.innerHTML = `
+      <span>Scenario: <strong>${escHtml(portfolio.scenario || 'base')}</strong></span>
+      <span>Run: <strong>${rd}</strong></span>
+      <span>Target: <strong>${target}</strong></span>
+      <span>Progress: <strong>${daysEl} / ${horiz} days</strong></span>
+      <span>Investment: <strong>${invest}</strong></span>
+    `;
+  }
+
+  // Destroy previous chart instance if exists
+  if (_portfolioChart) { _portfolioChart.destroy(); _portfolioChart = null; }
+
+  const ctx = document.getElementById('portfolioChart');
+  if (!ctx) return;
+
+  // Dynamic height based on number of stocks
+  ctx.style.height = Math.max(200, rows.length * 36) + 'px';
+
+  _portfolioChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Forecast %',
+          data: expected,
+          backgroundColor: 'rgba(102,126,234,0.6)',
+          borderColor: 'rgba(102,126,234,1)',
+          borderWidth: 1,
+          borderRadius: 2,
+        },
+        {
+          label: 'Actual so far %',
+          data: actual,
+          backgroundColor: actualColors,
+          borderColor: actualColors.map(c => c.replace('0.75', '1')),
+          borderWidth: 1,
+          borderRadius: 2,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.parsed.x;
+              return v === null ? ' No data' : ` ${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v}%`;
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: '#555', font: { family: 'Courier New', size: 11 },
+            callback: v => (v >= 0 ? '+' : '') + v + '%' },
+          grid: { color: '#1e1e1e' },
+          border: { color: '#2a2a2a' },
+        },
+        y: {
+          ticks: { color: '#aaa', font: { family: 'Courier New', size: 12 } },
+          grid: { display: false },
+          border: { color: '#2a2a2a' },
+        },
+      },
+    },
+  });
 }

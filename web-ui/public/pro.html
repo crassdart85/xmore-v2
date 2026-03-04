@@ -46,6 +46,18 @@
     </div>
   </div>
 
+  <!-- EGX Index Section -->
+  <div class="pro-egx-section">
+    <div class="pro-egx-chart-panel">
+      <div class="pro-panel-title">EGX 30 — Intraday</div>
+      <div id="egx30ChartWidget"></div>
+    </div>
+    <div class="pro-egx-indices-panel">
+      <div class="pro-panel-title">Market Indices</div>
+      <div id="egxIndicesWidget"></div>
+    </div>
+  </div>
+
   <!-- Top Gainers / Losers -->
   <div class="pro-movers-grid">
     <div class="pro-movers-panel">
@@ -97,6 +109,26 @@
     <div class="pro-macro-content" id="macroContent"></div>
   </div>
 
+  <!-- Portfolio Performance (shown only when logged in + has portfolios) -->
+  <div class="pro-portfolio-panel" id="portfolioPanel" style="display:none">
+    <div class="pro-panel-title">
+      My Portfolio Performance
+      <select id="portfolioSelect" class="pro-select" onchange="onPortfolioChange()"></select>
+    </div>
+    <div class="pro-portfolio-body">
+      <div class="pro-portfolio-meta" id="portfolioMeta"></div>
+      <div class="pro-chart-wrap">
+        <canvas id="portfolioChart"></canvas>
+      </div>
+      <div class="pro-portfolio-legend">
+        <span class="pro-legend-dot" style="background:#667eea"></span> Forecast
+        <span class="pro-legend-dot" style="background:#00c853;margin-left:14px"></span> Actual so far
+        <span class="pro-legend-dot" style="background:#ff1744;margin-left:14px"></span> Actual (negative)
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="pro.js"></script>
 </body>
 </html>
