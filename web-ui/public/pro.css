@@ -453,6 +453,134 @@ body {
   border-radius: 2px;
 }
 
+/* ─── Header Auth ────────────────────────────────────────────────────────── */
+.pro-auth-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 4px;
+}
+.pro-auth-user {
+  font-size: 11px;
+  color: var(--pro-muted);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pro-auth-btn {
+  background: none;
+  border: 1px solid var(--pro-border);
+  color: var(--pro-muted);
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.pro-auth-btn:hover { border-color: var(--pro-text); color: var(--pro-text); }
+.pro-auth-btn--primary {
+  border-color: var(--pro-accent);
+  color: var(--pro-accent);
+}
+.pro-auth-btn--primary:hover { background: var(--pro-accent); color: #fff; border-color: var(--pro-accent); }
+
+/* ─── Login Modal ─────────────────────────────────────────────────────────── */
+.pro-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.pro-modal {
+  background: #141414;
+  border: 1px solid var(--pro-border);
+  border-radius: 6px;
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 28px 24px;
+  position: relative;
+}
+.pro-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--pro-muted);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 6px;
+}
+.pro-modal-close:hover { color: var(--pro-text); }
+.pro-modal-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 16px;
+  color: var(--pro-text);
+}
+.pro-modal-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--pro-border);
+}
+.pro-modal-tab {
+  background: none;
+  border: none;
+  color: var(--pro-muted);
+  font-size: 12px;
+  padding: 6px 14px 8px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s;
+}
+.pro-modal-tab.active { color: var(--pro-accent); border-bottom-color: var(--pro-accent); }
+.pro-modal-form { display: flex; flex-direction: column; gap: 10px; }
+.pro-modal-label { font-size: 10px; letter-spacing: 1px; color: var(--pro-muted); margin-bottom: -6px; }
+.pro-modal-input {
+  background: #1a1a1a;
+  border: 1px solid var(--pro-border);
+  color: var(--pro-text);
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.pro-modal-input:focus { border-color: var(--pro-accent); }
+.pro-modal-error {
+  font-size: 11px;
+  color: var(--pro-red);
+  padding: 4px 0;
+}
+.pro-modal-submit {
+  margin-top: 4px;
+  background: var(--pro-accent);
+  border: none;
+  color: #fff;
+  font-size: 13px;
+  padding: 9px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+.pro-modal-submit:hover { opacity: 0.88; }
+.pro-modal-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Also allow .pro-pf-cta-btn as a button (not just <a>) */
+.pro-pf-cta-btn { cursor: pointer; background: none; }
+
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 700px) {
   .pro-movers-grid  { grid-template-columns: 1fr; }

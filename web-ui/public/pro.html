@@ -16,7 +16,33 @@
     <a href="https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To=EGP"
        class="pro-fx-link" target="_blank" rel="noopener">USD/EGP ↗</a>
     <span class="pro-date" id="proDate"></span>
+    <!-- Auth area -->
+    <div class="pro-auth-area">
+      <span class="pro-auth-user" id="proAuthUser" style="display:none"></span>
+      <button class="pro-auth-btn" id="proLogoutBtn" style="display:none" onclick="proHandleLogout()">Sign Out</button>
+      <button class="pro-auth-btn pro-auth-btn--primary" id="proLoginBtn" onclick="showProModal()">Sign In</button>
+    </div>
   </header>
+
+  <!-- Login Modal -->
+  <div class="pro-modal-overlay" id="proAuthModal" style="display:none" onclick="if(event.target===this)hideProModal()">
+    <div class="pro-modal">
+      <button class="pro-modal-close" onclick="hideProModal()">&times;</button>
+      <div class="pro-modal-title">Sign in to Xmore</div>
+      <div class="pro-modal-tabs">
+        <button class="pro-modal-tab active" id="proTabLogin" onclick="proSwitchTab('login')">Login</button>
+        <button class="pro-modal-tab" id="proTabSignup" onclick="proSwitchTab('signup')">Sign Up</button>
+      </div>
+      <form class="pro-modal-form" id="proAuthForm" onsubmit="proHandleSubmit(event)">
+        <label class="pro-modal-label">Email</label>
+        <input class="pro-modal-input" type="email" id="proAuthEmail" required autocomplete="email" placeholder="you@example.com">
+        <label class="pro-modal-label">Password</label>
+        <input class="pro-modal-input" type="password" id="proAuthPassword" required minlength="8" autocomplete="current-password" placeholder="••••••••">
+        <div class="pro-modal-error" id="proAuthError" style="display:none"></div>
+        <button class="pro-modal-submit" id="proAuthSubmit" type="submit">Login</button>
+      </form>
+    </div>
+  </div>
 
   <!-- TradingView ticker tape -->
   <div id="proTicker"></div>
@@ -118,7 +144,7 @@
           Sign in to see how your AI-generated stock portfolios are performing in real time —
           forecast vs actual return per stock, progress to target date, and agent signals.
         </div>
-        <a href="/" class="pro-pf-cta-btn">Sign In to Dashboard ↗</a>
+        <button class="pro-pf-cta-btn" onclick="showProModal()">Sign In ↗</button>
       </div>
     </div>
 

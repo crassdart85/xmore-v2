@@ -393,7 +393,7 @@ function pfShowState(id) {
   });
 }
 
-(async function initPortfolios() {
+async function initPortfolios() {
   try {
     const me = await fetch('/api/auth/me', { credentials: 'include' });
     if (!me.ok) { pfShowState('pfStateLogin'); return; }
@@ -416,7 +416,122 @@ function pfShowState(id) {
 
     await loadPortfolioChart(_portfolios[0].id);
   } catch (_) { pfShowState('pfStateLogin'); }
-})();
+}
+
+// ── Auth ─────────────────────────────────────────────────────────────────────
+
+let _proAuthMode = 'login';
+
+function showProModal() {
+  _proAuthMode = 'login';
+  proSwitchTab('login');
+  document.getElementById('proAuthEmail').value = '';
+  document.getElementById('proAuthPassword').value = '';
+  document.getElementById('proAuthError').style.display = 'none';
+  document.getElementById('proAuthModal').style.display = 'flex';
+  document.getElementById('proAuthEmail').focus();
+}
+
+function hideProModal() {
+  document.getElementById('proAuthModal').style.display = 'none';
+}
+
+function proSwitchTab(mode) {
+  _proAuthMode = mode;
+  document.getElementById('proTabLogin').classList.toggle('active', mode === 'login');
+  document.getElementById('proTabSignup').classList.toggle('active', mode === 'signup');
+  document.getElementById('proAuthSubmit').textContent = mode === 'login' ? 'Login' : 'Sign Up';
+  document.getElementById('proAuthPassword').setAttribute('autocomplete',
+    mode === 'login' ? 'current-password' : 'new-password');
+  document.getElementById('proAuthError').style.display = 'none';
+}
+
+async function proHandleSubmit(e) {
+  e.preventDefault();
+  const email    = document.getElementById('proAuthEmail').value.trim();
+  const password = document.getElementById('proAuthPassword').value;
+  const errEl    = document.getElementById('proAuthError');
+  const submitBtn = document.getElementById('proAuthSubmit');
+
+  errEl.style.display = 'none';
+  submitBtn.disabled = true;
+
+  try {
+    const endpoint = _proAuthMode === 'login' ? '/api/auth/login' : '/api/auth/signup';
+    const res  = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      hideProModal();
+      proSetLoggedIn(data.user);
+      initPortfolios();
+    } else {
+      const msg = data.error || 'Something went wrong. Please try again.';
+      errEl.textContent = res.status === 429 ? 'Too many attempts. Try again later.' : msg;
+      errEl.style.display = 'block';
+    }
+  } catch (_) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.style.display = 'block';
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+function proSetLoggedIn(user) {
+  const userEl   = document.getElementById('proAuthUser');
+  const loginBtn = document.getElementById('proLoginBtn');
+  const logoutBtn = document.getElementById('proLogoutBtn');
+  if (userEl)    { userEl.textContent = user.email; userEl.style.display = ''; }
+  if (loginBtn)  { loginBtn.style.display = 'none'; }
+  if (logoutBtn) { logoutBtn.style.display = ''; }
+}
+
+function proSetLoggedOut() {
+  const userEl   = document.getElementById('proAuthUser');
+  const loginBtn = document.getElementById('proLoginBtn');
+  const logoutBtn = document.getElementById('proLogoutBtn');
+  if (userEl)    { userEl.style.display = 'none'; }
+  if (loginBtn)  { loginBtn.style.display = ''; }
+  if (logoutBtn) { logoutBtn.style.display = 'none'; }
+  pfShowState('pfStateLogin');
+  const sel = document.getElementById('portfolioSelect');
+  if (sel) sel.style.display = 'none';
+}
+
+async function proHandleLogout() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+  } catch (_) { /* silent */ }
+  proSetLoggedOut();
+}
+
+async function proCheckAuth() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      proSetLoggedIn(data.user);
+    } else {
+      proSetLoggedOut();
+    }
+  } catch (_) {
+    proSetLoggedOut();
+  }
+  initPortfolios();
+}
+
+// Keyboard: Escape closes modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') hideProModal();
+});
+
+proCheckAuth();
 
 async function onPortfolioChange() {
   const sel = document.getElementById('portfolioSelect');
