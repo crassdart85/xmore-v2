@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xmore Pro — Market Overview</title>
+  <link rel="stylesheet" href="pro.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="pro-header">
+    <a href="/" class="pro-back">← Dashboard</a>
+    <span class="pro-logo">XMORE <span class="pro-logo-tag">PRO</span></span>
+    <span class="pro-market-label">EGX</span>
+    <span class="pro-date" id="proDate"></span>
+  </header>
+
+  <!-- TradingView ticker tape -->
+  <div id="proTicker"></div>
+
+  <!-- Stat pills row -->
+  <div class="pro-stat-row">
+    <div class="pro-stat">
+      <span class="pro-stat-label">Tracked</span>
+      <span class="pro-stat-val" id="statTracked">—</span>
+    </div>
+    <div class="pro-stat">
+      <span class="pro-stat-label">Up Today</span>
+      <span class="pro-stat-val green" id="statUp">—</span>
+      <span class="pro-stat-sub" id="statUpPct"></span>
+    </div>
+    <div class="pro-stat">
+      <span class="pro-stat-label">Down Today</span>
+      <span class="pro-stat-val red" id="statDown">—</span>
+      <span class="pro-stat-sub" id="statDownPct"></span>
+    </div>
+    <div class="pro-stat">
+      <span class="pro-stat-label">Best Agent Win Rate</span>
+      <span class="pro-stat-val" id="statWinRate">—</span>
+      <span class="pro-stat-sub" id="statWinAgent"></span>
+    </div>
+    <div class="pro-stat">
+      <span class="pro-stat-label">Last Data</span>
+      <span class="pro-stat-val" id="statLastData">—</span>
+    </div>
+  </div>
+
+  <!-- Top Gainers / Losers -->
+  <div class="pro-movers-grid">
+    <div class="pro-movers-panel">
+      <div class="pro-panel-title">Top Gainers</div>
+      <table class="pro-table" id="gainersTable">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Close</th>
+            <th>Chg%</th>
+            <th>Signal</th>
+            <th>Conf</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="pro-movers-panel">
+      <div class="pro-panel-title">Top Losers</div>
+      <table class="pro-table" id="losersTable">
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th>Close</th>
+            <th>Chg%</th>
+            <th>Signal</th>
+            <th>Conf</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sector Performance -->
+  <div class="pro-sector-panel">
+    <div class="pro-panel-title">Sector Performance</div>
+    <div class="pro-sector-grid" id="sectorGrid">
+      <div style="color:#555;font-size:12px;padding:8px 0;">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Macro Brief -->
+  <div class="pro-macro-panel">
+    <div class="pro-panel-title">
+      Macro Brief
+      <button class="pro-macro-btn" id="macroBtn" onclick="loadMacroBrief()">📊 Load Today's Read</button>
+    </div>
+    <div class="pro-macro-content" id="macroContent"></div>
+  </div>
+
+  <script src="pro.js"></script>
+</body>
+</html>

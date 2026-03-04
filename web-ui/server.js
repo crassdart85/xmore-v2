@@ -635,6 +635,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/pro', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'pro.html'));
+});
+
 app.get('*', (req, res) => {
   // Don't serve index.html for /api routes that weren't matched
   if (req.path.startsWith('/api/')) {

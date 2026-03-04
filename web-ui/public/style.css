@@ -1167,6 +1167,24 @@ footer {
     transform: scale(1.05);
 }
 
+.pro-link-btn {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    border-radius: 20px;
+    color: white;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+    transition: all 0.2s;
+}
+.pro-link-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: white;
+}
+
 .theme-btn {
     background: rgba(255, 255, 255, 0.2);
     color: white;
