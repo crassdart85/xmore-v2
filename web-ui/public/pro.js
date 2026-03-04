@@ -117,14 +117,18 @@
     height: '100%',
     tabs: [
       {
-        title: 'EGX Indices',
+        title: 'EGX Blue Chips',
         symbols: [
-          { s: 'EGX:EGX30',  d: 'EGX 30'  },
-          { s: 'EGX:EGX35',  d: 'EGX 35'  },
-          { s: 'EGX:EGX70',  d: 'EGX 70'  },
-          { s: 'EGX:EGX100', d: 'EGX 100' },
+          { s: 'EGX:COMI',  d: 'CIB'        },
+          { s: 'EGX:HRHO',  d: 'EFG Hermes' },
+          { s: 'EGX:ETEL',  d: 'Telecom EG' },
+          { s: 'EGX:CLHO',  d: 'Cleopatra'  },
+          { s: 'EGX:SWDY',  d: 'Edita'      },
+          { s: 'EGX:AMOC',  d: 'AMOC'       },
+          { s: 'EGX:ABUK',  d: 'AbuQir'     },
+          { s: 'EGX:EFIH',  d: 'EFG Fin'    },
         ],
-        originalTitle: 'EGX Indices',
+        originalTitle: 'EGX Blue Chips',
       },
     ],
   });
@@ -362,6 +366,10 @@ async function loadMacroBrief() {
     btn.disabled = false;
   }
 }
+
+// Auto-load on page open, then refresh every hour
+loadMacroBrief();
+setInterval(loadMacroBrief, 60 * 60 * 1000);
 
 // ── Portfolio Performance ─────────────────────────────────────────────────────
 
