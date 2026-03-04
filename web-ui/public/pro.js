@@ -171,6 +171,9 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
+// ── Shared state (available to portfolio renderer) ────────────────────────────
+let _csMap = {};  // symbol → {prediction, confidence}
+
 // ── Main data load ────────────────────────────────────────────────────────────
 Promise.all([
   fetch('/api/prices').then(r => r.json()).catch(() => []),
@@ -183,6 +186,14 @@ Promise.all([
   const pricesArr = Array.isArray(prices) ? prices : [];
   const consensusArr = Array.isArray(consensus) ? consensus : [];
   const perfArr = Array.isArray(perf) ? perf : [];
+
+  // Populate shared consensus map for portfolio renderer
+  consensusArr.forEach(c => {
+    _csMap[c.symbol] = {
+      prediction: c.final_signal || c.consensus_prediction || c.prediction,
+      confidence: c.confidence,
+    };
+  });
 
   renderStats(pricesArr, stats, perfArr);
   renderMovers(pricesArr, stocks, consensusArr);
@@ -370,36 +381,41 @@ async function loadMacroBrief() {
 loadMacroBrief();
 setInterval(loadMacroBrief, 60 * 60 * 1000);
 
-// ── Portfolio Performance ─────────────────────────────────────────────────────
+// ── Portfolio Forecast Performance ───────────────────────────────────────────
 
-let _portfolios = [];
+let _portfolios    = [];
 let _portfolioChart = null;
 
-// Check if user is logged in; if yes, load portfolios
+function pfShowState(id) {
+  ['pfStateLogin', 'pfStateEmpty', 'pfStateData'].forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.style.display = s === id ? '' : 'none';
+  });
+}
+
 (async function initPortfolios() {
   try {
     const me = await fetch('/api/auth/me', { credentials: 'include' });
-    if (!me.ok) return; // not logged in — panel stays hidden
+    if (!me.ok) { pfShowState('pfStateLogin'); return; }
 
     const pfRes = await fetch('/api/portfolio-forecasts', { credentials: 'include' });
-    if (!pfRes.ok) return;
+    if (!pfRes.ok) { pfShowState('pfStateLogin'); return; }
     const data = await pfRes.json();
     _portfolios = data.portfolios || [];
-    if (!_portfolios.length) return;
 
-    // Show panel and populate selector
-    const panel = document.getElementById('portfolioPanel');
-    const sel   = document.getElementById('portfolioSelect');
-    if (panel) panel.style.display = '';
+    if (!_portfolios.length) { pfShowState('pfStateEmpty'); return; }
+
+    // Populate selector
+    const sel = document.getElementById('portfolioSelect');
     if (sel) {
+      sel.style.display = '';
       sel.innerHTML = _portfolios.map(p =>
-        `<option value="${p.id}">${escHtml(p.name)} (${p.horizon_days}d)</option>`
+        `<option value="${p.id}">${escHtml(p.name)} · ${p.horizon_days}d · ${escHtml(p.scenario || 'base')}</option>`
       ).join('');
     }
 
-    // Load first portfolio
     await loadPortfolioChart(_portfolios[0].id);
-  } catch (_) { /* silent — unauthenticated or no portfolios */ }
+  } catch (_) { pfShowState('pfStateLogin'); }
 })();
 
 async function onPortfolioChange() {
@@ -411,108 +427,148 @@ async function loadPortfolioChart(portfolioId) {
   try {
     const res  = await fetch(`/api/portfolio-forecasts/${portfolioId}/results`, { credentials: 'include' });
     const data = await res.json();
-    if (!data.results || !data.results.length) return;
-
-    renderPortfolioChart(data.portfolio, data.results, data.run_date);
+    if (!data.results || !data.results.length) { pfShowState('pfStateEmpty'); return; }
+    renderPortfolioChart(data.portfolio, data.results);
   } catch (_) { /* silent */ }
 }
 
-function renderPortfolioChart(portfolio, results, runDate) {
-  // Filter to rows with at least an expected return
+function renderPortfolioChart(portfolio, results) {
   const rows = results.filter(r => r.expected_return_pct != null);
   if (!rows.length) return;
 
-  const labels    = rows.map(r => r.symbol.replace('.CA', ''));
-  const expected  = rows.map(r => parseFloat(r.expected_return_pct).toFixed(2));
-  const actual    = rows.map(r => {
-    // Use final actual if evaluated, otherwise daily actual so far
+  pfShowState('pfStateData');
+
+  const horiz  = portfolio.horizon_days || 1;
+  const invest = portfolio.investment_amount ? parseInt(portfolio.investment_amount) : null;
+
+  // Compute per-row actual values
+  const actualVals = rows.map(r => {
     const v = r.actual_return_pct != null ? r.actual_return_pct : r.daily_return_pct;
-    return v != null ? parseFloat(v).toFixed(2) : null;
+    return v != null ? parseFloat(v) : null;
   });
 
-  // Colour each actual bar green/red based on sign
-  const actualColors = actual.map(v => v === null ? 'transparent' :
-    parseFloat(v) >= 0 ? 'rgba(0,200,83,0.75)' : 'rgba(255,23,68,0.75)');
+  // ── KPI strip ──────────────────────────────────────────────────────────────
+  const avgForecast = rows.reduce((s, r) => s + parseFloat(r.expected_return_pct), 0) / rows.length;
+  const actualKnown = actualVals.filter(v => v !== null);
+  const avgActual   = actualKnown.length ? actualKnown.reduce((s, v) => s + v, 0) / actualKnown.length : null;
+  const daysElapsed = rows[0] ? (rows[0].days_elapsed || 0) : 0;
+  const progressPct = Math.min(Math.round(daysElapsed / horiz * 100), 100);
+  const targetDate  = rows[0] ? String(rows[0].target_date || '').slice(0, 10) : '—';
 
-  // Render portfolio meta info
-  const meta = document.getElementById('portfolioMeta');
-  if (meta) {
-    const rd     = runDate ? String(runDate).slice(0, 10) : '—';
-    const target = results[0] ? String(results[0].target_date || '').slice(0, 10) : '—';
-    const daysEl = results[0] ? results[0].days_elapsed : '—';
-    const horiz  = portfolio.horizon_days || '—';
-    const invest = portfolio.investment_amount
-      ? 'EGP ' + parseInt(portfolio.investment_amount).toLocaleString()
-      : '—';
-    meta.innerHTML = `
-      <span>Scenario: <strong>${escHtml(portfolio.scenario || 'base')}</strong></span>
-      <span>Run: <strong>${rd}</strong></span>
-      <span>Target: <strong>${target}</strong></span>
-      <span>Progress: <strong>${daysEl} / ${horiz} days</strong></span>
-      <span>Investment: <strong>${invest}</strong></span>
+  const kpiEl = document.getElementById('portfolioKPI');
+  if (kpiEl) {
+    const fmtKpi = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+    const actualCls = avgActual === null ? '' : (avgActual >= 0 ? 'green' : 'red');
+    kpiEl.innerHTML = `
+      <div class="pro-pf-kpi">
+        <span class="pro-stat-label">Avg Forecast</span>
+        <span class="pro-stat-val amber">${fmtKpi(avgForecast)}</span>
+      </div>
+      <div class="pro-pf-kpi">
+        <span class="pro-stat-label">Avg Actual So Far</span>
+        <span class="pro-stat-val ${actualCls}">${avgActual !== null ? fmtKpi(avgActual) : '—'}</span>
+      </div>
+      <div class="pro-pf-kpi">
+        <span class="pro-stat-label">Portfolio Progress</span>
+        <span class="pro-stat-val">${daysElapsed} <span style="font-size:13px;color:#555">/ ${horiz}d</span></span>
+        <div class="pro-pf-prog-track"><div class="pro-pf-prog-fill" style="width:${progressPct}%"></div></div>
+        <span class="pro-stat-sub">${progressPct}% to target · ${targetDate}</span>
+      </div>
+      <div class="pro-pf-kpi">
+        <span class="pro-stat-label">Investment</span>
+        <span class="pro-stat-val">${invest ? 'EGP ' + invest.toLocaleString() : '—'}</span>
+        <span class="pro-stat-sub">${escHtml(portfolio.scenario || 'base')} scenario · ${rows.length} stocks</span>
+      </div>
     `;
   }
 
-  // Destroy previous chart instance if exists
+  // ── Meta row ───────────────────────────────────────────────────────────────
+  const meta = document.getElementById('portfolioMeta');
+  if (meta) {
+    const runDate = rows[0] ? String(rows[0].run_date || '').slice(0, 10) : '—';
+    meta.innerHTML = `
+      <span>Run: <strong>${runDate}</strong></span>
+      <span>Horizon: <strong>${horiz}d</strong></span>
+      <span>Target: <strong>${targetDate}</strong></span>
+    `;
+  }
+
+  // ── Chart ──────────────────────────────────────────────────────────────────
+  const labels       = rows.map(r => r.symbol.replace('.CA', ''));
+  const expected     = rows.map(r => parseFloat(r.expected_return_pct).toFixed(2));
+  const actualColors = actualVals.map(v => v === null ? 'transparent' :
+    v >= 0 ? 'rgba(0,200,83,0.75)' : 'rgba(255,23,68,0.75)');
+
   if (_portfolioChart) { _portfolioChart.destroy(); _portfolioChart = null; }
-
   const ctx = document.getElementById('portfolioChart');
-  if (!ctx) return;
-
-  // Dynamic height based on number of stocks
-  ctx.style.height = Math.max(200, rows.length * 36) + 'px';
-
-  _portfolioChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Forecast %',
-          data: expected,
-          backgroundColor: 'rgba(102,126,234,0.6)',
-          borderColor: 'rgba(102,126,234,1)',
-          borderWidth: 1,
-          borderRadius: 2,
+  if (ctx) {
+    ctx.style.height = Math.max(180, rows.length * 32) + 'px';
+    _portfolioChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Forecast %', data: expected,
+            backgroundColor: 'rgba(102,126,234,0.55)', borderColor: 'rgba(102,126,234,1)',
+            borderWidth: 1, borderRadius: 2 },
+          { label: 'Actual %', data: actualVals.map(v => v !== null ? v.toFixed(2) : null),
+            backgroundColor: actualColors,
+            borderColor: actualColors.map(c => c.replace('0.75', '1')),
+            borderWidth: 1, borderRadius: 2 },
+        ],
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: c => {
+            const v = c.parsed.x;
+            return v === null ? ' No data' : ` ${c.dataset.label}: ${v >= 0 ? '+' : ''}${v}%`;
+          }}},
         },
-        {
-          label: 'Actual so far %',
-          data: actual,
-          backgroundColor: actualColors,
-          borderColor: actualColors.map(c => c.replace('0.75', '1')),
-          borderWidth: 1,
-          borderRadius: 2,
-        },
-      ],
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => {
-              const v = ctx.parsed.x;
-              return v === null ? ' No data' : ` ${ctx.dataset.label}: ${v >= 0 ? '+' : ''}${v}%`;
-            },
-          },
+        scales: {
+          x: { ticks: { color: '#555', font: { family: 'Courier New', size: 11 },
+              callback: v => (v >= 0 ? '+' : '') + v + '%' },
+            grid: { color: '#1e1e1e' }, border: { color: '#2a2a2a' } },
+          y: { ticks: { color: '#aaa', font: { family: 'Courier New', size: 12 } },
+            grid: { display: false }, border: { color: '#2a2a2a' } },
         },
       },
-      scales: {
-        x: {
-          ticks: { color: '#555', font: { family: 'Courier New', size: 11 },
-            callback: v => (v >= 0 ? '+' : '') + v + '%' },
-          grid: { color: '#1e1e1e' },
-          border: { color: '#2a2a2a' },
-        },
-        y: {
-          ticks: { color: '#aaa', font: { family: 'Courier New', size: 12 } },
-          grid: { display: false },
-          border: { color: '#2a2a2a' },
-        },
-      },
-    },
-  });
+    });
+  }
+
+  // ── Detail table ───────────────────────────────────────────────────────────
+  const tbody = document.querySelector('#portfolioDetailTable tbody');
+  if (!tbody) return;
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const sym      = r.symbol || '';
+    const label    = sym.replace('.CA', '');
+    const forecast = parseFloat(r.expected_return_pct);
+    const actVal   = actualVals[i];
+    const gap      = actVal !== null ? (actVal - forecast) : null;
+    const gapCls   = gap === null ? '' : (gap >= 0 ? 'green' : 'red');
+    const actCls   = actVal === null ? '' : (actVal >= 0 ? 'green' : 'red');
+    const cs       = _csMap[sym] || {};
+    const rowDays  = r.days_elapsed || 0;
+    const rowPct   = Math.min(Math.round(rowDays / horiz * 100), 100);
+    const tgt      = String(r.target_date || '').slice(0, 10);
+
+    return `<tr>
+      <td class="sym-cell">${escHtml(label)}</td>
+      <td class="sig-cell">${signalBadge(cs.prediction)}</td>
+      <td class="chg-cell amber">${fmtChg(forecast)}</td>
+      <td class="chg-cell ${actCls}">${actVal !== null ? fmtChg(actVal) : '—'}</td>
+      <td class="chg-cell ${gapCls}">${gap !== null ? fmtChg(gap) : '—'}</td>
+      <td style="min-width:110px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="pro-pf-prog-track" style="flex:1">
+            <div class="pro-pf-prog-fill" style="width:${rowPct}%"></div>
+          </div>
+          <span style="font-size:10px;color:#555;font-family:'Courier New',monospace;white-space:nowrap">${rowPct}%</span>
+        </div>
+      </td>
+      <td class="conf-cell">${escHtml(tgt || '—')}</td>
+    </tr>`;
+  }).join('');
 }

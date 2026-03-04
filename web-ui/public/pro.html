@@ -102,6 +102,75 @@
     </div>
   </div>
 
+  <!-- Portfolio Forecast Performance -->
+  <div class="pro-portfolio-panel" id="portfolioPanel">
+    <div class="pro-panel-title">
+      My Forecast Portfolio
+      <select id="portfolioSelect" class="pro-select" style="display:none" onchange="onPortfolioChange()"></select>
+    </div>
+
+    <!-- State: not logged in -->
+    <div class="pro-pf-state" id="pfStateLogin">
+      <div class="pro-pf-cta">
+        <div class="pro-pf-cta-icon">📊</div>
+        <div class="pro-pf-cta-title">Track Your Forecast Performance</div>
+        <div class="pro-pf-cta-desc">
+          Sign in to see how your AI-generated stock portfolios are performing in real time —
+          forecast vs actual return per stock, progress to target date, and agent signals.
+        </div>
+        <a href="/" class="pro-pf-cta-btn">Sign In to Dashboard ↗</a>
+      </div>
+    </div>
+
+    <!-- State: logged in, no portfolios -->
+    <div class="pro-pf-state" id="pfStateEmpty" style="display:none">
+      <div class="pro-pf-cta">
+        <div class="pro-pf-cta-icon">📈</div>
+        <div class="pro-pf-cta-title">No Forecast Portfolios Yet</div>
+        <div class="pro-pf-cta-desc">
+          Create a forecast portfolio on the main dashboard to start tracking AI prediction
+          accuracy against live EGX price movements.
+        </div>
+        <a href="/" class="pro-pf-cta-btn">Create Portfolio ↗</a>
+      </div>
+    </div>
+
+    <!-- State: has data -->
+    <div id="pfStateData" style="display:none">
+      <!-- KPI summary strip -->
+      <div class="pro-pf-kpi-row" id="portfolioKPI"></div>
+      <!-- Chart -->
+      <div class="pro-portfolio-body">
+        <div class="pro-portfolio-meta" id="portfolioMeta"></div>
+        <div class="pro-chart-wrap">
+          <canvas id="portfolioChart"></canvas>
+        </div>
+        <div class="pro-portfolio-legend">
+          <span class="pro-legend-dot" style="background:#667eea"></span> Forecast
+          <span class="pro-legend-dot" style="background:#00c853;margin-left:14px"></span> Actual (positive)
+          <span class="pro-legend-dot" style="background:#ff1744;margin-left:14px"></span> Actual (negative)
+        </div>
+      </div>
+      <!-- Per-stock detail table -->
+      <div class="pro-pf-detail-wrap">
+        <table class="pro-table" id="portfolioDetailTable">
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th>Signal</th>
+              <th>Forecast</th>
+              <th>Actual</th>
+              <th>Gap</th>
+              <th>Progress</th>
+              <th>Target Date</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- Macro Brief -->
   <div class="pro-macro-panel">
     <div class="pro-panel-title">
@@ -109,25 +178,6 @@
       <button class="pro-macro-btn" id="macroBtn" onclick="loadMacroBrief()">↺ Refresh</button>
     </div>
     <div class="pro-macro-content" id="macroContent"></div>
-  </div>
-
-  <!-- Portfolio Performance (shown only when logged in + has portfolios) -->
-  <div class="pro-portfolio-panel" id="portfolioPanel" style="display:none">
-    <div class="pro-panel-title">
-      My Portfolio Performance
-      <select id="portfolioSelect" class="pro-select" onchange="onPortfolioChange()"></select>
-    </div>
-    <div class="pro-portfolio-body">
-      <div class="pro-portfolio-meta" id="portfolioMeta"></div>
-      <div class="pro-chart-wrap">
-        <canvas id="portfolioChart"></canvas>
-      </div>
-      <div class="pro-portfolio-legend">
-        <span class="pro-legend-dot" style="background:#667eea"></span> Forecast
-        <span class="pro-legend-dot" style="background:#00c853;margin-left:14px"></span> Actual so far
-        <span class="pro-legend-dot" style="background:#ff1744;margin-left:14px"></span> Actual (negative)
-      </div>
-    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
