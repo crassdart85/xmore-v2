@@ -370,6 +370,19 @@ body {
 }
 .pro-pf-cta-btn:hover { background: var(--pro-accent); color: #fff; }
 
+/* Business narrative */
+.pro-pf-narrative {
+  padding: 10px 16px 12px;
+  font-size: 12px;
+  line-height: 1.75;
+  color: #999;
+  border-bottom: 1px solid var(--pro-border);
+}
+.pro-pf-narrative strong { color: var(--pro-text); font-weight: 600; }
+.pro-pf-narrative .green { color: var(--pro-green); }
+.pro-pf-narrative .red   { color: var(--pro-red); }
+.pro-pf-narrative .amber { color: var(--pro-amber); }
+
 /* KPI summary strip */
 .pro-pf-kpi-row {
   display: flex;

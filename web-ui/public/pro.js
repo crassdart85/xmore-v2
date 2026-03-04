@@ -597,6 +597,38 @@ function renderPortfolioChart(portfolio, results) {
     `;
   }
 
+  // ── Business narrative ─────────────────────────────────────────────────────
+  const narEl = document.getElementById('portfolioNarrative');
+  if (narEl) {
+    const name     = escHtml(portfolio.name || 'Portfolio');
+    const scenario = escHtml(portfolio.scenario || 'base');
+    const n        = rows.length;
+
+    let phase;
+    if (progressPct === 0)        phase = 'just initiated';
+    else if (progressPct < 25)    phase = 'in its early stages';
+    else if (progressPct < 50)    phase = 'approaching the halfway mark';
+    else if (progressPct < 75)    phase = 'past the halfway point';
+    else if (progressPct < 100)   phase = 'in the final stretch';
+    else                          phase = 'at its target date';
+
+    let perfSentence;
+    if (avgActual !== null) {
+      const gap      = avgActual - avgForecast;
+      const aboveBelow = gap >= 0 ? 'ahead of' : 'below';
+      const gapAmt   = Math.abs(gap).toFixed(1);
+      const actCls   = avgActual >= 0 ? 'green' : 'red';
+      const aheadCount = rows.filter((r, i) => actualVals[i] !== null && actualVals[i] >= parseFloat(r.expected_return_pct)).length;
+      const knownCount = rows.filter((r, i) => actualVals[i] !== null).length;
+      const scoreStr = knownCount > 0 ? ` ${aheadCount} of ${knownCount} positions with data are meeting or beating their individual AI targets.` : '';
+      perfSentence = `Across ${n} positions, the portfolio is averaging <span class="${actCls}"><strong>${fmtChg(avgActual)}</strong></span> actual return against an AI forecast of <span class="amber"><strong>${fmtChg(avgForecast)}</strong></span> — <strong>${gapAmt}pp ${aboveBelow} forecast</strong>.${scoreStr}`;
+    } else {
+      perfSentence = `Market price data is not yet available for this portfolio — actual vs. forecast comparison will appear once trading data is recorded.`;
+    }
+
+    narEl.innerHTML = `<strong>${name}</strong> is a <strong>${scenario}</strong>-scenario portfolio of <strong>${n} EGX stocks</strong> on a <strong>${horiz}-trading-day</strong> horizon, targeting <strong>${targetDate}</strong>. The forecast is <strong>${phase}</strong> — ${daysElapsed} of ${horiz} trading days elapsed (${progressPct}%). ${perfSentence}`;
+  }
+
   // ── Meta row ───────────────────────────────────────────────────────────────
   const meta = document.getElementById('portfolioMeta');
   if (meta) {
