@@ -37,7 +37,6 @@
       { proName: 'EGX:SWDY',   title: 'Edita'    },
       { proName: 'EGX:AMOC',   title: 'AMOC'     },
       { proName: 'EGX:ABUK',   title: 'AbuQir'   },
-      { proName: 'OANDA:USDEGP', title: 'USD/EGP' },
     ],
     showSymbolLogo: false,
     colorTheme: 'dark',

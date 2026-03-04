@@ -68,6 +68,15 @@ body {
   letter-spacing: 1px;
 }
 
+.pro-fx-link {
+  font-size: 11px;
+  color: var(--pro-muted);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: color 0.15s;
+}
+.pro-fx-link:hover { color: var(--pro-text); }
+
 .pro-date {
   margin-left: auto;
   color: var(--pro-muted);
