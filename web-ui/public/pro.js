@@ -63,7 +63,8 @@ function fmtClose(val) {
 
 function fmtDate(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr + 'T00:00:00');
+  // Slice to YYYY-MM-DD to handle both "2026-03-03" and "2026-03-03T00:00:00.000Z"
+  const d = new Date(String(dateStr).slice(0, 10) + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
@@ -133,8 +134,8 @@ function renderMovers(prices, stocks, consensus) {
   const csMap = {};
   consensus.forEach(c => {
     csMap[c.symbol] = {
-      prediction: c.consensus_prediction || c.prediction,
-      confidence: c.consensus_confidence || c.confidence,
+      prediction: c.final_signal || c.consensus_prediction || c.prediction,
+      confidence: c.confidence,
     };
   });
 
@@ -274,7 +275,7 @@ async function loadMacroBrief() {
 
   } catch (err) {
     content.innerHTML = `<div style="color:var(--pro-red)">Error: ${escHtml(err.message)}</div>`;
-    btn.textContent = '📊 Load Today's Read';
+    btn.textContent = "📊 Load Today's Read";
     btn.disabled = false;
   }
 }
