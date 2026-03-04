@@ -127,6 +127,8 @@ class MAAgent(BaseAgent):
         else:
             trend_strength = "weak"
 
+        price_above_short = bool(price > sma_short)
+
         # MA slope: compare current MAs to 5 days ago
         ma_slope_bearish = False
         sma_short_5d = df['ma_short'].iloc[-6] if len(df) >= 6 and pd.notna(df['ma_short'].iloc[-6]) else sma_short
@@ -154,8 +156,6 @@ class MAAgent(BaseAgent):
             confidence += 15
         elif trend_strength == "moderate":
             confidence += 8
-
-        price_above_short = bool(price > sma_short)
         if (prediction == "UP" and price_above_short) or (prediction == "DOWN" and not price_above_short):
             confidence += 7  # Price confirms direction
 
