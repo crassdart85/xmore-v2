@@ -1529,12 +1529,25 @@ document.getElementById('refreshBtn')?.addEventListener('click', refreshData);
 
 async function loadStats() {
     try {
-        const response = await fetch(`${API_URL}/stats`);
-        const data = await response.json();
+        const [statsRes, perfRes] = await Promise.all([
+            fetch(`${API_URL}/stats`),
+            fetch(`${API_URL}/performance`).catch(() => null),
+        ]);
+        const data = await statsRes.json();
 
         animateValue('stocksTracked', data.stocksTracked || 0, { decimalPlaces: 0 });
         animateValue('totalPredictions', data.totalPredictions || 0, { decimalPlaces: 0 });
         document.getElementById('latestDate').textContent = formatDate(data.latestDate);
+
+        // Populate accuracy stat from evaluations table (best non-Consensus agent)
+        if (perfRes && perfRes.ok) {
+            const perf = await perfRes.json();
+            const agents = Array.isArray(perf) ? perf.filter(p => p.agent_name !== 'Consensus' && parseFloat(p.accuracy) > 0) : [];
+            if (agents.length) {
+                agents.sort((a, b) => parseFloat(b.accuracy) - parseFloat(a.accuracy));
+                animateValue('overallAccuracy', parseFloat(agents[0].accuracy), { decimalPlaces: 1, suffix: '%' });
+            }
+        }
     } catch (error) {
         console.error('Error loading stats:', error);
     }
