@@ -161,21 +161,39 @@ def build_bull_case(symbol, agent_signals, market_data, sentiment_data):
                 "evidence_ar": "تقاطع ذهبي (المتوسط القصير فوق الطويل) — اتجاه صعودي"
             })
     elif majority_direction == 'DOWN':
-        if rsi_signal and rsi_signal.get('reasoning', {}).get('rsi_value', 50) > 65:
-            rsi_val = rsi_signal['reasoning']['rsi_value']
-            score += 8
-            factors.append({
-                "factor": "rsi_confirms_downside", "weight": 8,
-                "evidence": f"RSI at {rsi_val:.1f} — overbought, room to fall",
-                "evidence_ar": f"RSI عند {rsi_val:.1f} — تشبع شرائي، مجال للهبوط"
-            })
-        if ma_signal and ma_signal.get('reasoning', {}).get('crossover_type') in ['death_cross', 'bearish_trend']:
-            score += 7
-            factors.append({
-                "factor": "death_cross_active", "weight": 7,
-                "evidence": "Death cross (short MA below long MA) — bearish trend",
-                "evidence_ar": "تقاطع الموت (المتوسط القصير تحت الطويل) — اتجاه هبوطي"
-            })
+        if rsi_signal:
+            rsi_val = rsi_signal.get('reasoning', {}).get('rsi_value', 50)
+            rsi_trend = rsi_signal.get('reasoning', {}).get('rsi_trend', 'flat')
+            if rsi_val > 65:
+                score += 8
+                factors.append({
+                    "factor": "rsi_confirms_downside", "weight": 8,
+                    "evidence": f"RSI at {rsi_val:.1f} — overbought, room to fall",
+                    "evidence_ar": f"RSI عند {rsi_val:.1f} — تشبع شرائي، مجال للهبوط"
+                })
+            elif rsi_val > 55 and rsi_trend == 'falling':
+                score += 5
+                factors.append({
+                    "factor": "rsi_momentum_bearish", "weight": 5,
+                    "evidence": f"RSI at {rsi_val:.1f} and falling — bearish momentum",
+                    "evidence_ar": f"RSI عند {rsi_val:.1f} وهابط — زخم هبوطي"
+                })
+        if ma_signal:
+            ct = ma_signal.get('reasoning', {}).get('crossover_type', '')
+            if ct in ['death_cross', 'bearish_trend', 'bearish_slope_override']:
+                score += 7
+                factors.append({
+                    "factor": "death_cross_active", "weight": 7,
+                    "evidence": "Death cross or declining MA trend — bearish",
+                    "evidence_ar": "تقاطع الموت أو اتجاه المتوسط الهابط — هبوطي"
+                })
+            elif ma_signal.get('reasoning', {}).get('ma_slope_bearish'):
+                score += 4
+                factors.append({
+                    "factor": "ma_slope_declining", "weight": 4,
+                    "evidence": "Both MAs declining — underlying bearish momentum",
+                    "evidence_ar": "كلا المتوسطين هابطان — زخم هبوطي أساسي"
+                })
     
     # === FACTOR 6: Volume Confirmation (0-10 points) ===
     vol_signal = next((s for s in agent_signals if s['agent_name'] == 'Volume_Spike_Agent'), None)

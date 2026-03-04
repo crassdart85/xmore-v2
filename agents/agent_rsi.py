@@ -60,6 +60,18 @@ class RSIAgent(BaseAgent):
             base_signal = "DOWN"
         else:
             base_signal = "HOLD"
+            # Detect bearish momentum even in neutral zone:
+            # RSI falling sharply from elevated levels → early DOWN signal
+            if len(data) >= 6:
+                rsi_values_full = self.calculate_rsi(data, window=config.RSI_PERIOD)
+                rsi_5d_ago = rsi_values_full.iloc[-6]
+                rsi_diff = current_rsi - rsi_5d_ago
+                # RSI crossed below 50 from above (trend reversal)
+                if current_rsi < 50 and rsi_5d_ago > 52:
+                    base_signal = "DOWN"
+                # RSI falling sharply (>10 pts in 5d) from overbought territory
+                elif rsi_diff < -10 and rsi_5d_ago > 58:
+                    base_signal = "DOWN"
 
         if not sentiment or sentiment.get('article_count', 0) == 0:
             return base_signal
@@ -145,7 +157,7 @@ class RSIAgent(BaseAgent):
         
         # Calculate confidence
         confidence = 50.0
-        
+
         # Extreme RSI = higher confidence
         if current_rsi < 20 or current_rsi > 80:
             confidence += 20
@@ -153,7 +165,15 @@ class RSIAgent(BaseAgent):
             confidence += 12
         elif current_rsi < 40 or current_rsi > 60:
             confidence += 5
-        
+
+        # Momentum-based bearish signals are moderate confidence
+        rsi_diff_val = current_rsi - rsi_5d_ago
+        if prediction == "DOWN" and current_rsi < config.RSI_OVERBOUGHT:
+            # Penalise slightly — these are momentum signals, not extreme readings
+            confidence -= 10
+            if rsi_diff_val < -10:
+                confidence += 5  # Sharp fall is more convincing
+
         # Divergence boosts confidence
         if divergence == "bullish" and prediction == "UP":
             confidence += 10

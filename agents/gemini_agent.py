@@ -209,7 +209,8 @@ Rules:
 - "confidence" must be a float 0.0–1.0
 - "reasoning" must be plain English, under 200 characters
 - Account for EGX-specific context: lower liquidity than US markets, EGP currency
-- Be conservative: when uncertain, prefer "hold"
+- Make a decisive signal based on the weight of evidence; use "hold" only when signals genuinely contradict each other
+- Bearish signals (falling price trend, negative sentiment, RSI rolling over, declining volume) should produce "sell", not "hold"
 """
 
     # ──────────────────────────────────────────────────────────────────────

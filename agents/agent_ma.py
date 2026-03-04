@@ -126,27 +126,45 @@ class MAAgent(BaseAgent):
             trend_strength = "moderate"
         else:
             trend_strength = "weak"
-        
+
+        # MA slope: compare current MAs to 5 days ago
+        ma_slope_bearish = False
+        sma_short_5d = df['ma_short'].iloc[-6] if len(df) >= 6 and pd.notna(df['ma_short'].iloc[-6]) else sma_short
+        sma_long_5d  = df['ma_long'].iloc[-6]  if len(df) >= 6 and pd.notna(df['ma_long'].iloc[-6])  else sma_long
+        short_slope = sma_short - sma_short_5d
+        long_slope  = sma_long  - sma_long_5d
+        # Both MAs declining = bearish underlying momentum even in bullish crossover
+        if short_slope < 0 and long_slope < 0:
+            ma_slope_bearish = True
+        # If price has fallen below short MA while in a "bullish trend", override to DOWN
+        if crossover_type == "bullish_trend" and not price_above_short and ma_slope_bearish:
+            prediction = "DOWN"
+            crossover_type = "bearish_slope_override"
+
         # Confidence: based on freshness of crossover and gap strength
         confidence = 50.0
-        
+
         if crossover_days_ago is not None:
             if crossover_days_ago <= 3:
                 confidence += 20  # Fresh crossover = high confidence
             elif crossover_days_ago <= 7:
                 confidence += 10
-        
+
         if trend_strength == "strong":
             confidence += 15
         elif trend_strength == "moderate":
             confidence += 8
-        
+
         price_above_short = bool(price > sma_short)
         if (prediction == "UP" and price_above_short) or (prediction == "DOWN" and not price_above_short):
             confidence += 7  # Price confirms direction
-        
+
+        # Both MAs declining while in "bullish" zone lowers UP confidence
+        if ma_slope_bearish and prediction == "UP":
+            confidence -= 12
+
         confidence = min(95, max(20, confidence))
-        
+
         reasoning = {
             "sma_10": round(sma_short, 2),
             "sma_30": round(sma_long, 2),
@@ -155,7 +173,8 @@ class MAAgent(BaseAgent):
             "crossover_days_ago": crossover_days_ago if crossover_days_ago is not None else ">30",
             "price_above_sma10": price_above_short,
             "trend_strength": trend_strength,
-            "ma_gap_pct": round(ma_gap_pct, 2)
+            "ma_gap_pct": round(ma_gap_pct, 2),
+            "ma_slope_bearish": ma_slope_bearish
         }
         
         return AgentSignal(
