@@ -307,6 +307,10 @@ jobs:
       - name: Initialize database schema
         run: python -c "from database import create_tables; create_tables()"
 
+      # One-time cleanup: remove 0%-change evaluations caused by stale yfinance prices
+      - name: Clean stale evaluations (0% change artifact)
+        run: python fix_stale_evaluations.py
+
       # Agent prediction accuracy (evaluations table)
       - name: Evaluate prediction accuracy
         run: python evaluate.py
