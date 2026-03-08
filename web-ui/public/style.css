@@ -4901,3 +4901,270 @@ button:active, .btn:active, .tab-btn:active {
     .etf-global-table th:nth-child(3),
     .etf-global-table td:nth-child(3) { display: none; }
 }
+
+/* ============================================================
+   ETF FUND INTELLIGENCE DASHBOARD — redesigned
+   ============================================================ */
+
+/* Sub-tab navigation */
+.etf-subnav {
+    display: flex;
+    gap: 4px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+.etf-subnav-btn {
+    flex: 1;
+    min-width: 90px;
+    padding: 7px 14px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.etf-subnav-btn:hover { background: var(--card-bg); color: var(--text-primary); }
+.etf-subnav-btn.active { background: var(--accent); color: #fff; }
+.etf-subnav-badge {
+    font-size: 10px;
+    font-weight: 700;
+    background: rgba(255,255,255,0.25);
+    border-radius: 8px;
+    padding: 1px 6px;
+    min-width: 18px;
+    text-align: center;
+    display: none;
+}
+.etf-subnav-btn.active .etf-subnav-badge { display: inline-block; }
+.etf-subnav-btn:not(.active) .etf-subnav-badge {
+    display: inline-block;
+    background: var(--border-color);
+    color: var(--text-muted);
+}
+
+/* Toolbar: search + view toggle */
+.etf-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.etf-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.etf-search-input:focus { border-color: var(--accent); }
+.etf-view-toggle {
+    display: flex;
+    gap: 2px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    padding: 3px;
+}
+.etf-view-btn {
+    padding: 5px 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+.etf-view-btn:hover { color: var(--text-primary); }
+.etf-view-btn.active { background: var(--card-bg); color: var(--accent); }
+
+/* Sub-panel */
+.etf-subpanel { animation: fadeIn 0.15s ease; }
+
+/* Instrument type badges */
+.etf-type-badge {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    border-radius: 4px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+}
+.etf-type-badge.badge-etf   { background: #1d4ed820; color: #3b82f6; }
+.etf-type-badge.badge-etp   { background: #78350f20; color: #f59e0b; }
+.etf-type-badge.badge-gold  { background: #fbbf2420; color: #d97706; }
+.etf-type-badge.badge-note  { background: #7c3aed20; color: #8b5cf6; }
+.etf-type-badge.badge-global{ background: #06574420; color: #10b981; }
+.etf-type-badge.badge-fund  { background: #be123c20; color: #f43f5e; }
+.etf-type-badge.badge-tracker { background: #0e749120; color: #0ea5e9; }
+
+/* Improved ETF card */
+.etf-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: border-color 0.18s, box-shadow 0.18s, transform 0.12s;
+    position: relative;
+}
+.etf-card:hover {
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    transform: translateY(-1px);
+}
+.etf-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 3px;
+    gap: 6px;
+}
+.etf-card-symbol-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.etf-symbol {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.etf-exchange {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--input-bg);
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+.etf-card-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+.etf-card-issuer {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+.etf-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid var(--border-light, var(--border-color));
+}
+.etf-card-row:last-of-type { border-bottom: none; }
+.etf-label { color: var(--text-muted); font-size: 11px; }
+.etf-value { font-weight: 600; color: var(--text-primary); font-size: 12px; }
+.etf-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+}
+.etf-action-btn {
+    flex: 1;
+    padding: 5px 8px;
+    background: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.etf-action-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Liquidity indicator */
+.etf-liquidity {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+.etf-liquidity.liq-high { background: #16a34a20; color: #16a34a; }
+.etf-liquidity.liq-med  { background: #ca8a0420; color: #ca8a04; }
+.etf-liquidity.liq-low  { background: #dc262620; color: #dc2626; }
+
+/* Prem/disc colors */
+.etf-pos { color: #22c55e; }
+.etf-neg { color: #ef4444; }
+.prem-positive { color: #f59e0b; }
+.prem-negative { color: #22c55e; }
+
+/* Table view shared style */
+.etf-table-wrap { overflow-x: auto; }
+.etf-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.etf-data-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+}
+.etf-data-table th:hover { color: var(--text-primary); }
+.etf-data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.etf-data-table tr:hover td { background: var(--input-bg); }
+.etf-data-table td.cell-muted { color: var(--text-muted); font-size: 11px; }
+
+/* Empty / coming-soon state */
+.etf-coming-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    text-align: center;
+}
+.etf-coming-soon svg { opacity: 0.3; }
+.etf-coming-soon strong { font-size: 14px; color: var(--text-secondary); }
+.etf-coming-soon span { font-size: 12px; }
+
+@media (max-width: 600px) {
+    .etf-panel { padding: 14px; }
+    .etf-subnav-btn { font-size: 12px; padding: 6px 10px; min-width: 70px; }
+    .etf-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .etf-data-table th:nth-child(n+5),
+    .etf-data-table td:nth-child(n+5) { display: none; }
+}

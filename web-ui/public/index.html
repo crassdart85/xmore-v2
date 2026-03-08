@@ -714,50 +714,59 @@
 
         </section>
 
-        <!-- Tab: ETFs -->
+        <!-- Tab: ETFs — Fund Intelligence Dashboard -->
         <section id="tab-etf" class="tab-content" role="tabpanel" aria-labelledby="tabEtf">
 
-            <!-- EGX Local ETFs -->
-            <div id="etfLocalSection" class="etf-panel">
-                <div class="etf-panel-header">
-                    <span class="etf-panel-title">EGX Local ETFs</span>
-                    <span class="etf-panel-badge" id="etfLocalBadge" style="display:none;"></span>
-                </div>
-                <div id="etfLocalLoading" class="etf-state-msg">Loading ETF data…</div>
-                <div id="etfLocalEmpty" class="etf-empty-state" style="display:none;">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
-                    <p>No local ETF data yet</p>
-                    <span>Data is collected automatically after market close each trading day</span>
-                </div>
-                <div id="etfLocalGrid" class="etf-grid"></div>
+            <!-- Sub-navigation -->
+            <div class="etf-subnav" role="tablist" aria-label="Fund type">
+                <button class="etf-subnav-btn active" data-etfsub="etfs" role="tab" aria-selected="true">
+                    ETFs <span class="etf-subnav-badge" id="badge-etfs">0</span>
+                </button>
+                <button class="etf-subnav-btn" data-etfsub="etps" role="tab" aria-selected="false">
+                    ETPs <span class="etf-subnav-badge" id="badge-etps">0</span>
+                </button>
+                <button class="etf-subnav-btn" data-etfsub="equity-funds" role="tab" aria-selected="false">
+                    Equity Funds <span class="etf-subnav-badge" id="badge-equity-funds">0</span>
+                </button>
+                <button class="etf-subnav-btn" data-etfsub="global-etfs" role="tab" aria-selected="false">
+                    Global ETFs <span class="etf-subnav-badge" id="badge-global-etfs">0</span>
+                </button>
             </div>
 
-            <!-- Global ETFs with Egypt Exposure -->
-            <div id="etfGlobalSection" class="etf-panel" style="margin-top:20px;">
-                <div class="etf-panel-header">
-                    <span class="etf-panel-title">Global ETFs — Egypt Exposure</span>
-                    <span class="etf-panel-badge" id="etfGlobalBadge" style="display:none;"></span>
-                </div>
-                <div id="etfGlobalTableWrap" class="etf-global-table-wrap">
-                    <table class="etf-global-table">
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>Name</th>
-                                <th>Exchange</th>
-                                <th>Egypt %</th>
-                                <th>Close</th>
-                                <th>Change %</th>
-                                <th>NAV</th>
-                                <th>Prem/Disc</th>
-                            </tr>
-                        </thead>
-                        <tbody id="etfGlobalBody">
-                            <tr><td colspan="8" class="etf-table-empty">Global ETF data is updated nightly</td></tr>
-                        </tbody>
-                    </table>
+            <!-- Toolbar: search + view toggle -->
+            <div class="etf-toolbar">
+                <input type="search" class="etf-search-input" id="etfSearchInput" placeholder="Search by symbol or name…" autocomplete="off">
+                <div class="etf-view-toggle">
+                    <button class="etf-view-btn active" data-view="grid" title="Grid view">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0" y="0" width="6" height="6" rx="1" fill="currentColor"/><rect x="8" y="0" width="6" height="6" rx="1" fill="currentColor"/><rect x="0" y="8" width="6" height="6" rx="1" fill="currentColor"/><rect x="8" y="8" width="6" height="6" rx="1" fill="currentColor"/></svg>
+                    </button>
+                    <button class="etf-view-btn" data-view="table" title="Table view">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0" y="0" width="14" height="3" rx="1" fill="currentColor"/><rect x="0" y="5.5" width="14" height="3" rx="1" fill="currentColor"/><rect x="0" y="11" width="14" height="3" rx="1" fill="currentColor"/></svg>
+                    </button>
                 </div>
             </div>
+
+            <!-- Loading state (shared) -->
+            <div id="etfMainLoading" class="etf-state-msg">Loading fund data…</div>
+
+            <!-- ETFs sub-panel -->
+            <div id="etfPanel-etfs" class="etf-subpanel"></div>
+
+            <!-- ETPs sub-panel -->
+            <div id="etfPanel-etps" class="etf-subpanel" style="display:none"></div>
+
+            <!-- Equity Funds sub-panel -->
+            <div id="etfPanel-equity-funds" class="etf-subpanel" style="display:none">
+                <div class="etf-coming-soon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <strong>Equity Mutual Funds — Coming Soon</strong>
+                    <span>Open-ended mutual funds (CI, Beltone, EFG Hermes, NBE) will be available here once the data pipeline is live.</span>
+                </div>
+            </div>
+
+            <!-- Global ETFs sub-panel -->
+            <div id="etfPanel-global-etfs" class="etf-subpanel" style="display:none"></div>
+
         </section>
 
         <footer>
@@ -805,7 +814,7 @@
     <script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js" defer></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js" defer></script>
-    <script src="app.js?v=20260215a"></script>
+    <script src="app.js?v=20260308a"></script>
     <script src="auth.js?v=20260215a"></script>
     <script src="watchlist.js?v=20260215a"></script>
     <script src="trades.js?v=20260215a"></script>

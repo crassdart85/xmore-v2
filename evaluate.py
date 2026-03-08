@@ -83,6 +83,14 @@ def evaluate_predictions():
             end_price_row = cursor.fetchone()
             
             if not start_price_row:
+                # prediction_date may be a weekend/holiday (e.g. Friday when daily-pipeline runs)
+                # Fall back to the nearest PRIOR trading day's close
+                prior_query = _adapt_sql(
+                    "SELECT close FROM prices WHERE symbol = ? AND date <= ? ORDER BY date DESC LIMIT 1"
+                )
+                cursor.execute(prior_query, (symbol, pred['prediction_date']))
+                start_price_row = cursor.fetchone()
+            if not start_price_row:
                 print(f"⚠️ Missing price data to evaluate {symbol} for {pred['prediction_date']}")
                 continue
             if not end_price_row:

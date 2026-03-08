@@ -2537,24 +2537,15 @@ function closeWhyModal() {
     if (modal) modal.style.display = 'none';
 }
 
-// ── ETF Tab ────────────────────────────────────────────────────────────────────
+// ── ETF Fund Intelligence Dashboard ────────────────────────────────────────────
 
 let etfLoaded = false;
+let _etfAllInstruments = [];
+let _etfCurrentSub = 'etfs';
+let _etfCurrentView = 'grid';
 
-async function loadEtfTab() {
-    if (etfLoaded) return;
-    etfLoaded = true;
-    try {
-        const instruments = await fetch('/api/etf/instruments').then(r => r.json());
-        const local  = instruments.filter(i => i.region && i.region.includes('EGX'));
-        const global = instruments.filter(i => i.region && !i.region.includes('EGX'));
-        renderLocalEtfs(local);
-        renderGlobalEtfs(global, instruments);
-    } catch (err) {
-        const el = document.getElementById('etfLocalLoading');
-        if (el) el.textContent = 'Could not load ETF data.';
-    }
-}
+// ETP instrument types
+const _ETP_TYPES = new Set(['GOLD_ETP','INDEX_TRACKER','STRUCTURED_NOTE','ETN','UNKNOWN_ETP','ETP','COMMODITY_ETP']);
 
 function _fmtPct(val) {
     if (val == null) return '—';
@@ -2562,94 +2553,288 @@ function _fmtPct(val) {
     if (isNaN(n)) return '—';
     return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 }
-
 function _fmtNum(val, decimals = 2) {
     if (val == null) return '—';
     const n = parseFloat(val);
     if (isNaN(n)) return '—';
     return n.toFixed(decimals);
 }
-
-function renderLocalEtfs(instruments) {
-    const loading = document.getElementById('etfLocalLoading');
-    const empty   = document.getElementById('etfLocalEmpty');
-    const badge   = document.getElementById('etfLocalBadge');
-    const grid    = document.getElementById('etfLocalGrid');
-    if (!grid) return;
-    if (loading) loading.style.display = 'none';
-
-    if (!instruments.length) {
-        if (empty) empty.style.display = 'flex';
-        return;
-    }
-    if (empty) empty.style.display = 'none';
-    if (badge) { badge.textContent = instruments.length; badge.style.display = 'inline-block'; }
-
-    grid.innerHTML = instruments.map(i => {
-        const pct    = parseFloat(i.pct_change);
-        const pctCls = isNaN(pct) ? '' : pct >= 0 ? 'etf-pos' : 'etf-neg';
-        const pd     = parseFloat(i.premium_discount);
-        const pdCls  = isNaN(pd) ? '' : pd >= 0 ? 'prem-positive' : 'prem-negative';
-        const pdLabel = isNaN(pd) ? '—' : (pd >= 0 ? '+' : '') + (pd * 100).toFixed(2) + '%';
-        return `
-        <div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
-            <div class="etf-card-header">
-                <span class="etf-symbol">${i.symbol}</span>
-                <span class="etf-exchange">${i.exchange || ''}</span>
-            </div>
-            <div class="etf-card-name">${i.name || ''}</div>
-            <div class="etf-card-row">
-                <span class="etf-label">Close</span>
-                <span class="etf-value">${_fmtNum(i.close_price || i.last_price)}</span>
-            </div>
-            <div class="etf-card-row">
-                <span class="etf-label">Change</span>
-                <span class="etf-value ${pctCls}">${_fmtPct(i.pct_change)}</span>
-            </div>
-            <div class="etf-card-row">
-                <span class="etf-label">NAV</span>
-                <span class="etf-value">${_fmtNum(i.nav_value)}</span>
-            </div>
-            <div class="etf-card-row">
-                <span class="etf-label">Prem/Disc</span>
-                <span class="etf-value ${pdCls}">${pdLabel}</span>
-            </div>
-            <div class="etf-card-footer">Click for holdings</div>
-        </div>`;
-    }).join('');
+function _pdLabel(val) {
+    if (val == null) return '—';
+    const n = parseFloat(val);
+    if (isNaN(n)) return '—';
+    return (n >= 0 ? '+' : '') + (n * 100).toFixed(2) + '%';
+}
+function _pdClass(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '';
+    return n >= 0 ? 'prem-positive' : 'prem-negative';
+}
+function _pctClass(val) {
+    const n = parseFloat(val);
+    if (isNaN(n)) return '';
+    return n >= 0 ? 'etf-pos' : 'etf-neg';
+}
+function _liquidityLabel(valueTradedEGP) {
+    const v = parseFloat(valueTradedEGP);
+    if (isNaN(v) || v <= 0) return '<span class="etf-liquidity liq-low">Low</span>';
+    if (v >= 5_000_000) return '<span class="etf-liquidity liq-high">High</span>';
+    if (v >= 500_000)   return '<span class="etf-liquidity liq-med">Med</span>';
+    return '<span class="etf-liquidity liq-low">Low</span>';
+}
+function _typeBadge(type) {
+    const map = {
+        'ETF':              ['badge-etf',  'ETF'],
+        'GOLD_ETP':         ['badge-gold', 'Gold ETP'],
+        'INDEX_TRACKER':    ['badge-tracker','Tracker'],
+        'STRUCTURED_NOTE':  ['badge-note', 'Note'],
+        'ETN':              ['badge-etp',  'ETN'],
+        'COMMODITY_ETP':    ['badge-gold', 'Commodity'],
+        'ETP':              ['badge-etp',  'ETP'],
+        'UNKNOWN_ETP':      ['badge-etp',  'ETP'],
+        'EQUITY_FUND':      ['badge-fund', 'Fund'],
+    };
+    const [cls, label] = map[type] || ['badge-etp', type || 'ETP'];
+    return `<span class="etf-type-badge ${cls}">${label}</span>`;
+}
+function _etfClassify(i) {
+    if (!i.region || !i.region.includes('EGX')) return 'global-etfs';
+    if (i.type === 'ETF') return 'etfs';
+    if (_ETP_TYPES.has(i.type)) return 'etps';
+    if (i.type === 'EQUITY_FUND') return 'equity-funds';
+    return 'etps';
 }
 
-function renderGlobalEtfs(globalInstruments, allInstruments) {
-    const tbody = document.getElementById('etfGlobalBody');
-    const badge = document.getElementById('etfGlobalBadge');
-    if (!tbody) return;
+async function loadEtfTab() {
+    if (etfLoaded) return;
+    etfLoaded = true;
+    try {
+        const instruments = await fetch('/api/etf/instruments').then(r => r.json());
+        _etfAllInstruments = instruments;
 
-    // Country exposure is loaded separately; if no global instruments use all non-local
-    const instruments = globalInstruments.length ? globalInstruments : allInstruments.filter(i => !i.region || !i.region.includes('EGX'));
+        const loading = document.getElementById('etfMainLoading');
+        if (loading) loading.style.display = 'none';
+
+        // Classify
+        const groups = { 'etfs': [], 'etps': [], 'equity-funds': [], 'global-etfs': [] };
+        instruments.forEach(i => { const g = _etfClassify(i); if (groups[g]) groups[g].push(i); });
+
+        // Update badges
+        Object.entries(groups).forEach(([key, arr]) => {
+            const el = document.getElementById('badge-' + key);
+            if (el) el.textContent = arr.length;
+        });
+
+        // Render the active sub-panel
+        Object.entries(groups).forEach(([key, arr]) => _etfRenderGroup(key, arr));
+
+        // Wire up sub-nav clicks
+        document.querySelectorAll('.etf-subnav-btn').forEach(btn => {
+            btn.addEventListener('click', () => _etfSwitchSub(btn.dataset.etfsub));
+        });
+
+        // Wire up view-toggle clicks
+        document.querySelectorAll('.etf-view-btn').forEach(btn => {
+            btn.addEventListener('click', () => _etfToggleView(btn.dataset.view));
+        });
+
+        // Wire up search
+        const searchEl = document.getElementById('etfSearchInput');
+        if (searchEl) searchEl.addEventListener('input', _etfApplyFilter);
+
+    } catch (err) {
+        const el = document.getElementById('etfMainLoading');
+        if (el) el.textContent = 'Could not load fund data.';
+    }
+}
+
+function _etfRenderGroup(key, instruments) {
+    const panel = document.getElementById('etfPanel-' + key);
+    if (!panel) return;
+    if (key === 'equity-funds') return; // static coming-soon HTML set in index.html
 
     if (!instruments.length) {
-        tbody.innerHTML = '<tr><td colspan="8" class="etf-table-empty">No global ETF data yet</td></tr>';
+        panel.innerHTML = `<div class="etf-empty-state">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
+            <p>No data yet</p><span>Data is collected automatically after market close</span></div>`;
         return;
     }
-    if (badge) { badge.textContent = instruments.length; badge.style.display = 'inline-block'; }
 
-    tbody.innerHTML = instruments.map(i => {
-        const pct  = parseFloat(i.pct_change);
-        const pctCls = isNaN(pct) ? '' : pct >= 0 ? 'etf-pos' : 'etf-neg';
-        const pd   = parseFloat(i.premium_discount);
-        const pdCls  = isNaN(pd) ? '' : pd >= 0 ? 'prem-positive' : 'prem-negative';
-        const pdLabel = isNaN(pd) ? '—' : (pd >= 0 ? '+' : '') + (pd * 100).toFixed(2) + '%';
-        return `<tr>
-            <td><strong>${i.symbol}</strong></td>
-            <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${i.name || ''}">${i.name || '—'}</td>
-            <td>${i.exchange || '—'}</td>
-            <td>${i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—'}</td>
-            <td>${_fmtNum(i.close_price || i.last_price)}</td>
-            <td class="${pctCls}">${_fmtPct(i.pct_change)}</td>
-            <td>${_fmtNum(i.nav_value)}</td>
-            <td class="${pdCls}">${pdLabel}</td>
-        </tr>`;
-    }).join('');
+    panel.innerHTML = `
+        <div id="etfGrid-${key}" class="etf-grid">${instruments.map(i => _etfBuildCard(i, key)).join('')}</div>
+        <div id="etfTable-${key}" class="etf-table-wrap" style="display:none">
+            ${_etfBuildTable(instruments, key)}
+        </div>`;
+}
+
+function _etfBuildCard(i, group) {
+    const price = _fmtNum(i.close_price || i.last_price);
+    const pct   = _fmtPct(i.pct_change);
+    const pctCls = _pctClass(i.pct_change);
+
+    if (group === 'global-etfs') {
+        const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
+        return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+            <div class="etf-card-header">
+                <div class="etf-card-symbol-row">
+                    <span class="etf-symbol">${i.symbol}</span>
+                    ${_typeBadge('ETF')}
+                </div>
+                <span class="etf-exchange">${i.exchange || ''}</span>
+            </div>
+            <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
+            <div class="etf-card-row"><span class="etf-label">Egypt Exposure</span><span class="etf-value">${egyptPct}</span></div>
+            <div class="etf-card-row"><span class="etf-label">Price</span><span class="etf-value">${price}</span></div>
+            <div class="etf-card-row"><span class="etf-label">Change</span><span class="etf-value ${pctCls}">${pct}</span></div>
+            <div class="etf-card-row"><span class="etf-label">NAV</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
+            <div class="etf-card-row"><span class="etf-label">Prem/Disc</span><span class="etf-value ${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</span></div>
+            <div class="etf-card-actions"><button class="etf-action-btn" onclick="event.stopPropagation();showEtfHoldings('${i.symbol}')">Holdings</button></div>
+        </div>`;
+    }
+
+    if (group === 'etps') {
+        const underlying = i.underlying_index || '—';
+        const issuer = i.issuer || '—';
+        return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+            <div class="etf-card-header">
+                <div class="etf-card-symbol-row">
+                    <span class="etf-symbol">${i.symbol}</span>
+                    ${_typeBadge(i.type)}
+                </div>
+            </div>
+            <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
+            <div class="etf-card-issuer">Issuer: ${issuer}</div>
+            <div class="etf-card-row"><span class="etf-label">Price</span><span class="etf-value">${price}</span></div>
+            <div class="etf-card-row"><span class="etf-label">Change</span><span class="etf-value ${pctCls}">${pct}</span></div>
+            <div class="etf-card-row"><span class="etf-label">Underlying</span><span class="etf-value">${underlying}</span></div>
+            <div class="etf-card-row"><span class="etf-label">Liquidity</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
+        </div>`;
+    }
+
+    // Default: ETF card
+    return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+        <div class="etf-card-header">
+            <div class="etf-card-symbol-row">
+                <span class="etf-symbol">${i.symbol}</span>
+                ${_typeBadge('ETF')}
+            </div>
+            <span class="etf-exchange">${i.exchange || ''}</span>
+        </div>
+        <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
+        <div class="etf-card-row"><span class="etf-label">Price</span><span class="etf-value">${price}</span></div>
+        <div class="etf-card-row"><span class="etf-label">Change</span><span class="etf-value ${pctCls}">${pct}</span></div>
+        <div class="etf-card-row"><span class="etf-label">NAV</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
+        <div class="etf-card-row"><span class="etf-label">Prem/Disc</span><span class="etf-value ${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</span></div>
+        <div class="etf-card-row"><span class="etf-label">Liquidity</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
+        <div class="etf-card-actions"><button class="etf-action-btn" onclick="event.stopPropagation();showEtfHoldings('${i.symbol}')">Holdings</button></div>
+    </div>`;
+}
+
+function _etfBuildTable(instruments, group) {
+    let headers, rowFn;
+    if (group === 'global-etfs') {
+        headers = ['Symbol','Name','Exchange','Egypt %','Price','Change %','NAV','Prem/Disc'];
+        rowFn = i => {
+            const pct = _fmtPct(i.pct_change);
+            const pctCls = _pctClass(i.pct_change);
+            const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
+            return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
+                <td><strong>${i.symbol}</strong></td>
+                <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${i.name||''}">${i.name||'—'}</td>
+                <td class="cell-muted">${i.exchange||'—'}</td>
+                <td>${egyptPct}</td>
+                <td>${_fmtNum(i.close_price||i.last_price)}</td>
+                <td class="${pctCls}">${pct}</td>
+                <td>${_fmtNum(i.nav_value)}</td>
+                <td class="${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</td>
+            </tr>`;
+        };
+    } else if (group === 'etps') {
+        headers = ['Symbol','Name','Issuer','Underlying','Price','Change %','Liquidity'];
+        rowFn = i => {
+            const pctCls = _pctClass(i.pct_change);
+            return `<tr>
+                <td><strong>${i.symbol}</strong> ${_typeBadge(i.type)}</td>
+                <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${i.name||''}">${i.name||'—'}</td>
+                <td class="cell-muted">${i.issuer||'—'}</td>
+                <td class="cell-muted">${i.underlying_index||'—'}</td>
+                <td>${_fmtNum(i.close_price||i.last_price)}</td>
+                <td class="${pctCls}">${_fmtPct(i.pct_change)}</td>
+                <td>${_liquidityLabel(i.value_traded)}</td>
+            </tr>`;
+        };
+    } else {
+        headers = ['Symbol','Name','Exchange','Price','Change %','NAV','Prem/Disc','Liquidity'];
+        rowFn = i => {
+            const pctCls = _pctClass(i.pct_change);
+            return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
+                <td><strong>${i.symbol}</strong></td>
+                <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${i.name||''}">${i.name||'—'}</td>
+                <td class="cell-muted">${i.exchange||'—'}</td>
+                <td>${_fmtNum(i.close_price||i.last_price)}</td>
+                <td class="${pctCls}">${_fmtPct(i.pct_change)}</td>
+                <td>${_fmtNum(i.nav_value)}</td>
+                <td class="${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</td>
+                <td>${_liquidityLabel(i.value_traded)}</td>
+            </tr>`;
+        };
+    }
+    return `<table class="etf-data-table">
+        <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${instruments.map(rowFn).join('')}</tbody>
+    </table>`;
+}
+
+function _etfSwitchSub(key) {
+    _etfCurrentSub = key;
+    document.querySelectorAll('.etf-subnav-btn').forEach(btn => {
+        const active = btn.dataset.etfsub === key;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-selected', active);
+    });
+    document.querySelectorAll('.etf-subpanel').forEach(p => p.style.display = 'none');
+    const panel = document.getElementById('etfPanel-' + key);
+    if (panel) panel.style.display = '';
+    _etfApplyFilter();
+}
+
+function _etfToggleView(mode) {
+    _etfCurrentView = mode;
+    document.querySelectorAll('.etf-view-btn').forEach(btn =>
+        btn.classList.toggle('active', btn.dataset.view === mode));
+    ['etfs','etps','global-etfs'].forEach(key => {
+        const grid = document.getElementById('etfGrid-' + key);
+        const table = document.getElementById('etfTable-' + key);
+        if (grid)  grid.style.display  = mode === 'grid'  ? '' : 'none';
+        if (table) table.style.display = mode === 'table' ? '' : 'none';
+    });
+}
+
+function _etfApplyFilter() {
+    const q = (document.getElementById('etfSearchInput')?.value || '').toLowerCase().trim();
+    const key = _etfCurrentSub;
+    if (key === 'equity-funds') return;
+
+    const instruments = _etfAllInstruments.filter(i => {
+        if (_etfClassify(i) !== key) return false;
+        if (!q) return true;
+        return (i.symbol||'').toLowerCase().includes(q) || (i.name||'').toLowerCase().includes(q) || (i.issuer||'').toLowerCase().includes(q);
+    });
+
+    const panel = document.getElementById('etfPanel-' + key);
+    if (!panel) return;
+
+    const gridEl = document.getElementById('etfGrid-' + key);
+    const tableEl = document.getElementById('etfTable-' + key);
+
+    if (!instruments.length) {
+        if (gridEl) gridEl.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:20px 0;">${q ? 'No results for "' + q + '"' : 'No data yet'}</div>`;
+        if (tableEl) tableEl.innerHTML = '';
+        return;
+    }
+
+    if (gridEl) gridEl.innerHTML = instruments.map(i => _etfBuildCard(i, key)).join('');
+    if (tableEl) tableEl.innerHTML = _etfBuildTable(instruments, key);
 }
 
 async function showEtfHoldings(symbol) {
