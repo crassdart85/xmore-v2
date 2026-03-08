@@ -1377,7 +1377,7 @@ async function loadGlobalSnapshotBar() {
         const response = await fetch('/api/performance-v2/summary');
         const data = await response.json();
         if (!data || !data.available) {
-            el.innerHTML = `<div class="global-snapshot-empty">${t('noPerformance')}</div>`;
+            el.style.display = 'none';
             return;
         }
 
