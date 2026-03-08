@@ -157,7 +157,7 @@ def get_or_create_instrument(conn, symbol: str, exchange: str, defaults: Optiona
             RETURNING instrument_id
         """, (type_, region, symbol, isin, name, exchange, currency, country, issuer, underlying_index, today))
         row = cur.fetchone()
-        return row[0] if row else None
+        return row['instrument_id'] if row else None
     else:
         cur.execute(f"""
             INSERT OR IGNORE INTO instrument
