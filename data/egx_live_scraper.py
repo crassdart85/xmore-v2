@@ -1,27 +1,17 @@
 """
 EGX Live Data Scraper
 
-Fetches real-time stock data from the Egyptian Exchange live feed at
-http://41.33.162.236/egs4/ which provides 200+ stocks with bid/ask/volume.
+Primary source: TradingView Scanner API (https://scanner.tradingview.com/egypt/scan)
+  — Returns 250+ EGX stocks with 15-minute delayed OHLCV data.
+  — Plain JSON, no JS rendering needed.
 
-Primary EGX data source with yfinance fallback.
+Backup source: http://41.33.162.236/egs4/
+  — HTML table with bid/ask/volume, but unreliable and may have column-mapping issues.
 
-Column Mapping (Arabic → English):
-    الإسم_المختصر → name_ar
-    أخر_سعر → last_price
-    إغلاق → close
-    إقفال_سابق → prev_close
-    التغير → change
-    %التغيير → change_pct
-    أعلى → high (intraday)
-    الأدنى → low (intraday)
-    الاعلى → high_52w (52-week high)
-    الادنى → low_52w (52-week low)
-    العرض → bid
-    الطلب → ask
-    حجم_التداول → volume
+fetch_egx_live() tries TradingView first, falls back to 41.33.162.236 on failure.
 """
 
+import json
 import requests
 import pandas as pd
 import numpy as np
@@ -32,7 +22,18 @@ from io import StringIO
 
 logger = logging.getLogger(__name__)
 
-# EGX Live Feed URL
+# Primary: TradingView Scanner API
+_TV_SCAN_URL = 'https://scanner.tradingview.com/egypt/scan'
+_TV_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'application/json',
+    'Origin': 'https://www.tradingview.com',
+    'Referer': 'https://www.tradingview.com/',
+    'Content-Type': 'application/json',
+}
+_TV_COLUMNS = ['name', 'close', 'open', 'high', 'low', 'volume', 'change', 'description']
+
+# Backup: EGX Live Feed URL
 EGX_LIVE_URL = "http://41.33.162.236/egs4/"
 
 # Arabic column header → English field name mapping
@@ -103,19 +104,116 @@ def _safe_float(val, default=0.0):
         return default
 
 
+def fetch_egx_tradingview(timeout=20):
+    """
+    Fetch EGX stock data from TradingView Scanner API.
+
+    Returns a DataFrame in the same format as fetch_egx_live_backup(),
+    with columns: ticker, close, open, high, low, volume, change_pct, name_en, date, source.
+    Returns None on any failure.
+    """
+    payload = {
+        'filter': [{'left': 'exchange', 'operation': 'equal', 'right': 'EGX'}],
+        'columns': _TV_COLUMNS,
+        'sort': {'sortBy': 'volume', 'sortOrder': 'desc'},
+        'range': [0, 500],
+    }
+    try:
+        resp = requests.post(_TV_SCAN_URL, headers=_TV_HEADERS, json=payload, timeout=timeout)
+        resp.raise_for_status()
+        data = resp.json().get('data', [])
+        if not data:
+            logger.warning('[egx_tradingview] Empty response from TradingView Scanner')
+            return None
+
+        rows = []
+        today = datetime.now().strftime('%Y-%m-%d')
+        for item in data:
+            d = item.get('d', [])
+            if len(d) < 6:
+                continue
+            ticker = d[0]  # e.g. 'COMI'
+            close  = d[1]
+            open_  = d[2]
+            high   = d[3]
+            low    = d[4]
+            volume = d[5]
+            change_pct = d[6] if len(d) > 6 else None
+            name_en    = d[7] if len(d) > 7 else ''
+            if close is None or close == 0:
+                continue
+            rows.append({
+                'ticker':     ticker,
+                'close':      float(close),
+                'open':       float(open_) if open_ else float(close),
+                'high':       float(high)  if high  else float(close),
+                'low':        float(low)   if low   else float(close),
+                'volume':     int(volume)  if volume else 0,
+                'change_pct': float(change_pct) if change_pct is not None else 0.0,
+                'name_en':    str(name_en),
+                'date':       today,
+                'source':     'tradingview',
+            })
+
+        if not rows:
+            logger.warning('[egx_tradingview] No valid rows after parsing')
+            return None
+
+        df = pd.DataFrame(rows)
+        logger.info('[egx_tradingview] Fetched %d EGX stocks from TradingView', len(df))
+        return df
+
+    except Exception as exc:
+        logger.warning('[egx_tradingview] Failed: %s', exc)
+        return None
+
+
+def _tradingview_to_prices_schema(df):
+    """Convert TradingView DataFrame to prices schema records."""
+    records = []
+    for _, row in df.iterrows():
+        ticker = str(row['ticker']).strip()
+        if not ticker:
+            continue
+        symbol = f"{ticker}.CA" if not ticker.endswith('.CA') else ticker
+        records.append({
+            'symbol': symbol,
+            'date':   row['date'],
+            'open':   row['open'],
+            'high':   row['high'],
+            'low':    row['low'],
+            'close':  row['close'],
+            'volume': row['volume'],
+        })
+    return pd.DataFrame(records)
+
+
 def fetch_egx_live(timeout=30):
     """
-    Fetch and parse the EGX live feed HTML table.
+    Fetch EGX stock data.
+
+    Tries TradingView Scanner API first (primary — reliable, JSON, 250+ stocks).
+    Falls back to http://41.33.162.236/egs4/ HTML table on failure.
 
     Returns:
-        pd.DataFrame: DataFrame with columns mapped to English names,
-                      filtered for active stocks, with derived fields calculated.
-
+        pd.DataFrame: DataFrame with stock data (columns vary by source).
     Raises:
-        requests.RequestException: If the HTTP request fails.
-        ValueError: If no valid data is found in the response.
+        ValueError: If both sources fail.
     """
-    logger.info(f"Fetching EGX live data from {EGX_LIVE_URL}")
+    # --- Primary: TradingView ---
+    tv_df = fetch_egx_tradingview(timeout=20)
+    if tv_df is not None and len(tv_df) > 0:
+        return tv_df
+
+    logger.warning('[egx_live] TradingView failed, falling back to 41.33.162.236')
+
+    # --- Backup: 41.33.162.236 HTML table ---
+    return _fetch_egx_backup(timeout=timeout)
+
+
+def _fetch_egx_backup(timeout=30):
+    """Fetch EGX data from backup source 41.33.162.236."""
+    logger.info(f"Fetching EGX backup data from {EGX_LIVE_URL}")
 
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -136,10 +234,10 @@ def fetch_egx_live(timeout=30):
         tables = pd.read_html(StringIO(html_content), encoding='utf-8')
     except Exception as e:
         logger.error(f"Failed to parse HTML tables: {e}")
-        raise ValueError(f"No tables found in EGX live feed response: {e}")
+        raise ValueError(f"No tables found in EGX backup feed response: {e}")
 
     if not tables:
-        raise ValueError("No tables found in EGX live feed response")
+        raise ValueError("No tables found in EGX backup feed response")
 
     # Use the largest table (the main stock table)
     df = max(tables, key=len)
@@ -156,9 +254,9 @@ def fetch_egx_live(timeout=30):
 
     # Add metadata
     df['date'] = datetime.now().strftime('%Y-%m-%d')
-    df['source'] = 'egx_live'
+    df['source'] = 'egx_backup'
 
-    logger.info(f"EGX live feed: {len(df)} active stocks processed")
+    logger.info(f"EGX backup feed: {len(df)} active stocks processed")
     logger.info(f"EGX columns mapped: {list(df.columns)}")
     return df
 
@@ -251,15 +349,16 @@ def _calculate_derived_fields(df):
 
 def egx_to_prices_schema(df):
     """
-    Convert EGX live feed DataFrame to match the prices table schema.
+    Convert EGX DataFrame (from either TradingView or backup source) to prices schema.
     Schema: symbol, date, open, high, low, close, volume
-
-    Since the live feed doesn't provide 'open', we use prev_close as proxy.
     """
-    records = []
+    # TradingView data already has the right columns — convert directly
+    if 'source' in df.columns and df['source'].iloc[0] == 'tradingview':
+        return _tradingview_to_prices_schema(df)
 
+    # Backup (41.33.162.236) data — uses Arabic-mapped columns
+    records = []
     for _, row in df.iterrows():
-        # Build symbol — use ticker if available, else derive from name
         symbol = None
         if 'ticker' in df.columns and pd.notna(row.get('ticker')):
             ticker = str(row['ticker']).strip()
@@ -267,8 +366,6 @@ def egx_to_prices_schema(df):
                 symbol = f"{ticker}.CA" if not ticker.endswith('.CA') else ticker
 
         if not symbol and 'name_ar' in df.columns:
-            # Fallback: use name_ar as symbol if it looks like a short EGX ticker
-            # (EGX tickers are typically 2-6 char Arabic abbreviations)
             raw = str(row.get('name_ar', '')).strip()
             if raw and len(raw) <= 10:
                 symbol = f"{raw}.CA" if not raw.endswith('.CA') else raw
@@ -278,15 +375,14 @@ def egx_to_prices_schema(df):
 
         record = {
             'symbol': symbol,
-            'date': row.get('date', datetime.now().strftime('%Y-%m-%d')),
-            'open': row.get('prev_close', row.get('close', 0)),  # Use prev_close as proxy for open
-            'high': row.get('high', row.get('close', 0)),
-            'low': row.get('low', row.get('close', 0)),
-            'close': row.get('close', row.get('last_price', 0)),
+            'date':   row.get('date', datetime.now().strftime('%Y-%m-%d')),
+            'open':   row.get('prev_close', row.get('close', 0)),
+            'high':   row.get('high', row.get('close', 0)),
+            'low':    row.get('low', row.get('close', 0)),
+            'close':  row.get('close', row.get('last_price', 0)),
             'volume': int(row.get('volume', 0)),
         }
 
-        # Skip if no meaningful price data
         if record['close'] == 0:
             continue
 
@@ -324,7 +420,7 @@ def get_egx_names(df=None):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    print("🏛️  Fetching EGX live data...")
+    print("Fetching EGX live data (TradingView primary / 41.33.162.236 backup)...")
 
     try:
         df = fetch_egx_live()
