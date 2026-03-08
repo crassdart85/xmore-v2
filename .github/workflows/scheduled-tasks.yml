@@ -341,24 +341,26 @@ jobs:
         run: pip install -r requirements.txt
       - name: Initialize database schema
         run: python -c "from database import create_tables; create_tables()"
-      - name: Scrape EGX ETF daily tape
-        continue-on-error: true
-        run: python -m engines.etf_egx_tape
-      - name: Scrape EGX ETF NAV
-        continue-on-error: true
-        run: python -m engines.etf_egx_nav
-      - name: Scrape EGX ETF holdings
-        continue-on-error: true
-        run: python -m engines.etf_egx_holdings
-      - name: Scrape EGX ETF fund volume
-        continue-on-error: true
-        run: python -m engines.etf_egx_fund_volume
-      - name: Compute ETF premium/discount
-        continue-on-error: true
-        run: python -m engines.etf_premium_discount
+      # Mubasher first — reliable server-side rendered page, fast
       - name: Scrape EGX funds from Mubasher (statistics page)
         continue-on-error: true
         run: python -m engines.etf_egx_mubasher
+      # EGX.com.eg scrapers — may be slow/blocked; capped at 5 min each
+      - name: Scrape EGX ETF daily tape
+        continue-on-error: true
+        run: timeout 300 python -m engines.etf_egx_tape || true
+      - name: Scrape EGX ETF NAV
+        continue-on-error: true
+        run: timeout 300 python -m engines.etf_egx_nav || true
+      - name: Scrape EGX ETF holdings
+        continue-on-error: true
+        run: timeout 300 python -m engines.etf_egx_holdings || true
+      - name: Scrape EGX ETF fund volume
+        continue-on-error: true
+        run: timeout 300 python -m engines.etf_egx_fund_volume || true
+      - name: Compute ETF premium/discount
+        continue-on-error: true
+        run: timeout 120 python -m engines.etf_premium_discount || true
 
   # ─────────────────────────────────────
   # ETF Job 2: Global prices night run (23:30 Cairo = 21:30 UTC)
