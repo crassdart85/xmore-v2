@@ -354,7 +354,11 @@ jobs:
         continue-on-error: true
         run: python -m engines.etf_egx_fund_volume
       - name: Compute ETF premium/discount
+        continue-on-error: true
         run: python -m engines.etf_premium_discount
+      - name: Scrape EGX funds from Mubasher (statistics page)
+        continue-on-error: true
+        run: python -m engines.etf_egx_mubasher
 
   # ─────────────────────────────────────
   # ETF Job 2: Global prices night run (23:30 Cairo = 21:30 UTC)
