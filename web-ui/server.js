@@ -629,6 +629,41 @@ app.get('/api/risk/overview', (req, res) => {
 });
 
 // ============================================
+// DERIVATIVES MODULE INTEGRATION — proxy to FastAPI worker
+// ============================================
+const DERIVATIVES_API = process.env.DERIVATIVES_API_URL || 'http://localhost:8001';
+
+app.get('/api/derivatives/brief/:ticker', async (req, res) => {
+  try {
+    const { S = 10, K = 10, T = 1.0, r = 0.05, sigma = 0.20, option_type = 'call' } = req.query;
+    const url = `${DERIVATIVES_API}/brief/${req.params.ticker}?S=${S}&K=${K}&T=${T}&r=${r}&sigma=${sigma}&option_type=${option_type}`;
+    const upstream = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!upstream.ok) return res.status(upstream.status).json({ error: 'Pricing service error' });
+    const data = await upstream.json();
+    res.json(data);
+  } catch (err) {
+    res.status(503).json({ error: 'Derivatives service unavailable', detail: err.message });
+  }
+});
+
+app.post('/api/derivatives/price', async (req, res) => {
+  try {
+    const endpoint = req.query.type || 'bsm';  // bsm | binomial | asian | barrier
+    const url = `${DERIVATIVES_API}/price/${endpoint}`;
+    const upstream = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req.body),
+      signal: AbortSignal.timeout(30000),
+    });
+    const data = await upstream.json();
+    res.status(upstream.status).json(data);
+  } catch (err) {
+    res.status(503).json({ error: 'Derivatives service unavailable', detail: err.message });
+  }
+});
+
+// ============================================
 // FRONTEND ROUTE
 // ============================================
 app.get('/admin', (req, res) => {

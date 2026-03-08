@@ -16,6 +16,16 @@ services:
       - key: ADMIN_SECRET
         generateValue: true
 
+  # Derivatives Pricing API (Python/FastAPI worker)
+  - type: web
+    name: xmore-derivatives-api
+    env: python
+    buildCommand: pip install -r derivatives_api/requirements.txt -r requirements.txt
+    startCommand: uvicorn derivatives_api.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+
   # Note: Scheduled tasks run via GitHub Actions (.github/workflows/scheduled-tasks.yml)
 
 databases:

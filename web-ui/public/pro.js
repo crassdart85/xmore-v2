@@ -381,6 +381,89 @@ async function loadMacroBrief() {
 loadMacroBrief();
 setInterval(loadMacroBrief, 60 * 60 * 1000);
 
+// ── Derivatives Brief ────────────────────────────────────────────────
+async function loadDerivativesBrief() {
+  const ticker   = document.getElementById('derivTicker').value.trim() || 'COMI.CA';
+  const spotEl   = document.getElementById('derivSpot');
+  const strikeEl = document.getElementById('derivStrike');
+  const T        = parseFloat(document.getElementById('derivExpiry').value);
+
+  // Auto-fill spot from live prices if empty
+  let S = parseFloat(spotEl.value);
+  let K = parseFloat(strikeEl.value);
+
+  if (!S || isNaN(S)) {
+    // Try to get from live stats
+    try {
+      const r = await fetch('/api/stocks');
+      const stocks = await r.json();
+      const match = stocks.find(s => s.ticker === ticker || s.symbol === ticker);
+      if (match && match.close_price) {
+        S = parseFloat(match.close_price);
+        spotEl.value = S.toFixed(2);
+      }
+    } catch (_) {}
+    if (!S || isNaN(S)) S = 10.0;
+  }
+  if (!K || isNaN(K)) {
+    K = S;  // ATM by default
+    strikeEl.value = S.toFixed(2);
+  }
+
+  const loading  = document.getElementById('derivLoading');
+  const narEl    = document.getElementById('derivNarrative');
+  const metrEl   = document.getElementById('derivMetrics');
+
+  loading.style.display = '';
+  narEl.innerHTML = '';
+  metrEl.innerHTML = '';
+
+  try {
+    const params = new URLSearchParams({ S, K, T, r: 0.085, sigma: 0.25, option_type: 'call' });
+    const res = await fetch(`/api/derivatives/brief/${encodeURIComponent(ticker)}?${params}`);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      narEl.innerHTML = `<span class="deriv-error">Pricing service unavailable \u2014 ${err.error || res.status}</span>`;
+      return;
+    }
+
+    const data = await res.json();
+    narEl.innerHTML = `<p class="deriv-narrative-text">${data.narrative}</p>`;
+
+    const m = data.metrics || {};
+    const cards = [
+      { label: 'Call Price',   value: fmt2(m.call_price),  unit: 'EGP' },
+      { label: 'Put Price',    value: fmt2(m.put_price),   unit: 'EGP' },
+      { label: 'Straddle',     value: fmt2(m.straddle),    unit: 'EGP' },
+      { label: 'Delta',        value: fmt3(m.delta),       unit: '\u0394' },
+      { label: 'Gamma',        value: fmt4(m.gamma),       unit: '\u0393' },
+      { label: 'Theta / day',  value: fmt2(m.theta),       unit: 'EGP' },
+      { label: 'Vega / 1%',    value: fmt2(m.vega),        unit: 'EGP' },
+      { label: 'IV used',      value: pct1(m.sigma_used),  unit: '' },
+    ];
+
+    metrEl.innerHTML = cards.map(c => `
+      <div class="deriv-metric-card">
+        <div class="deriv-metric-label">${c.label}</div>
+        <div class="deriv-metric-value">${c.value} <span class="deriv-metric-unit">${c.unit}</span></div>
+      </div>`).join('');
+
+  } catch (err) {
+    narEl.innerHTML = `<span class="deriv-error">Error: ${err.message}</span>`;
+  } finally {
+    loading.style.display = 'none';
+  }
+}
+
+function fmt2(v) { return v != null && !isNaN(v) ? Number(v).toFixed(2) : '\u2014'; }
+function fmt3(v) { return v != null && !isNaN(v) ? Number(v).toFixed(3) : '\u2014'; }
+function fmt4(v) { return v != null && !isNaN(v) ? Number(v).toFixed(4) : '\u2014'; }
+function pct1(v) { return v != null && !isNaN(v) ? (Number(v)*100).toFixed(1)+'%' : '\u2014'; }
+
+// Auto-load derivatives brief on page open
+loadDerivativesBrief();
+
 // ── Portfolio Forecast Performance ───────────────────────────────────────────
 
 let _portfolios    = [];

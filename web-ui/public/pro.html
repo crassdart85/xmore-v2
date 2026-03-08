@@ -199,6 +199,28 @@
     </div>
   </div>
 
+  <!-- Derivatives Brief -->
+  <div class="pro-deriv-panel" id="derivPanel">
+    <div class="pro-panel-title">
+      Derivatives Brief
+      <div class="pro-deriv-controls">
+        <input id="derivTicker" class="pro-deriv-input" placeholder="Ticker e.g. COMI.CA" value="COMI.CA" />
+        <input id="derivSpot"   class="pro-deriv-input pro-deriv-input--sm" placeholder="Spot" type="number" step="0.1" />
+        <input id="derivStrike" class="pro-deriv-input pro-deriv-input--sm" placeholder="Strike" type="number" step="0.1" />
+        <select id="derivExpiry" class="pro-deriv-input pro-deriv-input--sm">
+          <option value="0.0833">1M</option>
+          <option value="0.25">3M</option>
+          <option value="0.5" selected>6M</option>
+          <option value="1.0">1Y</option>
+        </select>
+        <button class="pro-deriv-btn" onclick="loadDerivativesBrief()">Price &#9654;</button>
+      </div>
+    </div>
+    <div id="derivLoading" class="pro-deriv-loading" style="display:none">Pricing&#8230;</div>
+    <div id="derivNarrative" class="pro-deriv-narrative"></div>
+    <div id="derivMetrics" class="pro-deriv-metrics"></div>
+  </div>
+
   <!-- Macro Brief -->
   <div class="pro-macro-panel">
     <div class="pro-panel-title">
