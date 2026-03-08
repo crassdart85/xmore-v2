@@ -13,6 +13,7 @@ Run:
     python -m engines.etf_global_prices --backfill   # fetch last 30 days
 """
 
+import math
 import os
 import sys
 import logging
@@ -27,6 +28,16 @@ from database import create_tables, get_connection, _adapt_sql
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+
+
+def _safe_float(val):
+    """Convert to float, returning None for NaN/None/zero-falsy."""
+    try:
+        f = float(val or 0)
+        return None if (f == 0 or math.isnan(f) or math.isinf(f)) else f
+    except (TypeError, ValueError):
+        return None
+
 
 SOURCE_URL_TEMPLATE = 'https://etfdb.com/etf/{ticker}/'
 YFINANCE_SOURCE = 'https://finance.yahoo.com/quote/{ticker}'
@@ -82,11 +93,11 @@ def _fetch_yfinance_prices(tickers: list, period: str = '3d') -> dict:
                 last = df.iloc[-1]
                 results[ticker] = {
                     'trade_date': df.index[-1].date().isoformat(),
-                    'open':  float(last.get('Open', 0) or 0) or None,
-                    'high':  float(last.get('High', 0) or 0) or None,
-                    'low':   float(last.get('Low', 0) or 0) or None,
-                    'close': float(last.get('Close', 0) or 0) or None,
-                    'volume': float(last.get('Volume', 0) or 0) or None,
+                    'open':  _safe_float(last.get('Open')),
+                    'high':  _safe_float(last.get('High')),
+                    'low':   _safe_float(last.get('Low')),
+                    'close': _safe_float(last.get('Close')),
+                    'volume': _safe_float(last.get('Volume')),
                     'source_url': YFINANCE_SOURCE.format(ticker=ticker),
                 }
         else:
@@ -141,11 +152,11 @@ def _fetch_yfinance_history(tickers: list, days: int = 30) -> dict:
                     for idx, row in sub.iterrows():
                         results[ticker].append({
                             'trade_date': idx.date().isoformat(),
-                            'open':  float(row.get('Open', 0) or 0) or None,
-                            'high':  float(row.get('High', 0) or 0) or None,
-                            'low':   float(row.get('Low', 0) or 0) or None,
-                            'close': float(row.get('Close', 0) or 0) or None,
-                            'volume': float(row.get('Volume', 0) or 0) or None,
+                            'open':  _safe_float(row.get('Open')),
+                            'high':  _safe_float(row.get('High')),
+                            'low':   _safe_float(row.get('Low')),
+                            'close': _safe_float(row.get('Close')),
+                            'volume': _safe_float(row.get('Volume')),
                             'source_url': YFINANCE_SOURCE.format(ticker=ticker),
                         })
                 except Exception:
