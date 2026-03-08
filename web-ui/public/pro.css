@@ -693,3 +693,76 @@ body {
   font-size: 0.72rem;
   font-weight: 400;
 }
+
+/* ============================================================
+   PRO — MOBILE RESPONSIVE (comprehensive)
+   ============================================================ */
+
+@media (max-width: 768px) {
+  /* Header */
+  .pro-header {
+    padding: 8px 14px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pro-logo { font-size: 14px; letter-spacing: 2px; }
+  .pro-market-label { display: none; }
+  .pro-fx-link { display: none; }
+  .pro-date { font-size: 11px; margin-left: auto; }
+
+  /* Stat pills: 2 per row */
+  .pro-stat-row { flex-wrap: wrap; }
+  .pro-stat { flex: 1 1 48%; min-width: 0; padding: 10px 12px; }
+  .pro-stat-val { font-size: 18px; }
+
+  /* EGX section: single column */
+  .pro-egx-section { grid-template-columns: 1fr; }
+  #egx30ChartWidget,
+  #egxIndicesWidget { height: 260px; }
+
+  /* Movers: single column, scrollable tables */
+  .pro-movers-grid { grid-template-columns: 1fr; }
+  .pro-movers-panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* Sector: single column, fix grid columns */
+  .pro-sector-grid { grid-template-columns: 1fr; }
+  .pro-sector-row { grid-template-columns: 110px 1fr 54px; gap: 6px; }
+
+  /* Portfolio KPI strip: wrap */
+  .pro-pf-kpi-row { flex-wrap: wrap; }
+  .pro-pf-kpi { flex: 1 1 48%; min-width: 0; }
+
+  /* Macro content: add side padding */
+  .pro-macro-content { padding: 14px; }
+
+  /* Derivatives controls: stack inputs */
+  .pro-deriv-controls { gap: 6px; }
+  .pro-deriv-input { width: 100%; flex: 1 1 calc(50% - 6px); min-width: 0; }
+  .pro-deriv-input--sm { flex: 1 1 calc(40% - 6px); }
+  .pro-deriv-btn { width: 100%; }
+  .pro-deriv-metrics { grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px 14px; }
+
+  /* Panel titles */
+  .pro-panel-title { padding: 8px 12px; }
+  .pro-table td, .pro-table th { padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+  /* Stats: single column */
+  .pro-stat { flex: 1 1 100%; }
+
+  /* Sector: even tighter */
+  .pro-sector-row { grid-template-columns: 90px 1fr 48px; }
+  .pro-sector-name { font-size: 10px; }
+
+  /* KPI: single column */
+  .pro-pf-kpi { flex: 1 1 100%; }
+
+  /* Derivatives metrics: 2 per row */
+  .pro-deriv-metrics { grid-template-columns: 1fr 1fr; }
+  .pro-deriv-input { flex: 1 1 100%; }
+  .pro-deriv-input--sm { flex: 1 1 calc(50% - 6px); }
+
+  /* Auth modal in pro */
+  .pro-auth-modal { margin: 10px; max-width: calc(100vw - 20px); }
+}

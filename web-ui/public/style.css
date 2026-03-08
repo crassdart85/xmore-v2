@@ -5168,3 +5168,42 @@ button:active, .btn:active, .tab-btn:active {
     .etf-data-table th:nth-child(n+5),
     .etf-data-table td:nth-child(n+5) { display: none; }
 }
+
+/* ============================================================
+   MAIN APP — Mobile fixes (ETF sub-nav + general)
+   ============================================================ */
+
+/* ETF sub-nav: horizontal scroll on small screens */
+@media (max-width: 600px) {
+  .etf-subnav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 3px;
+    gap: 3px;
+  }
+  .etf-subnav::-webkit-scrollbar { display: none; }
+  .etf-subnav-btn {
+    flex: 0 0 auto;
+    font-size: 12px;
+    padding: 6px 12px;
+    min-width: auto;
+  }
+  .etf-toolbar { gap: 8px; }
+  .etf-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+}
+
+@media (max-width: 380px) {
+  .etf-grid { grid-template-columns: 1fr; }
+  .etf-card { padding: 12px; }
+}
+
+/* General main app: prevent horizontal overflow */
+@media (max-width: 480px) {
+  .container { padding: 12px !important; border-radius: 12px; }
+  .tab-content { padding-top: 4px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .stat-card { padding: 14px 10px; }
+  .stat-value { font-size: 1.6em; }
+}
