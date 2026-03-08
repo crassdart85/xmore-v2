@@ -629,37 +629,79 @@ app.get('/api/risk/overview', (req, res) => {
 });
 
 // ============================================
-// DERIVATIVES MODULE INTEGRATION — proxy to FastAPI worker
+// DERIVATIVES — Black-Scholes computed inline (no external service)
 // ============================================
-const DERIVATIVES_API = process.env.DERIVATIVES_API_URL || 'http://localhost:8001';
 
-app.get('/api/derivatives/brief/:ticker', async (req, res) => {
+// Abramowitz & Stegun approximation for standard normal CDF
+function _normCDF(x) {
+  const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+  const sign = x < 0 ? -1 : 1;
+  const t = 1 / (1 + p * Math.abs(x));
+  const poly = t*(a1+t*(a2+t*(a3+t*(a4+t*a5))));
+  return 0.5 * (1 + sign * (1 - poly * Math.exp(-x*x/2)));
+}
+function _normPDF(x) { return Math.exp(-0.5*x*x) / Math.sqrt(2*Math.PI); }
+
+function _bsm(S, K, T, r, sigma, q=0) {
+  const sqrtT = Math.sqrt(T);
+  const d1 = (Math.log(S/K) + (r - q + 0.5*sigma*sigma)*T) / (sigma*sqrtT);
+  const d2 = d1 - sigma*sqrtT;
+  const call = S*Math.exp(-q*T)*_normCDF(d1) - K*Math.exp(-r*T)*_normCDF(d2);
+  const put  = K*Math.exp(-r*T)*_normCDF(-d2) - S*Math.exp(-q*T)*_normCDF(-d1);
+  const delta = Math.exp(-q*T)*_normCDF(d1);
+  const gamma = Math.exp(-q*T)*_normPDF(d1) / (S*sigma*sqrtT);
+  const theta = (-(S*Math.exp(-q*T)*_normPDF(d1)*sigma)/(2*sqrtT) - r*K*Math.exp(-r*T)*_normCDF(d2) + q*S*Math.exp(-q*T)*_normCDF(d1)) / 365;
+  const vega  = S*Math.exp(-q*T)*_normPDF(d1)*sqrtT / 100;  // per 1% vol move
+  const rho   = K*T*Math.exp(-r*T)*_normCDF(d2) / 100;
+  return { call, put, delta, gamma, theta, vega, rho, d1, d2 };
+}
+
+app.get('/api/derivatives/brief/:ticker', (req, res) => {
   try {
-    const { S = 10, K = 10, T = 1.0, r = 0.05, sigma = 0.20, option_type = 'call' } = req.query;
-    const url = `${DERIVATIVES_API}/brief/${req.params.ticker}?S=${S}&K=${K}&T=${T}&r=${r}&sigma=${sigma}&option_type=${option_type}`;
-    const upstream = await fetch(url, { signal: AbortSignal.timeout(35000) });
-    if (!upstream.ok) return res.status(upstream.status).json({ error: 'Pricing service error' });
-    const data = await upstream.json();
-    res.json(data);
+    const ticker = req.params.ticker;
+    const S     = parseFloat(req.query.S)     || 10;
+    const K     = parseFloat(req.query.K)     || S;
+    const T     = parseFloat(req.query.T)     || 0.5;
+    const r     = parseFloat(req.query.r)     || 0.085;
+    const sigma = parseFloat(req.query.sigma) || 0.25;
+
+    if (S <= 0 || K <= 0 || T <= 0 || sigma <= 0)
+      return res.status(422).json({ error: 'Invalid parameters: S, K, T, sigma must be > 0' });
+
+    const g = _bsm(S, K, T, r, sigma);
+    const straddle     = g.call + g.put;
+    const straddlePct  = straddle / S * 100;
+    const deltaDollar  = g.delta * S * 0.01;
+
+    const narrative = `${ticker} \u2014 ATM call trades at EGP ${g.call.toFixed(2)}, put at EGP ${g.put.toFixed(2)}. ` +
+      `Straddle cost ${straddle.toFixed(2)} (${straddlePct.toFixed(1)}% of spot). ` +
+      `Delta ${g.delta.toFixed(2)} \u2014 a 1% spot move gains/loses EGP ${deltaDollar.toFixed(2)}. ` +
+      `Theta bleeds EGP ${Math.abs(g.theta).toFixed(2)}/day. Vol sensitivity EGP ${g.vega.toFixed(2)} per 1% vol move.`;
+
+    res.json({
+      ticker,
+      narrative,
+      metrics: {
+        call_price: g.call, put_price: g.put, straddle, straddle_pct: straddlePct,
+        delta: g.delta, delta_dollar: deltaDollar, gamma: g.gamma,
+        theta: g.theta, vega: g.vega, rho: g.rho,
+        sigma_used: sigma, S, K, T, r,
+      },
+    });
   } catch (err) {
-    res.status(503).json({ error: 'Derivatives service unavailable', detail: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/derivatives/price', async (req, res) => {
+app.post('/api/derivatives/price', (req, res) => {
   try {
-    const endpoint = req.query.type || 'bsm';  // bsm | binomial | asian | barrier
-    const url = `${DERIVATIVES_API}/price/${endpoint}`;
-    const upstream = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body),
-      signal: AbortSignal.timeout(30000),
-    });
-    const data = await upstream.json();
-    res.status(upstream.status).json(data);
+    const { S, K, T, r=0.085, sigma=0.25, option_type='call', q=0 } = req.body;
+    if (!S || !K || !T) return res.status(422).json({ error: 'S, K, T are required' });
+    const g = _bsm(parseFloat(S), parseFloat(K), parseFloat(T), parseFloat(r), parseFloat(sigma), parseFloat(q));
+    const price = option_type === 'put' ? g.put : g.call;
+    res.json({ price, delta: g.delta, gamma: g.gamma, theta: g.theta, vega: g.vega, rho: g.rho, sigma_used: sigma });
   } catch (err) {
-    res.status(503).json({ error: 'Derivatives service unavailable', detail: err.message });
+    res.status(500).json({ error: err.message });
   }
 });
 
