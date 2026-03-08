@@ -39,29 +39,43 @@ EGX_LIVE_URL = "http://41.33.162.236/egs4/"
 COLUMN_MAP = {
     'الإسم المختصر': 'name_ar',
     'الاسم المختصر': 'name_ar',
+    'الإسم': 'name_ar',
+    'الاسم': 'name_ar',
     'أخر سعر': 'last_price',
     'اخر سعر': 'last_price',
     'آخر سعر': 'last_price',
+    'السعر': 'last_price',
     'إغلاق': 'close',
     'اغلاق': 'close',
+    'سعر الإغلاق': 'close',
+    'سعر الاغلاق': 'close',
     'إقفال سابق': 'prev_close',
     'اقفال سابق': 'prev_close',
     'التغير': 'change',
     'التغيير': 'change_pct',
     '%التغيير': 'change_pct',
     'التغيير%': 'change_pct',
+    'نسبة التغيير': 'change_pct',
     'أعلى': 'high',
     'اعلى': 'high',
+    'أعلى سعر': 'high',
     'الأدنى': 'low',
     'الادنى': 'low',
+    'أدنى سعر': 'low',
     'الاعلى': 'high_52w',
     'الادني': 'low_52w',
     'العرض': 'bid',
     'الطلب': 'ask',
     'حجم التداول': 'volume',
     'حجم': 'volume',
+    'الكمية': 'volume',
     'الرمز': 'ticker',
     'رمز': 'ticker',
+    'الكود': 'ticker',
+    'كود': 'ticker',
+    'رمز الورقة': 'ticker',
+    'كود الورقة': 'ticker',
+    'رمز السهم': 'ticker',
 }
 
 
@@ -145,6 +159,7 @@ def fetch_egx_live(timeout=30):
     df['source'] = 'egx_live'
 
     logger.info(f"EGX live feed: {len(df)} active stocks processed")
+    logger.info(f"EGX columns mapped: {list(df.columns)}")
     return df
 
 
@@ -252,8 +267,11 @@ def egx_to_prices_schema(df):
                 symbol = f"{ticker}.CA" if not ticker.endswith('.CA') else ticker
 
         if not symbol and 'name_ar' in df.columns:
-            # We'll skip rows without a ticker — can't map to our system
-            continue
+            # Fallback: use name_ar as symbol if it looks like a short EGX ticker
+            # (EGX tickers are typically 2-6 char Arabic abbreviations)
+            raw = str(row.get('name_ar', '')).strip()
+            if raw and len(raw) <= 10:
+                symbol = f"{raw}.CA" if not raw.endswith('.CA') else raw
 
         if not symbol:
             continue

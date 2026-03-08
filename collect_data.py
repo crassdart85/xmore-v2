@@ -103,7 +103,7 @@ def collect_prices_yfinance(symbols=None):
                     if row.isnull().any():
                         continue
                     cursor.execute(_adapt_sql("""
-                        INSERT OR IGNORE INTO prices
+                        INSERT OR REPLACE INTO prices
                         (symbol, date, open, high, low, close, volume, data_source)
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """), (
@@ -158,7 +158,7 @@ def _store_prices(prices_df, source='egx_live'):
         for _, row in prices_df.iterrows():
             try:
                 cursor.execute(_adapt_sql("""
-                    INSERT OR IGNORE INTO prices
+                    INSERT OR REPLACE INTO prices
                     (symbol, date, open, high, low, close, volume, data_source)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """), (
