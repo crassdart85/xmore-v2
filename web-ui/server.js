@@ -637,7 +637,7 @@ app.get('/api/derivatives/brief/:ticker', async (req, res) => {
   try {
     const { S = 10, K = 10, T = 1.0, r = 0.05, sigma = 0.20, option_type = 'call' } = req.query;
     const url = `${DERIVATIVES_API}/brief/${req.params.ticker}?S=${S}&K=${K}&T=${T}&r=${r}&sigma=${sigma}&option_type=${option_type}`;
-    const upstream = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const upstream = await fetch(url, { signal: AbortSignal.timeout(35000) });
     if (!upstream.ok) return res.status(upstream.status).json({ error: 'Pricing service error' });
     const data = await upstream.json();
     res.json(data);
