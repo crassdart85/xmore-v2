@@ -68,14 +68,59 @@ body {
   letter-spacing: 1px;
 }
 
-.pro-fx-link {
+.pro-fx-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-size: 11px;
+  font-family: 'Courier New', monospace;
   color: var(--pro-muted);
-  text-decoration: none;
-  letter-spacing: 0.5px;
-  transition: color 0.15s;
 }
-.pro-fx-link:hover { color: var(--pro-text); }
+
+.pro-fx-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.pro-fx-pair {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: #444;
+  text-transform: uppercase;
+}
+
+.pro-fx-val {
+  font-size: 12px;
+  color: var(--pro-amber);
+}
+
+.pro-fx-sep {
+  color: #333;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.pro-fx-loading {
+  font-size: 10px;
+  color: #333;
+}
+
+.pro-lang-btn {
+  background: none;
+  border: 1px solid var(--pro-border);
+  color: var(--pro-muted);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.pro-lang-btn:hover { color: var(--pro-text); border-color: var(--pro-muted); }
 
 .pro-date {
   margin-left: auto;
@@ -83,6 +128,17 @@ body {
   font-size: 12px;
   font-family: 'Courier New', monospace;
 }
+
+/* ─── RTL overrides ─────────────────────────────────────────────────────── */
+[dir="rtl"] .pro-back { order: 10; }
+[dir="rtl"] .pro-date { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .pro-sector-row { flex-direction: row-reverse; }
+[dir="rtl"] .pro-stat-label,
+[dir="rtl"] .pro-stat-val,
+[dir="rtl"] .pro-stat-sub { text-align: right; }
+[dir="rtl"] .pro-panel-title { flex-direction: row-reverse; }
+[dir="rtl"] .pro-portfolio-legend { direction: rtl; }
+[dir="rtl"] .pro-pf-cta { direction: rtl; text-align: right; }
 
 /* ─── TradingView ticker ─────────────────────────────────────────────────── */
 #proTicker {
@@ -765,4 +821,10 @@ body {
 
   /* Auth modal in pro */
   .pro-auth-modal { margin: 10px; max-width: calc(100vw - 20px); }
+
+  /* FX strip: compress on small screens */
+  .pro-fx-strip { gap: 5px; }
+  .pro-fx-val { font-size: 10px; }
+  .pro-fx-pair { font-size: 8px; }
+  .pro-fx-sep { display: none; }
 }

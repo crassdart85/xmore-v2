@@ -706,6 +706,39 @@ app.post('/api/derivatives/price', (req, res) => {
 });
 
 // ============================================
+// FX RATES
+// ============================================
+let _fxCache = null, _fxCacheTime = 0;
+app.get('/api/fx-rates', async (req, res) => {
+  const now = Date.now();
+  if (_fxCache && now - _fxCacheTime < 3_600_000) return res.json(_fxCache);
+  try {
+    const https = require('https');
+    const raw = await new Promise((resolve, reject) => {
+      https.get('https://open.er-api.com/v6/latest/USD', (r) => {
+        let body = '';
+        r.on('data', d => body += d);
+        r.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+      }).on('error', reject);
+    });
+    const egp = raw.rates && raw.rates.EGP;
+    const sar = raw.rates && raw.rates.SAR;
+    if (!egp || !sar) throw new Error('Missing EGP/SAR rates');
+    _fxCache = {
+      USD_EGP: +egp.toFixed(2),
+      USD_SAR: +sar.toFixed(4),
+      SAR_EGP: +(egp / sar).toFixed(4),
+      updated: new Date().toISOString(),
+    };
+    _fxCacheTime = now;
+    res.json(_fxCache);
+  } catch (err) {
+    if (_fxCache) return res.json(_fxCache);   // serve stale on error
+    res.status(502).json({ error: err.message });
+  }
+});
+
+// ============================================
 // FRONTEND ROUTE
 // ============================================
 app.get('/admin', (req, res) => {

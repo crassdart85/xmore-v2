@@ -190,9 +190,11 @@ def run() -> int:
                 )
                 price_conflict = (
                     'ON CONFLICT (instrument_id, trade_date) DO UPDATE SET '
+                    'close_price=EXCLUDED.close_price, last_price=EXCLUDED.last_price, '
                     'pct_change=EXCLUDED.pct_change, source_url=EXCLUDED.source_url'
                 ) if is_pg else (
                     'ON CONFLICT(instrument_id, trade_date) DO UPDATE SET '
+                    'close_price=excluded.close_price, last_price=excluded.last_price, '
                     'pct_change=excluded.pct_change, source_url=excluded.source_url'
                 )
 
@@ -207,14 +209,14 @@ def run() -> int:
                         """)
                         cur.execute(sql_nav, (inst_id, trade_date, nav_price, fund.get('date')))
 
-                    # Price table: store pct_change (3-month) as a reference metric
+                    # Price table: store price as close_price/last_price + pct_change
                     sql_price = _adapt_sql(f"""
                         INSERT INTO etf_price_daily
-                          (instrument_id, trade_date, pct_change, source_url)
-                        VALUES ({ph},{ph},{ph},{ph})
+                          (instrument_id, trade_date, close_price, last_price, pct_change, source_url)
+                        VALUES ({ph},{ph},{ph},{ph},{ph},{ph})
                         {price_conflict}
                     """)
-                    cur.execute(sql_price, (inst_id, trade_date, pct_3m, STATS_URL))
+                    cur.execute(sql_price, (inst_id, trade_date, nav_price, nav_price, pct_3m, STATS_URL))
                     upserted += 1
                 except Exception as exc:
                     logger.error('[etf_egx_mubasher] DB insert for %s: %s', symbol, exc)

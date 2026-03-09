@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,17 +10,21 @@
 
   <!-- Header -->
   <header class="pro-header">
-    <a href="/" class="pro-back">← Dashboard</a>
+    <a href="/" class="pro-back" data-i18n="back">← Dashboard</a>
     <span class="pro-logo">XMORE <span class="pro-logo-tag">PRO</span></span>
     <span class="pro-market-label">EGX</span>
-    <a href="https://www.xe.com/currencyconverter/convert/?Amount=1&From=USD&To=EGP"
-       class="pro-fx-link" target="_blank" rel="noopener">USD/EGP ↗</a>
+    <!-- Live FX rates strip -->
+    <div class="pro-fx-strip" id="proFxStrip">
+      <span class="pro-fx-loading">FX…</span>
+    </div>
+    <!-- Language toggle -->
+    <button class="pro-lang-btn" id="proLangBtn" onclick="proToggleLang()">عر</button>
     <span class="pro-date" id="proDate"></span>
     <!-- Auth area -->
     <div class="pro-auth-area">
       <span class="pro-auth-user" id="proAuthUser" style="display:none"></span>
-      <button class="pro-auth-btn" id="proLogoutBtn" style="display:none" onclick="proHandleLogout()">Sign Out</button>
-      <button class="pro-auth-btn pro-auth-btn--primary" id="proLoginBtn" onclick="showProModal()">Sign In</button>
+      <button class="pro-auth-btn" id="proLogoutBtn" style="display:none" onclick="proHandleLogout()" data-i18n="signOut">Sign Out</button>
+      <button class="pro-auth-btn pro-auth-btn--primary" id="proLoginBtn" onclick="showProModal()" data-i18n="signIn">Sign In</button>
     </div>
   </header>
 
@@ -28,18 +32,18 @@
   <div class="pro-modal-overlay" id="proAuthModal" style="display:none" onclick="if(event.target===this)hideProModal()">
     <div class="pro-modal">
       <button class="pro-modal-close" onclick="hideProModal()">&times;</button>
-      <div class="pro-modal-title">Sign in to Xmore</div>
+      <div class="pro-modal-title" data-i18n="modalTitle">Sign in to Xmore</div>
       <div class="pro-modal-tabs">
-        <button class="pro-modal-tab active" id="proTabLogin" onclick="proSwitchTab('login')">Login</button>
-        <button class="pro-modal-tab" id="proTabSignup" onclick="proSwitchTab('signup')">Sign Up</button>
+        <button class="pro-modal-tab active" id="proTabLogin" onclick="proSwitchTab('login')" data-i18n="login">Login</button>
+        <button class="pro-modal-tab" id="proTabSignup" onclick="proSwitchTab('signup')" data-i18n="signUp">Sign Up</button>
       </div>
       <form class="pro-modal-form" id="proAuthForm" onsubmit="proHandleSubmit(event)">
-        <label class="pro-modal-label">Email</label>
+        <label class="pro-modal-label" data-i18n="email">Email</label>
         <input class="pro-modal-input" type="email" id="proAuthEmail" required autocomplete="email" placeholder="you@example.com">
-        <label class="pro-modal-label">Password</label>
+        <label class="pro-modal-label" data-i18n="password">Password</label>
         <input class="pro-modal-input" type="password" id="proAuthPassword" required minlength="8" autocomplete="current-password" placeholder="••••••••">
         <div class="pro-modal-error" id="proAuthError" style="display:none"></div>
-        <button class="pro-modal-submit" id="proAuthSubmit" type="submit">Login</button>
+        <button class="pro-modal-submit" id="proAuthSubmit" type="submit" data-i18n="login">Login</button>
       </form>
     </div>
   </div>
@@ -50,26 +54,26 @@
   <!-- Stat pills row -->
   <div class="pro-stat-row">
     <div class="pro-stat">
-      <span class="pro-stat-label">Tracked</span>
+      <span class="pro-stat-label" data-i18n="tracked">Tracked</span>
       <span class="pro-stat-val" id="statTracked">—</span>
     </div>
     <div class="pro-stat">
-      <span class="pro-stat-label">Up Today</span>
+      <span class="pro-stat-label" data-i18n="upToday">Up Today</span>
       <span class="pro-stat-val green" id="statUp">—</span>
       <span class="pro-stat-sub" id="statUpPct"></span>
     </div>
     <div class="pro-stat">
-      <span class="pro-stat-label">Down Today</span>
+      <span class="pro-stat-label" data-i18n="downToday">Down Today</span>
       <span class="pro-stat-val red" id="statDown">—</span>
       <span class="pro-stat-sub" id="statDownPct"></span>
     </div>
     <div class="pro-stat">
-      <span class="pro-stat-label">Best Agent Win Rate</span>
+      <span class="pro-stat-label" data-i18n="bestWinRate">Best Agent Win Rate</span>
       <span class="pro-stat-val" id="statWinRate">—</span>
       <span class="pro-stat-sub" id="statWinAgent"></span>
     </div>
     <div class="pro-stat">
-      <span class="pro-stat-label">Last Data</span>
+      <span class="pro-stat-label" data-i18n="lastData">Last Data</span>
       <span class="pro-stat-val" id="statLastData">—</span>
     </div>
   </div>
@@ -77,11 +81,11 @@
   <!-- EGX Index Section -->
   <div class="pro-egx-section">
     <div class="pro-egx-chart-panel">
-      <div class="pro-panel-title">EGX 30 — Intraday</div>
+      <div class="pro-panel-title" data-i18n="egx30Title">EGX 30 — Intraday</div>
       <div id="egx30ChartWidget"></div>
     </div>
     <div class="pro-egx-indices-panel">
-      <div class="pro-panel-title">EGX Blue Chips</div>
+      <div class="pro-panel-title" data-i18n="egxBlueChips">EGX Blue Chips</div>
       <div id="egxIndicesWidget"></div>
     </div>
   </div>
@@ -89,30 +93,30 @@
   <!-- Top Gainers / Losers -->
   <div class="pro-movers-grid">
     <div class="pro-movers-panel">
-      <div class="pro-panel-title">Top Gainers</div>
+      <div class="pro-panel-title" data-i18n="topGainers">Top Gainers</div>
       <table class="pro-table" id="gainersTable">
         <thead>
           <tr>
-            <th>Symbol</th>
-            <th>Close</th>
-            <th>Chg%</th>
-            <th>Signal</th>
-            <th>Conf</th>
+            <th data-i18n="colSymbol">Symbol</th>
+            <th data-i18n="colClose">Close</th>
+            <th data-i18n="colChg">Chg%</th>
+            <th data-i18n="colSignal">Signal</th>
+            <th data-i18n="colConf">Conf</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
     <div class="pro-movers-panel">
-      <div class="pro-panel-title">Top Losers</div>
+      <div class="pro-panel-title" data-i18n="topLosers">Top Losers</div>
       <table class="pro-table" id="losersTable">
         <thead>
           <tr>
-            <th>Symbol</th>
-            <th>Close</th>
-            <th>Chg%</th>
-            <th>Signal</th>
-            <th>Conf</th>
+            <th data-i18n="colSymbol">Symbol</th>
+            <th data-i18n="colClose">Close</th>
+            <th data-i18n="colChg">Chg%</th>
+            <th data-i18n="colSignal">Signal</th>
+            <th data-i18n="colConf">Conf</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -122,7 +126,7 @@
 
   <!-- Sector Performance -->
   <div class="pro-sector-panel">
-    <div class="pro-panel-title">Sector Performance</div>
+    <div class="pro-panel-title" data-i18n="sectorPerf">Sector Performance</div>
     <div class="pro-sector-grid" id="sectorGrid">
       <div style="color:#555;font-size:12px;padding:8px 0;">Loading…</div>
     </div>
@@ -131,7 +135,7 @@
   <!-- Portfolio Forecast Performance -->
   <div class="pro-portfolio-panel" id="portfolioPanel">
     <div class="pro-panel-title">
-      My Forecast Portfolio
+      <span data-i18n="myPortfolio">My Forecast Portfolio</span>
       <select id="portfolioSelect" class="pro-select" style="display:none" onchange="onPortfolioChange()"></select>
     </div>
 
@@ -139,12 +143,12 @@
     <div class="pro-pf-state" id="pfStateLogin">
       <div class="pro-pf-cta">
         <div class="pro-pf-cta-icon">📊</div>
-        <div class="pro-pf-cta-title">Track Your Forecast Performance</div>
-        <div class="pro-pf-cta-desc">
+        <div class="pro-pf-cta-title" data-i18n="pfLoginTitle">Track Your Forecast Performance</div>
+        <div class="pro-pf-cta-desc" data-i18n="pfLoginDesc">
           Sign in to see how your AI-generated stock portfolios are performing in real time —
           forecast vs actual return per stock, progress to target date, and agent signals.
         </div>
-        <button class="pro-pf-cta-btn" onclick="showProModal()">Sign In ↗</button>
+        <button class="pro-pf-cta-btn" onclick="showProModal()" data-i18n="signInArrow">Sign In ↗</button>
       </div>
     </div>
 
@@ -152,12 +156,12 @@
     <div class="pro-pf-state" id="pfStateEmpty" style="display:none">
       <div class="pro-pf-cta">
         <div class="pro-pf-cta-icon">📈</div>
-        <div class="pro-pf-cta-title">No Forecast Portfolios Yet</div>
-        <div class="pro-pf-cta-desc">
+        <div class="pro-pf-cta-title" data-i18n="pfEmptyTitle">No Forecast Portfolios Yet</div>
+        <div class="pro-pf-cta-desc" data-i18n="pfEmptyDesc">
           Create a forecast portfolio on the main dashboard to start tracking AI prediction
           accuracy against live EGX price movements.
         </div>
-        <a href="/" class="pro-pf-cta-btn">Create Portfolio ↗</a>
+        <a href="/" class="pro-pf-cta-btn" data-i18n="createPortfolio">Create Portfolio ↗</a>
       </div>
     </div>
 
@@ -174,9 +178,9 @@
           <canvas id="portfolioChart"></canvas>
         </div>
         <div class="pro-portfolio-legend">
-          <span class="pro-legend-dot" style="background:#667eea"></span> Forecast
-          <span class="pro-legend-dot" style="background:#00c853;margin-left:14px"></span> Actual (positive)
-          <span class="pro-legend-dot" style="background:#ff1744;margin-left:14px"></span> Actual (negative)
+          <span class="pro-legend-dot" style="background:#667eea"></span> <span data-i18n="legendForecast">Forecast</span>
+          <span class="pro-legend-dot" style="background:#00c853;margin-left:14px"></span> <span data-i18n="legendActualPos">Actual (positive)</span>
+          <span class="pro-legend-dot" style="background:#ff1744;margin-left:14px"></span> <span data-i18n="legendActualNeg">Actual (negative)</span>
         </div>
       </div>
       <!-- Per-stock detail table -->
@@ -184,13 +188,13 @@
         <table class="pro-table" id="portfolioDetailTable">
           <thead>
             <tr>
-              <th>Symbol</th>
-              <th>Signal</th>
-              <th>Forecast</th>
-              <th>Actual</th>
-              <th>Gap</th>
-              <th>Progress</th>
-              <th>Target Date</th>
+              <th data-i18n="colSymbol">Symbol</th>
+              <th data-i18n="colSignal">Signal</th>
+              <th data-i18n="colForecast">Forecast</th>
+              <th data-i18n="colActual">Actual</th>
+              <th data-i18n="colGap">Gap</th>
+              <th data-i18n="colProgress">Progress</th>
+              <th data-i18n="colTarget">Target Date</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -202,7 +206,7 @@
   <!-- Derivatives Brief -->
   <div class="pro-deriv-panel" id="derivPanel">
     <div class="pro-panel-title">
-      Derivatives Brief
+      <span data-i18n="derivTitle">Derivatives Brief</span>
       <div class="pro-deriv-controls">
         <input id="derivTicker" class="pro-deriv-input" placeholder="Ticker e.g. COMI.CA" value="COMI.CA" />
         <input id="derivSpot"   class="pro-deriv-input pro-deriv-input--sm" placeholder="Spot" type="number" step="0.1" />
@@ -213,10 +217,10 @@
           <option value="0.5" selected>6M</option>
           <option value="1.0">1Y</option>
         </select>
-        <button class="pro-deriv-btn" onclick="loadDerivativesBrief()">Price &#9654;</button>
+        <button class="pro-deriv-btn" onclick="loadDerivativesBrief()" data-i18n="derivBtn">Price &#9654;</button>
       </div>
     </div>
-    <div id="derivLoading" class="pro-deriv-loading" style="display:none">Pricing&#8230;</div>
+    <div id="derivLoading" class="pro-deriv-loading" style="display:none" data-i18n="pricing">Pricing&#8230;</div>
     <div id="derivNarrative" class="pro-deriv-narrative"></div>
     <div id="derivMetrics" class="pro-deriv-metrics"></div>
   </div>
@@ -224,8 +228,8 @@
   <!-- Macro Brief -->
   <div class="pro-macro-panel">
     <div class="pro-panel-title">
-      Macro Brief
-      <button class="pro-macro-btn" id="macroBtn" onclick="loadMacroBrief()">↺ Refresh</button>
+      <span data-i18n="macroTitle">Macro Brief</span>
+      <button class="pro-macro-btn" id="macroBtn" onclick="loadMacroBrief()" data-i18n="macroRefresh">↺ Refresh</button>
     </div>
     <div class="pro-macro-content" id="macroContent"></div>
   </div>

@@ -1,5 +1,112 @@
 /* ─── Xmore Pro — Market Overview ────────────────────────────────────────── */
 
+// ── Bilingual i18n ────────────────────────────────────────────────────────────
+let _PRO_LANG = 'en';
+
+const _PRO_I18N = {
+  en: {
+    back: '← Dashboard', signIn: 'Sign In', signOut: 'Sign Out',
+    modalTitle: 'Sign in to Xmore', login: 'Login', signUp: 'Sign Up',
+    email: 'Email', password: 'Password',
+    tracked: 'TRACKED', upToday: 'UP TODAY', downToday: 'DOWN TODAY',
+    bestWinRate: 'BEST AGENT WIN RATE', lastData: 'LAST DATA',
+    egx30Title: 'EGX 30 — Intraday', egxBlueChips: 'EGX Blue Chips',
+    topGainers: 'Top Gainers', topLosers: 'Top Losers',
+    colSymbol: 'Symbol', colClose: 'Close', colChg: 'Chg%',
+    colSignal: 'Signal', colConf: 'Conf',
+    colForecast: 'Forecast', colActual: 'Actual', colGap: 'Gap',
+    colProgress: 'Progress', colTarget: 'Target Date',
+    sectorPerf: 'Sector Performance',
+    myPortfolio: 'My Forecast Portfolio',
+    pfLoginTitle: 'Track Your Forecast Performance',
+    pfLoginDesc: 'Sign in to see how your AI-generated stock portfolios are performing in real time — forecast vs actual return per stock, progress to target date, and agent signals.',
+    signInArrow: 'Sign In ↗',
+    pfEmptyTitle: 'No Forecast Portfolios Yet',
+    pfEmptyDesc: 'Create a forecast portfolio on the main dashboard to start tracking AI prediction accuracy against live EGX price movements.',
+    createPortfolio: 'Create Portfolio ↗',
+    legendForecast: 'Forecast', legendActualPos: 'Actual (positive)', legendActualNeg: 'Actual (negative)',
+    derivTitle: 'Derivatives Brief', derivBtn: 'Price ▶', pricing: 'Pricing…',
+    macroTitle: 'Macro Brief', macroRefresh: '↺ Refresh',
+    loading: 'Loading…',
+  },
+  ar: {
+    back: '← الرئيسية', signIn: 'دخول', signOut: 'خروج',
+    modalTitle: 'تسجيل الدخول إلى Xmore', login: 'دخول', signUp: 'تسجيل',
+    email: 'البريد الإلكتروني', password: 'كلمة المرور',
+    tracked: 'متتبع', upToday: 'صاعد اليوم', downToday: 'هابط اليوم',
+    bestWinRate: 'أفضل معدل نجاح', lastData: 'آخر بيانات',
+    egx30Title: 'EGX 30 — خلال اليوم', egxBlueChips: 'أسهم EGX الكبرى',
+    topGainers: 'أعلى الرابحين', topLosers: 'أعلى الخاسرين',
+    colSymbol: 'الرمز', colClose: 'الإغلاق', colChg: 'التغير%',
+    colSignal: 'الإشارة', colConf: 'الثقة',
+    colForecast: 'التوقع', colActual: 'الفعلي', colGap: 'الفجوة',
+    colProgress: 'التقدم', colTarget: 'التاريخ المستهدف',
+    sectorPerf: 'أداء القطاعات',
+    myPortfolio: 'محفظة التوقعات',
+    pfLoginTitle: 'تابع أداء توقعاتك',
+    pfLoginDesc: 'سجّل دخولك لمتابعة أداء محافظ الأسهم المولّدة بالذكاء الاصطناعي — المقارنة بين التوقع والعائد الفعلي لكل سهم.',
+    signInArrow: 'تسجيل الدخول ↗',
+    pfEmptyTitle: 'لا توجد محافظ بعد',
+    pfEmptyDesc: 'أنشئ محفظة توقعات من اللوحة الرئيسية لبدء تتبع دقة الذكاء الاصطناعي مقارنةً بتحركات سوق البورصة.',
+    createPortfolio: 'إنشاء محفظة ↗',
+    legendForecast: 'التوقع', legendActualPos: 'الفعلي (موجب)', legendActualNeg: 'الفعلي (سالب)',
+    derivTitle: 'موجز المشتقات', derivBtn: 'تسعير ▶', pricing: 'جارٍ التسعير…',
+    macroTitle: 'موجز الاقتصاد الكلي', macroRefresh: '↺ تحديث',
+    loading: 'جارٍ التحميل…',
+  },
+};
+
+function proApplyLang() {
+  const dict = _PRO_I18N[_PRO_LANG];
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (dict[key] !== undefined) el.textContent = dict[key];
+  });
+  // RTL / LTR
+  document.documentElement.setAttribute('lang', _PRO_LANG);
+  document.documentElement.setAttribute('dir', _PRO_LANG === 'ar' ? 'rtl' : 'ltr');
+  // Toggle button label
+  const btn = document.getElementById('proLangBtn');
+  if (btn) btn.textContent = _PRO_LANG === 'ar' ? 'EN' : 'عر';
+}
+
+function proToggleLang() {
+  _PRO_LANG = _PRO_LANG === 'en' ? 'ar' : 'en';
+  proApplyLang();
+}
+
+// ── FX rates ──────────────────────────────────────────────────────────────────
+async function loadFxRates() {
+  const strip = document.getElementById('proFxStrip');
+  if (!strip) return;
+  try {
+    const res  = await fetch('/api/fx-rates');
+    const data = await res.json();
+    if (!data || data.error) throw new Error(data.error || 'no data');
+    strip.innerHTML = `
+      <div class="pro-fx-item">
+        <span class="pro-fx-pair">USD/EGP</span>
+        <span class="pro-fx-val">${data.USD_EGP.toFixed(2)}</span>
+      </div>
+      <span class="pro-fx-sep">·</span>
+      <div class="pro-fx-item">
+        <span class="pro-fx-pair">USD/SAR</span>
+        <span class="pro-fx-val">${data.USD_SAR.toFixed(4)}</span>
+      </div>
+      <span class="pro-fx-sep">·</span>
+      <div class="pro-fx-item">
+        <span class="pro-fx-pair">SAR/EGP</span>
+        <span class="pro-fx-val">${data.SAR_EGP.toFixed(4)}</span>
+      </div>
+    `;
+  } catch (_) {
+    strip.innerHTML = '<span class="pro-fx-loading">FX unavailable</span>';
+  }
+}
+
+loadFxRates();
+setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
+
 // ── Date header ──────────────────────────────────────────────────────────────
 (function renderDate() {
   const el = document.getElementById('proDate');
