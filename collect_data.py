@@ -97,16 +97,26 @@ def collect_prices_yfinance(symbols=None):
             ticker = yf.Ticker(symbol)
             df = ticker.history(period="90d")
             
+            if DATABASE_URL:
+                yf_sql = """
+                    INSERT INTO prices (symbol, date, open, high, low, close, volume, data_source)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (symbol, date) DO UPDATE SET
+                        open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
+                        close=EXCLUDED.close, volume=EXCLUDED.volume, data_source=EXCLUDED.data_source
+                """
+            else:
+                yf_sql = """
+                    INSERT OR REPLACE INTO prices
+                    (symbol, date, open, high, low, close, volume, data_source)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """
             with get_connection() as conn:
                 cursor = conn.cursor()
                 for date, row in df.iterrows():
                     if row.isnull().any():
                         continue
-                    cursor.execute(_adapt_sql("""
-                        INSERT OR REPLACE INTO prices
-                        (symbol, date, open, high, low, close, volume, data_source)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """), (
+                    cursor.execute(yf_sql, (
                         symbol,
                         date.strftime('%Y-%m-%d'),
                         float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']),
@@ -153,15 +163,28 @@ def _store_prices(prices_df, source='egx_live'):
         int: Number of records stored.
     """
     stored = 0
+
+    if DATABASE_URL:
+        # PostgreSQL: explicit upsert (INSERT OR REPLACE is SQLite-only syntax)
+        sql = """
+            INSERT INTO prices (symbol, date, open, high, low, close, volume, data_source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (symbol, date) DO UPDATE SET
+                open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
+                close=EXCLUDED.close, volume=EXCLUDED.volume, data_source=EXCLUDED.data_source
+        """
+    else:
+        sql = """
+            INSERT OR REPLACE INTO prices
+            (symbol, date, open, high, low, close, volume, data_source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
     with get_connection() as conn:
         cursor = conn.cursor()
         for _, row in prices_df.iterrows():
             try:
-                cursor.execute(_adapt_sql("""
-                    INSERT OR REPLACE INTO prices
-                    (symbol, date, open, high, low, close, volume, data_source)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """), (
+                cursor.execute(sql, (
                     str(row['symbol']),
                     str(row['date']),
                     float(row['open']),
