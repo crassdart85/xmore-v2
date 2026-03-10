@@ -1,7 +1,34 @@
 import pandas as pd
+import numpy as np
 from typing import Optional, Dict, Any
 from agents.agent_base import BaseAgent, AgentSignal
 import config
+
+
+def _get_vol_regime(data: pd.DataFrame) -> str:
+    """
+    Classify recent volatility into Low / Normal / High regime.
+
+    Uses EWMA std of daily returns (span=32, λ≈0.94 — same formula as
+    features.py garch_ewm_vol so the signal is internally consistent).
+
+    Thresholds (daily, not annualised):
+      Low    < 1.5%  → use tighter period (faster signals)
+      High   > 3.0%  → use wider period (filter noise)
+      Normal otherwise
+    """
+    if len(data) < 20:
+        return "normal"
+    returns = data['close'].pct_change().replace([np.inf, -np.inf], np.nan).fillna(0)
+    ewma_vol = returns.ewm(span=32, min_periods=10).std().iloc[-1]
+    if ewma_vol < 0.015:
+        return "low"
+    if ewma_vol > 0.030:
+        return "high"
+    return "normal"
+
+
+_RSI_PERIODS = {"low": 10, "normal": 14, "high": 20}
 
 
 class RSIAgent(BaseAgent):
@@ -48,10 +75,13 @@ class RSIAgent(BaseAgent):
         Returns:
             str: "UP", "DOWN", or "HOLD".
         """
-        if len(data) < config.RSI_PERIOD + 1:
+        regime = _get_vol_regime(data)
+        rsi_period = _RSI_PERIODS.get(regime, config.RSI_PERIOD)
+
+        if len(data) < rsi_period + 1:
             return "HOLD"
 
-        rsi_values = self.calculate_rsi(data, window=config.RSI_PERIOD)
+        rsi_values = self.calculate_rsi(data, window=rsi_period)
         current_rsi = rsi_values.iloc[-1]
 
         if current_rsi < config.RSI_OVERSOLD:
@@ -63,7 +93,7 @@ class RSIAgent(BaseAgent):
             # Detect bearish momentum even in neutral zone:
             # RSI falling sharply from elevated levels → early DOWN signal
             if len(data) >= 6:
-                rsi_values_full = self.calculate_rsi(data, window=config.RSI_PERIOD)
+                rsi_values_full = self.calculate_rsi(data, window=rsi_period)
                 rsi_5d_ago = rsi_values_full.iloc[-6]
                 rsi_diff = current_rsi - rsi_5d_ago
                 # RSI crossed below 50 from above (trend reversal)
@@ -105,7 +135,10 @@ class RSIAgent(BaseAgent):
         
         Returns dict with RSI value, zone, trend, divergence analysis.
         """
-        if len(data) < config.RSI_PERIOD + 1:
+        regime = _get_vol_regime(data)
+        rsi_period = _RSI_PERIODS.get(regime, config.RSI_PERIOD)
+
+        if len(data) < rsi_period + 1:
             return AgentSignal(
                 agent_name=self.name, symbol=symbol,
                 prediction="HOLD", confidence=0.0,
@@ -113,9 +146,9 @@ class RSIAgent(BaseAgent):
             ).to_dict()
 
         df = data.copy()
-        rsi_values = self.calculate_rsi(df, window=config.RSI_PERIOD)
+        rsi_values = self.calculate_rsi(df, window=rsi_period)
         current_rsi = rsi_values.iloc[-1]
-        
+
         # RSI from 5 days ago for trend
         rsi_5d_ago = rsi_values.iloc[-6] if len(rsi_values) >= 6 else rsi_values.iloc[0]
         
@@ -190,6 +223,8 @@ class RSIAgent(BaseAgent):
         
         reasoning = {
             "rsi_value": round(current_rsi, 1),
+            "rsi_period": rsi_period,
+            "vol_regime": regime,
             "rsi_zone": rsi_zone,
             "rsi_trend": rsi_trend,
             "rsi_5d_ago": round(rsi_5d_ago, 1),

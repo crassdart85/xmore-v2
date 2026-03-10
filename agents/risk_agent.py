@@ -127,13 +127,19 @@ def evaluate_risk(symbol: str,
             details['liquidity_risk'] = True
     
     # === CHECK 2: VOLATILITY ===
-    if market_data and market_data.get('volatility_20d') is not None:
-        vol = market_data['volatility_20d']
-        if vol > cfg['max_volatility_20d']:
+    # Prefer GARCH one-step-ahead conditional vol (forward-looking) over historical 20d std.
+    # GARCH sigma_t captures current volatility clustering; historical vol can lag market moves.
+    if market_data:
+        garch_vol = market_data.get('garch_forecast_vol')
+        hist_vol  = market_data.get('volatility_20d')
+        vol = garch_vol if garch_vol is not None else hist_vol
+        if vol is not None and vol > cfg['max_volatility_20d']:
             risk_score += 15
-            flags.append(f"⚠️ High volatility: {vol:.1%} daily (max: {cfg['max_volatility_20d']:.1%})")
-            flags_ar.append(f"⚠️ تقلب عالي: {vol:.1%} يومي (الحد الأقصى: {cfg['max_volatility_20d']:.1%})")
+            vol_source = "GARCH" if garch_vol is not None else "20d hist"
+            flags.append(f"⚠️ High volatility ({vol_source}): {vol:.1%} daily (max: {cfg['max_volatility_20d']:.1%})")
+            flags_ar.append(f"⚠️ تقلب عالي ({vol_source}): {vol:.1%} يومي (الحد الأقصى: {cfg['max_volatility_20d']:.1%})")
             details['volatility_risk'] = True
+            details['vol_source'] = vol_source
     
     # === CHECK 3: DRAWDOWN ===
     if market_data:

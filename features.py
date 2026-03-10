@@ -117,6 +117,9 @@ def _add_talib_indicators(df):
     df['Returns'] = pd.Series(close).pct_change().values
     df['Volatility'] = pd.Series(df['Returns']).rolling(window=20).std().values
 
+    # GARCH-inspired volatility features (no arch library required)
+    df = _add_garch_inspired_features(df)
+
     # ===================== VOLUME =====================
     # OBV — On Balance Volume
     df['OBV'] = talib.OBV(close, volume)
@@ -191,6 +194,9 @@ def _add_fallback_indicators(df):
     df['Returns'] = close.pct_change()
     df['Volatility'] = df['Returns'].rolling(window=20).std()
 
+    # GARCH-inspired volatility features
+    df = _add_garch_inspired_features(df)
+
     # ===================== VOLUME =====================
     # OBV
     obv = [0]
@@ -213,6 +219,96 @@ def _add_fallback_indicators(df):
     df['HAMMER'] = 0
     df['ENGULFING'] = 0
 
+    return df
+
+
+def _add_garch_inspired_features(df):
+    """
+    Add GARCH-inspired volatility dynamic features without requiring the arch library.
+
+    Three features:
+      garch_ewm_vol    — Exponentially-weighted std of returns (RiskMetrics EWMA,
+                         λ≈0.94 ↔ span≈32). Approximates IGARCH(1,1) conditional vol.
+                         Captures volatility clustering faster than a simple rolling std.
+      vol_of_vol       — Rolling std of garch_ewm_vol (10-day). Measures how erratic
+                         volatility itself is; high values → uncertainty about uncertainty.
+      vol_persistence  — Lag-1 autocorrelation of squared returns over 20-day window.
+                         Positive → vol is sticky/persistent; near-zero → mean-reverting.
+
+    All three are normalised to avoid scale issues during RF training.
+    """
+    if 'Returns' not in df.columns:
+        df['garch_ewm_vol']   = np.nan
+        df['vol_of_vol']      = np.nan
+        df['vol_persistence'] = np.nan
+        return df
+
+    returns = df['Returns'].fillna(0)
+
+    # EWMA vol (span=32 ≈ λ=0.94 daily decay, RiskMetrics standard)
+    df['garch_ewm_vol'] = returns.ewm(span=32, min_periods=10).std()
+
+    # Vol-of-vol: how much is conditional vol changing day-to-day
+    df['vol_of_vol'] = df['garch_ewm_vol'].rolling(window=10, min_periods=5).std()
+
+    # Persistence: lag-1 ACF of squared returns (20-day rolling)
+    sq_ret = returns ** 2
+    df['vol_persistence'] = sq_ret.rolling(window=20, min_periods=10).apply(
+        lambda x: float(pd.Series(x).autocorr(lag=1)) if len(x) >= 5 else 0.0,
+        raw=False
+    ).fillna(0)
+
+    return df
+
+
+def add_macro_features(df, macro_df):
+    """
+    Merge macro context (Brent crude, USD/EGP rate, EM equity) into the stock price DataFrame.
+
+    Uses 5-day rolling returns for each macro series so the ML agent sees recent direction,
+    not just the raw level (which varies in scale across instruments).
+
+    macro_df must have columns: date, brent_close, usdegp_close, eem_close.
+    Any missing macro series is filled with 0 (neutral / no signal).
+    """
+    macro_cols = ['brent_return_5d', 'usdegp_return_5d', 'eem_return_5d']
+
+    if macro_df is None or len(macro_df) == 0:
+        for col in macro_cols:
+            df[col] = 0.0
+        return df
+
+    macro = macro_df.copy()
+    # Normalise date to string YYYY-MM-DD for merge
+    macro['date'] = pd.to_datetime(macro['date']).dt.strftime('%Y-%m-%d')
+    macro = macro.sort_values('date')
+
+    for raw_col, ret_col in [
+        ('brent_close',  'brent_return_5d'),
+        ('usdegp_close', 'usdegp_return_5d'),
+        ('eem_close',    'eem_return_5d'),
+    ]:
+        if raw_col in macro.columns:
+            macro[ret_col] = macro[raw_col].pct_change(5)
+        else:
+            macro[ret_col] = 0.0
+
+    # Normalise date on the price df too
+    date_col = 'date' if 'date' in df.columns else None
+    if date_col:
+        df = df.copy()
+        df['_date_str'] = pd.to_datetime(df[date_col]).dt.strftime('%Y-%m-%d')
+        df = df.merge(
+            macro[['date'] + macro_cols],
+            left_on='_date_str', right_on='date',
+            how='left', suffixes=('', '_macro')
+        )
+        df = df.drop(columns=['_date_str', 'date_macro'], errors='ignore')
+    else:
+        for col in macro_cols:
+            df[col] = 0.0
+
+    df[macro_cols] = df[macro_cols].fillna(0.0)
     return df
 
 
@@ -277,8 +373,12 @@ def get_feature_columns():
         'RSI', 'CCI', 'WILLR', 'STOCH_K', 'STOCH_D', 'MFI', 'ROC',
         # Volatility
         'BB_Upper', 'BB_Middle', 'BB_Lower', 'ATR', 'NATR', 'Volatility',
+        # GARCH-inspired volatility dynamics
+        'garch_ewm_vol', 'vol_of_vol', 'vol_persistence',
         # Volume
         'OBV', 'AD_Line',
+        # Macro context
+        'brent_return_5d', 'usdegp_return_5d', 'eem_return_5d',
         # Sentiment
         'sentiment_score',
     ]

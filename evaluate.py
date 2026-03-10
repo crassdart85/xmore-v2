@@ -122,9 +122,10 @@ def evaluate_predictions():
             predicted = pred['prediction']
             was_correct = False
             if predicted == "HOLD":
-                # Holding is correct if flat, or strictly speaking if we just avoided a loss?
-                # For simplicity, let's say HOLD is correct if "FLAT"
-                was_correct = (actual_outcome == "FLAT")
+                # HOLD means "no significant move expected" — correct if stock stayed within ±2%.
+                # The old ±0.5% FLAT threshold was too tight: an agent that correctly avoided a
+                # 1.8% mover was counted as wrong. 2% matches the typical EGX noise floor.
+                was_correct = abs(pct_change) < 2.0
             else:
                 was_correct = (predicted == actual_outcome)
             

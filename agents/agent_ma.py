@@ -1,7 +1,36 @@
 import pandas as pd
+import numpy as np
 from typing import Optional, Dict, Any
 from agents.agent_base import BaseAgent, AgentSignal
 import config
+
+
+def _get_vol_regime(data: pd.DataFrame) -> str:
+    """
+    Classify recent volatility into Low / Normal / High regime.
+    Uses EWMA std of daily returns (span=32, same as features.py garch_ewm_vol).
+
+    Low  < 1.5% daily  → tighter windows (8/20) — signals quickly in calm markets
+    High > 3.0% daily  → wider windows (15/40) — filter noise in volatile markets
+    Normal otherwise   → default (10/30)
+    """
+    if len(data) < 20:
+        return "normal"
+    returns = data['close'].pct_change().replace([np.inf, -np.inf], np.nan).fillna(0)
+    ewma_vol = returns.ewm(span=32, min_periods=10).std().iloc[-1]
+    if ewma_vol < 0.015:
+        return "low"
+    if ewma_vol > 0.030:
+        return "high"
+    return "normal"
+
+
+# (short_window, long_window) by regime
+_MA_PERIODS = {
+    "low":    (8,  20),
+    "normal": (10, 30),
+    "high":   (15, 40),
+}
 
 
 class MAAgent(BaseAgent):
@@ -37,13 +66,16 @@ class MAAgent(BaseAgent):
         Returns:
             str: "UP", "DOWN", or "HOLD".
         """
-        if len(data) < self.long_window + 1:
+        regime = _get_vol_regime(data)
+        short_w, long_w = _MA_PERIODS.get(regime, (self.short_window, self.long_window))
+
+        if len(data) < long_w + 1:
             return "HOLD"
-        
+
         # Calculate moving averages
         data = data.copy()
-        data['ma_short'] = data['close'].rolling(window=self.short_window).mean()
-        data['ma_long'] = data['close'].rolling(window=self.long_window).mean()
+        data['ma_short'] = data['close'].rolling(window=short_w).mean()
+        data['ma_long'] = data['close'].rolling(window=long_w).mean()
         
         # Get current and previous values
         current = data.iloc[-1]
@@ -66,16 +98,19 @@ class MAAgent(BaseAgent):
         
         Returns dict with crossover details, MA values, and trend strength.
         """
-        if len(data) < self.long_window + 1:
+        regime = _get_vol_regime(data)
+        short_w, long_w = _MA_PERIODS.get(regime, (self.short_window, self.long_window))
+
+        if len(data) < long_w + 1:
             return AgentSignal(
                 agent_name=self.name, symbol=symbol,
                 prediction="HOLD", confidence=0.0,
-                reasoning={"error": "insufficient_data", "rows": len(data), "required": self.long_window + 1}
+                reasoning={"error": "insufficient_data", "rows": len(data), "required": long_w + 1}
             ).to_dict()
-        
+
         df = data.copy()
-        df['ma_short'] = df['close'].rolling(window=self.short_window).mean()
-        df['ma_long'] = df['close'].rolling(window=self.long_window).mean()
+        df['ma_short'] = df['close'].rolling(window=short_w).mean()
+        df['ma_long'] = df['close'].rolling(window=long_w).mean()
         
         current = df.iloc[-1]
         previous = df.iloc[-2]
@@ -166,15 +201,17 @@ class MAAgent(BaseAgent):
         confidence = min(95, max(20, confidence))
 
         reasoning = {
-            "sma_10": round(sma_short, 2),
-            "sma_30": round(sma_long, 2),
+            f"sma_{short_w}": round(sma_short, 2),
+            f"sma_{long_w}": round(sma_long, 2),
             "current_price": round(price, 2),
             "crossover_type": crossover_type,
             "crossover_days_ago": crossover_days_ago if crossover_days_ago is not None else ">30",
-            "price_above_sma10": price_above_short,
+            f"price_above_sma{short_w}": price_above_short,
             "trend_strength": trend_strength,
             "ma_gap_pct": round(ma_gap_pct, 2),
-            "ma_slope_bearish": ma_slope_bearish
+            "ma_slope_bearish": ma_slope_bearish,
+            "vol_regime": regime,
+            "ma_periods": f"{short_w}/{long_w}"
         }
         
         return AgentSignal(

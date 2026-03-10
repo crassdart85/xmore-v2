@@ -186,6 +186,9 @@ def _fetch_mubasher_articles() -> list:
     Returns articles in the same format as _fetch_recent_articles().
     """
     import feedparser
+    import calendar as _calendar
+    _now_ts = time.time()
+
     articles = []
     for url, lang in [(MUBASHER_EGX_RSS_EN, "EN"), (MUBASHER_EGX_RSS_AR, "AR")]:
         try:
@@ -194,7 +197,10 @@ def _fetch_mubasher_articles() -> list:
                 headline = entry.get("title", "")
                 summary = entry.get("summary", "")
                 if headline:
-                    articles.append({"headline": headline, "text": summary[:2000]})
+                    pub = entry.get("published_parsed")
+                    days_ago = max(0.0, (_now_ts - _calendar.timegm(pub)) / 86400) if pub else 1.0
+                    articles.append({"headline": headline, "text": summary[:2000],
+                                     "_days_ago": days_ago})
             logger.info(f"Fetched {min(len(feed.entries), 25)} articles from Mubasher {lang} RSS")
         except Exception as e:
             logger.warning(f"Mubasher {lang} RSS fetch failed: {e}")
@@ -320,15 +326,18 @@ def _fetch_finnhub_articles(symbols: list, days_back: int = 7) -> list:
                 _from=start_date.strftime("%Y-%m-%d"),
                 to=end_date.strftime("%Y-%m-%d"),
             )
+            _now_ts_fin = time.time()
             for item in news:
                 headline = item.get("headline", "")
                 summary = item.get("summary", "")
                 if headline:
-                    # Tag the article with the symbol so we can skip Gemini company matching
+                    pub_ts = item.get("datetime", _now_ts_fin)
+                    days_ago = max(0.0, (_now_ts_fin - pub_ts) / 86400)
                     articles.append({
                         "headline": headline,
                         "text": summary[:2000],
                         "_symbol_hint": symbol,
+                        "_days_ago": days_ago,
                     })
             time.sleep(0.5)
         except Exception as e:
@@ -363,17 +372,22 @@ def _fetch_recent_articles(days_back: int = 2) -> list:
         recent_uuids = month_ids["id"].dropna().head(days_back * 2).tolist()
         logger.info(f"Fetching {len(recent_uuids)} Enterprise Egypt editions")
 
-        for uuid in recent_uuids:
+        for edition_idx, uuid in enumerate(recent_uuids):
             try:
                 day_news = scraper.get_day_news_published(uuid, scraper.news_api)
                 day_news = scraper.get_html_content(day_news)
+
+                # Enterprise publishes AM + PM editions; edition_idx 0,1 = today,
+                # 2,3 = yesterday, etc.
+                days_ago = edition_idx // 2
 
                 for _, row in day_news.iterrows():
                     headline = row.get("head_en") or row.get("head_ar") or ""
                     text = row.get("c_storyContent_en") or row.get("c_storyContent_ar") or ""
                     if headline or text:
                         articles.append(
-                            {"headline": str(headline), "text": str(text)[:3000]}
+                            {"headline": str(headline), "text": str(text)[:3000],
+                             "_days_ago": days_ago}
                         )
 
                 time.sleep(1)  # polite scraping
@@ -403,7 +417,7 @@ def _score_articles_with_gemini(articles: list) -> dict:
         return {}
 
     gemma = CallGemma(api_key=GOOGLE_API_KEY, model="gemini-2.5-flash")
-    symbol_scores: dict = {}
+    symbol_scores: dict = {}   # symbol → list of (score, days_ago) tuples
 
     # Inject the EGX company list into the prompt
     system_prompt = prompts.get_gemma_response.replace(
@@ -431,6 +445,8 @@ def _score_articles_with_gemini(articles: list) -> dict:
                     symbol_scores.setdefault(symbol_hint, []).append(0.0)
                 continue
 
+            days_ago = article.get("_days_ago", 0.0)
+
             for item in result:
                 if not isinstance(item, dict):
                     continue
@@ -457,7 +473,8 @@ def _score_articles_with_gemini(articles: list) -> dict:
                     try:
                         # Normalise -10..+10 → -1..+1, clamp to range
                         score = max(-1.0, min(1.0, float(raw_score) / 10.0))
-                        symbol_scores.setdefault(symbol, []).append(score)
+                        # Store (score, days_ago) for recency-weighted aggregation
+                        symbol_scores.setdefault(symbol, []).append((score, days_ago))
                     except (ValueError, TypeError):
                         pass
 
@@ -524,9 +541,22 @@ def collect_sentiment(symbols: list = None, days_back: int = 2) -> int:
             success_count += 1
             continue
 
-        avg = sum(scores) / len(scores)
-        positive = sum(1 for s in scores if s > 0.1)
-        negative = sum(1 for s in scores if s < -0.1)
+        # Recency-weighted aggregation: weight = 2^(-days_ago / 1.5)
+        # Half-life of 1.5 days — articles from today have weight≈1.0,
+        # yesterday ≈0.63, 3 days ago ≈0.25
+        weighted_sum = 0.0
+        total_weight = 0.0
+        positive = 0
+        negative = 0
+        for s, days_ago in scores:
+            w = 2.0 ** (-days_ago / 1.5)
+            weighted_sum += s * w
+            total_weight += w
+            if s > 0.1:
+                positive += 1
+            elif s < -0.1:
+                negative += 1
+        avg = weighted_sum / total_weight if total_weight > 0 else 0.0
         neutral = len(scores) - positive - negative
 
         label = "Bullish" if avg > 0.1 else ("Bearish" if avg < -0.1 else "Neutral")

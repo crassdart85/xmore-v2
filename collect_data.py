@@ -130,9 +130,73 @@ def collect_prices_yfinance(symbols=None):
     return success_count
 
 
+def collect_macro_data():
+    """
+    Fetch macro context data via yfinance and store in the prices table.
+
+    Three instruments captured as special symbols:
+      MACRO_BRENT   ← BZ=F  (Brent crude front-month future)
+      MACRO_USDEGP  ← USDEGP=X  (USD / Egyptian Pound spot rate)
+      MACRO_EEM     ← EEM   (iShares MSCI Emerging Markets ETF)
+
+    Stored in the same prices table as stock prices (with data_source='yfinance_macro').
+    The ML agent reads these rows at training/inference time to build macro features.
+    """
+    MACRO_SYMBOLS = {
+        'MACRO_BRENT':  'BZ=F',
+        'MACRO_USDEGP': 'USDEGP=X',
+        'MACRO_EEM':    'EEM',
+    }
+
+    if DATABASE_URL:
+        sql = """
+            INSERT INTO prices (symbol, date, open, high, low, close, volume, data_source)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (symbol, date) DO UPDATE SET
+                open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
+                close=EXCLUDED.close, volume=EXCLUDED.volume
+        """
+    else:
+        sql = """
+            INSERT OR REPLACE INTO prices
+            (symbol, date, open, high, low, close, volume, data_source)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """
+
+    print("🌍 Fetching macro context data (Brent, USD/EGP, EM)...")
+    stored = 0
+    for internal_sym, yf_sym in MACRO_SYMBOLS.items():
+        try:
+            ticker = yf.Ticker(yf_sym)
+            df = ticker.history(period="90d")
+            if len(df) == 0:
+                print(f"  ⚠️  No data for {yf_sym} ({internal_sym})")
+                continue
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                for date, row in df.iterrows():
+                    cursor.execute(sql, (
+                        internal_sym,
+                        date.strftime('%Y-%m-%d'),
+                        float(row.get('Open',   row['Close'])),
+                        float(row.get('High',   row['Close'])),
+                        float(row.get('Low',    row['Close'])),
+                        float(row['Close']),
+                        int(row.get('Volume', 0)),
+                        'yfinance_macro',
+                    ))
+            stored += 1
+            print(f"  ✅ {internal_sym} ({yf_sym}): collected")
+        except Exception as e:
+            print(f"  ⚠️  {internal_sym} ({yf_sym}): {e}")
+
+    return stored
+
+
 def collect_prices():
     """
     Fetch stock prices — EGX live feed for Egyptian stocks, yfinance for US stocks.
+    Also collects macro context data (Brent, USD/EGP, EM ETF).
 
     Returns:
         int: Number of stocks successfully collected.
@@ -147,6 +211,9 @@ def collect_prices():
     if config.US_STOCKS:
         print("📈 Fetching US stock data from yfinance...")
         total += collect_prices_yfinance(config.US_STOCKS)
+
+    # Macro context (Brent, USD/EGP, EM) — used as ML features
+    collect_macro_data()
 
     return total
 

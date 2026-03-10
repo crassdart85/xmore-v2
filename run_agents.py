@@ -101,6 +101,98 @@ def _compute_market_data(df):
     return market
 
 
+def _compute_garch_vol(symbol: str, df) -> float:
+    """
+    Fit a plain GARCH(1,1) model and return the one-step-ahead conditional
+    volatility (sigma_t) in decimal form (e.g. 0.025 = 2.5% daily vol).
+
+    Returns None if arch is not installed, data is insufficient, or fitting fails.
+    Uses auto_select=False and model_preference="garch" to keep it fast (one model only).
+    """
+    try:
+        import numpy as np
+        from engines.garch_engine import GARCHEngine, HAS_ARCH
+        if not HAS_ARCH or len(df) < 60:
+            return None
+        log_ret = np.log(df['close'] / df['close'].shift(1)).replace([np.inf, -np.inf], np.nan).dropna()
+        if len(log_ret) < 60:
+            return None
+        returns_df = pd.DataFrame({symbol: log_ret})
+        engine = GARCHEngine(model_preference="garch", use_auto_select=False, min_obs=60)
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fitted = engine.fit(returns_df)
+        params = fitted.get(symbol)
+        if params and params.model_type != "static":
+            return params.sigma_t
+    except Exception:
+        pass
+    return None
+
+
+def _load_dynamic_weights(conn) -> dict:
+    """
+    Load accuracy-adjusted agent weights from the latest agent_performance_daily snapshot.
+    Falls back to config.AGENT_WEIGHTS on SQLite or if insufficient data exists.
+
+    Adjustment formula:
+        adjusted_weight = base_weight * clamp(win_rate_30d / 50.0, 0.5, 2.0)
+    Weights are renormalised to sum to 1.0 after adjustment.
+
+    A minimum of 10 evaluated predictions is required before adjusting a given agent's weight;
+    below that threshold the base weight is kept unchanged to avoid noise-driven swings.
+    """
+    base_weights = dict(getattr(config, 'AGENT_WEIGHTS', {
+        "ML_RandomForest":    0.28,
+        "MA_Crossover_Agent": 0.20,
+        "RSI_Agent":          0.17,
+        "Volume_Spike_Agent": 0.15,
+        "Gemini_LLM_Agent":   0.20,
+    }))
+
+    if not os.getenv('DATABASE_URL'):
+        return base_weights
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT DISTINCT ON (agent_name)
+                agent_name, win_rate_30d, predictions_30d
+            FROM agent_performance_daily
+            ORDER BY agent_name, snapshot_date DESC
+        """)
+        cols = [d[0] for d in cursor.description]
+        rows = cursor.fetchall()
+        if not rows:
+            return base_weights
+
+        snapshots = {}
+        for row in rows:
+            rec = row if isinstance(row, dict) else dict(zip(cols, row))
+            snapshots[rec['agent_name']] = rec
+
+        adjusted = {}
+        for agent, base_w in base_weights.items():
+            snap = snapshots.get(agent)
+            preds = int(snap['predictions_30d'] or 0) if snap else 0
+            win_rate = float(snap['win_rate_30d'] or 0) if snap else 0
+            if snap and preds >= 10 and snap.get('win_rate_30d') is not None:
+                multiplier = max(0.5, min(2.0, win_rate / 50.0))
+                adjusted[agent] = base_w * multiplier
+            else:
+                adjusted[agent] = base_w
+
+        total = sum(adjusted.values())
+        if total > 0:
+            adjusted = {k: round(v / total, 4) for k, v in adjusted.items()}
+
+        return adjusted
+    except Exception as e:
+        logger.warning(f"Could not load dynamic agent weights: {e}")
+        return base_weights
+
+
 def _store_consensus(conn, stock, today, consensus_result):
     """Store consensus result in consensus_results table."""
     cursor = conn.cursor()
@@ -233,6 +325,14 @@ def execute():
         risk_cfg = getattr(config, 'RISK_CONFIG', None)
 
         with get_connection() as conn:
+            # Load accuracy-adjusted weights once for the entire run
+            dynamic_weights = _load_dynamic_weights(conn)
+            base_weights = getattr(config, 'AGENT_WEIGHTS', {})
+            if dynamic_weights != base_weights:
+                print(f"📊 Dynamic agent weights (accuracy-adjusted): {dynamic_weights}")
+            else:
+                print("📊 Using base agent weights (no accuracy data yet)")
+
             cursor = conn.cursor()
 
             for stock in config.ALL_STOCKS:
@@ -356,6 +456,13 @@ def execute():
                 # ── Compute market data for Risk Agent ──
                 market_data = _compute_market_data(df)
 
+                # Enrich with GARCH one-step-ahead conditional vol forecast
+                if market_data:
+                    garch_vol = _compute_garch_vol(stock, df)
+                    if garch_vol is not None:
+                        market_data['garch_forecast_vol'] = garch_vol
+                        print(f"  📐 GARCH forecast vol: {garch_vol:.2%} (hist 20d: {market_data.get('volatility_20d', 0):.2%})")
+
                 # ── Layers 2 & 3: Consensus Engine ──
                 consensus_result = run_consensus(
                     symbol=stock,
@@ -363,7 +470,8 @@ def execute():
                     market_data=market_data,
                     sentiment_data=sentiment,
                     portfolio_signals=portfolio_signals,
-                    risk_config=risk_cfg
+                    risk_config=risk_cfg,
+                    dynamic_weights=dynamic_weights,
                 )
 
                 # Track for portfolio-level risk checks on subsequent stocks

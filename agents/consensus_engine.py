@@ -72,23 +72,28 @@ AGENT_WEIGHTS = {
 }
 
 
-def _weighted_consensus(agent_signals):
+def _weighted_consensus(agent_signals, dynamic_weights=None):
     """
     Compute weighted vote across agent signals.
     Returns (signal, weighted_confidence, agreement_ratio).
+
+    dynamic_weights: optional dict mapping agent_name → weight (accuracy-adjusted).
+                     Falls back to module-level AGENT_WEIGHTS if None.
     """
     if not agent_signals:
         return "HOLD", 0.0, 0.0
-    
+
+    weights = dynamic_weights if dynamic_weights else AGENT_WEIGHTS
+
     direction_scores = {"UP": 0.0, "DOWN": 0.0, "HOLD": 0.0, "FLAT": 0.0}
     total_weight = 0.0
-    
+
     for sig in agent_signals:
         agent_name = sig.get('agent_name', '')
-        weight = AGENT_WEIGHTS.get(agent_name, 0.20)
+        weight = weights.get(agent_name, 0.20)
         confidence = sig.get('confidence', 50) / 100.0
         prediction = sig.get('prediction', 'HOLD')
-        
+
         direction_scores[prediction] = direction_scores.get(prediction, 0) + (weight * confidence)
         total_weight += weight
     
@@ -118,7 +123,8 @@ def run_consensus(symbol: str,
                   sentiment_data: Optional[Dict[str, Any]] = None,
                   historical_accuracy: Optional[Dict] = None,
                   portfolio_signals: Optional[List[Dict[str, Any]]] = None,
-                  risk_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                  risk_config: Optional[Dict[str, Any]] = None,
+                  dynamic_weights: Optional[Dict[str, float]] = None) -> Dict[str, Any]:
     """
     Full 3-layer consensus pipeline for a single stock.
     
@@ -147,7 +153,9 @@ def run_consensus(symbol: str,
                                 historical_accuracy)
     
     # ── Weighted Consensus ──
-    consensus_signal, weighted_confidence, agreement_ratio = _weighted_consensus(agent_signals)
+    consensus_signal, weighted_confidence, agreement_ratio = _weighted_consensus(
+        agent_signals, dynamic_weights=dynamic_weights
+    )
     
     avg_confidence = sum(s.get('confidence', 50) for s in agent_signals) / len(agent_signals)
     
