@@ -101,6 +101,73 @@ def _compute_market_data(df):
     return market
 
 
+def _detect_market_regime(conn) -> Optional[dict]:
+    """
+    Fit a Gaussian HMM on recent EGX30-representative returns to classify
+    the current market regime as Calm / Turbulent / Crisis.
+
+    Uses COMI.CA (Commercial International Bank) as a liquid EGX30 proxy when
+    a dedicated EGX30 index price series is not available.
+
+    Returns a dict with keys:
+        regime_label_en   — "Calm", "Turbulent", or "Crisis"
+        regime_label_ar   — Arabic equivalent
+        regime_confidence — P(current state | data) in [0, 1]
+        current_regime    — 0-indexed integer, vol-sorted
+    Returns None on any failure (HMM not installed, insufficient data, etc.)
+    """
+    try:
+        from engines.regime_model import RegimeModel, HAS_HMMLEARN
+        if not HAS_HMMLEARN:
+            return None
+
+        # Try EGX30 index first, fall back to COMI.CA
+        proxy_symbols = ['EGX30.CA', 'COMI.CA', 'HRHO.CA']
+        price_series = None
+        for sym in proxy_symbols:
+            if os.getenv('DATABASE_URL'):
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT date, close FROM prices WHERE symbol=%s ORDER BY date", (sym,)
+                )
+            else:
+                cursor = conn.cursor()
+                cursor.execute(
+                    "SELECT date, close FROM prices WHERE symbol=? ORDER BY date", (sym,)
+                )
+            rows = cursor.fetchall()
+            if rows and len(rows) >= 100:
+                df_proxy = pd.DataFrame(rows, columns=['date', 'close'])
+                log_ret = np.log(df_proxy['close'] / df_proxy['close'].shift(1)).dropna()
+                if len(log_ret) >= 100:
+                    price_series = log_ret
+                    break
+
+        if price_series is None or len(price_series) < 100:
+            return None
+
+        import warnings
+        regime_model = RegimeModel(use_auto_select=True, n_iter=100)
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            state = regime_model.fit(price_series)
+
+        result = state.to_dict()
+        result['regime_label_en'] = state.regime_label_en
+        result['regime_label_ar'] = state.regime_label_ar
+        result['regime_confidence'] = state.regime_confidence
+        result['current_regime'] = state.current_regime
+        return result
+
+    except Exception as e:
+        logger.debug(f"Regime detection skipped: {e}")
+        return None
+
+
+import numpy as np
+from typing import Optional
+
+
 def _compute_garch_vol(symbol: str, df) -> float:
     """
     Fit a plain GARCH(1,1) model and return the one-step-ahead conditional
@@ -329,9 +396,20 @@ def execute():
             dynamic_weights = _load_dynamic_weights(conn)
             base_weights = getattr(config, 'AGENT_WEIGHTS', {})
             if dynamic_weights != base_weights:
-                print(f"📊 Dynamic agent weights (accuracy-adjusted): {dynamic_weights}")
+                print(f"Dynamic agent weights (accuracy-adjusted): {dynamic_weights}")
             else:
-                print("📊 Using base agent weights (no accuracy data yet)")
+                print("Using base agent weights (no accuracy data yet)")
+
+            # Detect market-wide regime once — applies as a filter across all stocks
+            market_regime = _detect_market_regime(conn)
+            if market_regime:
+                lbl = market_regime.get('regime_label_en', 'Unknown')
+                conf = market_regime.get('regime_confidence', 0)
+                print(f"Market Regime: {lbl} ({conf:.1%} confidence) "
+                      f"[regime {market_regime.get('current_regime')}/"
+                      f"{market_regime.get('n_regimes', '?')-1}]")
+            else:
+                print("Market Regime: detection unavailable (hmmlearn not installed or insufficient data)")
 
             cursor = conn.cursor()
 
@@ -472,6 +550,7 @@ def execute():
                     portfolio_signals=portfolio_signals,
                     risk_config=risk_cfg,
                     dynamic_weights=dynamic_weights,
+                    market_regime=market_regime,
                 )
 
                 # Track for portfolio-level risk checks on subsequent stocks

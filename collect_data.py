@@ -19,6 +19,8 @@ from newsapi import NewsApiClient
 from datetime import datetime, timedelta
 import time
 import logging
+import requests
+import re
 
 # Import your existing logic
 import config
@@ -130,13 +132,103 @@ def collect_prices_yfinance(symbols=None):
     return success_count
 
 
+def _fetch_usdegp_rate():
+    """
+    Fetch current USD/EGP exchange rate from multiple sources in priority order:
+      1. Central Bank of Egypt (cbe.org.eg) — official source
+      2. open.er-api.com — free tier, no key needed
+      3. frankfurter.app — ECB-based, free
+      4. exchangerate.host — free API
+    Returns float rate or None if all sources fail.
+    """
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+
+    # --- Source 1: CBE official page ---
+    try:
+        headers = {
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/122.0.0.0 Safari/537.36'
+            ),
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Connection': 'keep-alive',
+        }
+        resp = requests.get(
+            'http://cbe.org.eg/en/economic-research/statistics/exchange-rates',
+            headers=headers, timeout=10
+        )
+        if resp.status_code == 200:
+            # CBE renders a table: Currency | Buying | Selling
+            # Look for USD row — typically "US Dollar" or "USD"
+            text = resp.text
+            # Match patterns like USD row in table
+            patterns = [
+                r'US\s*Dollar.*?(\d+\.\d+).*?(\d+\.\d+)',
+                r'USD.*?(\d+\.\d+).*?(\d+\.\d+)',
+            ]
+            for pat in patterns:
+                m = re.search(pat, text, re.IGNORECASE | re.DOTALL)
+                if m:
+                    buying  = float(m.group(1))
+                    selling = float(m.group(2))
+                    mid = (buying + selling) / 2
+                    if 10 < mid < 200:   # sanity: EGP has been 30–50 range in recent years
+                        print(f"  CBE rate: USD/EGP = {mid:.4f} (buying={buying}, selling={selling})")
+                        return mid
+    except Exception as e:
+        print(f"  CBE fetch failed: {e}")
+
+    # --- Source 2: open.er-api.com (free, no key) ---
+    try:
+        r = requests.get('https://open.er-api.com/v6/latest/USD', timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            rate = data.get('rates', {}).get('EGP')
+            if rate and 10 < rate < 200:
+                print(f"  open.er-api rate: USD/EGP = {rate:.4f}")
+                return float(rate)
+    except Exception as e:
+        print(f"  open.er-api failed: {e}")
+
+    # --- Source 3: frankfurter.app (ECB-based) ---
+    try:
+        r = requests.get('https://api.frankfurter.app/latest?from=USD&to=EGP', timeout=8)
+        if r.status_code == 200:
+            data = r.json()
+            rate = data.get('rates', {}).get('EGP')
+            if rate and 10 < rate < 200:
+                print(f"  frankfurter rate: USD/EGP = {rate:.4f}")
+                return float(rate)
+    except Exception as e:
+        print(f"  frankfurter failed: {e}")
+
+    # --- Source 4: exchangerate.host ---
+    try:
+        r = requests.get(
+            'https://api.exchangerate.host/latest?base=USD&symbols=EGP',
+            timeout=8
+        )
+        if r.status_code == 200:
+            data = r.json()
+            rate = data.get('rates', {}).get('EGP')
+            if rate and 10 < rate < 200:
+                print(f"  exchangerate.host rate: USD/EGP = {rate:.4f}")
+                return float(rate)
+    except Exception as e:
+        print(f"  exchangerate.host failed: {e}")
+
+    return None
+
+
 def collect_macro_data():
     """
     Fetch macro context data via yfinance and store in the prices table.
 
     Three instruments captured as special symbols:
       MACRO_BRENT   ← BZ=F  (Brent crude front-month future)
-      MACRO_USDEGP  ← USDEGP=X  (USD / Egyptian Pound spot rate)
+      MACRO_USDEGP  ← USDEGP=X  (USD / Egyptian Pound spot rate, CBE primary)
       MACRO_EEM     ← EEM   (iShares MSCI Emerging Markets ETF)
 
     Stored in the same prices table as stock prices (with data_source='yfinance_macro').
@@ -163,14 +255,35 @@ def collect_macro_data():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
-    print("🌍 Fetching macro context data (Brent, USD/EGP, EM)...")
+    print("Fetching macro context data (Brent, USD/EGP, EM)...")
     stored = 0
+    today = datetime.utcnow().strftime('%Y-%m-%d')
+
+    # --- Special handling for USD/EGP: try CBE official source first ---
+    cbe_rate = _fetch_usdegp_rate()
+    if cbe_rate is not None:
+        try:
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(sql, (
+                    'MACRO_USDEGP',
+                    today,
+                    cbe_rate, cbe_rate, cbe_rate, cbe_rate,
+                    0,
+                    'cbe_official',
+                ))
+            stored += 1
+            print(f"  OK MACRO_USDEGP (CBE): {cbe_rate:.4f} EGP/USD")
+            MACRO_SYMBOLS.pop('MACRO_USDEGP', None)   # skip yfinance fallback
+        except Exception as e:
+            print(f"  MACRO_USDEGP CBE store error: {e} — will try yfinance")
+
     for internal_sym, yf_sym in MACRO_SYMBOLS.items():
         try:
             ticker = yf.Ticker(yf_sym)
             df = ticker.history(period="90d")
             if len(df) == 0:
-                print(f"  ⚠️  No data for {yf_sym} ({internal_sym})")
+                print(f"  WARNING: No data for {yf_sym} ({internal_sym})")
                 continue
             with get_connection() as conn:
                 cursor = conn.cursor()
@@ -186,9 +299,9 @@ def collect_macro_data():
                         'yfinance_macro',
                     ))
             stored += 1
-            print(f"  ✅ {internal_sym} ({yf_sym}): collected")
+            print(f"  OK {internal_sym} ({yf_sym}): collected")
         except Exception as e:
-            print(f"  ⚠️  {internal_sym} ({yf_sym}): {e}")
+            print(f"  WARNING: {internal_sym} ({yf_sym}): {e}")
 
     return stored
 
