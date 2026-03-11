@@ -275,12 +275,12 @@ def _store_consensus(conn, stock, today, consensus_result):
     if os.getenv('DATABASE_URL'):
         cursor.execute("""
             INSERT INTO consensus_results
-            (symbol, prediction_date, final_signal, conviction, confidence,
+            (symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
              risk_adjusted, agent_agreement, agents_agreeing, agents_total,
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
              agent_signals_json, reasoning_chain_json, display_json)
-            VALUES (%s, %s, %s, %s, %s,
+            VALUES (%s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s,
@@ -290,6 +290,7 @@ def _store_consensus(conn, stock, today, consensus_result):
                 final_signal = EXCLUDED.final_signal,
                 conviction = EXCLUDED.conviction,
                 confidence = EXCLUDED.confidence,
+                xmore_score = EXCLUDED.xmore_score,
                 risk_adjusted = EXCLUDED.risk_adjusted,
                 agent_agreement = EXCLUDED.agent_agreement,
                 agents_agreeing = EXCLUDED.agents_agreeing,
@@ -310,6 +311,7 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('final_signal', 'HOLD'),
             consensus_result.get('conviction', 'LOW'),
             consensus_result.get('confidence', 0),
+            consensus_result.get('xmore_score', 0),
             consensus_result.get('risk_adjusted', False),
             consensus_result.get('agent_agreement', 0),
             consensus_result.get('agents_agreeing', 0),
@@ -325,12 +327,12 @@ def _store_consensus(conn, stock, today, consensus_result):
     else:
         cursor.execute("""
             INSERT OR REPLACE INTO consensus_results
-            (symbol, prediction_date, final_signal, conviction, confidence,
+            (symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
              risk_adjusted, agent_agreement, agents_agreeing, agents_total,
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
              agent_signals_json, reasoning_chain_json, display_json)
-            VALUES (?, ?, ?, ?, ?,
+            VALUES (?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?,
@@ -340,6 +342,7 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('final_signal', 'HOLD'),
             consensus_result.get('conviction', 'LOW'),
             consensus_result.get('confidence', 0),
+            consensus_result.get('xmore_score', 0),
             1 if consensus_result.get('risk_adjusted', False) else 0,
             consensus_result.get('agent_agreement', 0),
             consensus_result.get('agents_agreeing', 0),
@@ -763,7 +766,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 reasons, reasons_ar,
                 bull_score, bear_score, agents_agreeing, agents_total, risk_flags,
                 trend_ar, trend_en, rec_type_ar, rec_type_en,
-                buy_guide, pivot, r1, r2, s1, s2
+                buy_guide, pivot, r1, r2, s1, s2, patterns
             ) VALUES (
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
@@ -772,7 +775,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 %s, %s,
                 %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
-                %s, %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s, %s, %s
             )
             ON CONFLICT (user_id, symbol, recommendation_date) DO UPDATE SET
                 action = EXCLUDED.action,
@@ -790,6 +793,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 pivot = EXCLUDED.pivot,
                 r1 = EXCLUDED.r1, r2 = EXCLUDED.r2,
                 s1 = EXCLUDED.s1, s2 = EXCLUDED.s2,
+                patterns = EXCLUDED.patterns,
                 updated_at = CURRENT_TIMESTAMP
         """
 
@@ -802,7 +806,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 reasons, reasons_ar,
                 bull_score, bear_score, agents_agreeing, agents_total, risk_flags,
                 trend_ar, trend_en, rec_type_ar, rec_type_en,
-                buy_guide, pivot, r1, r2, s1, s2
+                buy_guide, pivot, r1, r2, s1, s2, patterns
             ) VALUES (
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
@@ -811,7 +815,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 ?, ?,
                 ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?, ?, ?
             )
             ON CONFLICT (user_id, symbol, recommendation_date) DO UPDATE SET
                 action = excluded.action,
@@ -829,6 +833,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 pivot = excluded.pivot,
                 r1 = excluded.r1, r2 = excluded.r2,
                 s1 = excluded.s1, s2 = excluded.s2,
+                patterns = excluded.patterns,
                 updated_at = CURRENT_TIMESTAMP
         """
 
@@ -845,6 +850,7 @@ def store_trade_recommendation(user_id, rec, trading_date):
             rec.get("rec_type_ar"), rec.get("rec_type_en"),
             rec.get("buy_guide"), rec.get("pivot"),
             rec.get("r1"), rec.get("r2"), rec.get("s1"), rec.get("s2"),
+            json.dumps(rec.get("patterns", [])),
         )
         
         if os.getenv('DATABASE_URL'):

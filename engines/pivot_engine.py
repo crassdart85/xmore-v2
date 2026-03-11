@@ -147,6 +147,103 @@ def get_buy_guide(close: float, pivots: Optional[dict], atr: Optional[float]) ->
     return round(close - fallback_discount, 3)
 
 
+def detect_patterns(df: pd.DataFrame) -> list[dict]:
+    """
+    Detect common candlestick patterns on the last 3 rows.
+
+    Returns a list of dicts: [{name_en, name_ar, signal}]
+    where signal is 'bullish', 'bearish', or 'neutral'.
+    """
+    if df is None or len(df) < 3:
+        return []
+
+    rows = df.tail(3).copy()
+    rows = rows.reset_index(drop=True)
+
+    def body(r):
+        return abs(float(r["close"]) - float(r["open"]))
+
+    def range_(r):
+        return max(float(r["high"]) - float(r["low"]), 1e-9)
+
+    def upper_shadow(r):
+        top = max(float(r["open"]), float(r["close"]))
+        return float(r["high"]) - top
+
+    def lower_shadow(r):
+        bot = min(float(r["open"]), float(r["close"]))
+        return bot - float(r["low"])
+
+    def is_bullish(r):
+        return float(r["close"]) > float(r["open"])
+
+    def is_bearish(r):
+        return float(r["close"]) < float(r["open"])
+
+    patterns = []
+    r0, r1, r2 = rows.iloc[0], rows.iloc[1], rows.iloc[2]
+
+    # ── Doji (latest candle) ─────────────────────────────────────────────────
+    if body(r2) < 0.1 * range_(r2):
+        patterns.append({"name_en": "Doji", "name_ar": "دوجي", "signal": "neutral"})
+
+    # ── Hammer (latest candle, bullish reversal) ─────────────────────────────
+    if (
+        lower_shadow(r2) >= 2 * max(body(r2), 1e-9)
+        and upper_shadow(r2) <= 0.3 * range_(r2)
+        and body(r2) > 0
+    ):
+        patterns.append({"name_en": "Hammer", "name_ar": "المطرقة", "signal": "bullish"})
+
+    # ── Shooting Star (latest candle, bearish reversal) ──────────────────────
+    if (
+        upper_shadow(r2) >= 2 * max(body(r2), 1e-9)
+        and lower_shadow(r2) <= 0.3 * range_(r2)
+        and body(r2) > 0
+    ):
+        patterns.append({"name_en": "Shooting Star", "name_ar": "نجمة الرماية", "signal": "bearish"})
+
+    # ── Bullish Engulfing (r1 bearish, r2 bullish and body engulfs r1) ───────
+    if (
+        is_bearish(r1)
+        and is_bullish(r2)
+        and float(r2["open"]) <= float(r1["close"])
+        and float(r2["close"]) >= float(r1["open"])
+        and body(r2) > body(r1)
+    ):
+        patterns.append({"name_en": "Bullish Engulfing", "name_ar": "الابتلاع الصاعد", "signal": "bullish"})
+
+    # ── Bearish Engulfing (r1 bullish, r2 bearish and body engulfs r1) ───────
+    if (
+        is_bullish(r1)
+        and is_bearish(r2)
+        and float(r2["open"]) >= float(r1["close"])
+        and float(r2["close"]) <= float(r1["open"])
+        and body(r2) > body(r1)
+    ):
+        patterns.append({"name_en": "Bearish Engulfing", "name_ar": "الابتلاع الهابط", "signal": "bearish"})
+
+    # ── Morning Star (3-candle bullish reversal: r0 bear, r1 small, r2 bull) ─
+    if (
+        is_bearish(r0)
+        and body(r1) <= 0.3 * range_(r1)
+        and is_bullish(r2)
+        and float(r2["close"]) > (float(r0["open"]) + float(r0["close"])) / 2
+    ):
+        patterns.append({"name_en": "Morning Star", "name_ar": "نجمة الصباح", "signal": "bullish"})
+
+    # ── Evening Star (3-candle bearish reversal: r0 bull, r1 small, r2 bear) ─
+    if (
+        is_bullish(r0)
+        and body(r1) <= 0.3 * range_(r1)
+        and is_bearish(r2)
+        and float(r2["close"]) < (float(r0["open"]) + float(r0["close"])) / 2
+    ):
+        patterns.append({"name_en": "Evening Star", "name_ar": "نجمة المساء", "signal": "bearish"})
+
+    return patterns
+
+
 def enrich_recommendation(
     rec: dict,
     df: pd.DataFrame,
@@ -186,6 +283,7 @@ def enrich_recommendation(
     rec["rec_type_ar"]    = rec_type_ar
     rec["rec_type_en"]    = rec_type_en
     rec["buy_guide"]      = buy_guide
+    rec["patterns"]       = detect_patterns(df)
 
     if pivots:
         rec["pivot"]  = pivots["pivot"]

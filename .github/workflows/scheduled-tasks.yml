@@ -53,6 +53,8 @@ on:
     - cron: '0 6 * * 0'
     # ETF RAG embedding worker (hourly)
     - cron: '15 * * * *'
+    # Weekly backtest (Sunday 07:00 UTC)
+    - cron: '0 7 * * 0'
 
   workflow_dispatch:
 
@@ -483,3 +485,22 @@ jobs:
         run: python -c "from database import create_tables; create_tables()"
       - name: Process pending ETF document embeddings
         run: python -m engines.etf_rag_embedding_worker
+
+  # ─────────────────────────────────────
+  # Backtest: Walk-forward ML accuracy (weekly, Sunday 07:00 UTC)
+  # ─────────────────────────────────────
+  weekly-backtest:
+    if: github.event.schedule == '0 7 * * 0' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: main, fetch-depth: 1 }
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.10' }
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Initialize database schema
+        run: python -c "from database import create_tables; create_tables()"
+      - name: Run walk-forward backtest and save results
+        run: python engines/backtest.py --all --save

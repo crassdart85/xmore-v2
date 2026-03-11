@@ -358,6 +358,71 @@ router.get('/performance', authMiddleware, async (req, res) => {
     }
 });
 
+// ─── POST /api/trades/positions — Open a virtual position ────────────────────
+router.post('/positions', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user?.userId || req.userId;
+        const { symbol, entry_price, entry_date } = req.body;
+        if (!symbol || !entry_price) {
+            return res.status(400).json({ error: 'symbol and entry_price are required' });
+        }
+        const date = entry_date || new Date().toISOString().split('T')[0];
+        const price = parseFloat(entry_price);
+        if (isNaN(price) || price <= 0) return res.status(400).json({ error: 'Invalid entry_price' });
+
+        const sql = db._isPostgres
+            ? `INSERT INTO user_positions (user_id, symbol, status, entry_date, entry_price)
+               VALUES ($1, $2, 'OPEN', $3, $4)
+               ON CONFLICT ON CONSTRAINT idx_unique_open_position DO NOTHING
+               RETURNING id`
+            : `INSERT OR IGNORE INTO user_positions (user_id, symbol, status, entry_date, entry_price)
+               VALUES (?, ?, 'OPEN', ?, ?)`;
+
+        const result = await queryAll(sql, [userId, symbol, date, price]);
+        if (db._isPostgres && result.rows.length === 0) {
+            return res.status(409).json({ error: 'An open position for this symbol already exists' });
+        }
+        return res.json({ ok: true, message: `Position opened for ${symbol} at ${price}` });
+    } catch (err) {
+        console.error('Error opening position:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ─── PATCH /api/trades/positions/:id — Close a virtual position ───────────────
+router.patch('/positions/:id', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user?.userId || req.userId;
+        const posId = parseInt(req.params.id);
+        const { exit_price, exit_date } = req.body;
+        if (!exit_price) return res.status(400).json({ error: 'exit_price is required' });
+
+        const price = parseFloat(exit_price);
+        if (isNaN(price) || price <= 0) return res.status(400).json({ error: 'Invalid exit_price' });
+        const date = exit_date || new Date().toISOString().split('T')[0];
+
+        // Fetch position to compute return_pct
+        const fetchSql = `SELECT id, entry_price FROM user_positions WHERE id = $1 AND user_id = $2 AND status = 'OPEN'`;
+        const fetchRes = await queryAll(fetchSql, [posId, userId]);
+        if (fetchRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Open position not found' });
+        }
+        const entryPrice = parseFloat(fetchRes.rows[0].entry_price);
+        const returnPct = entryPrice > 0 ? parseFloat(((price - entryPrice) / entryPrice * 100).toFixed(4)) : 0;
+
+        const updateSql = `
+            UPDATE user_positions
+            SET status = 'CLOSED', exit_price = $1, exit_date = $2, return_pct = $3, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $4 AND user_id = $5 AND status = 'OPEN'
+        `;
+        await queryAll(updateSql, [price, date, returnPct, posId, userId]);
+        return res.json({ ok: true, return_pct: returnPct, message: `Position closed at ${price} (${returnPct > 0 ? '+' : ''}${returnPct}%)` });
+    } catch (err) {
+        console.error('Error closing position:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 // ─── Session Sheet (/api/trades/session-sheet) ───────────────────────────────
 // Returns today's signals enriched with pivot levels, trend, buy guide, rec type.
 // Also returns index-level pivot data for EGX30 / EGX70.
@@ -383,7 +448,7 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
                 tr.close_price, tr.stop_loss_price, tr.stop_loss_pct,
                 tr.target_price, tr.target_pct, tr.risk_reward_ratio,
                 tr.trend_ar, tr.trend_en, tr.rec_type_ar, tr.rec_type_en,
-                tr.buy_guide, tr.pivot, tr.r1, tr.r2, tr.s1, tr.s2
+                tr.buy_guide, tr.pivot, tr.r1, tr.r2, tr.s1, tr.s2, tr.patterns
             FROM trade_recommendations tr
             JOIN egx30_stocks s ON tr.symbol = s.symbol
             WHERE tr.user_id = $1

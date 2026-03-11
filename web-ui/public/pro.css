@@ -309,6 +309,17 @@ body {
   white-space: nowrap;
 }
 
+/* ─── Backtest panel ─────────────────────────────────────────────────────── */
+.pro-backtest-panel {
+  background: var(--pro-surface);
+  border-top: 1px solid var(--pro-border);
+  margin-top: 1px;
+}
+.pro-backtest-body { padding: 0 20px 16px; }
+.pro-backtest-table { width: 100%; }
+.pro-panel-note { font-size: 11px; color: var(--pro-muted); margin-left: 12px; }
+.score-cell { font-weight: 700; font-size: 13px; min-width: 46px; text-align: center; }
+
 /* ─── Macro brief panel ──────────────────────────────────────────────────── */
 .pro-macro-panel {
   background: var(--pro-surface);

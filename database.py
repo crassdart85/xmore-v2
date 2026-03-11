@@ -255,6 +255,29 @@ def create_tables():
         # Add reasoning column to predictions if it doesn't exist
         _safe_add_column(cursor, "predictions", "reasoning", "TEXT")
 
+        # Add xmore_score to consensus_results if it doesn't exist
+        _safe_add_column(cursor, "consensus_results", "xmore_score", "REAL")
+
+        # Table: Backtest Results (walk-forward ML performance per symbol)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS backtest_results (
+                id {auto_id},
+                symbol TEXT NOT NULL,
+                run_date DATE NOT NULL,
+                n_rows INTEGER,
+                n_splits INTEGER,
+                accuracy REAL,
+                directional_accuracy REAL,
+                signal_pnl_pct REAL,
+                up_precision REAL,
+                down_precision REAL,
+                features_used INTEGER,
+                fold_scores_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, run_date)
+            )
+        """)
+
         # Table 8: Users (Auth)
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS users (
@@ -447,7 +470,7 @@ def create_tables():
         for col_name, col_type in benchmark_columns:
             _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
 
-        # Add session-sheet columns (pivot levels, trend, buy guide, rec type)
+        # Add session-sheet columns (pivot levels, trend, buy guide, rec type, patterns)
         session_columns = [
             ("trend_ar",    "TEXT"),
             ("trend_en",    "TEXT"),
@@ -459,6 +482,7 @@ def create_tables():
             ("r2",          "REAL"),
             ("s1",          "REAL"),
             ("s2",          "REAL"),
+            ("patterns",    "TEXT"),
         ]
         for col_name, col_type in session_columns:
             _safe_add_column(cursor, "trade_recommendations", col_name, col_type)

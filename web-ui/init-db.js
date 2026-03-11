@@ -196,6 +196,34 @@ async function initializeDatabase() {
       // Column may already exist, that's fine
     }
 
+    // Add xmore_score column to consensus_results if not exists
+    try {
+      await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS xmore_score REAL');
+      console.log('✅ Added xmore_score column to consensus_results');
+    } catch (err) { /* already exists */ }
+
+    // Table: Backtest Results (walk-forward ML performance per symbol)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS backtest_results (
+        id SERIAL PRIMARY KEY,
+        symbol TEXT NOT NULL,
+        run_date DATE NOT NULL,
+        n_rows INTEGER,
+        n_splits INTEGER,
+        accuracy REAL,
+        directional_accuracy REAL,
+        signal_pnl_pct REAL,
+        up_precision REAL,
+        down_precision REAL,
+        features_used INTEGER,
+        fold_scores_json TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(symbol, run_date)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_backtest_symbol ON backtest_results(symbol, run_date DESC)');
+    console.log('✅ backtest_results table ready');
+
     // ============================================
     // AUTH & WATCHLIST TABLES
     // ============================================
@@ -300,6 +328,16 @@ async function initializeDatabase() {
       )
     `);
     await pool.query("CREATE INDEX IF NOT EXISTS idx_trade_rec_user_date ON trade_recommendations(user_id, recommendation_date DESC)");
+
+    // Session-sheet columns on trade_recommendations (safe)
+    for (const col of [
+      ['trend_ar','TEXT'], ['trend_en','TEXT'], ['rec_type_ar','TEXT'], ['rec_type_en','TEXT'],
+      ['buy_guide','REAL'], ['pivot','REAL'], ['r1','REAL'], ['r2','REAL'], ['s1','REAL'], ['s2','REAL'],
+      ['benchmark_1d_return','REAL'], ['alpha_1d','REAL'], ['benchmark_5d_return','REAL'], ['alpha_5d','REAL'],
+      ['patterns','TEXT'],
+    ]) {
+      try { await pool.query(`ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS ${col[0]} ${col[1]}`); } catch(_) {}
+    }
 
     // Table: Daily Briefings (one global row per date)
     await pool.query(`

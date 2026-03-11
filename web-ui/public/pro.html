@@ -102,6 +102,7 @@
             <th data-i18n="colChg">Chg%</th>
             <th data-i18n="colSignal">Signal</th>
             <th data-i18n="colConf">Conf</th>
+            <th data-i18n="colScore">Score</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -117,6 +118,7 @@
             <th data-i18n="colChg">Chg%</th>
             <th data-i18n="colSignal">Signal</th>
             <th data-i18n="colConf">Conf</th>
+            <th data-i18n="colScore">Score</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -223,6 +225,17 @@
     <div id="derivLoading" class="pro-deriv-loading" style="display:none" data-i18n="pricing">Pricing&#8230;</div>
     <div id="derivNarrative" class="pro-deriv-narrative"></div>
     <div id="derivMetrics" class="pro-deriv-metrics"></div>
+  </div>
+
+  <!-- Backtest Performance Panel -->
+  <div class="pro-backtest-panel">
+    <div class="pro-panel-title">
+      <span data-i18n="backtestTitle">Walk-Forward Backtest Results</span>
+      <span class="pro-panel-note" data-i18n="backtestNote">Updated weekly · ML agent only</span>
+    </div>
+    <div class="pro-backtest-body" id="backtestBody">
+      <div style="color:#555;font-size:12px;padding:8px 0;" data-i18n="loading">Loading…</div>
+    </div>
   </div>
 
   <!-- Macro Brief -->

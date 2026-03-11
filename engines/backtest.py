@@ -380,6 +380,61 @@ def backtest_symbol(symbol: str,
                 pass
 
 
+def save_results(results: list, run_date: str = None) -> int:
+    """
+    Persist backtest results to the backtest_results table.
+    Existing row for (symbol, run_date) is replaced.
+
+    Returns count of rows upserted.
+    """
+    import json as _json
+    if not results:
+        return 0
+    if run_date is None:
+        run_date = datetime.now().strftime('%Y-%m-%d')
+
+    saved = 0
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        for r in results:
+            if not r.get('metrics'):
+                continue
+            m = r['metrics']
+            pc = m.get('per_class', {})
+            up_p  = pc.get('UP',   {}).get('precision', None)
+            dn_p  = pc.get('DOWN', {}).get('precision', None)
+            fold_json = _json.dumps(r.get('fold_scores', []))
+            row = (
+                r['symbol'], run_date,
+                r.get('n_rows'), r.get('n_splits', DEFAULT_SPLITS),
+                m.get('accuracy'), m.get('directional_accuracy'),
+                m.get('signal_pnl_pct'), up_p, dn_p,
+                r.get('features_used'), fold_json,
+            )
+            if os.getenv('DATABASE_URL'):
+                cursor.execute("""
+                    INSERT INTO backtest_results
+                    (symbol, run_date, n_rows, n_splits, accuracy, directional_accuracy,
+                     signal_pnl_pct, up_precision, down_precision, features_used, fold_scores_json)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (symbol, run_date) DO UPDATE SET
+                        n_rows=EXCLUDED.n_rows, n_splits=EXCLUDED.n_splits,
+                        accuracy=EXCLUDED.accuracy, directional_accuracy=EXCLUDED.directional_accuracy,
+                        signal_pnl_pct=EXCLUDED.signal_pnl_pct, up_precision=EXCLUDED.up_precision,
+                        down_precision=EXCLUDED.down_precision, features_used=EXCLUDED.features_used,
+                        fold_scores_json=EXCLUDED.fold_scores_json
+                """, row)
+            else:
+                cursor.execute("""
+                    INSERT OR REPLACE INTO backtest_results
+                    (symbol, run_date, n_rows, n_splits, accuracy, directional_accuracy,
+                     signal_pnl_pct, up_precision, down_precision, features_used, fold_scores_json)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                """, row)
+            saved += 1
+    return saved
+
+
 def backtest_all(symbols: list = None,
                  n_splits: int = DEFAULT_SPLITS,
                  top_n_features: int = DEFAULT_TOP_N) -> list:
@@ -477,6 +532,8 @@ if __name__ == '__main__':
                         help=f'Number of walk-forward splits (default {DEFAULT_SPLITS})')
     parser.add_argument('--top-features', type=int, default=DEFAULT_TOP_N,
                         help=f'Top-N features to select (default {DEFAULT_TOP_N})')
+    parser.add_argument('--save', action='store_true',
+                        help='Persist results to backtest_results DB table')
     args = parser.parse_args()
 
     engine = 'LightGBM' if LGBM_AVAILABLE else 'RandomForest (LightGBM not installed)'
@@ -491,7 +548,13 @@ if __name__ == '__main__':
             for cls, vals in r['metrics']['per_class'].items():
                 print(f"  {cls:<6}  precision={vals['precision']:.3f}  recall={vals['recall']:.3f}  "
                       f"f1={vals['f1']:.3f}  support={vals['support']}")
+        if args.save and r['metrics']:
+            n = save_results([r])
+            print(f"\n✅ Saved {n} result(s) to backtest_results table.")
     else:
         print("Running full backtest...\n")
         results = backtest_all(n_splits=args.splits, top_n_features=args.top_features)
         print_report(results)
+        if args.save and results:
+            n = save_results(results)
+            print(f"\n✅ Saved {n} result(s) to backtest_results table.")

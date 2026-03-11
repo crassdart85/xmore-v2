@@ -809,6 +809,68 @@ footer {
 }
 
 /* ============================================
+   SCREENER BAR
+   ============================================ */
+.screener-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.screener-select {
+    padding: 7px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.85em;
+    cursor: pointer;
+    outline: none;
+}
+
+.screener-select:focus {
+    border-color: var(--accent);
+}
+
+.screener-label {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.screener-input {
+    width: 60px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font-size: 0.85em;
+    outline: none;
+    text-align: center;
+}
+
+.screener-reset {
+    padding: 7px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.82em;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.screener-reset:hover {
+    color: var(--text-primary);
+    border-color: var(--text-primary);
+}
+
+/* ============================================
    SCROLLABLE CONTAINER
    ============================================ */
 .scrollable-container {

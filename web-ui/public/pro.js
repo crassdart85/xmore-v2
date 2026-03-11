@@ -27,6 +27,8 @@ const _PRO_I18N = {
     legendForecast: 'Forecast', legendActualPos: 'Actual (positive)', legendActualNeg: 'Actual (negative)',
     derivTitle: 'Derivatives Brief', derivBtn: 'Price ▶', pricing: 'Pricing…',
     macroTitle: 'Macro Brief', macroRefresh: '↺ Refresh',
+    backtestTitle: 'Walk-Forward Backtest Results', backtestNote: 'Updated weekly · ML agent only',
+    colScore: 'Score', btSymbol: 'Symbol', btAcc: 'Accuracy', btDir: 'Directional', btPnl: 'Signal P&L', btRows: 'Rows',
     loading: 'Loading…',
   },
   ar: {
@@ -52,6 +54,8 @@ const _PRO_I18N = {
     legendForecast: 'التوقع', legendActualPos: 'الفعلي (موجب)', legendActualNeg: 'الفعلي (سالب)',
     derivTitle: 'موجز المشتقات', derivBtn: 'تسعير ▶', pricing: 'جارٍ التسعير…',
     macroTitle: 'موجز الاقتصاد الكلي', macroRefresh: '↺ تحديث',
+    backtestTitle: 'نتائج الاختبار الزمني', backtestNote: 'تحديث أسبوعي · نموذج ML فقط',
+    colScore: 'نقاط', btSymbol: 'الرمز', btAcc: 'الدقة', btDir: 'الاتجاه', btPnl: 'ر/خ الإشارة', btRows: 'الصفوف',
     loading: 'جارٍ التحميل…',
   },
 };
@@ -83,22 +87,27 @@ async function loadFxRates() {
     const res  = await fetch('/api/fx-rates');
     const data = await res.json();
     if (!data || data.error) throw new Error(data.error || 'no data');
-    strip.innerHTML = `
-      <div class="pro-fx-item">
-        <span class="pro-fx-pair">USD/EGP</span>
-        <span class="pro-fx-val">${data.USD_EGP.toFixed(2)}</span>
-      </div>
-      <span class="pro-fx-sep">·</span>
-      <div class="pro-fx-item">
-        <span class="pro-fx-pair">USD/SAR</span>
-        <span class="pro-fx-val">${data.USD_SAR.toFixed(4)}</span>
-      </div>
-      <span class="pro-fx-sep">·</span>
-      <div class="pro-fx-item">
-        <span class="pro-fx-pair">SAR/EGP</span>
-        <span class="pro-fx-val">${data.SAR_EGP.toFixed(4)}</span>
-      </div>
-    `;
+
+    const fxItems = [
+      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  ?? '—' },
+      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  ?? '—' },
+      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  ?? '—' },
+    ];
+    const goldItems = data.GOLD_24K_EGP_G ? [
+      { label: '🥇 24K/g',   val: data.GOLD_24K_EGP_G?.toFixed(0) + ' EGP' },
+      { label: '21K/g',      val: data.GOLD_21K_EGP_G?.toFixed(0) + ' EGP' },
+      { label: '18K/g',      val: data.GOLD_18K_EGP_G?.toFixed(0) + ' EGP' },
+      { label: 'جنيه ذهب',  val: data.GOLD_POUND_EGP?.toFixed(0)  + ' EGP' },
+    ] : [];
+
+    const allItems = [...fxItems, ...goldItems];
+    strip.innerHTML = allItems.map((item, i) =>
+      `${i > 0 ? '<span class="pro-fx-sep">·</span>' : ''}
+       <div class="pro-fx-item">
+         <span class="pro-fx-pair">${item.label}</span>
+         <span class="pro-fx-val">${item.val}</span>
+       </div>`
+    ).join('');
   } catch (_) {
     strip.innerHTML = '<span class="pro-fx-loading">FX unavailable</span>';
   }
@@ -297,8 +306,9 @@ Promise.all([
   // Populate shared consensus map for portfolio renderer
   consensusArr.forEach(c => {
     _csMap[c.symbol] = {
-      prediction: c.final_signal || c.consensus_prediction || c.prediction,
-      confidence: c.confidence,
+      prediction:  c.final_signal || c.consensus_prediction || c.prediction,
+      confidence:  c.confidence,
+      xmore_score: c.xmore_score,
     };
   });
 
@@ -334,12 +344,13 @@ function renderStats(prices, stats, perf) {
 
 // ── renderMovers ──────────────────────────────────────────────────────────────
 function renderMovers(prices, stocks, consensus) {
-  // Build consensus map: symbol → {prediction, confidence}
+  // Build consensus map: symbol → {prediction, confidence, xmore_score}
   const csMap = {};
   consensus.forEach(c => {
     csMap[c.symbol] = {
-      prediction: c.final_signal || c.consensus_prediction || c.prediction,
-      confidence: c.confidence,
+      prediction:  c.final_signal || c.consensus_prediction || c.prediction,
+      confidence:  c.confidence,
+      xmore_score: c.xmore_score,
     };
   });
 
@@ -360,7 +371,7 @@ function fillMoversTable(tableId, rows, csMap) {
   if (!tbody) return;
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="color:#555;padding:12px 14px;">No data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#555;padding:12px 14px;">No data</td></tr>';
     return;
   }
 
@@ -371,6 +382,8 @@ function fillMoversTable(tableId, rows, csMap) {
     const chgCls = chg > 0 ? 'green' : (chg < 0 ? 'red' : '');
     const cs     = csMap[sym] || {};
     const conf   = cs.confidence ? parseFloat(cs.confidence).toFixed(0) + '%' : '—';
+    const score  = cs.xmore_score != null ? parseFloat(cs.xmore_score).toFixed(0) : '—';
+    const scoreCls = cs.xmore_score >= 70 ? 'green' : cs.xmore_score >= 45 ? '' : 'red';
 
     return `<tr>
       <td class="sym-cell">${escHtml(label)}</td>
@@ -378,6 +391,7 @@ function fillMoversTable(tableId, rows, csMap) {
       <td class="chg-cell ${chgCls}">${escHtml(fmtChg(p.change_pct))}</td>
       <td class="sig-cell">${signalBadge(cs.prediction)}</td>
       <td class="conf-cell">${escHtml(conf)}</td>
+      <td class="score-cell ${scoreCls}" title="Xmore Score">${escHtml(score)}</td>
     </tr>`;
   }).join('');
 }
@@ -487,6 +501,52 @@ async function loadMacroBrief() {
 // Auto-load on page open, then refresh every hour
 loadMacroBrief();
 setInterval(loadMacroBrief, 60 * 60 * 1000);
+
+// ── Backtest Results ─────────────────────────────────────────────────
+async function loadBacktestResults() {
+  const body = document.getElementById('backtestBody');
+  if (!body) return;
+  try {
+    const res  = await fetch('/api/backtest/results');
+    const data = await res.json();
+    if (!data || !data.length) {
+      body.innerHTML = '<p style="color:#555;font-size:12px;padding:8px 0;">No backtest data yet — runs weekly on Sunday.</p>';
+      return;
+    }
+    const t = k => (_PRO_I18N[_PRO_LANG] || _PRO_I18N.en)[k] || k;
+    const rows = data
+      .sort((a, b) => (b.directional_accuracy || 0) - (a.directional_accuracy || 0))
+      .slice(0, 30)
+      .map(r => {
+        const dir    = r.directional_accuracy != null ? (r.directional_accuracy * 100).toFixed(1) + '%' : '—';
+        const acc    = r.accuracy            != null ? (r.accuracy * 100).toFixed(1) + '%' : '—';
+        const pnl    = r.signal_pnl_pct      != null ? (r.signal_pnl_pct >= 0 ? '+' : '') + r.signal_pnl_pct.toFixed(1) + '%' : '—';
+        const pnlCls = r.signal_pnl_pct >= 0 ? 'green' : 'red';
+        const dirCls = (r.directional_accuracy || 0) >= 0.55 ? 'green' : (r.directional_accuracy || 0) >= 0.45 ? '' : 'red';
+        return `<tr>
+          <td class="sym-cell">${escHtml(r.symbol.replace('.CA',''))}</td>
+          <td>${escHtml(acc)}</td>
+          <td class="${dirCls}">${escHtml(dir)}</td>
+          <td class="${pnlCls}">${escHtml(pnl)}</td>
+          <td style="color:#555">${r.n_rows || '—'}</td>
+        </tr>`;
+      }).join('');
+    body.innerHTML = `
+      <table class="pro-table pro-backtest-table">
+        <thead><tr>
+          <th>${t('btSymbol')}</th>
+          <th>${t('btAcc')}</th>
+          <th>${t('btDir')}</th>
+          <th>${t('btPnl')}</th>
+          <th>${t('btRows')}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch (e) {
+    body.innerHTML = '<p style="color:#555;font-size:12px;">Backtest data unavailable.</p>';
+  }
+}
+loadBacktestResults();
 
 // ── Derivatives Brief ────────────────────────────────────────────────
 async function loadDerivativesBrief() {

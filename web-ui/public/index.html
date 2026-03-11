@@ -110,6 +110,30 @@
                 <input type="text" id="predictionsSearch" placeholder="Search by stock symbol or company name..."
                     onkeyup="filterPredictions()">
             </div>
+            <!-- Screener filters -->
+            <div class="screener-bar" id="screenerBar">
+                <select id="screenerSignal" onchange="filterPredictions()" class="screener-select">
+                    <option value="">All Signals</option>
+                    <option value="up">↑ Bullish (UP)</option>
+                    <option value="down">↓ Bearish (DOWN)</option>
+                    <option value="hold">— Hold</option>
+                </select>
+                <select id="screenerConviction" onchange="filterPredictions()" class="screener-select">
+                    <option value="">All Conviction</option>
+                    <option value="VERY_HIGH">Very High</option>
+                    <option value="HIGH">High</option>
+                    <option value="MODERATE">Moderate</option>
+                    <option value="LOW">Low</option>
+                </select>
+                <select id="screenerSector" onchange="filterPredictions()" class="screener-select">
+                    <option value="">All Sectors</option>
+                </select>
+                <label class="screener-label">Min Conf:
+                    <input type="number" id="screenerMinConf" min="0" max="100" value="0"
+                        oninput="filterPredictions()" class="screener-input" placeholder="0">%
+                </label>
+                <button onclick="resetScreener()" class="screener-reset">✕ Reset</button>
+            </div>
             <div id="predictions" class="scrollable-container">
                 <div class="skeleton-loader">
                     <div class="skeleton-row">

@@ -26,26 +26,28 @@ logger = logging.getLogger(__name__)
 
 def _compute_conviction(bull_score, bear_score, agreement_ratio, avg_confidence):
     """
-    Map numeric scores to a conviction label.
-    
-    Returns one of: VERY_HIGH, HIGH, MODERATE, LOW
+    Map numeric scores to a conviction label and Xmore Score (0-100).
+
+    Returns (conviction_label, xmore_score).
+    xmore_score is a continuous 0-100 composite used as a comparable rank metric.
     """
-    # Weighted composite
+    # Weighted composite — same formula used for conviction gating
     composite = (
         bull_score * 0.30 +
         (100 - bear_score) * 0.25 +
         agreement_ratio * 100 * 0.25 +
         avg_confidence * 0.20
     )
-    
+    xmore_score = round(max(0.0, min(100.0, composite)), 1)
+
     if composite >= 75:
-        return "VERY_HIGH"
+        return "VERY_HIGH", xmore_score
     elif composite >= 60:
-        return "HIGH"
+        return "HIGH", xmore_score
     elif composite >= 40:
-        return "MODERATE"
+        return "MODERATE", xmore_score
     else:
-        return "LOW"
+        return "LOW", xmore_score
 
 
 def _conviction_display(conviction, lang='en'):
@@ -214,7 +216,7 @@ def run_consensus(symbol: str,
 
     avg_confidence = sum(s.get('confidence', 50) for s in agent_signals) / len(agent_signals)
 
-    conviction = _compute_conviction(
+    conviction, xmore_score = _compute_conviction(
         bull_case['bull_score'], bear_case['bear_score'],
         agreement_ratio, avg_confidence
     )
@@ -274,6 +276,7 @@ def run_consensus(symbol: str,
         "final_signal": final_signal,
         "conviction": final_conviction,
         "confidence": round(weighted_confidence, 1),
+        "xmore_score": xmore_score,
         "risk_adjusted": risk_assessment['action'] != "PASS",
 
         # Agreement
@@ -323,6 +326,7 @@ def _empty_result(symbol, timestamp):
         "final_signal": "HOLD",
         "conviction": "LOW",
         "confidence": 0.0,
+        "xmore_score": 0.0,
         "risk_adjusted": False,
         "agent_agreement": 0,
         "agents_agreeing": 0,

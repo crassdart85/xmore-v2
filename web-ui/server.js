@@ -471,13 +471,13 @@ app.get('/api/evaluations', (req, res) => {
 app.get('/api/consensus', (req, res) => {
   const query = DATABASE_URL
     ? `SELECT DISTINCT ON (symbol)
-         symbol, prediction_date, final_signal, conviction, confidence,
+         symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
          risk_adjusted, agent_agreement, agents_agreeing, agents_total,
          majority_direction, bull_score, bear_score, risk_action, risk_score,
          display_json, risk_assessment_json
        FROM consensus_results
        ORDER BY symbol, prediction_date DESC`
-    : `SELECT c.symbol, c.prediction_date, c.final_signal, c.conviction, c.confidence,
+    : `SELECT c.symbol, c.prediction_date, c.final_signal, c.conviction, c.confidence, c.xmore_score,
          c.risk_adjusted, c.agent_agreement, c.agents_agreeing, c.agents_total,
          c.majority_direction, c.bull_score, c.bear_score, c.risk_action, c.risk_score,
          c.display_json, c.risk_assessment_json
@@ -706,7 +706,32 @@ app.post('/api/derivatives/price', (req, res) => {
 });
 
 // ============================================
-// FX RATES
+// BACKTEST RESULTS API
+// ============================================
+app.get('/api/backtest/results', (req, res) => {
+  const sym = req.query.symbol;
+  let sql, params;
+  if (sym) {
+    const ph = DATABASE_URL ? '$1' : '?';
+    sql = `SELECT * FROM backtest_results WHERE symbol = ${ph} ORDER BY run_date DESC LIMIT 10`;
+    params = [sym.toUpperCase()];
+  } else {
+    sql = DATABASE_URL
+      ? `SELECT DISTINCT ON (symbol) * FROM backtest_results ORDER BY symbol, run_date DESC`
+      : `SELECT br.* FROM backtest_results br INNER JOIN (SELECT symbol, MAX(run_date) AS d FROM backtest_results GROUP BY symbol) l ON br.symbol=l.symbol AND br.run_date=l.d ORDER BY br.directional_accuracy DESC`;
+    params = [];
+  }
+  db.all(sql, params, (err, rows) => {
+    if (err) {
+      if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) return res.json([]);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json((rows || []).map(r => ({ ...r, fold_scores: r.fold_scores_json ? JSON.parse(r.fold_scores_json) : [] })));
+  });
+});
+
+// ============================================
+// FX RATES (with gold)
 // ============================================
 let _fxCache = null, _fxCacheTime = 0;
 app.get('/api/fx-rates', async (req, res) => {
@@ -723,11 +748,27 @@ app.get('/api/fx-rates', async (req, res) => {
     });
     const egp = raw.rates && raw.rates.EGP;
     const sar = raw.rates && raw.rates.SAR;
+    const xau = raw.rates && raw.rates.XAU;   // troy oz per 1 USD
     if (!egp || !sar) throw new Error('Missing EGP/SAR rates');
+    // Gold calculations: XAU rate = troy oz per USD, so 1 troy oz = 1/xau USD
+    const TROY_OZ_TO_GRAMS = 31.1035;
+    let goldData = {};
+    if (xau && xau > 0) {
+      const xauUsd  = 1 / xau;                                     // USD per troy oz
+      const gold24K = (xauUsd / TROY_OZ_TO_GRAMS) * egp;           // EGP per gram 24K
+      goldData = {
+        XAU_USD:         +xauUsd.toFixed(2),
+        GOLD_24K_EGP_G:  +gold24K.toFixed(2),
+        GOLD_21K_EGP_G:  +(gold24K * 21 / 24).toFixed(2),
+        GOLD_18K_EGP_G:  +(gold24K * 18 / 24).toFixed(2),
+        GOLD_POUND_EGP:  +(gold24K * 21 / 24 * 8).toFixed(2),     // 8g 21K = Egyptian gold pound
+      };
+    }
     _fxCache = {
       USD_EGP: +egp.toFixed(2),
       USD_SAR: +sar.toFixed(4),
       SAR_EGP: +(egp / sar).toFixed(4),
+      ...goldData,
       updated: new Date().toISOString(),
     };
     _fxCacheTime = now;

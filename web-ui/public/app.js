@@ -1609,8 +1609,35 @@ async function loadPredictions() {
     }
 }
 
+const SECTOR_MAP = {
+    'COMI.CA':'Banking','ETEL.CA':'Telecom','HRHO.CA':'Real Estate','SWDY.CA':'Construction',
+    'TALAAT.CA':'Real Estate','ESRS.CA':'Steel','ACGC.CA':'Chemicals','ABUK.CA':'Food & Bev',
+    'PHDC.CA':'Real Estate','EFIH.CA':'Financial Services','MNHD.CA':'Real Estate',
+    'OCDI.CA':'Real Estate','CLHO.CA':'Tourism & Leisure','SUGR.CA':'Food & Bev',
+    'HELMY.CA':'Financial Services','DCRC.CA':'Financial Services','AMOC.CA':'Petroleum',
+    'ORWE.CA':'Textile','SKPC.CA':'Chemicals','AUTO.CA':'Automotive',
+    'SPMD.CA':'Construction','HELI.CA':'Aviation','ISPH.CA':'Pharma',
+    'ALCN.CA':'Construction','BINV.CA':'Financial Services',
+};
+
+function getStockSector(symbol) {
+    return SECTOR_MAP[symbol] || 'Other';
+}
+
+function populateSectorDropdown(symbols) {
+    const select = document.getElementById('screenerSector');
+    if (!select) return;
+    const sectors = [...new Set(symbols.map(getStockSector))].sort();
+    const current = select.value;
+    // keep first "All Sectors" option, replace rest
+    select.innerHTML = '<option value="">All Sectors</option>' +
+        sectors.map(s => `<option value="${s}"${s === current ? ' selected' : ''}>${s}</option>`).join('');
+}
+
 function renderPredictionTable(grouped, symbols, tableId) {
     if (symbols.length === 0) return '';
+
+    if (tableId === 'predictionsTable') populateSectorDropdown(symbols);
 
     let html = `<table id="${tableId}" class="predictions-v2-table"><thead><tr><th>${t('stock')}</th><th>${t('consensusSignal')}</th><th>${t('agreement')}</th><th>${t('conviction')}</th><th>${t('recentAccuracySymbol')}</th><th>${t('expandDetails')}</th></tr></thead><tbody>`;
 
@@ -1641,11 +1668,13 @@ function renderPredictionTable(grouped, symbols, tableId) {
         const agreeCount = tally[consensusKey] || 0;
         const agreementPct = predictions.length ? Math.round((agreeCount / predictions.length) * 100) : 0;
         const convictionValue = predictions.length ? confidenceSum / predictions.length : 0;
+        const convictionLabel = convictionValue >= 75 ? 'VERY_HIGH' : convictionValue >= 60 ? 'HIGH' : convictionValue >= 40 ? 'MODERATE' : 'LOW';
+        const sector = getStockSector(symbol);
         const recentAcc = stockPerformanceMap[symbol]?.win_rate;
         const detailsId = `pred-details-${symbol.replace('.', '-')}`;
 
         html += `
-            <tr data-search="${searchText}" class="group-start pred-stock-row">
+            <tr data-search="${searchText}" data-signal="${consensusKey}" data-conviction="${convictionLabel}" data-sector="${sector}" data-conf="${Math.round(convictionValue)}" class="group-start pred-stock-row">
                 <td class="stock-cell"><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
                 <td><span class="signal-${consensusKey}">${t(consensusKey)}</span></td>
                 <td>${agreeCount}/${predictions.length} (${agreementPct}%)</td>
@@ -1695,7 +1724,11 @@ function togglePredictionDetails(id) {
 // ============================================
 
 function filterPredictions() {
-    const searchValue = document.getElementById('predictionsSearch').value.toLowerCase().trim();
+    const searchValue = document.getElementById('predictionsSearch')?.value.toLowerCase().trim() || '';
+    const sigFilter = document.getElementById('screenerSignal')?.value || '';
+    const convFilter = document.getElementById('screenerConviction')?.value || '';
+    const sectorFilter = document.getElementById('screenerSector')?.value || '';
+    const minConf = parseFloat(document.getElementById('screenerMinConf')?.value) || 0;
 
     ['predictionsTable', 'watchlistPredictionsTable'].forEach(tableId => {
         const table = document.getElementById(tableId);
@@ -1705,10 +1738,19 @@ function filterPredictions() {
         let currentGroupVisible = false;
 
         rows.forEach(row => {
-            const searchText = row.getAttribute('data-search') || '';
             const isGroupStart = row.classList.contains('group-start');
             if (isGroupStart) {
-                currentGroupVisible = searchText.includes(searchValue);
+                const searchText = row.getAttribute('data-search') || '';
+                const signal = row.getAttribute('data-signal') || '';
+                const conviction = row.getAttribute('data-conviction') || '';
+                const sector = row.getAttribute('data-sector') || '';
+                const conf = parseFloat(row.getAttribute('data-conf') || '0');
+                currentGroupVisible =
+                    searchText.includes(searchValue) &&
+                    (!sigFilter || signal === sigFilter) &&
+                    (!convFilter || conviction === convFilter) &&
+                    (!sectorFilter || sector === sectorFilter) &&
+                    conf >= minConf;
                 row.classList.toggle('hidden-row', !currentGroupVisible);
                 return;
             }
@@ -1719,6 +1761,20 @@ function filterPredictions() {
             row.classList.toggle('hidden-row', !currentGroupVisible);
         });
     });
+}
+
+function resetScreener() {
+    const sig = document.getElementById('screenerSignal');
+    const conv = document.getElementById('screenerConviction');
+    const sec = document.getElementById('screenerSector');
+    const conf = document.getElementById('screenerMinConf');
+    const search = document.getElementById('predictionsSearch');
+    if (sig) sig.value = '';
+    if (conv) conv.value = '';
+    if (sec) sec.value = '';
+    if (conf) conf.value = '0';
+    if (search) search.value = '';
+    filterPredictions();
 }
 
 // ============================================

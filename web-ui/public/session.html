@@ -44,6 +44,18 @@
 
   </div>
 
+  <!-- Virtual Portfolio Simulator -->
+  <div class="s-section-title" id="sSimTitle"><span>VIRTUAL PORTFOLIO SIMULATOR</span></div>
+  <div class="s-sim-panel" id="sSimPanel">
+    <div class="s-sim-form">
+      <select id="simSymbol" class="s-sim-input"></select>
+      <input type="number" id="simEntryPrice" class="s-sim-input" placeholder="Entry price" step="0.01" min="0.01">
+      <button class="s-sim-btn s-sim-open" onclick="simOpenPosition()">+ Open Position</button>
+    </div>
+    <div id="simOpenList" class="s-sim-list"></div>
+    <div id="simStats" class="s-sim-stats"></div>
+  </div>
+
   <!-- Footer -->
   <footer class="s-footer">
     <span class="s-footer-logo">XMORE</span>
@@ -76,6 +88,12 @@ const T = {
     colPivot:    'Pivot',
     colR1:       'R1',
     colR2:       'R2',
+    colPatterns: 'Patterns',
+    simTitle:    'VIRTUAL PORTFOLIO SIMULATOR',
+    simOpen:     '+ Open Position',
+    simClose:    'Close',
+    simNoOpen:   'No open positions.',
+    simStats:    'Stats',
     loading:     'Loading session data…',
     idxLoading:  'Loading index levels…',
     empty:       'No session data available. Run the pipeline to generate signals.',
@@ -103,6 +121,12 @@ const T = {
     colPivot:    'المحور',
     colR1:       'مقاومة 1',
     colR2:       'مقاومة 2',
+    colPatterns: 'الأنماط',
+    simTitle:    'محاكي المحفظة الافتراضية',
+    simOpen:     '+ فتح صفقة',
+    simClose:    'إغلاق',
+    simNoOpen:   'لا توجد صفقات مفتوحة.',
+    simStats:    'إحصاءات',
     loading:     'جاري تحميل البيانات…',
     idxLoading:  'جاري تحميل مستويات المؤشرات…',
     empty:       'لا توجد بيانات للجلسة. قم بتشغيل الخط لتوليد الإشارات.',
@@ -130,6 +154,7 @@ function applyLang() {
   document.getElementById('sBack').textContent       = t('back');
   document.getElementById('sIdxTitle').innerHTML     = `<span>${t('idxTitle')}</span>`;
   document.getElementById('sStocksTitle').innerHTML  = `<span>${t('stockTitle')}</span>`;
+  document.getElementById('sSimTitle').innerHTML     = `<span>${t('simTitle')}</span>`;
   document.getElementById('sFooterNote').textContent = t('footer');
   const lbl = document.getElementById('sSessionLabel');
   const dateEl = document.getElementById('sSessionDate');
@@ -178,6 +203,7 @@ function renderHead() {
     t('colBuy'), t('colSL'), t('colTarget'),
     t('colProfit'), t('colRisk'), t('colRR'),
     t('colS2'), t('colS1'), t('colPivot'), t('colR1'), t('colR2'),
+    t('colPatterns'),
   ];
   const head = document.getElementById('sTableHead');
   head.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
@@ -189,8 +215,20 @@ function renderTable(data) {
   const tbody = document.getElementById('sTableBody');
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="16" class="s-empty">${t('empty')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="17" class="s-empty">${t('empty')}</td></tr>`;
     return;
+  }
+
+  function renderPatterns(raw) {
+    if (!raw) return '—';
+    let list;
+    try { list = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(_) { return '—'; }
+    if (!list || list.length === 0) return '—';
+    return list.map(p => {
+      const cls = p.signal === 'bullish' ? 's-pat-bull' : p.signal === 'bearish' ? 's-pat-bear' : 's-pat-neu';
+      const name = lang === 'ar' ? (p.name_ar || p.name_en) : p.name_en;
+      return `<span class="s-pattern-badge ${cls}">${name}</span>`;
+    }).join('');
   }
 
   const rows = data.map((row, i) => {
@@ -215,6 +253,7 @@ function renderTable(data) {
       <td class="s-pivot-val">${fmt(row.pivot, 3)}</td>
       <td class="s-pivot-val">${fmt(row.r1, 3)}</td>
       <td class="s-pivot-val">${fmt(row.r2, 3)}</td>
+      <td class="s-patterns">${renderPatterns(row.patterns)}</td>
     </tr>`;
   }).join('');
 
@@ -271,7 +310,7 @@ async function loadSession() {
     if (!res.ok) {
       if (res.status === 401) {
         document.getElementById('sTableBody').innerHTML =
-          `<tr><td colspan="16" class="s-empty">${t('noLogin')}</td></tr>`;
+          `<tr><td colspan="17" class="s-empty">${t('noLogin')}</td></tr>`;
         document.getElementById('sIndexWrap').innerHTML =
           `<div class="s-empty">${t('noLogin')}</div>`;
         return;
@@ -290,11 +329,89 @@ async function loadSession() {
 
     renderTable(window._sessionData);
     renderIndexCards(window._indexData);
+    populateSimSymbols(window._sessionData);
   } catch (e) {
     document.getElementById('sTableBody').innerHTML =
-      `<tr><td colspan="16" class="s-empty">Error loading data: ${e.message}</td></tr>`;
+      `<tr><td colspan="17" class="s-empty">Error loading data: ${e.message}</td></tr>`;
     document.getElementById('sIndexWrap').innerHTML = '';
   }
+}
+
+/* ─── Virtual Portfolio Simulator ─────────────────────────────────────────── */
+async function simOpenPosition() {
+  const symbol = document.getElementById('simSymbol').value;
+  const price  = parseFloat(document.getElementById('simEntryPrice').value);
+  if (!symbol || !price || price <= 0) { alert('Select a symbol and enter a valid price.'); return; }
+  try {
+    const res = await fetch('/api/trades/positions', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol, entry_price: price }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Error'); return; }
+    document.getElementById('simEntryPrice').value = '';
+    loadSimulator();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function simClosePosition(id, currentPrice) {
+  const exitPrice = parseFloat(prompt('Exit price:', currentPrice || ''));
+  if (!exitPrice || exitPrice <= 0) return;
+  try {
+    const res = await fetch(`/api/trades/positions/${id}`, {
+      method: 'PATCH', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exit_price: exitPrice }),
+    });
+    const data = await res.json();
+    if (!res.ok) { alert(data.error || 'Error'); return; }
+    alert(data.message || 'Closed');
+    loadSimulator();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function loadSimulator() {
+  try {
+    const res = await fetch('/api/trades/portfolio', { credentials: 'include' });
+    if (!res.ok) { document.getElementById('simOpenList').innerHTML = ''; return; }
+    const data = await res.json();
+    const list = document.getElementById('simOpenList');
+    const statsEl = document.getElementById('simStats');
+    const open = data.open_positions || [];
+
+    if (open.length === 0) {
+      list.innerHTML = `<div class="s-sim-empty">${t('simNoOpen')}</div>`;
+    } else {
+      list.innerHTML = open.map(p => {
+        const ret = parseFloat(p.unrealized_return_pct || 0);
+        const cls = ret >= 0 ? 's-pct-pos' : 's-pct-neg';
+        const sym = p.symbol.replace('.CA', '');
+        const name = lang === 'ar' ? (p.name_ar || sym) : (p.name_en || sym);
+        return `<div class="s-sim-row">
+          <span class="s-sim-sym">${sym}</span>
+          <span class="s-sim-name">${name}</span>
+          <span>Entry: <strong>${fmt(p.entry_price, 3)}</strong></span>
+          <span>Now: <strong>${fmt(p.current_price, 3)}</strong></span>
+          <span class="${cls}"><strong>${ret >= 0 ? '+' : ''}${ret}%</strong></span>
+          <button class="s-sim-btn s-sim-close-btn" onclick="simClosePosition(${p.id}, ${p.current_price || p.entry_price})">${t('simClose')}</button>
+        </div>`;
+      }).join('');
+    }
+
+    const s = data.stats || {};
+    if (s.total_trades > 0) {
+      statsEl.innerHTML = `<span>${t('simStats')}: ${s.total_trades} closed · Win rate: ${s.win_rate}% · Avg return: ${s.avg_return > 0 ? '+' : ''}${s.avg_return}%</span>`;
+    } else {
+      statsEl.innerHTML = '';
+    }
+  } catch (_) {}
+}
+
+function populateSimSymbols(data) {
+  const sel = document.getElementById('simSymbol');
+  if (!sel || !data || data.length === 0) return;
+  sel.innerHTML = data.map(r => `<option value="${r.symbol}">${r.symbol.replace('.CA', '')}</option>`).join('');
 }
 
 /* ─── Init ────────────────────────────────────────────────────────────────── */
@@ -304,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
   applyLang();
   loadSession();
+  loadSimulator();
 });
 </script>
 </body>
