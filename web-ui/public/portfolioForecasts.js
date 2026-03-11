@@ -162,14 +162,21 @@
         resultsEl.innerHTML = `<div class="pf-loading">${isAr() ? 'جارٍ التحميل…' : 'Loading…'}</div>`;
 
         try {
-            const data = await apiFetch(`/api/portfolio-forecasts/${id}/results`);
-            renderPortfolioResults(resultsEl, data);
+            const [data, consensusData] = await Promise.all([
+                apiFetch(`/api/portfolio-forecasts/${id}/results`),
+                apiFetch('/api/consensus').catch(() => ({ results: [] })),
+            ]);
+            const xscoreMap = {};
+            for (const c of (Array.isArray(consensusData) ? consensusData : [])) {
+                if (c.symbol && c.xmore_score != null) xscoreMap[c.symbol] = c.xmore_score;
+            }
+            renderPortfolioResults(resultsEl, data, xscoreMap);
         } catch (err) {
             resultsEl.innerHTML = `<p class="pf-error">${escHtml(err.message)}</p>`;
         }
     }
 
-    function renderPortfolioResults(el, data) {
+    function renderPortfolioResults(el, data, xscoreMap = {}) {
         const { portfolio, results, run_date } = data;
         if (!results || !results.length) {
             el.innerHTML = `
@@ -266,11 +273,16 @@
                     </div>`;
                 }
 
+                const xscore = xscoreMap[r.symbol];
+                const xscoreHtml = xscore != null
+                    ? `<span class="pf-xscore" title="Xmore Score">${Math.round(xscore)}</span>`
+                    : '';
+
                 html += `
                 <div class="pf-result-card">
                     <!-- Symbol + expected return -->
                     <div class="pf-rc-top">
-                        <span class="pf-rc-symbol">${escHtml(r.symbol)}</span>
+                        <span class="pf-rc-symbol">${escHtml(r.symbol)}${xscoreHtml}</span>
                         <span class="pf-rc-return ${colorClass(exp)}">${fmt(exp)}</span>
                     </div>
 
@@ -345,12 +357,19 @@
         }
 
         try {
-            const data = await apiFetch(`/api/portfolio-forecasts/${id}/run`, { method: 'POST' });
+            const [data, consensusData] = await Promise.all([
+                apiFetch(`/api/portfolio-forecasts/${id}/run`, { method: 'POST' }),
+                apiFetch('/api/consensus').catch(() => ({ results: [] })),
+            ]);
+            const xscoreMap = {};
+            for (const c of (Array.isArray(consensusData) ? consensusData : [])) {
+                if (c.symbol && c.xmore_score != null) xscoreMap[c.symbol] = c.xmore_score;
+            }
             if (resultsEl) renderPortfolioResults(resultsEl, {
                 portfolio: portfolio || { name: label },
                 results: data.results,
                 run_date: data.run_date,
-            });
+            }, xscoreMap);
             await refreshPortfolioList();
         } catch (err) {
             if (resultsEl) resultsEl.innerHTML = `<p class="pf-error">${escHtml(err.message)}</p>`;

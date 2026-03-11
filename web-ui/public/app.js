@@ -413,6 +413,10 @@ const TRANSLATIONS = {
         // Accessibility (Upgrade 7)
         skipToContent: 'Skip to content',
 
+        // Forecasts
+        tabForecasts: 'Forecasts',
+        forecastsBrief: 'Track saved forecast portfolios and monitor actual vs. predicted performance.',
+
         // Time Machine
         tabTimeMachine: 'Time Machine',
         timemachineBrief: "Enter an amount and a past date to see what your investment would be worth today if you had followed Xmore's recommendations.",
@@ -690,6 +694,10 @@ const TRANSLATIONS = {
         // Accessibility (Upgrade 7)
         skipToContent: 'الانتقال إلى المحتوى',
 
+        // Forecasts
+        tabForecasts: 'التوقعات',
+        forecastsBrief: 'تتبع محافظ التوقعات المحفوظة وقارن الأداء الفعلي مع المتوقع.',
+
         // Time Machine
         tabTimeMachine: 'آلة الزمن',
         timemachineBrief: 'أدخل مبلغاً وتاريخاً سابقاً لمعرفة قيمة استثمارك اليوم لو اتبعت توصيات Xmore.',
@@ -923,7 +931,7 @@ function applyLanguage() {
     });
 
     // Tab buttons
-    const tabs = ['tabPredictions', 'tabBriefing', 'tabTrades', 'tabPortfolio', 'tabWatchlist', 'tabConsensus', 'tabPerformance', 'tabResults', 'tabPrices', 'tabTimeMachine'];
+    const tabs = ['tabPredictions', 'tabBriefing', 'tabTrades', 'tabPortfolio', 'tabForecasts', 'tabWatchlist', 'tabConsensus', 'tabPerformance', 'tabResults', 'tabPrices', 'tabTimeMachine'];
     tabs.forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.textContent = t(id);
@@ -938,7 +946,7 @@ function applyLanguage() {
     if (perfMonthlyTitle) perfMonthlyTitle.textContent = t('monthlyTrend');
     const resultsTitle = document.getElementById('resultsTitle');
     if (resultsTitle) resultsTitle.textContent = t('tabResults');
-    const briefIds = ['predictionsBrief', 'watchlistBrief', 'performanceBrief', 'consensusBrief', 'resultsBrief', 'pricesBrief', 'briefingBrief', 'tradesBrief', 'portfolioBrief', 'timemachineBrief'];
+    const briefIds = ['predictionsBrief', 'watchlistBrief', 'performanceBrief', 'consensusBrief', 'resultsBrief', 'pricesBrief', 'briefingBrief', 'tradesBrief', 'portfolioBrief', 'forecastsBrief', 'timemachineBrief'];
     briefIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = t(id);
@@ -1030,6 +1038,7 @@ function switchToTab(tabId, updateHash) {
     if (tabId === 'performance' && typeof loadPerformanceDashboard === 'function') loadPerformanceDashboard();
     if (tabId === 'timemachine' && typeof loadTimeMachine === 'function') loadTimeMachine();
     if (tabId === 'etf' && typeof loadEtfTab === 'function') loadEtfTab();
+    if (tabId === 'forecasts' && typeof loadPortfolioForecasts === 'function') loadPortfolioForecasts();
 }
 
 // Key shared with admin dashboard for frontend tab visibility

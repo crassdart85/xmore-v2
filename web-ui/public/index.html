@@ -71,6 +71,7 @@
             <button class="tab-btn" data-tab="briefing" id="tabBriefing" role="tab" aria-selected="false" aria-controls="tab-briefing">Briefing</button>
             <button class="tab-btn" data-tab="trades" id="tabTrades" role="tab" aria-selected="false" aria-controls="tab-trades">Trades</button>
             <button class="tab-btn" data-tab="portfolio" id="tabPortfolio" role="tab" aria-selected="false" aria-controls="tab-portfolio">Portfolio</button>
+            <button class="tab-btn" data-tab="forecasts" id="tabForecasts" role="tab" aria-selected="false" aria-controls="tab-forecasts">Forecasts</button>
             <button class="tab-btn" data-tab="watchlist" id="tabWatchlist" role="tab" aria-selected="false" aria-controls="tab-watchlist">Watchlist</button>
             <button class="tab-btn" data-tab="consensus" id="tabConsensus" role="tab" aria-selected="false" aria-controls="tab-consensus">Consensus</button>
             <button class="tab-btn" data-tab="performance" id="tabPerformance" role="tab" aria-selected="false" aria-controls="tab-performance">Performance</button>
@@ -283,6 +284,82 @@
             </div>
         </section>
 
+        <!-- Tab: Forecasts (My Forecast Portfolios) -->
+        <section class="tab-content" id="tab-forecasts" role="tabpanel" aria-labelledby="tabForecasts">
+            <div class="section-header">
+                <h2 id="forecastsTitle">My Forecast Portfolios</h2>
+                <p class="section-subtitle" id="forecastsBrief">Track saved forecast portfolios and monitor actual vs. predicted performance.</p>
+            </div>
+            <div id="pfSection" class="pf-section">
+                <div class="pf-header-bar">
+                    <h3 data-translate="pf_title">My Forecast Portfolios</h3>
+                    <button id="pfCreateBtn" class="pf-create-btn" data-translate="pf_create">+ New Portfolio</button>
+                </div>
+
+                <!-- Create / Edit form (hidden until triggered) -->
+                <div id="pfCreateForm" class="pf-form-card" style="display:none">
+                    <h4 id="pfFormTitle" class="pf-form-title">New Portfolio</h4>
+                    <div class="pf-form-row">
+                        <label data-translate="pf_name_label">Portfolio Name</label>
+                        <input type="text" id="pfNameInput" class="pf-name-input" placeholder="e.g. Blue Chips" maxlength="64">
+                    </div>
+                    <div class="pf-form-row">
+                        <label>Stocks <span class="fc-max-hint">(select up to 20)</span></label>
+                        <div id="pfSelectedTags" class="fc-selected-tags"></div>
+                        <div class="fc-symbol-wrapper">
+                            <input type="text" id="pfSymbolSearch" placeholder="Search and add stocks…" autocomplete="off" class="fc-symbol-search">
+                            <div id="pfSymbolDropdown" class="fc-symbol-dropdown" style="display:none"></div>
+                        </div>
+                        <div class="fc-selection-counter"><span id="pfSelectionCount">0</span>/20 selected</div>
+                    </div>
+                    <div class="pf-form-row">
+                        <label data-translate="fcHorizonLabel">Time Horizon</label>
+                        <div class="tm-date-presets">
+                            <button class="tm-preset pf-horizon-btn" data-days="21" data-translate="fc1Month">1 month</button>
+                            <button class="tm-preset pf-horizon-btn" data-days="42" data-translate="fc2Months">2 months</button>
+                            <button class="tm-preset pf-horizon-btn active" data-days="63" data-translate="fc3Months">3 months</button>
+                            <button class="tm-preset pf-horizon-btn" data-days="126" data-translate="fc6Months">6 months</button>
+                            <button class="tm-preset pf-horizon-btn" data-days="252" data-translate="fc1Year">1 year</button>
+                            <button class="tm-preset pf-horizon-btn" data-days="504" data-translate="fc2Years">2 years</button>
+                        </div>
+                        <input type="hidden" id="pfHorizonInput" value="63">
+                    </div>
+                    <div class="pf-form-row">
+                        <label data-translate="fcScenarioLabel">Scenario</label>
+                        <div class="fc-scenario-row">
+                            <label class="fc-scenario-opt fc-scenario-active">
+                                <input type="radio" name="pfScenario" value="base" checked>
+                                <span class="fc-scenario-label" data-translate="fcBase">Base</span>
+                            </label>
+                            <label class="fc-scenario-opt">
+                                <input type="radio" name="pfScenario" value="bull">
+                                <span class="fc-scenario-label" data-translate="fcBull">Bull</span>
+                            </label>
+                            <label class="fc-scenario-opt">
+                                <input type="radio" name="pfScenario" value="bear">
+                                <span class="fc-scenario-label" data-translate="fcBear">Bear</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="pf-form-row">
+                        <label data-translate="tmAmountLabel">Investment Amount (EGP)</label>
+                        <input type="number" id="pfAmountInput" min="1000" max="10000000" step="1000" value="10000" class="pf-amount-input">
+                    </div>
+                    <div id="pfFormError" class="pf-form-error"></div>
+                    <div class="pf-form-actions">
+                        <button id="pfSaveBtn" class="tm-simulate-btn pf-save-btn" data-translate="pf_save">Save Portfolio</button>
+                        <button id="pfCancelBtn" class="pf-cancel-btn" data-translate="pf_cancel">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Portfolio cards list -->
+                <div id="pfList" class="pf-list"></div>
+
+                <!-- Active portfolio results -->
+                <div id="pfResults" style="display:none"></div>
+            </div>
+        </section>
+
         <!-- Tab: Time Machine -->
         <section class="tab-content" id="tab-timemachine" role="tabpanel" aria-labelledby="tabTimeMachine">
             <div class="section-header">
@@ -446,10 +523,6 @@
                         <button class="fc-mode-btn" id="fcModeManual">
                             <span class="fc-mode-name" data-translate="fcModeManual">🔍 I pick manually</span>
                             <span class="fc-mode-desc" data-translate="fcModeManualDesc">Pick 1–20 stocks and compare forecasts</span>
-                        </button>
-                        <button class="fc-mode-btn" id="fcModePortfolio">
-                            <span class="fc-mode-name" data-translate="fcModePortfolio">📁 My Portfolios</span>
-                            <span class="fc-mode-desc" data-translate="fcModePortfolioDesc">Run forecast on your saved portfolios</span>
                         </button>
                     </div>
 
@@ -635,76 +708,6 @@
 
             <!-- Multi-stock comparison results -->
             <div id="fcMultiResults" style="display:none"></div>
-
-            <!-- My Forecast Portfolios section -->
-            <div id="pfSection" class="pf-section" style="display:none">
-                <div class="pf-header-bar">
-                    <h3 data-translate="pf_title">My Forecast Portfolios</h3>
-                    <button id="pfCreateBtn" class="pf-create-btn" data-translate="pf_create">+ New Portfolio</button>
-                </div>
-
-                <!-- Create / Edit form (hidden until triggered) -->
-                <div id="pfCreateForm" class="pf-form-card" style="display:none">
-                    <h4 id="pfFormTitle" class="pf-form-title">New Portfolio</h4>
-                    <div class="pf-form-row">
-                        <label data-translate="pf_name_label">Portfolio Name</label>
-                        <input type="text" id="pfNameInput" class="pf-name-input" placeholder="e.g. Blue Chips" maxlength="64">
-                    </div>
-                    <div class="pf-form-row">
-                        <label>Stocks <span class="fc-max-hint">(select up to 20)</span></label>
-                        <div id="pfSelectedTags" class="fc-selected-tags"></div>
-                        <div class="fc-symbol-wrapper">
-                            <input type="text" id="pfSymbolSearch" placeholder="Search and add stocks…" autocomplete="off" class="fc-symbol-search">
-                            <div id="pfSymbolDropdown" class="fc-symbol-dropdown" style="display:none"></div>
-                        </div>
-                        <div class="fc-selection-counter"><span id="pfSelectionCount">0</span>/20 selected</div>
-                    </div>
-                    <div class="pf-form-row">
-                        <label data-translate="fcHorizonLabel">Time Horizon</label>
-                        <div class="tm-date-presets">
-                            <button class="tm-preset pf-horizon-btn" data-days="21" data-translate="fc1Month">1 month</button>
-                            <button class="tm-preset pf-horizon-btn" data-days="42" data-translate="fc2Months">2 months</button>
-                            <button class="tm-preset pf-horizon-btn active" data-days="63" data-translate="fc3Months">3 months</button>
-                            <button class="tm-preset pf-horizon-btn" data-days="126" data-translate="fc6Months">6 months</button>
-                            <button class="tm-preset pf-horizon-btn" data-days="252" data-translate="fc1Year">1 year</button>
-                            <button class="tm-preset pf-horizon-btn" data-days="504" data-translate="fc2Years">2 years</button>
-                        </div>
-                        <input type="hidden" id="pfHorizonInput" value="63">
-                    </div>
-                    <div class="pf-form-row">
-                        <label data-translate="fcScenarioLabel">Scenario</label>
-                        <div class="fc-scenario-row">
-                            <label class="fc-scenario-opt fc-scenario-active">
-                                <input type="radio" name="pfScenario" value="base" checked>
-                                <span class="fc-scenario-label" data-translate="fcBase">Base</span>
-                            </label>
-                            <label class="fc-scenario-opt">
-                                <input type="radio" name="pfScenario" value="bull">
-                                <span class="fc-scenario-label" data-translate="fcBull">Bull</span>
-                            </label>
-                            <label class="fc-scenario-opt">
-                                <input type="radio" name="pfScenario" value="bear">
-                                <span class="fc-scenario-label" data-translate="fcBear">Bear</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="pf-form-row">
-                        <label data-translate="tmAmountLabel">Investment Amount (EGP)</label>
-                        <input type="number" id="pfAmountInput" min="1000" max="10000000" step="1000" value="10000" class="pf-amount-input">
-                    </div>
-                    <div id="pfFormError" class="pf-form-error"></div>
-                    <div class="pf-form-actions">
-                        <button id="pfSaveBtn" class="tm-simulate-btn pf-save-btn" data-translate="pf_save">Save Portfolio</button>
-                        <button id="pfCancelBtn" class="pf-cancel-btn" data-translate="pf_cancel">Cancel</button>
-                    </div>
-                </div>
-
-                <!-- Portfolio cards list -->
-                <div id="pfList" class="pf-list"></div>
-
-                <!-- Active portfolio results -->
-                <div id="pfResults" style="display:none"></div>
-            </div>
 
             <!-- Forecast loading state -->
             <div id="fcLoading" class="tm-loading" style="display:none">

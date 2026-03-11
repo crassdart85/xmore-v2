@@ -4221,6 +4221,21 @@ button:active, .btn:active, .tab-btn:active {
     font-weight: 800;
     color: var(--text-primary);
     letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.pf-xscore {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 1px 5px;
+    letter-spacing: 0;
 }
 .pf-rc-return {
     font-size: 1.25rem;
