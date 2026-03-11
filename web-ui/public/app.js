@@ -3122,7 +3122,7 @@ async function runComparison() {
         const cMap = {};
         (Array.isArray(consensus) ? consensus : []).forEach(c => { cMap[c.symbol] = c; });
         const pMap = {};
-        (prices.prices || []).forEach(p => { pMap[p.symbol] = p; });
+        (Array.isArray(prices) ? prices : (prices.prices || [])).forEach(p => { pMap[p.symbol] = p; });
 
         const rows = syms.map(sym => {
             const c = cMap[sym] || {};
@@ -3155,7 +3155,7 @@ async function runComparison() {
             <tr><td>Price (EGP)</td>${rows.map(r => `<td>${r.p.close != null ? parseFloat(r.p.close).toFixed(2) : '—'}</td>`).join('')}</tr>
             <tr><td>Day Change</td>${rows.map(r => `<td style="color:${r.chg > 0 ? 'var(--bullish)' : r.chg < 0 ? 'var(--bearish)' : 'inherit'}">${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : '—'}</td>`).join('')}</tr>
             <tr><td>Volume</td>${rows.map(r => `<td>${r.p.volume != null ? Number(r.p.volume).toLocaleString() : '—'}</td>`).join('')}</tr>
-            <tr><td><button class="pf-btn-view" onclick="loadStockBrief('${rows[0]?.sym}')">AI Brief ↗</button></td>${rows.map(r => `<td><button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">Brief</button></td>`).join('')}</tr>
+            <tr><td>AI Brief</td>${rows.map(r => `<td><button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">Brief ↗</button></td>`).join('')}</tr>
             </tbody>
         </table>
         </div>`;

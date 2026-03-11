@@ -748,22 +748,34 @@ app.get('/api/fx-rates', async (req, res) => {
     });
     const egp = raw.rates && raw.rates.EGP;
     const sar = raw.rates && raw.rates.SAR;
-    const xau = raw.rates && raw.rates.XAU;   // troy oz per 1 USD
     if (!egp || !sar) throw new Error('Missing EGP/SAR rates');
-    // Gold calculations: XAU rate = troy oz per USD, so 1 troy oz = 1/xau USD
+    // Fetch gold spot price from Yahoo Finance (GC=F futures, USD/troy oz)
     const TROY_OZ_TO_GRAMS = 31.1035;
     let goldData = {};
-    if (xau && xau > 0) {
-      const xauUsd  = 1 / xau;                                     // USD per troy oz
-      const gold24K = (xauUsd / TROY_OZ_TO_GRAMS) * egp;           // EGP per gram 24K
-      goldData = {
-        XAU_USD:         +xauUsd.toFixed(2),
-        GOLD_24K_EGP_G:  +gold24K.toFixed(2),
-        GOLD_21K_EGP_G:  +(gold24K * 21 / 24).toFixed(2),
-        GOLD_18K_EGP_G:  +(gold24K * 18 / 24).toFixed(2),
-        GOLD_POUND_EGP:  +(gold24K * 21 / 24 * 8).toFixed(2),     // 8g 21K = Egyptian gold pound
-      };
-    }
+    try {
+      const goldRaw = await new Promise((resolve, reject) => {
+        https.get(
+          'https://query1.finance.yahoo.com/v8/finance/chart/GC%3DF?interval=1d&range=1d',
+          { headers: { 'User-Agent': 'Mozilla/5.0' } },
+          (r) => {
+            let body = '';
+            r.on('data', d => body += d);
+            r.on('end', () => { try { resolve(JSON.parse(body)); } catch (e) { reject(e); } });
+          }
+        ).on('error', reject);
+      });
+      const xauUsd = goldRaw?.chart?.result?.[0]?.meta?.regularMarketPrice;
+      if (xauUsd && xauUsd > 0) {
+        const gold24K = (xauUsd / TROY_OZ_TO_GRAMS) * egp;
+        goldData = {
+          XAU_USD:         +xauUsd.toFixed(2),
+          GOLD_24K_EGP_G:  +gold24K.toFixed(2),
+          GOLD_21K_EGP_G:  +(gold24K * 21 / 24).toFixed(2),
+          GOLD_18K_EGP_G:  +(gold24K * 18 / 24).toFixed(2),
+          GOLD_POUND_EGP:  +(gold24K * 21 / 24 * 8).toFixed(2),
+        };
+      }
+    } catch (_) { /* gold fetch failed — omit gold fields */ }
     _fxCache = {
       USD_EGP: +egp.toFixed(2),
       USD_SAR: +sar.toFixed(4),
@@ -847,13 +859,28 @@ Data: Signal=${ctx.final_signal||'N/A'}, Conviction=${ctx.conviction||'N/A'}, Co
 Format: 1) Current stance and signal quality 2) Key risk factor 3) Short-term outlook. Be direct, no disclaimers.`;
 
   try {
-    const { GoogleGenAI } = require('@google/genai');
-    const genai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
-    const result = await genai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ parts: [{ text: prompt }] }],
+    const https = require('https');
+    const body = JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] });
+    const text = await new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: 'generativelanguage.googleapis.com',
+        path: `/v1beta/models/gemini-2.5-flash:generateContent?key=${GOOGLE_API_KEY}`,
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      }, r => {
+        let d = '';
+        r.on('data', c => d += c);
+        r.on('end', () => {
+          try {
+            const j = JSON.parse(d);
+            resolve(j?.candidates?.[0]?.content?.parts?.[0]?.text || 'Brief unavailable.');
+          } catch (e) { reject(e); }
+        });
+      });
+      req.on('error', reject);
+      req.write(body);
+      req.end();
     });
-    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || 'Brief unavailable.';
     _briefCache.set(symbol, { text, ts: Date.now() });
     res.json({ brief: text, symbol });
   } catch (err) {
