@@ -43,12 +43,20 @@ _HEADERS = {
 # midata variables that contain fund arrays on the statistics page
 _VARS = ['threeMonthGainers', 'threeMonthLosers', 'yearGainers', 'yearLosers']
 
-# Map Mubasher Arabic classification to our ETF type
+# Map Mubasher Arabic classification to our internal class label
 _CLASS_MAP = {
     '\u0633\u0644\u0639':            'COMMODITY',  # سلع (commodities)
     '\u0623\u0633\u0647\u0645':      'EQUITY',     # أسهم (equities)
     '\u0645\u062a\u0646\u0648\u0639': 'BALANCED',  # متنوع (diversified/balanced)
     '\u0627\u0644\u062f\u062e\u0644 \u0627\u0644\u062b\u0627\u0628\u062a': 'FIXED_INCOME',  # الدخل الثابت
+}
+
+# Map internal class label to instrument type (used by frontend classifier)
+_TYPE_MAP = {
+    'COMMODITY':    'COMMODITY_ETP',  # gold / commodity trackers → ETPs tab
+    'EQUITY':       'ETF',
+    'BALANCED':     'ETF',
+    'FIXED_INCOME': 'ETF',
 }
 
 
@@ -160,16 +168,18 @@ def run() -> int:
                 logger.debug('[etf_egx_mubasher] Skipping fundId %s — no symbol', fid)
                 continue
 
-            name = fund.get('name', symbol)
-            cls  = fund.get('classification', '')
+            name    = fund.get('name', symbol)
+            cls     = fund.get('classification', '')
+            cls_en  = _CLASS_MAP.get(cls, cls)
+            inst_type = _TYPE_MAP.get(cls_en, 'ETF')
 
             inst_id = get_or_create_instrument(conn, symbol, 'EGX', {
                 'name':     name,
-                'type':     'ETF',
+                'type':     inst_type,
                 'region':   'LOCAL_EGX',
                 'currency': 'EGP',
                 'country':  'Egypt',
-                'issuer':   _CLASS_MAP.get(cls, cls),
+                'issuer':   cls_en,
             })
             if inst_id is None:
                 logger.warning('[etf_egx_mubasher] Could not upsert instrument for %s', symbol)
