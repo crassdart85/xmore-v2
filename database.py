@@ -447,6 +447,22 @@ def create_tables():
         for col_name, col_type in benchmark_columns:
             _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
 
+        # Add session-sheet columns (pivot levels, trend, buy guide, rec type)
+        session_columns = [
+            ("trend_ar",    "TEXT"),
+            ("trend_en",    "TEXT"),
+            ("rec_type_ar", "TEXT"),
+            ("rec_type_en", "TEXT"),
+            ("buy_guide",   "REAL"),
+            ("pivot",       "REAL"),
+            ("r1",          "REAL"),
+            ("r2",          "REAL"),
+            ("s1",          "REAL"),
+            ("s2",          "REAL"),
+        ]
+        for col_name, col_type in session_columns:
+            _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
+
         # Add benchmark columns to user_positions
         position_columns = [
             ("benchmark_return_pct", "REAL"),

@@ -665,6 +665,35 @@ def get_market_data(symbol: str):
             "atr": atr
         }
 
+def get_ohlc_df(symbol: str, limit: int = 60) -> Optional[pd.DataFrame]:
+    """Fetch recent OHLC data for pivot / ATR calculation."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            if os.getenv('DATABASE_URL'):
+                cursor.execute(
+                    "SELECT date, open, high, low, close, volume FROM prices "
+                    "WHERE symbol = %s ORDER BY date DESC LIMIT %s",
+                    (symbol, limit)
+                )
+            else:
+                cursor.execute(
+                    "SELECT date, open, high, low, close, volume FROM prices "
+                    "WHERE symbol = ? ORDER BY date DESC LIMIT ?",
+                    (symbol, limit)
+                )
+            rows = cursor.fetchall()
+        if not rows:
+            return None
+        if os.getenv('DATABASE_URL'):
+            df = pd.DataFrame(rows)
+        else:
+            df = pd.DataFrame(rows, columns=['date', 'open', 'high', 'low', 'close', 'volume'])
+        return df.sort_values('date').reset_index(drop=True)
+    except Exception:
+        return None
+
+
 def open_new_position(user_id, rec, trading_date):
     """Create a new OPEN position."""
     with get_connection() as conn:
@@ -727,19 +756,23 @@ def store_trade_recommendation(user_id, rec, trading_date):
         
         query_pg = """
             INSERT INTO trade_recommendations (
-                user_id, symbol, recommendation_date, action, signal, 
+                user_id, symbol, recommendation_date, action, signal,
                 confidence, conviction, risk_action, priority,
-                close_price, stop_loss_pct, target_pct, 
+                close_price, stop_loss_pct, target_pct,
                 stop_loss_price, target_price, risk_reward_ratio,
                 reasons, reasons_ar,
-                bull_score, bear_score, agents_agreeing, agents_total, risk_flags
+                bull_score, bear_score, agents_agreeing, agents_total, risk_flags,
+                trend_ar, trend_en, rec_type_ar, rec_type_en,
+                buy_guide, pivot, r1, r2, s1, s2
             ) VALUES (
-                %s, %s, %s, %s, %s, 
+                %s, %s, %s, %s, %s,
                 %s, %s, %s, %s,
-                %s, %s, %s, 
+                %s, %s, %s,
                 %s, %s, %s,
                 %s, %s,
-                %s, %s, %s, %s, %s
+                %s, %s, %s, %s, %s,
+                %s, %s, %s, %s,
+                %s, %s, %s, %s, %s, %s
             )
             ON CONFLICT (user_id, symbol, recommendation_date) DO UPDATE SET
                 action = EXCLUDED.action,
@@ -749,24 +782,36 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 priority = EXCLUDED.priority,
                 reasons = EXCLUDED.reasons,
                 reasons_ar = EXCLUDED.reasons_ar,
+                trend_ar = EXCLUDED.trend_ar,
+                trend_en = EXCLUDED.trend_en,
+                rec_type_ar = EXCLUDED.rec_type_ar,
+                rec_type_en = EXCLUDED.rec_type_en,
+                buy_guide = EXCLUDED.buy_guide,
+                pivot = EXCLUDED.pivot,
+                r1 = EXCLUDED.r1, r2 = EXCLUDED.r2,
+                s1 = EXCLUDED.s1, s2 = EXCLUDED.s2,
                 updated_at = CURRENT_TIMESTAMP
         """
-        
+
         query_sqlite = """
             INSERT INTO trade_recommendations (
-                user_id, symbol, recommendation_date, action, signal, 
+                user_id, symbol, recommendation_date, action, signal,
                 confidence, conviction, risk_action, priority,
-                close_price, stop_loss_pct, target_pct, 
+                close_price, stop_loss_pct, target_pct,
                 stop_loss_price, target_price, risk_reward_ratio,
                 reasons, reasons_ar,
-                bull_score, bear_score, agents_agreeing, agents_total, risk_flags
+                bull_score, bear_score, agents_agreeing, agents_total, risk_flags,
+                trend_ar, trend_en, rec_type_ar, rec_type_en,
+                buy_guide, pivot, r1, r2, s1, s2
             ) VALUES (
-                ?, ?, ?, ?, ?, 
+                ?, ?, ?, ?, ?,
                 ?, ?, ?, ?,
-                ?, ?, ?, 
+                ?, ?, ?,
                 ?, ?, ?,
                 ?, ?,
-                ?, ?, ?, ?, ?
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?,
+                ?, ?, ?, ?, ?, ?
             )
             ON CONFLICT (user_id, symbol, recommendation_date) DO UPDATE SET
                 action = excluded.action,
@@ -776,9 +821,17 @@ def store_trade_recommendation(user_id, rec, trading_date):
                 priority = excluded.priority,
                 reasons = excluded.reasons,
                 reasons_ar = excluded.reasons_ar,
+                trend_ar = excluded.trend_ar,
+                trend_en = excluded.trend_en,
+                rec_type_ar = excluded.rec_type_ar,
+                rec_type_en = excluded.rec_type_en,
+                buy_guide = excluded.buy_guide,
+                pivot = excluded.pivot,
+                r1 = excluded.r1, r2 = excluded.r2,
+                s1 = excluded.s1, s2 = excluded.s2,
                 updated_at = CURRENT_TIMESTAMP
         """
-        
+
         params = (
             user_id, rec["symbol"], trading_date, rec["action"], rec["signal"],
             rec["confidence"], rec["conviction"], rec["risk_action"], rec["priority"],
@@ -787,7 +840,11 @@ def store_trade_recommendation(user_id, rec, trading_date):
             json.dumps(rec["reasons"]), json.dumps(rec["reasons_ar"]),
             rec["metadata"]["bull_score"], rec["metadata"]["bear_score"],
             rec["metadata"]["agents_agreeing"], rec["metadata"]["agents_total"],
-            json.dumps(rec["metadata"].get("risk_flags", []))
+            json.dumps(rec["metadata"].get("risk_flags", [])),
+            rec.get("trend_ar"), rec.get("trend_en"),
+            rec.get("rec_type_ar"), rec.get("rec_type_en"),
+            rec.get("buy_guide"), rec.get("pivot"),
+            rec.get("r1"), rec.get("r2"), rec.get("s1"), rec.get("s2"),
         )
         
         if os.getenv('DATABASE_URL'):
@@ -801,6 +858,7 @@ from engines.trade_recommender import (
     calculate_risk_levels,
     TRADE_CONFIG
 )
+from engines.pivot_engine import enrich_recommendation
 from engines.briefing_generator import generate_daily_briefing
 from utils.trading_calendar import should_generate_recommendations
 
@@ -1107,7 +1165,12 @@ def generate_daily_trade_recommendations(trading_date):
                 if rec["action"] == "BUY":
                     risk_levels = calculate_risk_levels(symbol, consensus, market_data)
                     rec.update(risk_levels)
-                
+
+                # Add pivot levels, trend, buy guide, recommendation type
+                ohlc_df = get_ohlc_df(symbol)
+                if ohlc_df is not None:
+                    enrich_recommendation(rec, ohlc_df, market_data.get("close", 0))
+
                 # Metadata
                 rec["priority"] = score_recommendation_priority(rec)
                 rec["close_price"] = market_data.get("close")

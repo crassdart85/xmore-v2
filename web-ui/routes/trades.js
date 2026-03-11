@@ -72,6 +72,8 @@ router.get('/today', authMiddleware, async (req, res) => {
                 tr.bull_score, tr.bear_score,
                 tr.agents_agreeing, tr.agents_total,
                 tr.risk_flags,
+                tr.trend_ar, tr.trend_en, tr.rec_type_ar, tr.rec_type_en,
+                tr.buy_guide, tr.pivot, tr.r1, tr.r2, tr.s1, tr.s2,
                 CASE WHEN up.id IS NOT NULL THEN 1 ELSE 0 END AS has_position,
                 up.entry_date, up.entry_price
             FROM trade_recommendations tr
@@ -352,6 +354,83 @@ router.get('/performance', authMiddleware, async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching performance:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ─── Session Sheet (/api/trades/session-sheet) ───────────────────────────────
+// Returns today's signals enriched with pivot levels, trend, buy guide, rec type.
+// Also returns index-level pivot data for EGX30 / EGX70.
+router.get('/session-sheet', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.userId;
+
+        // Resolve latest date for this user
+        const latestRes = await queryAll(
+            `SELECT MAX(recommendation_date) AS d FROM trade_recommendations WHERE user_id = $1`,
+            [userId]
+        );
+        const sessionDate = latestRes.rows[0]?.d
+            ? new Date(latestRes.rows[0].d).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0];
+
+        // Stock signals
+        const stocksSql = `
+            SELECT
+                tr.symbol,
+                s.name_en, s.name_ar, s.sector_en, s.sector_ar,
+                tr.action, tr.signal, tr.confidence, tr.conviction,
+                tr.close_price, tr.stop_loss_price, tr.stop_loss_pct,
+                tr.target_price, tr.target_pct, tr.risk_reward_ratio,
+                tr.trend_ar, tr.trend_en, tr.rec_type_ar, tr.rec_type_en,
+                tr.buy_guide, tr.pivot, tr.r1, tr.r2, tr.s1, tr.s2
+            FROM trade_recommendations tr
+            JOIN egx30_stocks s ON tr.symbol = s.symbol
+            WHERE tr.user_id = $1
+              AND tr.recommendation_date = $2
+              AND tr.signal IN ('UP', 'DOWN')
+            ORDER BY tr.confidence DESC, tr.priority DESC
+        `;
+        const stocksRes = await queryAll(stocksSql, [userId, sessionDate]);
+
+        // Index pivot levels (EGX30, EGX70 stored as MACRO symbols)
+        const indexSymbols = ['EGX30.CA', 'EGX70.CA'];
+        const indexData = [];
+        for (const sym of indexSymbols) {
+            const ph = db._isPostgres ? '$1' : '?';
+            const idxRes = await queryAll(
+                `SELECT open, high, low, close FROM prices WHERE symbol = ${ph} ORDER BY date DESC LIMIT 2`,
+                [sym]
+            );
+            if (idxRes.rows.length >= 2) {
+                const prev = idxRes.rows[1]; // older row
+                const H = parseFloat(prev.high), L = parseFloat(prev.low), C = parseFloat(prev.close);
+                const P  = (H + L + C) / 3;
+                const R1 = 2*P - L, R2 = P + (H - L);
+                const S1 = 2*P - H, S2 = P - (H - L);
+                const close = parseFloat(idxRes.rows[0].close);
+                indexData.push({
+                    symbol: sym,
+                    name_en: sym === 'EGX30.CA' ? 'EGX 30 Index' : 'EGX 70 Index',
+                    name_ar: sym === 'EGX30.CA' ? 'مؤشر ايجى اكس 30' : 'مؤشر ايجى اكس 70',
+                    close_price:    parseFloat(close.toFixed(2)),
+                    stop_loss_price: parseFloat((close * 0.97).toFixed(2)),
+                    pivot: parseFloat(P.toFixed(2)),
+                    r1:    parseFloat(R1.toFixed(2)),
+                    r2:    parseFloat(R2.toFixed(2)),
+                    s1:    parseFloat(S1.toFixed(2)),
+                    s2:    parseFloat(S2.toFixed(2)),
+                });
+            }
+        }
+
+        res.json({
+            session_date: sessionDate,
+            stocks:  stocksRes.rows,
+            indices: indexData,
+        });
+    } catch (err) {
+        console.error('Error fetching session sheet:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });

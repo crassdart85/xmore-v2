@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xmore — Session Sheet</title>
+  <link rel="stylesheet" href="session.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="s-header">
+    <a href="/" class="s-back" id="sBack">← Dashboard</a>
+    <span class="s-logo">XMORE <span class="s-logo-tag">SESSION</span></span>
+    <span class="s-session-label" id="sSessionLabel">
+      Session <span class="s-session-date" id="sSessionDate">—</span>
+    </span>
+    <button class="s-lang-btn" id="sLangBtn" onclick="toggleLang()">عر</button>
+  </header>
+
+  <div class="s-container">
+
+    <!-- Index levels (EGX30 / EGX70 pivot levels) -->
+    <div class="s-section-title" id="sIdxTitle">
+      <span>INDEX SUPPORT &amp; RESISTANCE</span>
+    </div>
+    <div class="s-index-wrap" id="sIndexWrap">
+      <div class="s-loading" id="sIdxLoading">Loading index levels…</div>
+    </div>
+
+    <!-- Stock session sheet -->
+    <div class="s-section-title" id="sStocksTitle">
+      <span>STOCK SIGNALS</span>
+    </div>
+
+    <div class="s-table-wrap">
+      <table class="s-table" id="sTable">
+        <thead id="sTableHead"></thead>
+        <tbody id="sTableBody">
+          <tr><td colspan="12" class="s-loading">Loading session data…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <footer class="s-footer">
+    <span class="s-footer-logo">XMORE</span>
+    <span class="s-footer-note" id="sFooterNote">
+      AI-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.
+    </span>
+  </footer>
+
+<script>
+/* ─── i18n ────────────────────────────────────────────────────────────────── */
+const T = {
+  en: {
+    back:        '← Dashboard',
+    sessionLabel:'Session',
+    idxTitle:    'INDEX SUPPORT & RESISTANCE',
+    stockTitle:  'STOCK SIGNALS',
+    colQ:        '#',
+    colCode:     'CODE',
+    colName:     'Name',
+    colTrend:    'Trend',
+    colRecType:  'Type',
+    colBuy:      'Buy Guide',
+    colSL:       'Stop Loss',
+    colTarget:   'Target',
+    colProfit:   'Profit%',
+    colRisk:     'Risk%',
+    colRR:       'R/R',
+    colS2:       'S2',
+    colS1:       'S1',
+    colPivot:    'Pivot',
+    colR1:       'R1',
+    colR2:       'R2',
+    loading:     'Loading session data…',
+    idxLoading:  'Loading index levels…',
+    empty:       'No session data available. Run the pipeline to generate signals.',
+    noLogin:     'Sign in to view your personalised session sheet.',
+    footer:      'AI-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.',
+  },
+  ar: {
+    back:        'الرئيسية →',
+    sessionLabel:'جلسة',
+    idxTitle:    'مستويات الدعم والمقاومة للمؤشرات',
+    stockTitle:  'إشارات الأسهم',
+    colQ:        '#',
+    colCode:     'الكود',
+    colName:     'الاسم',
+    colTrend:    'الاتجاه',
+    colRecType:  'النوع',
+    colBuy:      'سعر الدخول',
+    colSL:       'وقف الخسارة',
+    colTarget:   'الهدف',
+    colProfit:   'ربح%',
+    colRisk:     'خطر%',
+    colRR:       'ع/خ',
+    colS2:       'دعم 2',
+    colS1:       'دعم 1',
+    colPivot:    'المحور',
+    colR1:       'مقاومة 1',
+    colR2:       'مقاومة 2',
+    loading:     'جاري تحميل البيانات…',
+    idxLoading:  'جاري تحميل مستويات المؤشرات…',
+    empty:       'لا توجد بيانات للجلسة. قم بتشغيل الخط لتوليد الإشارات.',
+    noLogin:     'سجّل دخولك لعرض ورقة الجلسة الخاصة بك.',
+    footer:      'إشارات مولّدة بالذكاء الاصطناعي — ليست نصيحة مالية. بورصة مصر · الأحد–الخميس 10:00–14:30 القاهرة.',
+  }
+};
+
+let lang = localStorage.getItem('s_lang') || 'en';
+
+function t(key) { return (T[lang] || T.en)[key] || key; }
+
+function toggleLang() {
+  lang = lang === 'en' ? 'ar' : 'en';
+  localStorage.setItem('s_lang', lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
+  applyLang();
+  renderTable(window._sessionData || []);
+  renderIndexCards(window._indexData || []);
+}
+
+function applyLang() {
+  document.getElementById('sBack').textContent       = t('back');
+  document.getElementById('sIdxTitle').innerHTML     = `<span>${t('idxTitle')}</span>`;
+  document.getElementById('sStocksTitle').innerHTML  = `<span>${t('stockTitle')}</span>`;
+  document.getElementById('sFooterNote').textContent = t('footer');
+  const lbl = document.getElementById('sSessionLabel');
+  const dateEl = document.getElementById('sSessionDate');
+  const date = dateEl.textContent;
+  lbl.innerHTML = `${t('sessionLabel')} <span class="s-session-date">${date}</span>`;
+}
+
+/* ─── Trend class ─────────────────────────────────────────────────────────── */
+function trendClass(trendEn) {
+  if (!trendEn) return 's-trend-side';
+  const u = trendEn.toLowerCase();
+  if (u === 'bullish')  return 's-trend-up';
+  if (u === 'bearish')  return 's-trend-down';
+  return 's-trend-side';
+}
+
+function trendLabel(row) {
+  return lang === 'ar' ? (row.trend_ar || '—') : (row.trend_en || '—');
+}
+
+function recTypeLabel(row) {
+  return lang === 'ar' ? (row.rec_type_ar || '—') : (row.rec_type_en || '—');
+}
+
+function nameLabel(row) {
+  return lang === 'ar' ? (row.name_ar || row.symbol) : (row.name_en || row.symbol);
+}
+
+function fmt(v, decimals = 2) {
+  if (v == null || v === '' || isNaN(v)) return '—';
+  return Number(v).toFixed(decimals);
+}
+
+function fmtPct(v) {
+  if (v == null || isNaN(v)) return '—';
+  const n = Number(v);
+  const cls = n >= 0 ? 's-pct-pos' : 's-pct-neg';
+  return `<span class="${cls}">${n.toFixed(1)}%</span>`;
+}
+
+/* ─── Render table head ───────────────────────────────────────────────────── */
+function renderHead() {
+  const cols = [
+    t('colQ'), t('colCode'), t('colName'),
+    t('colTrend'), t('colRecType'),
+    t('colBuy'), t('colSL'), t('colTarget'),
+    t('colProfit'), t('colRisk'), t('colRR'),
+    t('colS2'), t('colS1'), t('colPivot'), t('colR1'), t('colR2'),
+  ];
+  const head = document.getElementById('sTableHead');
+  head.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
+}
+
+/* ─── Render rows ─────────────────────────────────────────────────────────── */
+function renderTable(data) {
+  renderHead();
+  const tbody = document.getElementById('sTableBody');
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="16" class="s-empty">${t('empty')}</td></tr>`;
+    return;
+  }
+
+  const rows = data.map((row, i) => {
+    const tc = trendClass(row.trend_en);
+    const recCls = (row.rec_type_en || '').toLowerCase() === 'trade' ? 's-rec-trade' : 's-rec-hold';
+    const sym = row.symbol.replace('.CA', '');
+
+    return `<tr>
+      <td class="s-row-num">${i + 1}</td>
+      <td class="s-code">${sym}</td>
+      <td class="s-name">${nameLabel(row)}</td>
+      <td class="${tc}">${trendLabel(row)}</td>
+      <td class="${recCls}">${recTypeLabel(row)}</td>
+      <td class="s-num-buy">${fmt(row.buy_guide, 3)}</td>
+      <td class="s-num-sl">${fmt(row.stop_loss_price, 3)}</td>
+      <td class="s-num-tgt">${fmt(row.target_price, 3)}</td>
+      <td>${fmtPct(row.target_pct)}</td>
+      <td>${fmtPct(row.stop_loss_pct)}</td>
+      <td class="s-num">${fmt(row.risk_reward_ratio, 2)}</td>
+      <td class="s-pivot-val">${fmt(row.s2, 3)}</td>
+      <td class="s-pivot-val">${fmt(row.s1, 3)}</td>
+      <td class="s-pivot-val">${fmt(row.pivot, 3)}</td>
+      <td class="s-pivot-val">${fmt(row.r1, 3)}</td>
+      <td class="s-pivot-val">${fmt(row.r2, 3)}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.innerHTML = rows;
+}
+
+/* ─── Index cards ─────────────────────────────────────────────────────────── */
+function renderIndexCards(data) {
+  const wrap = document.getElementById('sIndexWrap');
+  if (!data || data.length === 0) {
+    wrap.innerHTML = `<div class="s-empty">${t('empty')}</div>`;
+    return;
+  }
+
+  const labels = {
+    s2:    t('colS2'),
+    s1:    t('colS1'),
+    pivot: t('colPivot'),
+    r1:    t('colR1'),
+    r2:    t('colR2'),
+    sl:    t('colSL'),
+  };
+
+  wrap.innerHTML = data.map(row => {
+    const sym = row.symbol.replace('.CA', '');
+    const name = lang === 'ar' ? (row.name_ar || sym) : (row.name_en || sym);
+    const cells = [
+      { label: labels.s2,    val: fmt(row.s2,             3), cls: 's-num-sl'  },
+      { label: labels.s1,    val: fmt(row.s1,             3), cls: 's-num-sl'  },
+      { label: labels.pivot, val: fmt(row.pivot,          3), cls: 's-pivot-val'},
+      { label: labels.r1,    val: fmt(row.r1,             3), cls: 's-num-tgt' },
+      { label: labels.r2,    val: fmt(row.r2,             3), cls: 's-num-tgt' },
+      { label: labels.sl,    val: fmt(row.stop_loss_price,3), cls: 's-num-sl'  },
+    ].map(c => `
+      <div class="s-index-cell">
+        <div class="s-index-cell-label">${c.label}</div>
+        <div class="s-index-cell-val ${c.cls}">${c.val}</div>
+      </div>`).join('');
+
+    return `<div class="s-index-card">
+      <div class="s-index-head">
+        <span class="s-index-code">${sym}</span>
+        <span class="s-index-name">${name}</span>
+      </div>
+      <div class="s-index-body">${cells}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ─── Load data ───────────────────────────────────────────────────────────── */
+async function loadSession() {
+  try {
+    const res = await fetch('/api/trades/session-sheet', { credentials: 'include' });
+    if (!res.ok) {
+      if (res.status === 401) {
+        document.getElementById('sTableBody').innerHTML =
+          `<tr><td colspan="16" class="s-empty">${t('noLogin')}</td></tr>`;
+        document.getElementById('sIndexWrap').innerHTML =
+          `<div class="s-empty">${t('noLogin')}</div>`;
+        return;
+      }
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const json = await res.json();
+
+    // Set session date
+    const dateEl = document.getElementById('sSessionDate');
+    dateEl.textContent = json.session_date || '—';
+    applyLang();
+
+    window._sessionData = json.stocks || [];
+    window._indexData   = json.indices || [];
+
+    renderTable(window._sessionData);
+    renderIndexCards(window._indexData);
+  } catch (e) {
+    document.getElementById('sTableBody').innerHTML =
+      `<tr><td colspan="16" class="s-empty">Error loading data: ${e.message}</td></tr>`;
+    document.getElementById('sIndexWrap').innerHTML = '';
+  }
+}
+
+/* ─── Init ────────────────────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  document.documentElement.lang = lang;
+  document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
+  document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
+  applyLang();
+  loadSession();
+});
+</script>
+</body>
+</html>

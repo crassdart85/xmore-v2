@@ -1,0 +1,288 @@
+/* ─── Xmore Session Sheet ────────────────────────────────────────────────── */
+
+:root {
+  --s-bg:      #0d0d0d;
+  --s-surface: #141414;
+  --s-border:  #2a2a2a;
+  --s-text:    #e0e0e0;
+  --s-muted:   #666;
+  --s-green:   #00c853;
+  --s-red:     #ff1744;
+  --s-amber:   #ffab00;
+  --s-accent:  #667eea;
+  --s-gold:    #f5c518;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--s-bg);
+  color: var(--s-text);
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  min-height: 100vh;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.s-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: var(--s-bg);
+  border-bottom: 1px solid var(--s-border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.s-back {
+  color: var(--s-muted);
+  text-decoration: none;
+  font-size: 12px;
+  transition: color 0.15s;
+}
+.s-back:hover { color: var(--s-text); }
+
+.s-logo {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--s-text);
+}
+.s-logo-tag {
+  background: var(--s-gold);
+  color: #000;
+  font-size: 9px;
+  padding: 2px 5px;
+  border-radius: 2px;
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+.s-session-label {
+  font-size: 12px;
+  color: var(--s-muted);
+  font-family: 'Courier New', monospace;
+  margin-left: auto;
+}
+.s-session-date {
+  color: var(--s-gold);
+  font-weight: 600;
+}
+
+.s-lang-btn {
+  background: none;
+  border: 1px solid var(--s-border);
+  color: var(--s-muted);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.s-lang-btn:hover { color: var(--s-text); border-color: var(--s-muted); }
+
+/* ─── Container ──────────────────────────────────────────────────────────── */
+.s-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ─── Section title ──────────────────────────────────────────────────────── */
+.s-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--s-muted);
+  margin: 24px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--s-border);
+}
+.s-section-title span {
+  color: var(--s-gold);
+}
+
+/* ─── Table ──────────────────────────────────────────────────────────────── */
+.s-table-wrap {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid var(--s-border);
+}
+
+.s-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+}
+
+.s-table thead tr {
+  background: #1a1a1a;
+  border-bottom: 2px solid var(--s-border);
+}
+
+.s-table th {
+  padding: 8px 12px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--s-muted);
+  white-space: nowrap;
+}
+
+.s-table td {
+  padding: 7px 12px;
+  text-align: center;
+  border-bottom: 1px solid #1e1e1e;
+  white-space: nowrap;
+}
+
+.s-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.s-table tbody tr:hover {
+  background: #181818;
+}
+
+/* Name cell — left aligned */
+.s-table td.s-name {
+  text-align: right;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--s-gold);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 12px;
+}
+html[dir="ltr"] .s-table td.s-name { text-align: left; color: var(--s-text); }
+
+/* Code cell */
+.s-code {
+  font-weight: 700;
+  color: var(--s-accent);
+}
+
+/* Trend */
+.s-trend-up   { color: var(--s-green); font-weight: 600; }
+.s-trend-down { color: var(--s-red);   font-weight: 600; }
+.s-trend-side { color: var(--s-amber); font-weight: 600; }
+
+/* Rec type */
+.s-rec-trade { color: var(--s-green); }
+.s-rec-hold  { color: var(--s-amber); }
+
+/* Numbers */
+.s-num     { color: var(--s-text); }
+.s-num-sl  { color: var(--s-red); }
+.s-num-tgt { color: var(--s-green); }
+.s-num-buy { color: var(--s-gold); font-weight: 600; }
+.s-pct-pos { color: var(--s-green); }
+.s-pct-neg { color: var(--s-red); }
+
+/* Row number */
+.s-row-num {
+  color: var(--s-muted);
+  font-size: 11px;
+  width: 28px;
+}
+
+/* Pivot row styling */
+.s-pivot-val { color: #9ca3af; }
+
+/* ─── Index table (EGX30/70) ─────────────────────────────────────────────── */
+.s-index-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 700px) { .s-index-wrap { grid-template-columns: 1fr; } }
+
+.s-index-card {
+  background: var(--s-surface);
+  border: 1px solid var(--s-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.s-index-head {
+  padding: 8px 14px;
+  background: #1a1a1a;
+  border-bottom: 1px solid var(--s-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.s-index-code { font-weight: 700; color: var(--s-gold); font-size: 13px; }
+.s-index-name { color: var(--s-muted); font-size: 11px; }
+
+.s-index-body {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0;
+}
+.s-index-cell {
+  padding: 8px 10px;
+  text-align: center;
+  border-right: 1px solid var(--s-border);
+}
+.s-index-cell:last-child { border-right: none; }
+.s-index-cell-label {
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--s-muted);
+  margin-bottom: 4px;
+}
+.s-index-cell-val {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* ─── Empty / loading ────────────────────────────────────────────────────── */
+.s-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--s-muted);
+  font-size: 13px;
+}
+.s-loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--s-muted);
+  animation: s-pulse 1.5s ease-in-out infinite;
+}
+@keyframes s-pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+/* ─── Footer ─────────────────────────────────────────────────────────────── */
+.s-footer {
+  margin-top: 40px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--s-border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--s-muted);
+  font-size: 11px;
+}
+.s-footer-logo { font-weight: 700; letter-spacing: 2px; color: var(--s-text); }
+.s-footer-note { flex: 1; }
+
+/* ─── RTL adjustments ───────────────────────────────────────────────────── */
+html[dir="rtl"] .s-table th,
+html[dir="rtl"] .s-table td { direction: rtl; }
+html[dir="rtl"] .s-session-label { margin-left: 0; margin-right: auto; }
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .s-table th, .s-table td { padding: 6px 8px; font-size: 11px; }
+  .s-container { padding: 12px; }
+}

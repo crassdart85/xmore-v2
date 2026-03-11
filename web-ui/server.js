@@ -749,6 +749,14 @@ app.get('/pro', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pro.html'));
 });
 
+app.get('/session', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'session.html'));
+});
+
+app.get('/landing', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'landing.html'));
+});
+
 app.get('*', (req, res) => {
   // Don't serve index.html for /api routes that weren't matched
   if (req.path.startsWith('/api/')) {
