@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xmore — Feature Documentation</title>
+  <meta name="description" content="Complete feature documentation for the Xmore AI Stock Prediction Dashboard.">
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #1f2937;
+      --border: #30363d;
+      --accent: #00d4aa;
+      --accent2: #3b82f6;
+      --accent3: #f59e0b;
+      --text: #e6edf3;
+      --text2: #8b949e;
+      --pos: #3fb950;
+      --neg: #f85149;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.6; }
+
+    /* ── Header ── */
+    .docs-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 32px;
+      display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .docs-logo { font-size: 22px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
+    .docs-title { font-size: 14px; color: var(--text2); }
+    .docs-header-links { margin-left: auto; display: flex; gap: 12px; }
+    .docs-header-links a {
+      color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600;
+      padding: 6px 14px; border: 1px solid var(--accent); border-radius: 6px;
+      transition: background .15s;
+    }
+    .docs-header-links a:hover { background: rgba(0,212,170,.12); }
+
+    /* ── Layout ── */
+    .docs-layout { display: flex; max-width: 1200px; margin: 0 auto; }
+    .docs-sidebar {
+      width: 220px; flex-shrink: 0; padding: 28px 16px;
+      position: sticky; top: 61px; height: calc(100vh - 61px); overflow-y: auto;
+    }
+    .docs-sidebar h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text2); margin-bottom: 10px; }
+    .docs-sidebar a {
+      display: block; color: var(--text2); text-decoration: none; font-size: 13px;
+      padding: 5px 10px; border-radius: 6px; margin-bottom: 2px; transition: all .15s;
+    }
+    .docs-sidebar a:hover, .docs-sidebar a.active { background: var(--surface2); color: var(--text); }
+    .docs-sidebar .toc-sub { padding-left: 18px; font-size: 12px; }
+
+    .docs-main { flex: 1; padding: 32px 40px; min-width: 0; }
+
+    /* ── Section ── */
+    .docs-section { margin-bottom: 64px; scroll-margin-top: 80px; }
+    .docs-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    .docs-section-icon { font-size: 28px; }
+    .docs-section-title { font-size: 22px; font-weight: 700; }
+    .docs-section-badge { font-size: 11px; padding: 3px 8px; border-radius: 99px; font-weight: 600; }
+    .badge-live { background: rgba(63,185,80,.15); color: var(--pos); }
+    .badge-pro { background: rgba(0,212,170,.15); color: var(--accent); }
+    .badge-new { background: rgba(245,158,11,.15); color: var(--accent3); }
+
+    .docs-desc { color: var(--text2); margin-bottom: 20px; max-width: 720px; }
+
+    /* ── Feature cards ── */
+    .feature-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 18px; transition: border-color .2s;
+    }
+    .feature-card:hover { border-color: var(--accent); }
+    .feature-card h4 { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .feature-card p { font-size: 13px; color: var(--text2); }
+
+    /* ── Mockup screenshots ── */
+    .mockup {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      overflow: hidden; margin-bottom: 24px;
+    }
+    .mockup-titlebar {
+      background: var(--surface2); padding: 10px 14px; display: flex; align-items: center; gap: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mockup-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .mockup-dot.r { background: #f85149; } .mockup-dot.y { background: #f59e0b; } .mockup-dot.g { background: #3fb950; }
+    .mockup-url { font-size: 12px; color: var(--text2); margin-left: 8px; }
+    .mockup-body { padding: 20px; }
+
+    /* Mock UI elements */
+    .mock-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+    .mock-tab { padding: 6px 14px; border-radius: 6px; font-size: 12px; background: var(--surface2); color: var(--text2); cursor: default; }
+    .mock-tab.active { background: rgba(0,212,170,.15); color: var(--accent); font-weight: 600; }
+    .mock-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .mock-table th { padding: 7px 10px; text-align: left; color: var(--text2); background: var(--surface2); font-weight: 500; border-bottom: 1px solid var(--border); }
+    .mock-table td { padding: 7px 10px; border-bottom: 1px solid rgba(48,54,61,.5); }
+    .mock-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    .mock-badge.up { background: rgba(63,185,80,.15); color: var(--pos); }
+    .mock-badge.down { background: rgba(248,81,73,.15); color: var(--neg); }
+    .mock-badge.hold { background: rgba(139,148,158,.15); color: var(--text2); }
+    .mock-stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .mock-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 100px; }
+    .mock-stat .val { font-size: 18px; font-weight: 700; color: var(--accent); }
+    .mock-stat .lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+    .mock-chart { background: var(--surface2); border-radius: 8px; height: 80px; display: flex; align-items: flex-end; padding: 10px; gap: 4px; overflow: hidden; }
+    .mock-bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--accent); opacity: .7; min-width: 6px; }
+    .mock-bar.neg { background: var(--neg); }
+    .mock-sparkline { background: var(--surface2); border-radius: 8px; height: 50px; padding: 8px; display: flex; align-items: center; }
+    .mock-sparkline svg { width: 100%; height: 34px; }
+    .mock-alert-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(48,54,61,.5); font-size: 12px; }
+    .mock-alert-sym { font-weight: 700; color: var(--accent); min-width: 50px; }
+    .mock-alert-cond { color: var(--text2); flex: 1; }
+    .mock-alert-price { font-weight: 600; }
+    .mock-tag { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    .mock-tag.active { background: rgba(63,185,80,.15); color: var(--pos); }
+    .mock-tag.triggered { background: rgba(245,158,11,.15); color: var(--accent3); }
+    .mock-input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .mock-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--text2); flex: 1; }
+    .mock-btn { background: rgba(0,212,170,.15); color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: default; white-space: nowrap; }
+    .mock-rate-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
+    .mock-rate-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
+    .mock-rate-icon { font-size: 20px; margin-bottom: 4px; }
+    .mock-rate-val { font-size: 16px; font-weight: 700; }
+    .mock-rate-lbl { font-size: 10px; color: var(--text2); margin-top: 2px; }
+    .mock-sector-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
+    .mock-sector-bar { height: 6px; border-radius: 3px; background: var(--accent); }
+    .mock-sector-lbl { color: var(--text2); min-width: 90px; }
+    .mock-totals { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .mock-total-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; flex: 1; min-width: 110px; }
+    .mock-total-lbl { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; }
+    .mock-total-val { font-size: 16px; font-weight: 700; margin-top: 2px; }
+    .mock-horizon-btns { display: flex; gap: 8px; margin-bottom: 12px; }
+    .mock-horizon-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; background: var(--surface2); color: var(--text2); }
+    .mock-horizon-btn.active { background: rgba(0,212,170,.15); color: var(--accent); font-weight: 600; }
+
+    /* ── Code block ── */
+    .docs-code {
+      background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px; font-family: 'Courier New', monospace; font-size: 12.5px; color: #a5d6ff;
+      overflow-x: auto; margin-bottom: 20px;
+    }
+    .docs-code .comment { color: var(--text2); }
+    .docs-code .key { color: #ff7b72; }
+    .docs-code .str { color: #a5d6ff; }
+    .docs-code .num { color: #79c0ff; }
+
+    /* ── Steps ── */
+    .steps { list-style: none; counter-reset: step; margin-bottom: 20px; }
+    .steps li { counter-increment: step; padding: 10px 0 10px 44px; position: relative; border-bottom: 1px solid rgba(48,54,61,.4); font-size: 14px; }
+    .steps li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 8px;
+      width: 28px; height: 28px; line-height: 28px; text-align: center;
+      background: rgba(0,212,170,.15); color: var(--accent); border-radius: 50%;
+      font-size: 12px; font-weight: 700;
+    }
+    .steps li strong { color: var(--accent); }
+
+    /* ── Tip box ── */
+    .tip-box { background: rgba(0,212,170,.06); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; }
+    .tip-box .tip-label { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .warn-box { background: rgba(245,158,11,.06); border-left: 3px solid var(--accent3); border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 20px; font-size: 13px; }
+    .warn-box .tip-label { font-weight: 700; color: var(--accent3); margin-bottom: 4px; }
+
+    /* ── TOC pills at top ── */
+    .toc-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 40px; }
+    .toc-pill {
+      padding: 6px 14px; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 99px; font-size: 12px; color: var(--text2); text-decoration: none;
+      transition: all .15s;
+    }
+    .toc-pill:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Compare table mock ── */
+    .comp-mock-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .comp-mock-table th { padding: 8px 10px; background: var(--surface2); border: 1px solid var(--border); text-align: center; color: var(--text2); font-weight: 500; }
+    .comp-mock-table th.label-col { text-align: left; }
+    .comp-mock-table th.sym { color: var(--accent); font-weight: 700; font-size: 13px; }
+    .comp-mock-table td { padding: 7px 10px; border: 1px solid rgba(48,54,61,.4); text-align: center; }
+    .comp-mock-table td.label-col { text-align: left; color: var(--text2); background: var(--surface2); }
+
+    /* ── Brief box mock ── */
+    .brief-mock { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 20px; }
+    .brief-mock .brief-sym { font-size: 20px; font-weight: 800; color: var(--accent); margin-bottom: 4px; }
+    .brief-mock .brief-meta { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
+    .brief-mock p { font-size: 13px; line-height: 1.7; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .docs-sidebar { display: none; }
+      .docs-main { padding: 20px 16px; }
+      .mock-rate-grid { grid-template-columns: repeat(2, 1fr); }
+      .comp-mock-table { font-size: 11px; }
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Pro badge ── */
+    .inline-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; vertical-align: middle; margin-left: 4px; }
+    .inline-badge.pro { background: rgba(0,212,170,.2); color: var(--accent); }
+    .inline-badge.new { background: rgba(245,158,11,.2); color: var(--accent3); }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<header class="docs-header">
+  <div class="docs-logo">Xmore</div>
+  <div class="docs-title">Feature Documentation</div>
+  <div class="docs-header-links">
+    <a href="/">← Dashboard</a>
+    <a href="/pro">PRO ↗</a>
+  </div>
+</header>
+
+<div class="docs-layout">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <nav class="docs-sidebar">
+    <h3>Contents</h3>
+    <a href="#overview">Overview</a>
+    <a href="#predictions">Predictions</a>
+    <a class="toc-sub" href="#comparison">Stock Comparison</a>
+    <a class="toc-sub" href="#aibrief">AI Brief</a>
+    <a href="#portfolio">Portfolio</a>
+    <a class="toc-sub" href="#alerts">Price Alerts</a>
+    <a href="#rates">Rates Tab</a>
+    <a href="#performance">Performance</a>
+    <a class="toc-sub" href="#multihorizon">Multi-horizon</a>
+    <a href="#forecasts">Forecast Portfolios</a>
+    <a href="#pro">Xmore Pro</a>
+    <a class="toc-sub" href="#macro">Macro Brief</a>
+    <a href="#etf">ETF Dashboard</a>
+    <a href="#assistant">Market Assistant</a>
+    <a href="#admin">Admin Panel</a>
+    <a href="#timemachine">Time Machine</a>
+    <a href="#api">API Reference</a>
+  </nav>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <main class="docs-main">
+
+    <!-- INTRO -->
+    <div style="margin-bottom: 40px;">
+      <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 8px;">Xmore Documentation</h1>
+      <p style="color: var(--text2); font-size: 15px; max-width: 680px;">
+        Xmore is an AI-powered stock prediction system for the Egyptian Exchange (EGX) and global markets.
+        This page documents every feature available on the dashboard and Xmore Pro.
+      </p>
+    </div>
+
+    <!-- TOC PILLS -->
+    <div class="toc-pills">
+      <a href="#predictions" class="toc-pill">📈 Predictions</a>
+      <a href="#comparison" class="toc-pill">⇔ Compare</a>
+      <a href="#aibrief" class="toc-pill">🤖 AI Brief</a>
+      <a href="#portfolio" class="toc-pill">💼 Portfolio</a>
+      <a href="#alerts" class="toc-pill">🔔 Alerts</a>
+      <a href="#rates" class="toc-pill">💱 Rates</a>
+      <a href="#performance" class="toc-pill">🏆 Performance</a>
+      <a href="#forecasts" class="toc-pill">🔮 Forecasts</a>
+      <a href="#pro" class="toc-pill">⚡ Pro</a>
+      <a href="#etf" class="toc-pill">🌍 ETF</a>
+      <a href="#assistant" class="toc-pill">💬 Assistant</a>
+      <a href="#admin" class="toc-pill">🛠 Admin</a>
+    </div>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 1. OVERVIEW -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="overview">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🏠</span>
+        <h2 class="docs-section-title">Overview</h2>
+        <span class="docs-section-badge badge-live">Live</span>
+      </div>
+      <p class="docs-desc">
+        Xmore aggregates signals from 5 AI agents — Moving Average, RSI, Volume Spike, Random Forest ML, and Gemini LLM —
+        into a unified consensus score. The dashboard auto-refreshes data on every EGX trading day.
+      </p>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>🤖 5 AI Agents</h4>
+          <p>MA Crossover, RSI, Volume Spike, Random Forest, and Gemini LLM each vote independently with weighted confidence.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📊 Xmore Score</h4>
+          <p>0–100 composite bullishness score. ≥65 = strong buy zone; ≤35 = bearish. Updated daily after market close.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🌐 Bilingual</h4>
+          <p>Full English / Arabic toggle. All labels, signals, and dates switch language. Arabic uses RTL layout.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🌙 Dark / Light theme</h4>
+          <p>Theme preference saved to localStorage and persists across sessions.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📱 Responsive</h4>
+          <p>Mobile-optimised layout. Tables scroll horizontally on small screens. All modals are touch-friendly.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔐 Auth</h4>
+          <p>Sign Up / Sign In with email. JWT stored in HTTP-only cookie. Portfolio, alerts, and forecasts are per-user.</p>
+        </div>
+      </div>
+      <div class="tip-box">
+        <div class="tip-label">Quick start</div>
+        Visit <a href="/" style="color:var(--accent)">xmore-project.onrender.com</a> → sign up for free → add stocks to your watchlist → check the Predictions tab each morning before market open (09:00 Cairo).
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 2. PREDICTIONS -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="predictions">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">📈</span>
+        <h2 class="docs-section-title">Predictions</h2>
+        <span class="docs-section-badge badge-live">Main Tab</span>
+      </div>
+      <p class="docs-desc">
+        The Predictions tab is the core screen. It shows today's AI consensus signal for every tracked EGX stock.
+        Data is computed nightly after market close and reflects the prior session's closing prices.
+      </p>
+
+      <!-- Mockup -->
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">xmore-project.onrender.com → Predictions tab</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-tabs">
+            <div class="mock-tab active">Predictions</div>
+            <div class="mock-tab">Portfolio</div>
+            <div class="mock-tab">Performance</div>
+            <div class="mock-tab">Rates</div>
+            <div class="mock-tab">ETF</div>
+          </div>
+          <div class="mock-stat-row">
+            <div class="mock-stat"><div class="val">253</div><div class="lbl">Stocks tracked</div></div>
+            <div class="mock-stat"><div class="val" style="color:var(--pos)">62</div><div class="lbl">BUY signals</div></div>
+            <div class="mock-stat"><div class="val" style="color:var(--neg)">41</div><div class="lbl">SELL signals</div></div>
+            <div class="mock-stat"><div class="val">14 Mar</div><div class="lbl">Latest data</div></div>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <div class="mock-input" style="flex:2">Search symbol or name…</div>
+            <div class="mock-btn">⇔ Compare</div>
+            <div class="mock-btn">🔍 Screener</div>
+          </div>
+          <table class="mock-table">
+            <thead><tr>
+              <th>Symbol</th><th>Signal</th><th>Confidence</th><th>Xmore Score</th><th>Agents</th><th>Price</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><strong>COMI</strong></td><td><span class="mock-badge up">BUY</span></td><td>87%</td><td><span style="color:var(--pos)">78</span></td><td>4/5</td><td>62.40</td></tr>
+              <tr><td><strong>EKHW</strong></td><td><span class="mock-badge up">BUY</span></td><td>72%</td><td><span style="color:var(--pos)">66</span></td><td>3/5</td><td>18.90</td></tr>
+              <tr><td><strong>HRHO</strong></td><td><span class="mock-badge hold">HOLD</span></td><td>55%</td><td>50</td><td>2/5</td><td>9.15</td></tr>
+              <tr><td><strong>ORWE</strong></td><td><span class="mock-badge down">SELL</span></td><td>68%</td><td><span style="color:var(--neg)">32</span></td><td>3/5</td><td>4.30</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📡 Consensus Signal</h4>
+          <p>BUY / HOLD / SELL derived from majority vote across all active agents. Displayed with conviction label (Strong/Moderate/Weak).</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔢 Xmore Score</h4>
+          <p>0–100 bull/bear composite. Color-coded: green ≥65, red ≤35, grey in-between.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔍 Screener</h4>
+          <p>Filter by signal (BUY/SELL), confidence threshold, sector, and volume. Results sortable by any column.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📰 Sentiment Badge</h4>
+          <p>Colour-coded news sentiment (Positive / Neutral / Negative) beside each stock, derived from Gemini LLM analysis of latest headlines.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:12px; font-size:16px;">How to read a signal row</h3>
+      <ol class="steps">
+        <li><strong>Signal</strong> — BUY means majority of agents predict price will rise within 5 trading days.</li>
+        <li><strong>Confidence</strong> — weighted average certainty across agreeing agents (0–100%). Higher = more conviction.</li>
+        <li><strong>Xmore Score</strong> — bull pressure index. Score of 80 means 80% of composite weight is bullish.</li>
+        <li><strong>Agents column</strong> — e.g. "4/5" = 4 of 5 agents voted for the consensus direction.</li>
+        <li><strong>Price</strong> — last closing price in EGP from EGX or TradingView Scanner.</li>
+      </ol>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 2b. STOCK COMPARISON -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="comparison">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">⇔</span>
+        <h2 class="docs-section-title">Stock Comparison Tool</h2>
+        <span class="docs-section-badge badge-new">New</span>
+      </div>
+      <p class="docs-desc">
+        Compare up to 4 EGX stocks side-by-side across all AI metrics. Click the <strong>⇔ Compare</strong> button
+        on the Predictions tab screener bar to open the comparison modal.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Comparison Modal — up to 4 symbols</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-input-row">
+            <div class="mock-input">COMI</div>
+            <div class="mock-input">EKHW</div>
+            <div class="mock-input">HRHO</div>
+            <div class="mock-input">ORWE</div>
+            <div class="mock-btn">Compare</div>
+          </div>
+          <table class="comp-mock-table">
+            <thead>
+              <tr>
+                <th class="label-col">Metric</th>
+                <th class="sym">COMI</th>
+                <th class="sym">EKHW</th>
+                <th class="sym">HRHO</th>
+                <th class="sym">ORWE</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="label-col">Signal</td><td><span class="mock-badge up">BUY</span></td><td><span class="mock-badge up">BUY</span></td><td><span class="mock-badge hold">HOLD</span></td><td><span class="mock-badge down">SELL</span></td></tr>
+              <tr><td class="label-col">Confidence</td><td>87%</td><td>72%</td><td>55%</td><td>68%</td></tr>
+              <tr><td class="label-col">Xmore Score</td><td style="color:var(--pos)">78</td><td style="color:var(--pos)">66</td><td>50</td><td style="color:var(--neg)">32</td></tr>
+              <tr><td class="label-col">Bull Score</td><td>0.82</td><td>0.71</td><td>0.51</td><td>0.28</td></tr>
+              <tr><td class="label-col">Bear Score</td><td>0.18</td><td>0.29</td><td>0.49</td><td>0.72</td></tr>
+              <tr><td class="label-col">Price (EGP)</td><td>62.40</td><td>18.90</td><td>9.15</td><td>4.30</td></tr>
+              <tr><td class="label-col">AI Brief</td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <ol class="steps">
+        <li>Click <strong>⇔ Compare</strong> in the Predictions tab search bar.</li>
+        <li>Type up to 4 stock symbols (e.g. COMI, EKHW, HRHO).</li>
+        <li>Click <strong>Compare</strong> to fetch live consensus data for all symbols in parallel.</li>
+        <li>Review the side-by-side table — click any <strong>📄 Brief</strong> button for an AI narrative.</li>
+      </ol>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 2c. AI BRIEF -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="aibrief">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🤖</span>
+        <h2 class="docs-section-title">Per-stock AI Brief</h2>
+        <span class="docs-section-badge badge-new">New</span>
+      </div>
+      <p class="docs-desc">
+        Every stock can generate a 3-sentence Gemini-powered analyst brief covering current stance, key risk, and short-term outlook.
+        Briefs are cached for 1 hour to minimise API cost.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">AI Brief Modal — COMI</span>
+        </div>
+        <div class="mockup-body">
+          <div class="brief-mock">
+            <div class="brief-sym">COMI</div>
+            <div class="brief-meta">Generated by Gemini 2.5 Flash · Cached 1 hour</div>
+            <p>
+              <strong>1. Stance:</strong> COMI carries a strong BUY signal with 87% confidence, underpinned by bullish MA crossover alignment and elevated RSI momentum — 4 of 5 agents agree on the upside case.<br><br>
+              <strong>2. Key risk:</strong> The primary downside risk is broad EGX market sentiment reversal; COMI has historically tracked EGX30 beta closely, so any index weakness could compress the position within the 5-day horizon.<br><br>
+              <strong>3. Outlook:</strong> Short-term momentum favours continuation toward the 64–66 EGP resistance zone, provided the current volume profile holds above the 20-day average.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <div class="tip-label">Availability</div>
+        AI Brief requires <code>GOOGLE_API_KEY</code> to be configured. Briefs are accessible from the Comparison Tool modal and from individual stock rows in Predictions (via the 📄 icon when visible).
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 3. PORTFOLIO -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="portfolio">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">💼</span>
+        <h2 class="docs-section-title">Virtual Portfolio</h2>
+        <span class="docs-section-badge badge-live">Portfolio Tab</span>
+      </div>
+      <p class="docs-desc">
+        Track your real or virtual trades with full EGP P&amp;L accounting. Each position records entry price, quantity,
+        and date. The portfolio calculates live cost vs current market value using the latest price feed.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Portfolio Tab — open positions with EGP totals</span>
+        </div>
+        <div class="mockup-body">
+          <!-- Totals strip -->
+          <div class="mock-totals">
+            <div class="mock-total-pill"><div class="mock-total-lbl">Invested</div><div class="mock-total-val">EGP 48,350</div></div>
+            <div class="mock-total-pill"><div class="mock-total-lbl">Market Value</div><div class="mock-total-val">EGP 53,120</div></div>
+            <div class="mock-total-pill"><div class="mock-total-lbl">Total P&amp;L</div><div class="mock-total-val" style="color:var(--pos)">+EGP 4,770</div></div>
+            <div class="mock-total-pill"><div class="mock-total-lbl">Return</div><div class="mock-total-val" style="color:var(--pos)">+9.86%</div></div>
+          </div>
+          <!-- Sector breakdown -->
+          <div style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Sector Allocation</div>
+            <div class="mock-sector-row"><span class="mock-sector-lbl">Banking</span><div class="mock-sector-bar" style="width:45%"></div><span style="font-size:12px;color:var(--text2)">45%</span></div>
+            <div class="mock-sector-row"><span class="mock-sector-lbl">Real Estate</span><div class="mock-sector-bar" style="width:28%;background:var(--accent2)"></div><span style="font-size:12px;color:var(--text2)">28%</span></div>
+            <div class="mock-sector-row"><span class="mock-sector-lbl">Industrials</span><div class="mock-sector-bar" style="width:27%;background:var(--accent3)"></div><span style="font-size:12px;color:var(--text2)">27%</span></div>
+          </div>
+          <table class="mock-table">
+            <thead><tr>
+              <th>Symbol</th><th>Entry</th><th>Qty</th><th>Current</th><th>Cost (EGP)</th><th>Value (EGP)</th><th>P&amp;L (EGP)</th><th>%</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><strong>COMI</strong></td><td>58.00</td><td>500</td><td>62.40</td><td>29,000</td><td>31,200</td><td class="pos">+2,200</td><td class="pos">+7.6%</td></tr>
+              <tr><td><strong>EKHW</strong></td><td>20.10</td><td>1000</td><td>18.90</td><td>20,100</td><td>18,900</td><td class="neg">-1,200</td><td class="neg">-6.0%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📊 EGP Totals Strip</h4>
+          <p>Four live pills: Total Invested, Market Value, P&amp;L (EGP), Return %. Updated on every portfolio load.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🍕 Sector Breakdown</h4>
+          <p>Visual bar chart showing portfolio weight per sector. Helps identify concentration risk.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📋 Open Positions Table</h4>
+          <p>Symbol, entry date, entry price, quantity, current price, cost EGP, market value EGP, P&amp;L EGP, % return.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📜 Trade History</h4>
+          <p>All closed trades with entry/exit dates and final return %. Win rate and average return in the stats strip.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-bottom:12px; font-size:16px;">Adding a position</h3>
+      <ol class="steps">
+        <li>Go to the <strong>Trades</strong> tab → <em>Add Trade</em> form.</li>
+        <li>Enter <strong>Symbol</strong> (e.g. COMI), <strong>Entry Price</strong>, <strong>Quantity</strong>, and <strong>Date</strong>.</li>
+        <li>Click <strong>Add</strong>. The position appears immediately in Portfolio with live P&amp;L.</li>
+        <li>To close: click the ✕ on the position row, enter exit price.</li>
+      </ol>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 3b. PRICE ALERTS -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="alerts">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🔔</span>
+        <h2 class="docs-section-title">Price Alerts</h2>
+        <span class="docs-section-badge badge-new">New</span>
+      </div>
+      <p class="docs-desc">
+        Set price threshold alerts for any EGX stock. Alerts auto-trigger when the current price crosses your target —
+        no background job required. The system checks all active alerts when you open the Portfolio tab.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Price Alerts — Portfolio tab, Alerts section</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-input-row">
+            <div class="mock-input">Symbol (e.g. COMI)</div>
+            <select class="mock-input" style="flex:none;width:100px">
+              <option>Above</option><option>Below</option>
+            </select>
+            <div class="mock-input" style="flex:none;width:90px">64.00</div>
+            <div class="mock-btn">+ Alert</div>
+          </div>
+          <div class="mock-alert-row">
+            <span class="mock-alert-sym">COMI</span>
+            <span class="mock-alert-cond">Price above</span>
+            <span class="mock-alert-price">64.00 EGP</span>
+            <span style="font-size:11px;color:var(--text2)">now: 62.40</span>
+            <span class="mock-tag active">Active</span>
+            <span style="color:var(--neg);cursor:pointer;margin-left:auto">🗑</span>
+          </div>
+          <div class="mock-alert-row">
+            <span class="mock-alert-sym">ORWE</span>
+            <span class="mock-alert-cond">Price below</span>
+            <span class="mock-alert-price">4.00 EGP</span>
+            <span style="font-size:11px;color:var(--text2)">now: 4.30</span>
+            <span class="mock-tag active">Active</span>
+            <span style="color:var(--neg);cursor:pointer;margin-left:auto">🗑</span>
+          </div>
+          <div class="mock-alert-row" style="opacity:.6">
+            <span class="mock-alert-sym">EKHW</span>
+            <span class="mock-alert-cond">Price above</span>
+            <span class="mock-alert-price">22.00 EGP</span>
+            <span style="font-size:11px;color:var(--text2)">triggered 12 Mar</span>
+            <span class="mock-tag triggered">Triggered</span>
+            <span style="color:var(--neg);cursor:pointer;margin-left:auto">🗑</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Above / Below conditions</h4>
+          <p>Create an alert for when a stock rises above or falls below a specific EGP price.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Auto-trigger at read time</h4>
+          <p>When you load the Portfolio tab, the server checks all active alerts against the latest price and marks any triggered ones — no separate cron needed.</p>
+        </div>
+        <div class="feature-card">
+          <h4>20 alert limit</h4>
+          <p>Up to 20 active alerts per user account. Delete triggered alerts to free slots.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Current price shown</h4>
+          <p>Each alert row shows the current live price so you can see how close the threshold is.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 4. RATES TAB -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="rates">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">💱</span>
+        <h2 class="docs-section-title">Rates Tab</h2>
+        <span class="docs-section-badge badge-new">New</span>
+      </div>
+      <p class="docs-desc">
+        Live FX and gold rates with 90-day sparkline history charts. Data is fetched from the open exchange-rate API
+        on every page load and stored in the database — building a historical record automatically.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Rates Tab — live cards + history charts</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-rate-grid">
+            <div class="mock-rate-card"><div class="mock-rate-icon">💵</div><div class="mock-rate-val">49.85</div><div class="mock-rate-lbl">USD / EGP</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon">🇸🇦</div><div class="mock-rate-val">13.29</div><div class="mock-rate-lbl">USD / SAR</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon">🥇</div><div class="mock-rate-val">2,940</div><div class="mock-rate-lbl">Gold (USD/oz)</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon">⚖️</div><div class="mock-rate-val">7,850</div><div class="mock-rate-lbl">Gold Pound (EGP)</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">USD/EGP — 90 days</div>
+              <div class="mock-sparkline">
+                <svg viewBox="0 0 200 34" preserveAspectRatio="none">
+                  <polyline points="0,30 30,28 60,25 90,22 110,18 140,15 170,14 200,13"
+                    fill="none" stroke="#00d4aa" stroke-width="2"/>
+                  <polygon points="0,34 0,30 30,28 60,25 90,22 110,18 140,15 170,14 200,13 200,34"
+                    fill="rgba(0,212,170,.1)"/>
+                </svg>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--text2);margin-bottom:4px;">Gold/oz (USD) — 90 days</div>
+              <div class="mock-sparkline">
+                <svg viewBox="0 0 200 34" preserveAspectRatio="none">
+                  <polyline points="0,20 30,22 60,18 90,15 110,12 140,10 170,8 200,6"
+                    fill="none" stroke="#f59e0b" stroke-width="2"/>
+                  <polygon points="0,34 0,20 30,22 60,18 90,15 110,12 140,10 170,8 200,6 200,34"
+                    fill="rgba(245,158,11,.1)"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>Live rate cards</h4>
+          <p>USD/EGP, USD/SAR, SAR/EGP, XAU/USD (gold), 24K gold per gram EGP, 21K per gram EGP, Gold Pound EGP.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Sparkline history</h4>
+          <p>Canvas-rendered 90-day charts for each rate — no external chart library, pure 2D canvas API.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Auto-accumulating history</h4>
+          <p>Every time any user fetches /api/fx-rates, the rate is stored in the <code>fx_rates_history</code> table — one row per day, upserted.</p>
+        </div>
+        <div class="feature-card">
+          <h4>Header FX strip (Pro)</h4>
+          <p>USD/EGP, USD/SAR, SAR/EGP live rates also appear in the Xmore Pro header bar, refreshed hourly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 5. PERFORMANCE -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="performance">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🏆</span>
+        <h2 class="docs-section-title">Performance Dashboard</h2>
+        <span class="docs-section-badge badge-live">Performance Tab</span>
+      </div>
+      <p class="docs-desc">
+        Tracks the real-world accuracy of every agent. Predictions are evaluated after the 5-day trading horizon
+        by comparing predicted direction to actual price movement. Agents compete transparently.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Performance Tab — agent accuracy leaderboard</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-stat-row">
+            <div class="mock-stat"><div class="val" style="color:var(--pos)">73%</div><div class="lbl">Best agent accuracy</div></div>
+            <div class="mock-stat"><div class="val">1,240</div><div class="lbl">Predictions evaluated</div></div>
+            <div class="mock-stat"><div class="val">D+5</div><div class="lbl">Horizon</div></div>
+          </div>
+          <table class="mock-table">
+            <thead><tr>
+              <th>Agent</th><th>Accuracy</th><th>Total</th><th>Win</th><th>Trend</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><strong>Gemini LLM</strong></td><td style="color:var(--pos)">73%</td><td>310</td><td>227</td><td>↑</td></tr>
+              <tr><td><strong>Random Forest</strong></td><td style="color:var(--pos)">69%</td><td>310</td><td>214</td><td>→</td></tr>
+              <tr><td><strong>RSI Agent</strong></td><td>62%</td><td>310</td><td>192</td><td>→</td></tr>
+              <tr><td><strong>MA Crossover</strong></td><td>61%</td><td>310</td><td>189</td><td>↓</td></tr>
+              <tr><td><strong>Volume Spike</strong></td><td style="color:var(--neg)">58%</td><td>310</td><td>180</td><td>↓</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 5b. MULTI-HORIZON -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="multihorizon">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🎯</span>
+        <h2 class="docs-section-title">Multi-horizon Signal Evaluation</h2>
+        <span class="docs-section-badge badge-new">New</span>
+      </div>
+      <p class="docs-desc">
+        Beyond the default D+5, Xmore now evaluates consensus signals at <strong>D+10</strong> and <strong>D+20</strong>
+        trading days. This reveals which stocks' AI signals remain accurate over longer horizons.
+      </p>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Performance Tab → Signal Accuracy by Horizon</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-horizon-btns">
+            <div class="mock-horizon-btn active">D+5</div>
+            <div class="mock-horizon-btn">D+10</div>
+            <div class="mock-horizon-btn">D+20</div>
+          </div>
+          <table class="mock-table">
+            <thead><tr>
+              <th>Symbol</th><th>Horizon</th><th>Accuracy</th><th>Predictions</th><th>Correct</th>
+            </tr></thead>
+            <tbody>
+              <tr><td><strong>COMI</strong></td><td>D+10</td><td style="color:var(--pos)">81%</td><td>16</td><td>13</td></tr>
+              <tr><td><strong>EKHW</strong></td><td>D+10</td><td style="color:var(--pos)">75%</td><td>12</td><td>9</td></tr>
+              <tr><td><strong>HRHO</strong></td><td>D+10</td><td>60%</td><td>10</td><td>6</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <div class="tip-label">Data requirement</div>
+        D+10 and D+20 results only appear for stocks that have at least 3 evaluated predictions at that horizon. New entries accumulate as <code>evaluate.py</code> runs daily.
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 6. FORECAST PORTFOLIOS -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="forecasts">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🔮</span>
+        <h2 class="docs-section-title">Forecast Portfolios</h2>
+        <span class="docs-section-badge badge-live">Forecasts Tab</span>
+      </div>
+      <p class="docs-desc">
+        Build a named portfolio with a custom horizon (1m to 2y) and Xmore will forecast each stock's expected
+        return using all active agents. Daily actuals are recorded and compared against the forecast.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📋 Custom Portfolios</h4>
+          <p>Create multiple named portfolios (e.g. "Conservative Q2", "Aggressive 6M") each with its own stocks and horizon.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📅 Six Horizons</h4>
+          <p>1 month (21 trading days), 2m, 3m, 6m, 1 year, 2 years. Forecast auto-runs on creation.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📈 Daily Actuals Tracking</h4>
+          <p>A cron records the actual closing price each day. The chart overlays forecast vs actual return over time.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📝 Business Narrative</h4>
+          <p>Auto-generated plain-English summary: scenario, phase (early/mid/late), avg forecast gap, and per-position beat count.</p>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Forecasts Tab — portfolio chart + narrative (Xmore Pro)</span>
+        </div>
+        <div class="mockup-body">
+          <div class="mock-stat-row">
+            <div class="mock-stat"><div class="val" style="color:var(--pos)">+12.4%</div><div class="lbl">Forecast avg return</div></div>
+            <div class="mock-stat"><div class="val">3</div><div class="lbl">Stocks</div></div>
+            <div class="mock-stat"><div class="val">42d</div><div class="lbl">Horizon (2m)</div></div>
+            <div class="mock-stat"><div class="val">Mid</div><div class="lbl">Phase</div></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:14px;font-size:13px;line-height:1.6;color:var(--text2);">
+            <strong style="color:var(--text)">Aggressive Q2</strong> · Moderate scenario · 2-month horizon<br>
+            Phase: <strong>mid</strong> (day 21 of 42) · Average actual vs forecast gap: <strong style="color:var(--pos)">+1.8 pp ahead</strong><br>
+            2 of 3 positions beating forecast. COMI +14.2% (forecast 11%), EKHW -6% (forecast +8%).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 7. XMORE PRO -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="pro">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">⚡</span>
+        <h2 class="docs-section-title">Xmore Pro Dashboard</h2>
+        <span class="docs-section-badge badge-pro">Pro</span>
+      </div>
+      <p class="docs-desc">
+        A standalone professional terminal at <a href="/pro" style="color:var(--accent)">/pro</a> — dark terminal theme,
+        live EGX market overview, Top Gainers/Losers, sector performance, FX rates strip, and forecast portfolios in one screen.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📊 EGX Market Overview</h4>
+          <p>TradingView Advanced Chart (EGX30, 5-min area) + EGX blue-chip stock table with live consensus signals.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📈 Top Gainers / Losers</h4>
+          <p>8-row tables of the session's best and worst performers with signal badges and confidence.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🏭 Sector Performance</h4>
+          <p>Horizontal bar chart of average % return per sector, colour-coded green/red.</p>
+        </div>
+        <div class="feature-card">
+          <h4>💱 FX Rates Strip</h4>
+          <p>Live USD/EGP, USD/SAR, SAR/EGP in the header bar. Updates hourly.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🌐 Bilingual (EN/AR)</h4>
+          <p>Full RTL Arabic support via <code>proToggleLang()</code>. All section labels and signals switch language.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📰 Macro Brief</h4>
+          <p>Gemini-powered grounded macro overview with web citations. Auto-loads on page open, refreshes hourly.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 7b. MACRO BRIEF -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="macro">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">📰</span>
+        <h2 class="docs-section-title">Macro Brief</h2>
+        <span class="docs-section-badge badge-live">Pro + Chat</span>
+      </div>
+      <p class="docs-desc">
+        A Gemini 2.5 Flash grounded web search producing a structured Egyptian macro overview:
+        EGX index level, USD/EGP rate, inflation, interest rate, key market movers, and 3 web source citations.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>🔍 Grounded web search</h4>
+          <p>Uses Google Search grounding to pull real-time macro data — not just the training cutoff.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔗 Web source pills</h4>
+          <p>Clickable blue citation pills for each web source used in the response.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔄 Auto-refresh</h4>
+          <p>Macro Brief auto-loads on Pro page open and refreshes every 60 minutes via <code>setInterval</code>.</p>
+        </div>
+        <div class="feature-card">
+          <h4>💬 Chat quick chip</h4>
+          <p>"📊 Macro Brief" quick chip in the Market Assistant chat widget also triggers the macro endpoint.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 8. ETF -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="etf">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🌍</span>
+        <h2 class="docs-section-title">ETF Dashboard</h2>
+        <span class="docs-section-badge badge-live">ETF Tab</span>
+      </div>
+      <p class="docs-desc">
+        Tracks both <strong>Egyptian EGX-listed ETFs</strong> (via Mubasher) and <strong>Global ETFs</strong>
+        (EGPT, EEMX, FM, FRDM via yfinance). Holdings, premium/discount, NAV, and fund volume.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>🇪🇬 EGX Local ETFs</h4>
+          <p>~13 funds from Mubasher. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🌐 Global ETFs</h4>
+          <p>NYSE/NASDAQ-listed Egypt-focused ETFs (EGPT, EEMX, etc.). Price table with daily change and volume.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📋 Holdings Modal</h4>
+          <p>Click any ETF card to see the top holdings with weight %, last updated date, and country exposure.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📄 ETF RAG Documents</h4>
+          <p>PDF factsheets uploaded in Admin are embedded via Gemini and searchable via the Market Assistant.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 9. MARKET ASSISTANT -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="assistant">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">💬</span>
+        <h2 class="docs-section-title">Market Assistant</h2>
+        <span class="docs-section-badge badge-live">Chat Widget</span>
+      </div>
+      <p class="docs-desc">
+        An AI chat widget powered by Gemini with full context injection: live prices, consensus signals,
+        sentiment, ETF prices, and — when logged in — your personal forecast portfolio data.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📊 Live market context</h4>
+          <p>Every message includes today's gainers/losers, volume leaders, sentiment, and consensus signals as background context.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🔮 Portfolio context</h4>
+          <p>When signed in, the assistant knows your forecast portfolios and can answer questions about positions vs forecasts.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📰 News-aware</h4>
+          <p>Arabic-aware search extracts keywords from your question to find relevant recent headlines before answering.</p>
+        </div>
+        <div class="feature-card">
+          <h4>⚡ Quick chips</h4>
+          <p>"📊 Macro Brief", "📈 Top Movers", "🎯 Buy Signals" — one-tap prompts for common questions.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 10. ADMIN -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="admin">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🛠</span>
+        <h2 class="docs-section-title">Admin Panel</h2>
+        <span class="docs-section-badge badge-pro">Admin Only</span>
+      </div>
+      <p class="docs-desc">
+        Accessed at <code>/admin</code>. Requires ADMIN_USERNAME + ADMIN_PASSWORD credentials (JWT-protected).
+        Contains system health, report upload, RAG embedding status, ETF documents, and user reports.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📤 Report Upload</h4>
+          <p>Upload PDF/image market reports (up to 25 MB). Text extracted via pdf-parse; images OCR'd via tesseract.js. Auto-embedded if GOOGLE_API_KEY is set.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🧠 Ask Reports (RAG)</h4>
+          <p>Semantic search over embedded market report chunks. Shows AI answer + source document citations.</p>
+        </div>
+        <div class="feature-card">
+          <h4>💊 System Health</h4>
+          <p>Live DB row counts, latest prediction date, agent status, and pending embedding jobs.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📄 ETF Documents</h4>
+          <p>View all uploaded ETF factsheets in the <code>rag_document</code> table with embedding job status.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 11. TIME MACHINE -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="timemachine">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">⏳</span>
+        <h2 class="docs-section-title">Time Machine</h2>
+        <span class="docs-section-badge badge-live">History Tab</span>
+      </div>
+      <p class="docs-desc">
+        Replay any past trading session. Select a historical date to see what the AI agents predicted
+        that day, alongside actual price outcomes — useful for backtesting your own strategy.
+      </p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4>📅 Date picker</h4>
+          <p>Select any past EGX trading day. Predictions and prices are loaded from the database snapshot for that date.</p>
+        </div>
+        <div class="feature-card">
+          <h4>✅ Outcome overlay</h4>
+          <p>Green ✓ / Red ✗ icons show which signals were correct — the actual price move is shown alongside.</p>
+        </div>
+        <div class="feature-card">
+          <h4>📊 Session stats</h4>
+          <p>Overall accuracy, best and worst calls for the selected date, per-agent win rate for that session.</p>
+        </div>
+        <div class="feature-card">
+          <h4>🏋️ Backtest mode</h4>
+          <p>Pivot levels and trend signals from the Session Sheet complement Time Machine for trade planning.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 12. API REFERENCE -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="api">
+      <div class="docs-section-header">
+        <span class="docs-section-icon">🔌</span>
+        <h2 class="docs-section-title">API Reference</h2>
+        <span class="docs-section-badge badge-live">REST</span>
+      </div>
+      <p class="docs-desc">All endpoints return JSON. Auth endpoints require a valid session cookie. Admin endpoints require <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+
+      <div class="docs-code">
+<span class="comment"># ── Predictions & Consensus ──</span>
+<span class="key">GET</span>  /api/consensus                    <span class="comment">→ array of all stocks with signals</span>
+<span class="key">GET</span>  /api/stocks/:symbol/brief         <span class="comment">→ {brief} Gemini 3-sentence AI narrative</span>
+<span class="key">GET</span>  /api/signal-accuracy?horizon=10   <span class="comment">→ per-stock accuracy at D+5/D+10/D+20</span>
+
+<span class="comment"># ── Prices ──</span>
+<span class="key">GET</span>  /api/prices                        <span class="comment">→ latest close price for all symbols</span>
+<span class="key">GET</span>  /api/prices/:symbol                <span class="comment">→ price history for one symbol</span>
+<span class="key">GET</span>  /api/sentiment                     <span class="comment">→ latest sentiment per stock</span>
+<span class="key">GET</span>  /api/stats                         <span class="comment">→ {total_stocks, latestDate, …}</span>
+
+<span class="comment"># ── Portfolio & Trades ──</span>
+<span class="key">GET</span>  /api/trades/portfolio              <span class="comment">→ {open_positions, closed_positions, stats, totals, sector_breakdown}</span>
+<span class="key">POST</span> /api/trades/positions             <span class="comment">→ add position {symbol, entry_price, quantity, entry_date}</span>
+<span class="key">GET</span>  /api/trades/alerts                 <span class="comment">→ list alerts (auto-triggers active ones)</span>
+<span class="key">POST</span> /api/trades/alerts                 <span class="comment">→ create alert {symbol, condition, target_price}</span>
+<span class="key">DELETE</span> /api/trades/alerts/:id          <span class="comment">→ delete alert</span>
+
+<span class="comment"># ── FX & Rates ──</span>
+<span class="key">GET</span>  /api/fx-rates                      <span class="comment">→ {USD_EGP, USD_SAR, SAR_EGP, XAU_USD, …}</span>
+<span class="key">GET</span>  /api/fx-rates/history?days=90      <span class="comment">→ array of daily rate rows (oldest first)</span>
+
+<span class="comment"># ── Forecast Portfolios ──</span>
+<span class="key">GET</span>  /api/portfolio-forecasts           <span class="comment">→ list user portfolios</span>
+<span class="key">POST</span> /api/portfolio-forecasts           <span class="comment">→ create portfolio + run forecast</span>
+<span class="key">GET</span>  /api/portfolio-forecasts/:id/results  <span class="comment">→ per-stock forecast results</span>
+<span class="key">GET</span>  /api/portfolio-forecasts/:id/chart    <span class="comment">→ forecast vs actuals time series</span>
+
+<span class="comment"># ── ETF ──</span>
+<span class="key">GET</span>  /api/etf/instruments               <span class="comment">→ all ETF instruments</span>
+<span class="key">GET</span>  /api/etf/prices/:symbol            <span class="comment">→ price history</span>
+<span class="key">GET</span>  /api/etf/nav/:symbol               <span class="comment">→ NAV history</span>
+<span class="key">GET</span>  /api/etf/holdings/:symbol          <span class="comment">→ holdings snapshot</span>
+<span class="key">GET</span>  /api/etf/country-exposure          <span class="comment">→ country weights</span>
+
+<span class="comment"># ── RAG / Chat ──</span>
+<span class="key">POST</span> /api/rag/chat                      <span class="comment">→ {message} → {reply} market assistant</span>
+<span class="key">POST</span> /api/rag/macro                     <span class="comment">→ {} → {answer, sources[]} grounded macro brief</span>
+<span class="key">POST</span> /api/rag/ask                       <span class="comment">→ {question} → {answer} report RAG (admin)</span>
+
+<span class="comment"># ── Auth ──</span>
+<span class="key">POST</span> /api/auth/signup                   <span class="comment">→ {email, password} → sets cookie</span>
+<span class="key">POST</span> /api/auth/login                    <span class="comment">→ {email, password} → sets cookie</span>
+<span class="key">POST</span> /api/auth/logout                   <span class="comment">→ clears cookie</span>
+<span class="key">GET</span>  /api/auth/me                       <span class="comment">→ {id, email} if logged in</span>
+      </div>
+
+      <div class="warn-box">
+        <div class="tip-label">Auth note</div>
+        Portfolio, alerts, and forecast endpoints require a valid session cookie (set by /api/auth/login).
+        Pass <code>credentials: 'include'</code> on all fetch calls from the frontend.
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <div style="padding: 32px 0 16px; border-top: 1px solid var(--border); color: var(--text2); font-size: 13px; display:flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+      <span>Xmore — AI Stock Prediction for EGX &amp; Global Markets</span>
+      <span><a href="/" style="color:var(--accent); text-decoration:none;">← Back to Dashboard</a></span>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active sidebar link on scroll
+  const sections = document.querySelectorAll('.docs-section');
+  const links = document.querySelectorAll('.docs-sidebar a');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.docs-sidebar a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>

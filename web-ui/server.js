@@ -908,6 +908,10 @@ app.get('/pro', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'pro.html'));
 });
 
+app.get('/docs', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'docs.html'));
+});
+
 app.get('/session', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'session.html'));
 });
