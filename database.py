@@ -487,13 +487,66 @@ def create_tables():
         for col_name, col_type in session_columns:
             _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
 
-        # Add benchmark columns to user_positions
+        # Add benchmark + quantity columns to user_positions
         position_columns = [
             ("benchmark_return_pct", "REAL"),
             ("alpha_pct", "REAL"),
+            ("quantity", "INTEGER DEFAULT 1"),
         ]
         for col_name, col_type in position_columns:
             _safe_add_column(cursor, "user_positions", col_name, col_type)
+
+        # Add horizon_days to evaluations (for D+5/D+10/D+20 tracking)
+        _safe_add_column(cursor, "evaluations", "horizon_days", "INTEGER DEFAULT 5")
+
+        # Table 36: Price Alerts
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS price_alerts (
+                id          {auto_id},
+                user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                symbol      TEXT NOT NULL,
+                condition   TEXT NOT NULL DEFAULT 'above',
+                target_price REAL NOT NULL,
+                active      {bool_default},
+                triggered_at TIMESTAMP,
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_alerts_user ON price_alerts(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(active)")
+
+        # Table 37: FX Rates History (one row per day)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS fx_rates_history (
+                id              {auto_id},
+                date            DATE NOT NULL UNIQUE,
+                usd_egp         REAL,
+                usd_sar         REAL,
+                xau_usd         REAL,
+                gold_24k_egp_g  REAL,
+                gold_21k_egp_g  REAL,
+                gold_pound_egp  REAL,
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_fx_history_date ON fx_rates_history(date DESC)")
+
+        # Table 38: Stock Signal Evaluations at multiple horizons (D+5, D+10, D+20)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS stock_signal_evals (
+                id               {auto_id},
+                symbol           TEXT NOT NULL,
+                prediction_date  DATE NOT NULL,
+                horizon_days     INTEGER NOT NULL,
+                predicted_signal TEXT,
+                actual_change_pct REAL,
+                was_correct      {bool_default},
+                evaluated_at     DATE DEFAULT CURRENT_DATE,
+                UNIQUE(symbol, prediction_date, horizon_days)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sse_symbol ON stock_signal_evals(symbol, prediction_date DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)")
 
         # Seed EGX 30 stocks (upsert: ignore if already exists)
         egx30_stocks = [

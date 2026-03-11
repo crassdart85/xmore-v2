@@ -790,6 +790,61 @@ async function initializeDatabase() {
 
     console.log('✅ ETF / instrument tables ready');
 
+    // New columns (safe — IF NOT EXISTS syntax)
+    await pool.query('ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1');
+    await pool.query('ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5');
+
+    // Table: Price Alerts
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS price_alerts (
+        id           BIGSERIAL PRIMARY KEY,
+        user_id      BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        symbol       TEXT NOT NULL,
+        condition    TEXT NOT NULL DEFAULT 'above',
+        target_price NUMERIC(18,4) NOT NULL,
+        active       BOOLEAN NOT NULL DEFAULT TRUE,
+        triggered_at TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_alerts_user   ON price_alerts(user_id)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(active)');
+
+    // Table: FX Rates History (one row per day)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS fx_rates_history (
+        id             BIGSERIAL PRIMARY KEY,
+        date           DATE NOT NULL UNIQUE,
+        usd_egp        NUMERIC(18,4),
+        usd_sar        NUMERIC(18,4),
+        xau_usd        NUMERIC(18,4),
+        gold_24k_egp_g NUMERIC(18,4),
+        gold_21k_egp_g NUMERIC(18,4),
+        gold_pound_egp NUMERIC(18,4),
+        created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_fx_history_date ON fx_rates_history(date DESC)');
+
+    // Table: Signal evaluations at multiple horizons (D+5, D+10, D+20)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS stock_signal_evals (
+        id                BIGSERIAL PRIMARY KEY,
+        symbol            TEXT NOT NULL,
+        prediction_date   DATE NOT NULL,
+        horizon_days      INTEGER NOT NULL,
+        predicted_signal  TEXT,
+        actual_change_pct NUMERIC(18,4),
+        was_correct       BOOLEAN,
+        evaluated_at      DATE NOT NULL DEFAULT CURRENT_DATE,
+        UNIQUE(symbol, prediction_date, horizon_days)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_sse_symbol  ON stock_signal_evals(symbol, prediction_date DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)');
+
+    console.log('✅ New tables (alerts, fx_history, signal_evals) ready');
+
     // Seed ALL EGX stocks (~190)
     console.log('🌱 Seeding EGX stocks...');
     await pool.query(`

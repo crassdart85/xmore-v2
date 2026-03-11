@@ -417,6 +417,29 @@ const TRANSLATIONS = {
         tabForecasts: 'Forecasts',
         forecastsBrief: 'Track saved forecast portfolios and monitor actual vs. predicted performance.',
 
+        // Rates tab
+        tabRates: 'Rates',
+        ratesBrief: 'Live USD/EGP exchange rate, gold prices, and 30-day history charts.',
+        ratesHistoryTitle: '30-Day History',
+
+        // Alerts
+        alertsTitle: 'Price Alerts',
+        alertsHint: 'Get notified when a stock crosses your target price.',
+        alertAbove: 'Above ↑',
+        alertBelow: 'Below ↓',
+
+        // Comparison
+        compModalTitle: 'Stock Comparison',
+
+        // Portfolio totals
+        ptlCostLabel: 'Invested (EGP)',
+        ptlValueLabel: 'Market Value (EGP)',
+        ptlPnlLabel: 'P&L (EGP)',
+        ptlRetLabel: 'Return %',
+
+        // Multi-horizon
+        multiHorizonTitle: 'Signal Accuracy by Horizon',
+
         // Time Machine
         tabTimeMachine: 'Time Machine',
         timemachineBrief: "Enter an amount and a past date to see what your investment would be worth today if you had followed Xmore's recommendations.",
@@ -698,6 +721,29 @@ const TRANSLATIONS = {
         tabForecasts: 'التوقعات',
         forecastsBrief: 'تتبع محافظ التوقعات المحفوظة وقارن الأداء الفعلي مع المتوقع.',
 
+        // Rates tab
+        tabRates: 'الأسعار',
+        ratesBrief: 'سعر صرف الدولار/الجنيه وأسعار الذهب ورسوم بيانية لـ 30 يوم.',
+        ratesHistoryTitle: 'السجل - 30 يوم',
+
+        // Alerts
+        alertsTitle: 'تنبيهات الأسعار',
+        alertsHint: 'احصل على تنبيه عندما يتجاوز سهم سعرك المستهدف.',
+        alertAbove: 'أعلى من ↑',
+        alertBelow: 'أقل من ↓',
+
+        // Comparison
+        compModalTitle: 'مقارنة الأسهم',
+
+        // Portfolio totals
+        ptlCostLabel: 'المستثمر (جنيه)',
+        ptlValueLabel: 'القيمة السوقية (جنيه)',
+        ptlPnlLabel: 'الربح/الخسارة (جنيه)',
+        ptlRetLabel: 'العائد %',
+
+        // Multi-horizon
+        multiHorizonTitle: 'دقة الإشارات حسب الأفق الزمني',
+
         // Time Machine
         tabTimeMachine: 'آلة الزمن',
         timemachineBrief: 'أدخل مبلغاً وتاريخاً سابقاً لمعرفة قيمة استثمارك اليوم لو اتبعت توصيات Xmore.',
@@ -931,7 +977,7 @@ function applyLanguage() {
     });
 
     // Tab buttons
-    const tabs = ['tabPredictions', 'tabBriefing', 'tabTrades', 'tabPortfolio', 'tabForecasts', 'tabWatchlist', 'tabConsensus', 'tabPerformance', 'tabResults', 'tabPrices', 'tabTimeMachine'];
+    const tabs = ['tabPredictions', 'tabBriefing', 'tabTrades', 'tabPortfolio', 'tabForecasts', 'tabWatchlist', 'tabConsensus', 'tabPerformance', 'tabResults', 'tabPrices', 'tabTimeMachine', 'tabRates'];
     tabs.forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.textContent = t(id);
@@ -946,7 +992,7 @@ function applyLanguage() {
     if (perfMonthlyTitle) perfMonthlyTitle.textContent = t('monthlyTrend');
     const resultsTitle = document.getElementById('resultsTitle');
     if (resultsTitle) resultsTitle.textContent = t('tabResults');
-    const briefIds = ['predictionsBrief', 'watchlistBrief', 'performanceBrief', 'consensusBrief', 'resultsBrief', 'pricesBrief', 'briefingBrief', 'tradesBrief', 'portfolioBrief', 'forecastsBrief', 'timemachineBrief'];
+    const briefIds = ['predictionsBrief', 'watchlistBrief', 'performanceBrief', 'consensusBrief', 'resultsBrief', 'pricesBrief', 'briefingBrief', 'tradesBrief', 'portfolioBrief', 'forecastsBrief', 'timemachineBrief', 'ratesBrief'];
     briefIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = t(id);
@@ -1039,6 +1085,9 @@ function switchToTab(tabId, updateHash) {
     if (tabId === 'timemachine' && typeof loadTimeMachine === 'function') loadTimeMachine();
     if (tabId === 'etf' && typeof loadEtfTab === 'function') loadEtfTab();
     if (tabId === 'forecasts' && typeof loadPortfolioForecasts === 'function') loadPortfolioForecasts();
+    if (tabId === 'rates') loadRatesTab();
+    if (tabId === 'portfolio') { loadAlerts(); }
+    if (tabId === 'performance') loadSignalAccuracy(5);
 }
 
 // Key shared with admin dashboard for frontend tab visibility
@@ -2947,5 +2996,331 @@ async function showEtfHoldings(symbol) {
 function closeEtfModal() {
     const modal = document.getElementById('etfHoldingsModal');
     if (modal) modal.style.display = 'none';
+}
+
+// ============================================================
+// PORTFOLIO — enhanced with EGP P&L + sector breakdown
+// ============================================================
+
+function renderPortfolioTotals(totals) {
+    const strip = document.getElementById('portfolioTotals');
+    if (!strip || !totals) return;
+    const fmt = n => n != null ? Number(n).toLocaleString('en-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—';
+    const pnl = totals.total_pnl_egp;
+    const ret = totals.total_return_pct;
+    document.getElementById('ptlCost').textContent = fmt(totals.total_cost_egp) + ' EGP';
+    document.getElementById('ptlValue').textContent = fmt(totals.total_value_egp) + ' EGP';
+    const pnlEl = document.getElementById('ptlPnl');
+    pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmt(pnl) + ' EGP';
+    pnlEl.style.color = pnl >= 0 ? 'var(--bullish)' : 'var(--bearish)';
+    const retEl = document.getElementById('ptlRet');
+    retEl.textContent = (ret >= 0 ? '+' : '') + Number(ret).toFixed(2) + '%';
+    retEl.style.color = ret >= 0 ? 'var(--bullish)' : 'var(--bearish)';
+    strip.style.display = 'flex';
+}
+
+function renderSectorBreakdown(sectors) {
+    const el = document.getElementById('portfolioSectors');
+    if (!el || !sectors || !sectors.length) return;
+    el.innerHTML = sectors.map(s =>
+        `<div class="pf-sector-pill" title="${s.sector}: ${s.weight_pct}%">
+            <div class="pf-sector-bar-fill" style="width:${s.weight_pct}%"></div>
+            <span class="pf-sector-name">${s.sector}</span>
+            <span class="pf-sector-pct">${s.weight_pct}%</span>
+        </div>`
+    ).join('');
+    el.style.display = 'flex';
+}
+
+// ============================================================
+// PRICE ALERTS
+// ============================================================
+
+async function loadAlerts() {
+    const listEl = document.getElementById('alertsList');
+    if (!listEl) return;
+    try {
+        const data = await fetch('/api/trades/alerts', { credentials: 'include' }).then(r => r.json());
+        const alerts = data.alerts || [];
+        if (!alerts.length) {
+            listEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.88rem">No alerts set. Add one above.</p>';
+            return;
+        }
+        const isAr = document.documentElement.lang === 'ar' || localStorage.getItem('lang') === 'ar';
+        listEl.innerHTML = alerts.map(a => {
+            const triggered = !a.active;
+            const condLabel = a.condition === 'above' ? (isAr ? 'أعلى من' : 'Above') : (isAr ? 'أقل من' : 'Below');
+            const cur = parseFloat(a.current_price);
+            const diff = cur && a.target_price ? ((cur - a.target_price) / a.target_price * 100).toFixed(1) : null;
+            return `<div class="alert-row ${triggered ? 'alert-triggered' : ''}">
+                <span class="alert-sym">${a.symbol}</span>
+                <span class="alert-cond">${condLabel}</span>
+                <span class="alert-price">${parseFloat(a.target_price).toFixed(2)}</span>
+                ${cur ? `<span class="alert-cur" style="color:var(--text-muted)">Now: ${cur.toFixed(2)}${diff ? ` (${diff > 0 ? '+' : ''}${diff}%)` : ''}</span>` : ''}
+                ${triggered ? `<span class="alert-tag-triggered">${isAr ? 'نُشِّط' : 'Triggered'}</span>` : ''}
+                <button class="alert-del-btn" onclick="deleteAlert(${a.id})">✕</button>
+            </div>`;
+        }).join('');
+    } catch {
+        const listEl2 = document.getElementById('alertsList');
+        if (listEl2) listEl2.innerHTML = '<p style="color:var(--text-muted)">Sign in to use price alerts.</p>';
+    }
+}
+
+async function addPriceAlert() {
+    const sym = (document.getElementById('alertSymbol')?.value || '').trim().toUpperCase();
+    const cond = document.getElementById('alertCondition')?.value || 'above';
+    const price = parseFloat(document.getElementById('alertPrice')?.value);
+    if (!sym || isNaN(price) || price <= 0) return;
+    try {
+        const r = await fetch('/api/trades/alerts', {
+            method: 'POST', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ symbol: sym, condition: cond, target_price: price })
+        });
+        if (!r.ok) { const e = await r.json(); alert(e.error || 'Error'); return; }
+        document.getElementById('alertSymbol').value = '';
+        document.getElementById('alertPrice').value = '';
+        loadAlerts();
+    } catch (e) { alert(e.message); }
+}
+
+async function deleteAlert(id) {
+    try {
+        await fetch(`/api/trades/alerts/${id}`, { method: 'DELETE', credentials: 'include' });
+        loadAlerts();
+    } catch {}
+}
+
+// ============================================================
+// STOCK COMPARISON TOOL
+// ============================================================
+
+function openComparisonModal() {
+    const m = document.getElementById('comparisonModal');
+    if (m) m.style.display = 'flex';
+}
+function closeComparisonModal() {
+    const m = document.getElementById('comparisonModal');
+    if (m) m.style.display = 'none';
+}
+
+async function runComparison() {
+    const syms = ['compSym1','compSym2','compSym3','compSym4']
+        .map(id => (document.getElementById(id)?.value || '').trim().toUpperCase())
+        .filter(Boolean);
+    if (syms.length < 2) { alert('Enter at least 2 symbols to compare.'); return; }
+
+    const resultsEl = document.getElementById('compResults');
+    resultsEl.innerHTML = '<p class="loading">Loading...</p>';
+
+    try {
+        const [consensus, prices] = await Promise.all([
+            fetch('/api/consensus', { credentials: 'include' }).then(r => r.json()),
+            fetch('/api/prices', { credentials: 'include' }).then(r => r.json()),
+        ]);
+        const cMap = {};
+        (Array.isArray(consensus) ? consensus : []).forEach(c => { cMap[c.symbol] = c; });
+        const pMap = {};
+        (prices.prices || []).forEach(p => { pMap[p.symbol] = p; });
+
+        const rows = syms.map(sym => {
+            const c = cMap[sym] || {};
+            const p = pMap[sym] || {};
+            const chg = p.close && p.open ? ((p.close - p.open) / p.open * 100).toFixed(2) : null;
+            return { sym, c, p, chg };
+        });
+
+        const signalBadge = (sig) => {
+            if (!sig) return '<span style="color:var(--text-muted)">—</span>';
+            const cls = sig === 'UP' ? 'bullish' : sig === 'DOWN' ? 'bearish' : 'neutral';
+            return `<span class="signal-badge ${cls}">${sig}</span>`;
+        };
+
+        resultsEl.innerHTML = `
+        <div class="table-responsive">
+        <table class="data-table comp-table">
+            <thead><tr>
+                <th>Metric</th>
+                ${rows.map(r => `<th>${r.sym}</th>`).join('')}
+            </tr></thead>
+            <tbody>
+            <tr><td>Signal</td>${rows.map(r => `<td>${signalBadge(r.c.final_signal)}</td>`).join('')}</tr>
+            <tr><td>Xmore Score</td>${rows.map(r => `<td>${r.c.xmore_score != null ? Math.round(r.c.xmore_score) : '—'}</td>`).join('')}</tr>
+            <tr><td>Conviction</td>${rows.map(r => `<td>${r.c.conviction || '—'}</td>`).join('')}</tr>
+            <tr><td>Confidence</td>${rows.map(r => `<td>${r.c.confidence != null ? r.c.confidence + '%' : '—'}</td>`).join('')}</tr>
+            <tr><td>Agents Agree</td>${rows.map(r => `<td>${r.c.agents_agreeing != null ? r.c.agents_agreeing + '/' + r.c.agents_total : '—'}</td>`).join('')}</tr>
+            <tr><td>Bull Score</td>${rows.map(r => `<td style="color:var(--bullish)">${r.c.bull_score != null ? r.c.bull_score : '—'}</td>`).join('')}</tr>
+            <tr><td>Bear Score</td>${rows.map(r => `<td style="color:var(--bearish)">${r.c.bear_score != null ? r.c.bear_score : '—'}</td>`).join('')}</tr>
+            <tr><td>Price (EGP)</td>${rows.map(r => `<td>${r.p.close != null ? parseFloat(r.p.close).toFixed(2) : '—'}</td>`).join('')}</tr>
+            <tr><td>Day Change</td>${rows.map(r => `<td style="color:${r.chg > 0 ? 'var(--bullish)' : r.chg < 0 ? 'var(--bearish)' : 'inherit'}">${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : '—'}</td>`).join('')}</tr>
+            <tr><td>Volume</td>${rows.map(r => `<td>${r.p.volume != null ? Number(r.p.volume).toLocaleString() : '—'}</td>`).join('')}</tr>
+            <tr><td><button class="pf-btn-view" onclick="loadStockBrief('${rows[0]?.sym}')">AI Brief ↗</button></td>${rows.map(r => `<td><button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">Brief</button></td>`).join('')}</tr>
+            </tbody>
+        </table>
+        </div>`;
+    } catch (err) {
+        resultsEl.innerHTML = `<p style="color:var(--bearish)">${err.message}</p>`;
+    }
+}
+
+// ============================================================
+// PER-STOCK AI BRIEF
+// ============================================================
+
+async function loadStockBrief(symbol) {
+    const modal = document.getElementById('briefModal');
+    const bodyEl = document.getElementById('briefModalBody');
+    const titleEl = document.getElementById('briefModalSymbol');
+    if (!modal) return;
+    titleEl.textContent = symbol + ' — AI Brief';
+    bodyEl.innerHTML = '<p class="loading">Generating brief...</p>';
+    modal.style.display = 'flex';
+    try {
+        const r = await fetch(`/api/stocks/${encodeURIComponent(symbol)}/brief`, { credentials: 'include' });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || 'Error');
+        bodyEl.textContent = data.brief;
+    } catch (err) {
+        bodyEl.textContent = 'Could not generate brief: ' + err.message;
+    }
+}
+
+function closeBriefModal() {
+    const m = document.getElementById('briefModal');
+    if (m) m.style.display = 'none';
+}
+
+// ============================================================
+// RATES TAB — FX & Gold with history charts
+// ============================================================
+
+async function loadRatesTab() {
+    const cardsEl = document.getElementById('ratesCards');
+    const chartsEl = document.getElementById('ratesHistoryCharts');
+    if (!cardsEl) return;
+
+    try {
+        const [live, history] = await Promise.all([
+            fetch('/api/fx-rates').then(r => r.json()),
+            fetch('/api/fx-rates/history?days=30').then(r => r.json()),
+        ]);
+
+        // Live cards
+        const rateItems = [
+            { label: 'USD / EGP', value: live.USD_EGP, key: 'usd_egp', icon: '💵' },
+            { label: 'Gold 24K / gram', value: live.GOLD_24K_EGP_G, key: 'gold_24k_egp_g', icon: '🥇', suffix: 'EGP' },
+            { label: 'Gold 21K / gram', value: live.GOLD_21K_EGP_G, key: 'gold_21k_egp_g', icon: '🏅', suffix: 'EGP' },
+            { label: 'Gold Pound', value: live.GOLD_POUND_EGP, key: 'gold_pound_egp', icon: '💰', suffix: 'EGP' },
+            { label: 'Gold 18K / gram', value: live.GOLD_18K_EGP_G, key: null, icon: '🔶', suffix: 'EGP' },
+            { label: 'USD / SAR', value: live.USD_SAR, key: null, icon: '🇸🇦' },
+            { label: 'SAR / EGP', value: live.SAR_EGP, key: null, icon: '↔️' },
+        ];
+        cardsEl.innerHTML = rateItems.filter(r => r.value != null).map(r => `
+            <div class="rate-card">
+                <span class="rate-icon">${r.icon}</span>
+                <span class="rate-label">${r.label}</span>
+                <span class="rate-value">${parseFloat(r.value).toLocaleString('en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${r.suffix ? ' ' + r.suffix : ''}</span>
+            </div>`).join('');
+
+        // History sparkline charts
+        if (!chartsEl || !history.length) return;
+        const sparkDefs = [
+            { label: 'USD/EGP Rate', key: 'usd_egp', color: '#3b82f6' },
+            { label: 'Gold 24K (EGP/g)', key: 'gold_24k_egp_g', color: '#f59e0b' },
+            { label: 'Gold 21K (EGP/g)', key: 'gold_21k_egp_g', color: '#d97706' },
+            { label: 'Gold Pound (EGP)', key: 'gold_pound_egp', color: '#b45309' },
+        ];
+        chartsEl.innerHTML = sparkDefs.map(d => `
+            <div class="rate-chart-card">
+                <div class="rate-chart-label">${d.label}</div>
+                <canvas id="chart_${d.key}" height="80"></canvas>
+            </div>`).join('');
+
+        // Draw sparklines using simple canvas
+        sparkDefs.forEach(def => {
+            const canvas = document.getElementById('chart_' + def.key);
+            if (!canvas) return;
+            const vals = history.map(h => parseFloat(h[def.key])).filter(v => !isNaN(v));
+            if (vals.length < 2) return;
+            drawSparkline(canvas, vals, def.color);
+        });
+
+    } catch (err) {
+        if (cardsEl) cardsEl.innerHTML = `<p style="color:var(--bearish)">${err.message}</p>`;
+    }
+}
+
+function drawSparkline(canvas, values, color) {
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth || 200;
+    const H = canvas.height || 80;
+    canvas.width = W;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const range = max - min || 1;
+    const pad = 4;
+    ctx.clearRect(0, 0, W, H);
+    ctx.beginPath();
+    values.forEach((v, i) => {
+        const x = pad + (i / (values.length - 1)) * (W - 2 * pad);
+        const y = H - pad - ((v - min) / range) * (H - 2 * pad);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Fill under
+    const lastX = pad + ((values.length - 1) / (values.length - 1)) * (W - 2 * pad);
+    ctx.lineTo(lastX, H);
+    ctx.lineTo(pad, H);
+    ctx.closePath();
+    ctx.fillStyle = color + '22';
+    ctx.fill();
+    // Current value label
+    const last = values[values.length - 1];
+    ctx.fillStyle = color;
+    ctx.font = '11px sans-serif';
+    ctx.fillText(last.toLocaleString('en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), pad, H - pad - 2);
+}
+
+// ============================================================
+// MULTI-HORIZON SIGNAL ACCURACY
+// ============================================================
+
+async function loadSignalAccuracy(horizon) {
+    horizon = horizon || 5;
+    // Update active button
+    document.querySelectorAll('.horizon-btn').forEach(b => {
+        b.classList.toggle('active', parseInt(b.dataset.horizon) === horizon);
+    });
+    const el = document.getElementById('signalAccuracyTable');
+    if (!el) return;
+    el.innerHTML = '<p class="loading">Loading...</p>';
+    try {
+        const data = await fetch(`/api/signal-accuracy?horizon=${horizon}`).then(r => r.json());
+        if (!Array.isArray(data) || !data.length) {
+            el.innerHTML = `<p style="color:var(--text-muted)">No D+${horizon} data yet — runs after 10+ trading days of consensus signals.</p>`;
+            return;
+        }
+        el.innerHTML = `
+        <div class="table-responsive">
+        <table class="data-table">
+            <thead><tr><th>Symbol</th><th>Horizon</th><th>Predictions</th><th>Correct</th><th>Accuracy</th><th>Avg Change</th></tr></thead>
+            <tbody>${data.map(r => `
+            <tr>
+                <td><strong>${r.symbol}</strong></td>
+                <td>D+${r.horizon_days}</td>
+                <td>${r.total}</td>
+                <td>${r.correct}</td>
+                <td style="color:${parseFloat(r.accuracy_pct) >= 60 ? 'var(--bullish)' : 'var(--bearish)'};font-weight:700">${parseFloat(r.accuracy_pct).toFixed(1)}%</td>
+                <td style="color:${parseFloat(r.avg_change_pct) >= 0 ? 'var(--bullish)' : 'var(--bearish)'}">${parseFloat(r.avg_change_pct) >= 0 ? '+' : ''}${parseFloat(r.avg_change_pct).toFixed(2)}%</td>
+            </tr>`).join('')}
+            </tbody>
+        </table>
+        </div>`;
+    } catch (err) {
+        el.innerHTML = `<p style="color:var(--bearish)">${err.message}</p>`;
+    }
 }
 

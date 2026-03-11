@@ -78,6 +78,7 @@
             <button class="tab-btn" data-tab="results" id="tabResults" role="tab" aria-selected="false" aria-controls="tab-results">Results</button>
             <button class="tab-btn" data-tab="prices" id="tabPrices" role="tab" aria-selected="false" aria-controls="tab-prices">Prices</button>
             <button class="tab-btn" data-tab="timemachine" id="tabTimeMachine" role="tab" aria-selected="false" aria-controls="tab-timemachine">Time Machine</button>
+            <button class="tab-btn" data-tab="rates" id="tabRates" role="tab" aria-selected="false" aria-controls="tab-rates">Rates</button>
             <button class="tab-btn" data-tab="etf" id="tabEtf" role="tab" aria-selected="false" aria-controls="tab-etf">ETFs</button>
         </nav>
 
@@ -134,6 +135,7 @@
                         oninput="filterPredictions()" class="screener-input" placeholder="0">%
                 </label>
                 <button onclick="resetScreener()" class="screener-reset">✕ Reset</button>
+                <button onclick="openComparisonModal()" class="screener-reset" id="compareBtn" style="background:var(--accent);color:#fff;margin-left:auto">⇔ Compare</button>
             </div>
             <div id="predictions" class="scrollable-container">
                 <div class="skeleton-loader">
@@ -178,6 +180,18 @@
             </div>
             <div id="perfDashboard">
                 <p class="loading">Loading performance data...</p>
+            </div>
+            <!-- Multi-horizon signal accuracy -->
+            <div class="section-inner" id="multiHorizonSection" style="margin-top:24px">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+                    <h3 id="multiHorizonTitle" style="margin:0">Signal Accuracy by Horizon</h3>
+                    <div class="horizon-btns">
+                        <button class="horizon-btn active" data-horizon="5" onclick="loadSignalAccuracy(5)">D+5</button>
+                        <button class="horizon-btn" data-horizon="10" onclick="loadSignalAccuracy(10)">D+10</button>
+                        <button class="horizon-btn" data-horizon="20" onclick="loadSignalAccuracy(20)">D+20</button>
+                    </div>
+                </div>
+                <div id="signalAccuracyTable"><p class="loading">Loading...</p></div>
             </div>
         </section>
 
@@ -262,12 +276,33 @@
         <section class="tab-content" id="tab-portfolio" role="tabpanel" aria-labelledby="tabPortfolio">
             <div class="section-header">
                 <h2 id="portfolioTitle">My Portfolio</h2>
-                <p class="section-subtitle" id="portfolioBrief">Monitor open positions, recent trade history, and high-level portfolio health in one place.</p>
+                <p class="section-subtitle" id="portfolioBrief">Monitor open positions, real EGP P&amp;L, sector breakdown, and price alerts.</p>
             </div>
 
-            <div id="portfolioStats" class="stats-grid-mini">
-                <!-- Populated by JS -->
+            <!-- Portfolio totals strip -->
+            <div id="portfolioTotals" class="pf-totals-strip" style="display:none">
+                <div class="pf-total-pill">
+                    <span class="pf-total-label" id="ptlCostLabel">Invested</span>
+                    <span class="pf-total-val" id="ptlCost">—</span>
+                </div>
+                <div class="pf-total-pill">
+                    <span class="pf-total-label" id="ptlValueLabel">Market Value</span>
+                    <span class="pf-total-val" id="ptlValue">—</span>
+                </div>
+                <div class="pf-total-pill">
+                    <span class="pf-total-label" id="ptlPnlLabel">P&amp;L</span>
+                    <span class="pf-total-val" id="ptlPnl">—</span>
+                </div>
+                <div class="pf-total-pill">
+                    <span class="pf-total-label" id="ptlRetLabel">Return</span>
+                    <span class="pf-total-val" id="ptlRet">—</span>
+                </div>
             </div>
+
+            <!-- Sector allocation -->
+            <div id="portfolioSectors" class="pf-sector-row" style="display:none"></div>
+
+            <div id="portfolioStats" class="stats-grid-mini"></div>
 
             <div class="section-inner">
                 <h3 id="portfolioOpenTitle">Open Positions</h3>
@@ -280,6 +315,26 @@
                 <h3 id="portfolioHistoryTitle">Trade History</h3>
                 <div id="portfolioHistory" class="table-responsive">
                     <p class="loading">Loading history...</p>
+                </div>
+            </div>
+
+            <!-- Price Alerts -->
+            <div class="section-inner" id="alertsSection">
+                <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px">
+                    <h3 id="alertsTitle" style="margin:0">Price Alerts</h3>
+                    <span class="pf-total-label" id="alertsHint">Get notified when a stock crosses your target price.</span>
+                </div>
+                <div class="alerts-add-row">
+                    <input type="text" id="alertSymbol" placeholder="Symbol e.g. COMI.CA" class="screener-input" style="width:130px">
+                    <select id="alertCondition" class="screener-select">
+                        <option value="above" id="alertAbove">Above ↑</option>
+                        <option value="below" id="alertBelow">Below ↓</option>
+                    </select>
+                    <input type="number" id="alertPrice" placeholder="Target price" class="screener-input" style="width:120px" min="0" step="0.01">
+                    <button class="screener-reset" id="alertAddBtn" onclick="addPriceAlert()">+ Add Alert</button>
+                </div>
+                <div id="alertsList" class="alerts-list">
+                    <p class="loading" id="alertsLoading">Loading alerts...</p>
                 </div>
             </div>
         </section>
@@ -796,6 +851,23 @@
 
         </section>
 
+        <!-- Tab: Rates — FX & Gold -->
+        <section class="tab-content" id="tab-rates" role="tabpanel" aria-labelledby="tabRates">
+            <div class="section-header">
+                <h2 id="ratesTitle">Currency & Gold Rates</h2>
+                <p class="section-subtitle" id="ratesBrief">Live USD/EGP, gold prices, and 30-day history charts.</p>
+            </div>
+            <!-- Live rate cards -->
+            <div id="ratesCards" class="rates-card-grid">
+                <p class="loading">Loading rates...</p>
+            </div>
+            <!-- Historical charts -->
+            <div class="section-inner" style="margin-top:24px">
+                <h3 id="ratesHistoryTitle">30-Day History</h3>
+                <div id="ratesHistoryCharts" class="rates-history-grid"></div>
+            </div>
+        </section>
+
         <footer>
             <button id="refreshBtn" class="refresh-btn">Refresh Data</button>
             <div class="disclaimer-block">
@@ -841,7 +913,7 @@
     <script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/notyf@3/notyf.min.js" defer></script>
     <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js" defer></script>
-    <script src="app.js?v=20260309a"></script>
+    <script src="app.js?v=20260311a"></script>
     <script src="auth.js?v=20260215a"></script>
     <script src="watchlist.js?v=20260215a"></script>
     <script src="trades.js?v=20260215a"></script>
@@ -926,6 +998,38 @@
             <button id="chatSend" onclick="sendChatMessage()">&#10148;</button>
         </div>
     </div>
+
+    <!-- ── Comparison Modal ─────────────────────────────────────── -->
+    <div id="comparisonModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeComparisonModal()">
+        <div class="modal-box modal-wide">
+            <div class="modal-header">
+                <span id="compModalTitle">Stock Comparison</span>
+                <button class="modal-close" onclick="closeComparisonModal()">✕</button>
+            </div>
+            <div class="comp-symbol-row">
+                <input type="text" id="compSym1" class="screener-input" placeholder="Symbol 1" maxlength="12">
+                <input type="text" id="compSym2" class="screener-input" placeholder="Symbol 2" maxlength="12">
+                <input type="text" id="compSym3" class="screener-input" placeholder="Symbol 3" maxlength="12">
+                <input type="text" id="compSym4" class="screener-input" placeholder="Symbol 4" maxlength="12">
+                <button class="screener-reset" style="background:var(--accent);color:#fff" onclick="runComparison()" id="compRunBtn">Compare</button>
+            </div>
+            <div id="compResults" style="margin-top:16px"></div>
+        </div>
+    </div>
+
+    <!-- ── Per-Stock AI Brief Modal ─────────────────────────────── -->
+    <div id="briefModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeBriefModal()">
+        <div class="modal-box">
+            <div class="modal-header">
+                <span id="briefModalSymbol">Stock Brief</span>
+                <button class="modal-close" onclick="closeBriefModal()">✕</button>
+            </div>
+            <div id="briefModalBody" style="padding:12px 0;line-height:1.7;white-space:pre-wrap">
+                <p class="loading">Generating brief...</p>
+            </div>
+        </div>
+    </div>
+
 </body>
 
 </html>

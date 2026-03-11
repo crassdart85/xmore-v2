@@ -375,6 +375,93 @@ def evaluate_portfolio_forecasts():
         print(f"  ✅ Evaluated {evaluated} portfolio forecast(s).")
 
 
+def evaluate_signal_horizons():
+    """
+    Evaluate consensus signals at D+10 and D+20 horizons (D+5 is covered by evaluate_predictions).
+    Reads consensus_results from the past 30 days, checks actual prices at D+10 and D+20,
+    and stores results in stock_signal_evals.
+    """
+    today = datetime.now().strftime('%Y-%m-%d')
+    cutoff = (datetime.now() - timedelta(days=60)).strftime('%Y-%m-%d')
+    print(f"📐 Evaluating signal horizons (D+10, D+20) up to {today}...")
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Fetch consensus signals from past 60 days
+        q = _adapt_sql("""
+            SELECT symbol, prediction_date, final_signal
+            FROM consensus_results
+            WHERE prediction_date >= ? AND prediction_date <= ?
+            AND final_signal IN ('UP', 'DOWN')
+        """)
+        cursor.execute(q, (cutoff, today))
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        rows = cursor.fetchall()
+        signals = pd.DataFrame(rows, columns=columns) if rows else pd.DataFrame()
+
+        if signals.empty:
+            print("  No consensus signals to evaluate.")
+            return
+
+        price_q = _adapt_sql("SELECT close FROM prices WHERE symbol = ? AND date = ?")
+        near_q  = _adapt_sql(
+            "SELECT close FROM prices WHERE symbol = ? AND date >= ? ORDER BY date ASC LIMIT 1"
+        )
+        prior_q = _adapt_sql(
+            "SELECT close FROM prices WHERE symbol = ? AND date <= ? ORDER BY date DESC LIMIT 1"
+        )
+
+        if DATABASE_URL:
+            upsert_q = """
+                INSERT INTO stock_signal_evals
+                (symbol, prediction_date, horizon_days, predicted_signal, actual_change_pct, was_correct)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (symbol, prediction_date, horizon_days) DO NOTHING
+            """
+        else:
+            upsert_q = """
+                INSERT OR IGNORE INTO stock_signal_evals
+                (symbol, prediction_date, horizon_days, predicted_signal, actual_change_pct, was_correct)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
+
+        done = 0
+        for _, row in signals.iterrows():
+            symbol = row['symbol']
+            pred_date = str(row['prediction_date'])
+            signal = row['final_signal']
+
+            # Get base price
+            cursor.execute(prior_q, (symbol, pred_date))
+            base_row = cursor.fetchone()
+            if not base_row:
+                continue
+            base_price = float(base_row[0] if isinstance(base_row, (list, tuple)) else base_row['close'])
+            if base_price == 0:
+                continue
+
+            for horizon in [10, 20]:
+                target_dt = (datetime.strptime(pred_date, '%Y-%m-%d') + timedelta(days=horizon)).strftime('%Y-%m-%d')
+                if target_dt > today:
+                    continue  # Not yet evaluable
+                cursor.execute(price_q, (symbol, target_dt))
+                end_row = cursor.fetchone()
+                if not end_row:
+                    cursor.execute(near_q, (symbol, target_dt))
+                    end_row = cursor.fetchone()
+                if not end_row:
+                    continue
+                end_price = float(end_row[0] if isinstance(end_row, (list, tuple)) else end_row['close'])
+                change_pct = ((end_price - base_price) / base_price) * 100
+                actual_dir = 'UP' if change_pct >= 0.5 else ('DOWN' if change_pct <= -0.5 else 'FLAT')
+                was_correct = (signal == actual_dir)
+                cursor.execute(upsert_q, (symbol, pred_date, horizon, signal, float(change_pct), bool(was_correct)))
+                done += 1
+
+        print(f"  ✅ Evaluated {done} signal-horizon pair(s).")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate Xmore2 Predictions')
     parser.add_argument('--lookback', action='store_true', help='Run look-back analysis for previous week')
@@ -386,6 +473,9 @@ if __name__ == "__main__":
 
     # Evaluate portfolio forecasts whose target date has passed
     evaluate_portfolio_forecasts()
+
+    # Evaluate signals at D+10 and D+20 horizons
+    evaluate_signal_horizons()
 
     if args.lookback:
         evaluate_lookback(days_ago=args.days)

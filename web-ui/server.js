@@ -772,11 +772,129 @@ app.get('/api/fx-rates', async (req, res) => {
       updated: new Date().toISOString(),
     };
     _fxCacheTime = now;
+    // Store in fx_rates_history (one row per day, upsert)
+    const today = new Date().toISOString().split('T')[0];
+    const histSql = db._isPostgres
+      ? `INSERT INTO fx_rates_history (date, usd_egp, usd_sar, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (date) DO UPDATE SET
+         usd_egp=EXCLUDED.usd_egp, usd_sar=EXCLUDED.usd_sar, xau_usd=EXCLUDED.xau_usd,
+         gold_24k_egp_g=EXCLUDED.gold_24k_egp_g, gold_21k_egp_g=EXCLUDED.gold_21k_egp_g,
+         gold_pound_egp=EXCLUDED.gold_pound_egp`
+      : `INSERT OR REPLACE INTO fx_rates_history (date, usd_egp, usd_sar, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp)
+         VALUES (?,?,?,?,?,?,?)`;
+    db.run(histSql, [today, _fxCache.USD_EGP, _fxCache.USD_SAR, goldData.XAU_USD || null,
+      goldData.GOLD_24K_EGP_G || null, goldData.GOLD_21K_EGP_G || null, goldData.GOLD_POUND_EGP || null],
+      () => {}); // fire-and-forget
     res.json(_fxCache);
   } catch (err) {
     if (_fxCache) return res.json(_fxCache);   // serve stale on error
     res.status(502).json({ error: err.message });
   }
+});
+
+// ============================================
+// FX RATES HISTORY
+// ============================================
+app.get('/api/fx-rates/history', (req, res) => {
+  const days = Math.min(90, parseInt(req.query.days) || 30);
+  const sql = DATABASE_URL
+    ? `SELECT date, usd_egp, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp
+       FROM fx_rates_history ORDER BY date DESC LIMIT $1`
+    : `SELECT date, usd_egp, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp
+       FROM fx_rates_history ORDER BY date DESC LIMIT ?`;
+  db.all(sql, [days], (err, rows) => {
+    if (err) {
+      if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) return res.json([]);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json((rows || []).reverse()); // oldest first for charts
+  });
+});
+
+// ============================================
+// PER-STOCK AI BRIEF
+// ============================================
+const _briefCache = new Map(); // symbol -> { text, ts }
+
+app.get('/api/stocks/:symbol/brief', async (req, res) => {
+  const symbol = (req.params.symbol || '').toUpperCase().replace(/[^A-Z0-9.]/g, '');
+  if (!symbol) return res.status(400).json({ error: 'Invalid symbol' });
+
+  // Serve cache if fresh (1h)
+  const cached = _briefCache.get(symbol);
+  if (cached && Date.now() - cached.ts < 3_600_000) return res.json({ brief: cached.text, symbol, cached: true });
+
+  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
+  if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'AI brief not configured' });
+
+  // Gather context from db
+  const ctx = await new Promise(resolve => {
+    const sql = DATABASE_URL
+      ? `SELECT c.final_signal, c.conviction, c.confidence, c.xmore_score, c.bull_score, c.bear_score,
+                p.close FROM consensus_results c
+         LEFT JOIN (SELECT symbol, close FROM prices WHERE symbol=$1 ORDER BY date DESC LIMIT 1) p ON p.symbol=c.symbol
+         WHERE c.symbol=$1 ORDER BY c.prediction_date DESC LIMIT 1`
+      : `SELECT c.final_signal, c.conviction, c.confidence, c.xmore_score, c.bull_score, c.bear_score,
+                p.close FROM consensus_results c
+         LEFT JOIN (SELECT symbol, close FROM prices WHERE symbol=? ORDER BY date DESC LIMIT 1) p ON p.symbol=c.symbol
+         WHERE c.symbol=? ORDER BY c.prediction_date DESC LIMIT 1`;
+    const params = DATABASE_URL ? [symbol] : [symbol, symbol];
+    db.get(sql, params, (err, row) => resolve(row || {}));
+  });
+
+  const prompt = `You are a concise EGX (Egyptian Exchange) stock analyst. Write a 3-sentence professional brief for ${symbol}.
+Data: Signal=${ctx.final_signal||'N/A'}, Conviction=${ctx.conviction||'N/A'}, Confidence=${ctx.confidence||'N/A'}%, XmoreScore=${ctx.xmore_score||'N/A'}, BullScore=${ctx.bull_score||'N/A'}, BearScore=${ctx.bear_score||'N/A'}, Price=${ctx.close||'N/A'} EGP.
+Format: 1) Current stance and signal quality 2) Key risk factor 3) Short-term outlook. Be direct, no disclaimers.`;
+
+  try {
+    const { GoogleGenAI } = require('@google/genai');
+    const genai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
+    const result = await genai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: [{ parts: [{ text: prompt }] }],
+    });
+    const text = result?.candidates?.[0]?.content?.parts?.[0]?.text || 'Brief unavailable.';
+    _briefCache.set(symbol, { text, ts: Date.now() });
+    res.json({ brief: text, symbol });
+  } catch (err) {
+    res.status(502).json({ error: 'AI brief failed: ' + err.message });
+  }
+});
+
+// ============================================
+// STOCK SIGNAL MULTI-HORIZON (D+5/D+10/D+20)
+// ============================================
+app.get('/api/signal-accuracy', (req, res) => {
+  const horizon = parseInt(req.query.horizon) || 5;
+  const limit = Math.min(100, parseInt(req.query.limit) || 30);
+  const sql = DATABASE_URL
+    ? `SELECT symbol, horizon_days,
+         COUNT(*) as total,
+         SUM(CASE WHEN was_correct THEN 1 ELSE 0 END) as correct,
+         ROUND(100.0 * SUM(CASE WHEN was_correct THEN 1 ELSE 0 END) / COUNT(*), 1) as accuracy_pct,
+         AVG(actual_change_pct) as avg_change_pct
+       FROM stock_signal_evals
+       WHERE horizon_days = $1
+       GROUP BY symbol, horizon_days
+       HAVING COUNT(*) >= 3
+       ORDER BY accuracy_pct DESC LIMIT $2`
+    : `SELECT symbol, horizon_days,
+         COUNT(*) as total,
+         SUM(CASE WHEN was_correct THEN 1 ELSE 0 END) as correct,
+         ROUND(100.0 * SUM(CASE WHEN was_correct THEN 1 ELSE 0 END) / COUNT(*), 1) as accuracy_pct,
+         AVG(actual_change_pct) as avg_change_pct
+       FROM stock_signal_evals
+       WHERE horizon_days = ?
+       GROUP BY symbol, horizon_days
+       HAVING COUNT(*) >= 3
+       ORDER BY accuracy_pct DESC LIMIT ?`;
+  db.all(sql, [horizon, limit], (err, rows) => {
+    if (err) {
+      if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) return res.json([]);
+      return res.status(500).json({ error: err.message });
+    }
+    res.json(rows || []);
+  });
 });
 
 // ============================================

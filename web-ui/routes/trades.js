@@ -217,22 +217,29 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
 
         const openSql = `
             SELECT
-                up.symbol, s.name_en, s.name_ar, s.sector_en, s.sector_ar,
+                up.id, up.symbol, s.name_en, s.name_ar, s.sector_en, s.sector_ar,
                 up.entry_date, up.entry_price,
+                COALESCE(up.quantity, 1) AS quantity,
                 (SELECT close FROM prices WHERE symbol = up.symbol ORDER BY date DESC LIMIT 1) AS current_price,
                 ${daysHeldExpr} AS days_held
             FROM user_positions up
-            JOIN egx30_stocks s ON up.symbol = s.symbol
+            LEFT JOIN egx30_stocks s ON up.symbol = s.symbol
             WHERE up.user_id = $1 AND up.status = 'OPEN'
             ORDER BY up.entry_date DESC
         `;
 
         const openResult = await queryAll(openSql, [userId]);
         const openPositions = openResult.rows.map(p => {
-            const ret = p.entry_price && p.current_price
-                ? ((p.current_price - p.entry_price) / p.entry_price * 100).toFixed(2)
+            const qty = parseInt(p.quantity) || 1;
+            const entry = parseFloat(p.entry_price) || 0;
+            const current = parseFloat(p.current_price) || 0;
+            const ret = entry > 0 && current > 0
+                ? ((current - entry) / entry * 100).toFixed(2)
                 : 0;
-            return { ...p, unrealized_return_pct: ret };
+            const cost_egp = +(entry * qty).toFixed(2);
+            const value_egp = current > 0 ? +(current * qty).toFixed(2) : null;
+            const pnl_egp = value_egp != null ? +(value_egp - cost_egp).toFixed(2) : null;
+            return { ...p, quantity: qty, unrealized_return_pct: ret, cost_egp, value_egp, pnl_egp };
         });
 
         // Closed positions
@@ -280,9 +287,35 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
         const avg_win = winning.length > 0 ? winning.reduce((sum, p) => sum + (p.return_pct || 0), 0) / winning.length : 0;
         const avg_loss = losing.length > 0 ? losing.reduce((sum, p) => sum + (p.return_pct || 0), 0) / losing.length : 0;
 
+        // Portfolio totals
+        const totalCostEgp = openPositions.reduce((s, p) => s + (p.cost_egp || 0), 0);
+        const totalValueEgp = openPositions.reduce((s, p) => s + (p.value_egp || p.cost_egp || 0), 0);
+        const totalPnlEgp = totalValueEgp - totalCostEgp;
+        const totalReturnPct = totalCostEgp > 0 ? +((totalPnlEgp / totalCostEgp) * 100).toFixed(2) : 0;
+
+        // Sector breakdown (by cost_egp)
+        const sectorMap = {};
+        for (const p of openPositions) {
+            const sec = p.sector_en || 'Other';
+            sectorMap[sec] = (sectorMap[sec] || 0) + (p.cost_egp || 0);
+        }
+        const sector_breakdown = Object.entries(sectorMap)
+            .map(([sector, cost]) => ({
+                sector,
+                weight_pct: totalCostEgp > 0 ? +((cost / totalCostEgp) * 100).toFixed(1) : 0
+            }))
+            .sort((a, b) => b.weight_pct - a.weight_pct);
+
         return res.json({
             open_positions: openPositions,
             closed_positions: closedResult.rows,
+            totals: {
+                total_cost_egp: +totalCostEgp.toFixed(2),
+                total_value_egp: +totalValueEgp.toFixed(2),
+                total_pnl_egp: +totalPnlEgp.toFixed(2),
+                total_return_pct: totalReturnPct,
+            },
+            sector_breakdown,
             stats: {
                 total_trades,
                 winning_trades: winning.length,
@@ -362,27 +395,28 @@ router.get('/performance', authMiddleware, async (req, res) => {
 router.post('/positions', authMiddleware, async (req, res) => {
     try {
         const userId = req.user?.userId || req.userId;
-        const { symbol, entry_price, entry_date } = req.body;
+        const { symbol, entry_price, entry_date, quantity } = req.body;
         if (!symbol || !entry_price) {
             return res.status(400).json({ error: 'symbol and entry_price are required' });
         }
         const date = entry_date || new Date().toISOString().split('T')[0];
         const price = parseFloat(entry_price);
+        const qty = Math.max(1, parseInt(quantity) || 1);
         if (isNaN(price) || price <= 0) return res.status(400).json({ error: 'Invalid entry_price' });
 
         const sql = db._isPostgres
-            ? `INSERT INTO user_positions (user_id, symbol, status, entry_date, entry_price)
-               VALUES ($1, $2, 'OPEN', $3, $4)
+            ? `INSERT INTO user_positions (user_id, symbol, status, entry_date, entry_price, quantity)
+               VALUES ($1, $2, 'OPEN', $3, $4, $5)
                ON CONFLICT ON CONSTRAINT idx_unique_open_position DO NOTHING
                RETURNING id`
-            : `INSERT OR IGNORE INTO user_positions (user_id, symbol, status, entry_date, entry_price)
-               VALUES (?, ?, 'OPEN', ?, ?)`;
+            : `INSERT OR IGNORE INTO user_positions (user_id, symbol, status, entry_date, entry_price, quantity)
+               VALUES (?, ?, 'OPEN', ?, ?, ?)`;
 
-        const result = await queryAll(sql, [userId, symbol, date, price]);
+        const result = await queryAll(sql, [userId, symbol, date, price, qty]);
         if (db._isPostgres && result.rows.length === 0) {
             return res.status(409).json({ error: 'An open position for this symbol already exists' });
         }
-        return res.json({ ok: true, message: `Position opened for ${symbol} at ${price}` });
+        return res.json({ ok: true, message: `Position opened for ${symbol} at ${price} × ${qty}` });
     } catch (err) {
         console.error('Error opening position:', err);
         res.status(500).json({ error: 'Server error' });
@@ -496,6 +530,86 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
         });
     } catch (err) {
         console.error('Error fetching session sheet:', err);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// ─── Price Alerts ──────────────────────────────────────────────
+
+// GET /api/trades/alerts — list user's alerts + trigger check vs latest price
+router.get('/alerts', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user?.userId || req.userId;
+        const sql = `
+            SELECT a.id, a.symbol, a.condition, a.target_price, a.active, a.triggered_at, a.created_at,
+                   (SELECT close FROM prices WHERE symbol = a.symbol ORDER BY date DESC LIMIT 1) AS current_price
+            FROM price_alerts a
+            WHERE a.user_id = $1
+            ORDER BY a.created_at DESC
+            LIMIT 50
+        `;
+        const result = await queryAll(sql, [userId]);
+        // Auto-trigger active alerts
+        for (const alert of result.rows) {
+            if (!alert.active) continue;
+            const cur = parseFloat(alert.current_price);
+            const tgt = parseFloat(alert.target_price);
+            if (isNaN(cur) || isNaN(tgt)) continue;
+            const hit = (alert.condition === 'above' && cur >= tgt) || (alert.condition === 'below' && cur <= tgt);
+            if (hit) {
+                const now = new Date().toISOString();
+                await queryAll(
+                    `UPDATE price_alerts SET active = $1, triggered_at = $2 WHERE id = $3`,
+                    [false, now, alert.id]
+                ).catch(() => {});
+                alert.active = false;
+                alert.triggered_at = now;
+            }
+        }
+        res.json({ alerts: result.rows });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// POST /api/trades/alerts — create alert
+router.post('/alerts', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user?.userId || req.userId;
+        const { symbol, condition, target_price } = req.body;
+        if (!symbol || !target_price || !['above', 'below'].includes(condition)) {
+            return res.status(400).json({ error: 'symbol, condition (above/below), target_price required' });
+        }
+        const price = parseFloat(target_price);
+        if (isNaN(price) || price <= 0) return res.status(400).json({ error: 'Invalid target_price' });
+        // Limit 20 active alerts per user
+        const countRes = await queryAll(
+            `SELECT COUNT(*) AS cnt FROM price_alerts WHERE user_id = $1 AND active = $2`,
+            [userId, true]
+        );
+        const cnt = parseInt(countRes.rows[0]?.cnt) || 0;
+        if (cnt >= 20) return res.status(400).json({ error: 'Maximum 20 active alerts allowed' });
+
+        await queryAll(
+            `INSERT INTO price_alerts (user_id, symbol, condition, target_price, active) VALUES ($1, $2, $3, $4, $5)`,
+            [userId, symbol.toUpperCase(), condition, price, true]
+        );
+        res.json({ ok: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// DELETE /api/trades/alerts/:id
+router.delete('/alerts/:id', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user?.userId || req.userId;
+        await queryAll(
+            `DELETE FROM price_alerts WHERE id = $1 AND user_id = $2`,
+            [parseInt(req.params.id), userId]
+        );
+        res.json({ ok: true });
+    } catch (err) {
         res.status(500).json({ error: 'Server error' });
     }
 });

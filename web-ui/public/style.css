@@ -5284,3 +5284,264 @@ button:active, .btn:active, .tab-btn:active {
   .stat-card { padding: 14px 10px; }
   .stat-value { font-size: 1.6em; }
 }
+
+/* ============================================================
+   PORTFOLIO TOTALS STRIP
+   ============================================================ */
+.pf-totals-strip {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+.pf-total-pill {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 120px;
+}
+.pf-total-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.pf-total-val {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Sector breakdown */
+.pf-sector-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+.pf-sector-pill {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    overflow: hidden;
+}
+.pf-sector-bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--accent);
+    opacity: 0.12;
+    border-radius: 20px 0 0 20px;
+}
+.pf-sector-name { color: var(--text-primary); font-weight: 600; position: relative; }
+.pf-sector-pct  { color: var(--text-muted); font-size: 0.75rem; position: relative; }
+
+/* ============================================================
+   PRICE ALERTS
+   ============================================================ */
+.alerts-add-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+}
+.alerts-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.88rem;
+}
+.alert-row.alert-triggered {
+    border-color: var(--bullish);
+    background: color-mix(in srgb, var(--bullish) 6%, var(--card-bg));
+}
+.alert-sym  { font-weight: 700; color: var(--text-primary); min-width: 90px; }
+.alert-cond { color: var(--text-muted); }
+.alert-price { font-weight: 600; color: var(--accent); }
+.alert-cur   { color: var(--text-muted); font-size: 0.82rem; }
+.alert-tag-triggered {
+    background: var(--bullish);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 10px;
+}
+.alert-del-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+.alert-del-btn:hover { color: var(--bearish); }
+
+/* ============================================================
+   STOCK COMPARISON MODAL
+   ============================================================ */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: rgba(0,0,0,0.55);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.modal-box {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    max-width: 560px;
+    width: 100%;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+    overflow: hidden;
+}
+.modal-box.modal-wide { max-width: 900px; }
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-primary);
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    border-radius: 4px;
+    transition: color 0.15s;
+}
+.modal-close:hover { color: var(--bearish); }
+.comp-symbol-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+}
+#compResults {
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    flex: 1;
+}
+.comp-table th, .comp-table td { text-align: center; }
+.comp-table td:first-child, .comp-table th:first-child { text-align: left; font-weight: 600; }
+
+/* ============================================================
+   AI BRIEF MODAL
+   ============================================================ */
+#briefModalBody {
+    padding: 16px 20px;
+    line-height: 1.75;
+    color: var(--text-primary);
+    font-size: 0.92rem;
+    overflow-y: auto;
+    max-height: 70vh;
+    white-space: pre-wrap;
+}
+
+/* ============================================================
+   RATES TAB
+   ============================================================ */
+.rates-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.rate-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: box-shadow 0.2s;
+}
+.rate-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+.rate-icon  { font-size: 1.5rem; }
+.rate-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.rate-value { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); }
+.rates-history-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+.rate-chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 14px;
+}
+.rate-chart-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+/* ============================================================
+   MULTI-HORIZON SELECTOR
+   ============================================================ */
+.horizon-btns {
+    display: flex;
+    gap: 6px;
+}
+.horizon-btn {
+    padding: 4px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.horizon-btn.active,
+.horizon-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+    .pf-totals-strip { gap: 8px; }
+    .pf-total-pill { min-width: 90px; }
+    .rates-card-grid { grid-template-columns: repeat(2, 1fr); }
+    .rates-history-grid { grid-template-columns: 1fr; }
+    .comp-symbol-row input { width: 100%; }
+}
