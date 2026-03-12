@@ -55,7 +55,7 @@ router.get('/summary', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 365, 365);
         const liveFilter = isPostgres
-            ? `is_live = TRUE`
+            ? `(is_live = TRUE OR is_live IS NULL)`
             : `(is_live = 1 OR is_live IS NULL)`;
         const dateFilter = isPostgres
             ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
@@ -231,7 +231,7 @@ router.get('/by-agent', async (req, res) => {
 router.get('/by-stock', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
-        const liveFilter = isPostgres ? 'tr.is_live = TRUE' : '(tr.is_live = 1 OR tr.is_live IS NULL)';
+        const liveFilter = isPostgres ? '(tr.is_live = TRUE OR tr.is_live IS NULL)' : '(tr.is_live = 1 OR tr.is_live IS NULL)';
         const dateFilter = isPostgres
             ? `tr.recommendation_date >= CURRENT_DATE - ${ph(1)}`
             : `tr.recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
@@ -273,7 +273,7 @@ router.get('/by-stock', async (req, res) => {
 router.get('/equity-curve', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 180, 365);
-        const liveFilter = isPostgres ? 'is_live = TRUE' : '(is_live = 1 OR is_live IS NULL)';
+        const liveFilter = isPostgres ? '(is_live = TRUE OR is_live IS NULL)' : '(is_live = 1 OR is_live IS NULL)';
         const dateFilter = isPostgres
             ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
@@ -355,7 +355,7 @@ router.get('/predictions/history', async (req, res) => {
         const limit = Math.min(parseInt(req.query.limit) || 25, 100);
         const offset = (page - 1) * limit;
 
-        const liveFilter = isPostgres ? 'tr.is_live = TRUE' : '(tr.is_live = 1 OR tr.is_live IS NULL)';
+        const liveFilter = isPostgres ? '(tr.is_live = TRUE OR tr.is_live IS NULL)' : '(tr.is_live = 1 OR tr.is_live IS NULL)';
         const dateFilter = isPostgres
             ? `cr.prediction_date <= CURRENT_DATE`
             : `cr.prediction_date <= date('now')`;
