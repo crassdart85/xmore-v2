@@ -125,7 +125,7 @@ def resolve_1day_outcomes() -> int:
             FROM trade_recommendations tr
             WHERE tr.actual_next_day_return IS NULL
             AND tr.recommendation_date <= {_interval(1)}
-            AND tr.recommendation_date >= {_interval(14)}
+            AND tr.recommendation_date >= {_interval(90)}
             AND tr.close_price IS NOT NULL
             AND tr.close_price > 0
         """
@@ -223,7 +223,7 @@ def resolve_5day_outcomes() -> int:
             FROM trade_recommendations tr
             WHERE tr.actual_5day_return IS NULL
             AND tr.recommendation_date <= {_interval(7)}
-            AND tr.recommendation_date >= {_interval(30)}
+            AND tr.recommendation_date >= {_interval(90)}
             AND tr.close_price IS NOT NULL
             AND tr.close_price > 0
         """
