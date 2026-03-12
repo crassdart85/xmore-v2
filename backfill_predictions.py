@@ -144,15 +144,15 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
         cur.execute(f"""
             INSERT INTO trade_recommendations
                 (user_id, symbol, recommendation_date, action, signal,
-                 confidence, conviction, risk_action, priority,
+                 confidence, conviction, risk_action,
                  close_price, stop_loss_pct, target_pct,
                  stop_loss_price, target_price, risk_reward_ratio,
                  is_simulated)
-            VALUES ({','.join([ph]*16)})
+            VALUES ({','.join([ph]*15)})
             ON CONFLICT (user_id, symbol, recommendation_date) DO NOTHING
         """, (
             user_id, symbol, date, action_db, signal_db,
-            confidence, conviction, 'PROCEED', 'MEDIUM',
+            confidence, conviction, 'PROCEED',
             entry_price, stop_loss_pct * 100, target_pct * 100,
             stop_loss_price, target_price, risk_reward,
             True
@@ -161,14 +161,14 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
         cur.execute(f"""
             INSERT OR IGNORE INTO trade_recommendations
                 (user_id, symbol, recommendation_date, action, signal,
-                 confidence, conviction, risk_action, priority,
+                 confidence, conviction, risk_action,
                  close_price, stop_loss_pct, target_pct,
                  stop_loss_price, target_price, risk_reward_ratio,
                  is_simulated)
-            VALUES ({','.join([ph]*16)})
+            VALUES ({','.join([ph]*15)})
         """, (
             user_id, symbol, date, action_db, signal_db,
-            confidence, conviction, 'PROCEED', 'MEDIUM',
+            confidence, conviction, 'PROCEED',
             entry_price, stop_loss_pct * 100, target_pct * 100,
             stop_loss_price, target_price, risk_reward,
             1
@@ -251,9 +251,17 @@ def run(days: int = 60, dry_run: bool = False):
                 except Exception as e:
                     logger.warning(f"  ⚠ {symbol} {day}: {e}")
                     errors += 1
+                    # Rollback failed row so subsequent rows aren't aborted
+                    try:
+                        conn.rollback()
+                    except Exception:
+                        pass
 
             if not dry_run:
-                conn.commit()
+                try:
+                    conn.commit()
+                except Exception:
+                    conn.rollback()
 
             if day_inserted:
                 logger.info(f"  {day}: +{day_inserted} signals inserted")
