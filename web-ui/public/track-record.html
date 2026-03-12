@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="trHtml">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xmore — Track Record</title>
+  <link rel="stylesheet" href="track-record.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="tr-header">
+    <a href="/" class="tr-back" data-i18n="back">← Dashboard</a>
+    <div class="tr-header-brand">
+      <span class="tr-logo">XMORE <span class="tr-logo-tag" data-i18n="logoTag">TRACK RECORD</span></span>
+      <span class="tr-live-badge" data-i18n="liveBadge">LIVE PREDICTIONS ONLY</span>
+    </div>
+    <div class="tr-header-controls">
+      <div class="tr-period-group">
+        <button class="tr-period-btn active" data-days="30">30D</button>
+        <button class="tr-period-btn" data-days="90">90D</button>
+        <button class="tr-period-btn" data-days="180">180D</button>
+        <button class="tr-period-btn" data-days="365" data-i18n-val="all">ALL</button>
+      </div>
+      <button class="tr-lang-btn" id="trLangBtn" onclick="trToggleLang()">عر</button>
+      <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">⬇ Export CSV</button>
+    </div>
+  </header>
+
+  <div class="tr-container">
+
+    <!-- Hero / Intro -->
+    <div class="tr-hero">
+      <div class="tr-hero-text">
+        <h1 class="tr-hero-title" data-i18n="heroTitle">AI-Powered EGX Stock Predictions — Verified Performance</h1>
+        <p class="tr-hero-body" data-i18n="heroBody">
+          Every signal shown below was generated <strong>before market open</strong> by Xmore's multi-agent
+          AI system and recorded with an immutable timestamp. No predictions have been altered, removed,
+          or backdated. What you see is what was called — win or lose.
+        </p>
+        <div class="tr-hero-pills">
+          <span class="tr-pill" data-i18n="pill1">5 AI Agents</span>
+          <span class="tr-pill" data-i18n="pill2">Weighted Consensus</span>
+          <span class="tr-pill" data-i18n="pill3">EGX-Listed Stocks</span>
+          <span class="tr-pill" data-i18n="pill4">Automated. Unbiased.</span>
+        </div>
+      </div>
+      <div class="tr-hero-stat-group">
+        <div class="tr-hero-stat" id="heroDateRange">
+          <div class="tr-hero-stat-label" data-i18n="trackingSince">Tracking Since</div>
+          <div class="tr-hero-stat-val" id="heroSince">—</div>
+        </div>
+        <div class="tr-hero-stat">
+          <div class="tr-hero-stat-label" data-i18n="lastUpdate">Last Updated</div>
+          <div class="tr-hero-stat-val" id="heroLast">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Summary Strip -->
+    <div class="tr-kpi-strip">
+      <div class="tr-kpi-card">
+        <div class="tr-kpi-label" data-i18n="kpiSignals">TOTAL SIGNALS</div>
+        <div class="tr-kpi-value" id="kpiTotal">—</div>
+        <div class="tr-kpi-desc" data-i18n="kpiSignalsDesc">Live, timestamped calls made to date</div>
+      </div>
+      <div class="tr-kpi-card">
+        <div class="tr-kpi-label" data-i18n="kpiWinRate">WIN RATE</div>
+        <div class="tr-kpi-value" id="kpiWin">—</div>
+        <div class="tr-kpi-desc" data-i18n="kpiWinRateDesc">% of calls where direction was correct next-day</div>
+      </div>
+      <div class="tr-kpi-card">
+        <div class="tr-kpi-label" data-i18n="kpiAlpha">AVG ALPHA vs EGX30</div>
+        <div class="tr-kpi-value" id="kpiAlpha">—</div>
+        <div class="tr-kpi-desc" data-i18n="kpiAlphaDesc">Excess return per signal over the benchmark index</div>
+      </div>
+      <div class="tr-kpi-card">
+        <div class="tr-kpi-label" data-i18n="kpiBeat">BEAT BENCHMARK</div>
+        <div class="tr-kpi-value" id="kpiBeat">—</div>
+        <div class="tr-kpi-desc" data-i18n="kpiBeatDesc">Signals that outperformed EGX30 on the same day</div>
+      </div>
+      <div class="tr-kpi-card">
+        <div class="tr-kpi-label" data-i18n="kpiSharpe">SHARPE RATIO</div>
+        <div class="tr-kpi-value" id="kpiSharpe">—</div>
+        <div class="tr-kpi-desc" data-i18n="kpiSharpeDesc">Risk-adjusted return (annualised). >1 is strong.</div>
+      </div>
+      <div class="tr-kpi-card">
+        <div class="tr-kpi-label" data-i18n="kpiPF">PROFIT FACTOR</div>
+        <div class="tr-kpi-value" id="kpiPF">—</div>
+        <div class="tr-kpi-desc" data-i18n="kpiPFDesc">Gross gains ÷ gross losses. >1.5 is robust.</div>
+      </div>
+    </div>
+
+    <!-- Rolling Windows -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="rollingTitle">ROLLING PERFORMANCE WINDOWS</div>
+      <p class="tr-section-desc" data-i18n="rollingDesc">
+        Performance is reported across multiple time horizons so you can assess consistency —
+        not just a single cherry-picked period. A strong system performs across all windows.
+      </p>
+      <div class="tr-rolling-cards" id="trRollingCards">
+        <div class="tr-loading" data-i18n="loading">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Equity Curve -->
+    <div class="tr-section">
+      <div class="tr-section-header">
+        <div>
+          <span class="tr-section-title" data-i18n="equityTitle">CUMULATIVE RETURN: XMORE SIGNALS vs EGX 30 BENCHMARK</span>
+          <p class="tr-section-desc" data-i18n="equityDesc">
+            This chart compounds the daily average return of all Xmore signals (blue) against the
+            EGX 30 benchmark return on the same day (grey). The widening gap represents alpha —
+            value generated beyond what the market gave for free.
+          </p>
+        </div>
+        <div class="tr-legend">
+          <span class="tr-legend-dot" style="background:#667eea"></span>
+          <span data-i18n="legendXmore">Xmore Signals</span>
+          <span class="tr-legend-dot" style="background:#555;margin-left:12px"></span>
+          <span data-i18n="legendBench">EGX 30 Benchmark</span>
+        </div>
+      </div>
+      <div class="tr-chart-wrap">
+        <canvas id="equityCurveChart"></canvas>
+        <div class="tr-chart-empty" id="equityEmpty" style="display:none" data-i18n="noData">No resolved predictions yet.</div>
+      </div>
+      <div class="tr-chart-footer" id="equityFooter"></div>
+    </div>
+
+    <!-- Agent Methodology -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="methodTitle">HOW THE PREDICTIONS ARE MADE — THE AGENT ENSEMBLE</div>
+      <p class="tr-section-desc" data-i18n="methodDesc">
+        Xmore uses five independent AI agents, each analysing the same stock from a different lens.
+        Their individual signals are weighted into a single consensus score. No single agent controls
+        the outcome — disagreement between agents is flagged as elevated risk.
+      </p>
+      <div class="tr-agent-cards">
+        <div class="tr-agent-card">
+          <div class="tr-agent-name">MA Crossover</div>
+          <div class="tr-agent-desc" data-i18n="agentMA">Trend-following model using short and long moving average crossovers to detect momentum shifts.</div>
+        </div>
+        <div class="tr-agent-card">
+          <div class="tr-agent-name">RSI Agent</div>
+          <div class="tr-agent-desc" data-i18n="agentRSI">Identifies overbought / oversold conditions using the Relative Strength Index for mean-reversion signals.</div>
+        </div>
+        <div class="tr-agent-card">
+          <div class="tr-agent-name">Volume Spike</div>
+          <div class="tr-agent-desc" data-i18n="agentVol">Detects unusual volume activity that often precedes significant price moves, independent of price direction.</div>
+        </div>
+        <div class="tr-agent-card">
+          <div class="tr-agent-name">ML RandomForest</div>
+          <div class="tr-agent-desc" data-i18n="agentML">Trained on historical EGX price, volume and technical features. Learns non-linear patterns invisible to rule-based agents.</div>
+        </div>
+        <div class="tr-agent-card">
+          <div class="tr-agent-name">Gemini LLM</div>
+          <div class="tr-agent-desc" data-i18n="agentLLM">Reads Arabic and English financial news to incorporate sentiment and corporate announcements into the signal.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent Performance Table -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="agentPerfTitle">AGENT PERFORMANCE BREAKDOWN</div>
+      <p class="tr-section-desc" data-i18n="agentPerfDesc">
+        Win rates and signal counts per agent over the last 30 and 90 days.
+        This transparency lets you see which analytical layer drives accuracy on EGX.
+      </p>
+      <table class="tr-table" id="agentTable">
+        <thead>
+          <tr>
+            <th data-i18n="colAgent">Agent</th>
+            <th data-i18n="colSignals30">Signals 30D</th>
+            <th data-i18n="colWin30">Win Rate 30D</th>
+            <th data-i18n="colWin90">Win Rate 90D</th>
+            <th data-i18n="colConf">Avg Confidence</th>
+          </tr>
+        </thead>
+        <tbody id="agentTableBody">
+          <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Two-col: Best Stocks + Max Drawdown context -->
+    <div class="tr-two-col">
+
+      <div class="tr-section">
+        <div class="tr-section-title" data-i18n="topStocksTitle">TOP STOCKS BY ALPHA GENERATED</div>
+        <p class="tr-section-desc" data-i18n="topStocksDesc">
+          Stocks where Xmore signals have consistently delivered returns above the EGX30 benchmark.
+          Minimum 3 resolved signals required.
+        </p>
+        <table class="tr-table">
+          <thead>
+            <tr>
+              <th data-i18n="colSym">Symbol</th>
+              <th data-i18n="colTrades">Signals</th>
+              <th data-i18n="colWinRate">Win Rate</th>
+              <th data-i18n="colAvgAlpha">Avg Alpha</th>
+            </tr>
+          </thead>
+          <tbody id="stockTableBody">
+            <tr><td colspan="4" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tr-section">
+        <div class="tr-section-title" data-i18n="riskTitle">RISK METRICS EXPLAINED</div>
+        <p class="tr-section-desc" data-i18n="riskDesc">
+          Institutional-grade risk statistics calculated from the live prediction history.
+        </p>
+        <div class="tr-risk-rows" id="riskRows">
+          <div class="tr-loading" data-i18n="loading">Loading…</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Prediction Log -->
+    <div class="tr-section">
+      <div class="tr-section-header">
+        <div>
+          <span class="tr-section-title" data-i18n="logTitle">FULL PREDICTION LOG</span>
+          <p class="tr-section-desc" data-i18n="logDesc">
+            Every live signal ever issued, with the actual next-day return and whether the directional
+            call was correct. All entries are read-only — prediction fields are immutable after issuance.
+          </p>
+        </div>
+        <div class="tr-log-filters">
+          <select class="tr-select" id="logFilter" onchange="logPage=1;loadLog()">
+            <option value="" data-i18n="filterAll">All Signals</option>
+            <option value="UP" data-i18n="filterUp">UP only</option>
+            <option value="DOWN" data-i18n="filterDown">DOWN only</option>
+          </select>
+        </div>
+      </div>
+      <div class="tr-table-wrap">
+        <table class="tr-table tr-table--log">
+          <thead>
+            <tr>
+              <th data-i18n="colDate">Date</th>
+              <th data-i18n="colSym">Symbol</th>
+              <th data-i18n="colSignal">Signal</th>
+              <th data-i18n="colConfidence">Confidence</th>
+              <th data-i18n="colConviction">Conviction</th>
+              <th data-i18n="colActual1D">1D Actual</th>
+              <th data-i18n="colAlpha">Alpha</th>
+              <th data-i18n="colHit">Hit?</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <tr><td colspan="8" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tr-pagination" id="logPagination"></div>
+    </div>
+
+    <!-- Methodology / Transparency -->
+    <div class="tr-section tr-section--accent">
+      <div class="tr-section-title" data-i18n="transparencyTitle">AUDIT TRAIL & TRANSPARENCY COMMITMENT</div>
+      <div class="tr-transparency-grid">
+        <div class="tr-transparency-item">
+          <div class="tr-transparency-icon">🕒</div>
+          <div class="tr-transparency-label" data-i18n="t1Label">Pre-Market Timestamp</div>
+          <div class="tr-transparency-text" data-i18n="t1Text">Every prediction is generated and logged before EGX opens. Time of generation is recorded and cannot be altered.</div>
+        </div>
+        <div class="tr-transparency-item">
+          <div class="tr-transparency-icon">🔒</div>
+          <div class="tr-transparency-label" data-i18n="t2Label">Immutable Signal Fields</div>
+          <div class="tr-transparency-text" data-i18n="t2Text">Core signal fields (direction, confidence, action) are write-once. Any modification attempt is logged in the audit table.</div>
+        </div>
+        <div class="tr-transparency-item">
+          <div class="tr-transparency-icon">📊</div>
+          <div class="tr-transparency-label" data-i18n="t3Label">Live Data Only</div>
+          <div class="tr-transparency-text" data-i18n="t3Text">Performance metrics exclude any backtested or simulated predictions. Only real-time live signals count toward the statistics.</div>
+        </div>
+        <div class="tr-transparency-item">
+          <div class="tr-transparency-icon">🌐</div>
+          <div class="tr-transparency-label" data-i18n="t4Label">Market-Sourced Returns</div>
+          <div class="tr-transparency-text" data-i18n="t4Text">Actual returns are computed from EGX official closing prices, sourced from Mubasher data feeds and Yahoo Finance.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="tr-disclaimer">
+      <strong data-i18n="disclaimerTitle">Important Disclaimer:</strong>
+      <span data-i18n="disclaimerText">
+        All performance metrics are derived exclusively from live, pre-market predictions with immutable timestamps.
+        No backtested, simulated, or backfilled data is included in these statistics.
+        Past prediction accuracy does not guarantee future performance.
+        Xmore signals are for informational purposes and do not constitute investment advice.
+        Capital invested in equities is subject to market risk.
+      </span>
+      <div id="trDateRange" style="margin-top:6px;font-size:10px;"></div>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="track-record.js"></script>
+</body>
+</html>

@@ -1,0 +1,631 @@
+/* ─── Xmore Track Record — Investor Page ───────────────────── */
+
+// ── i18n ──────────────────────────────────────────────────────
+let _LANG = 'en';
+
+const I18N = {
+  en: {
+    back: '← Dashboard',
+    logoTag: 'TRACK RECORD',
+    liveBadge: 'LIVE PREDICTIONS ONLY',
+    exportBtn: '⬇ Export CSV',
+    heroTitle: 'AI-Powered EGX Stock Predictions — Verified Performance',
+    heroBody: 'Every signal shown below was generated <strong>before market open</strong> by Xmore\'s multi-agent AI system and recorded with an immutable timestamp. No predictions have been altered, removed, or backdated. What you see is what was called — win or lose.',
+    pill1: '5 AI Agents', pill2: 'Weighted Consensus', pill3: 'EGX-Listed Stocks', pill4: 'Automated. Unbiased.',
+    trackingSince: 'Tracking Since', lastUpdate: 'Last Updated',
+    kpiSignals: 'TOTAL SIGNALS', kpiSignalsDesc: 'Live, timestamped calls made to date',
+    kpiWinRate: 'WIN RATE', kpiWinRateDesc: '% of calls where direction was correct next-day',
+    kpiAlpha: 'AVG ALPHA vs EGX30', kpiAlphaDesc: 'Excess return per signal over the benchmark index',
+    kpiBeat: 'BEAT BENCHMARK', kpiBeatDesc: 'Signals that outperformed EGX30 on the same day',
+    kpiSharpe: 'SHARPE RATIO', kpiSharpeDesc: 'Risk-adjusted return (annualised). >1 is strong.',
+    kpiPF: 'PROFIT FACTOR', kpiPFDesc: 'Gross gains ÷ gross losses. >1.5 is robust.',
+    rollingTitle: 'ROLLING PERFORMANCE WINDOWS',
+    rollingDesc: 'Performance is reported across multiple time horizons so you can assess consistency — not just a single cherry-picked period. A strong system performs across all windows.',
+    equityTitle: 'CUMULATIVE RETURN: XMORE SIGNALS vs EGX 30 BENCHMARK',
+    equityDesc: 'This chart compounds the daily average return of all Xmore signals (blue) against the EGX 30 benchmark return on the same day (grey). The widening gap represents alpha — value generated beyond what the market gave for free.',
+    legendXmore: 'Xmore Signals', legendBench: 'EGX 30 Benchmark',
+    noData: 'No resolved predictions yet.',
+    methodTitle: 'HOW THE PREDICTIONS ARE MADE — THE AGENT ENSEMBLE',
+    methodDesc: 'Xmore uses five independent AI agents, each analysing the same stock from a different lens. Their individual signals are weighted into a single consensus score. No single agent controls the outcome — disagreement between agents is flagged as elevated risk.',
+    agentMA: 'Trend-following model using short and long moving average crossovers to detect momentum shifts.',
+    agentRSI: 'Identifies overbought / oversold conditions using the Relative Strength Index for mean-reversion signals.',
+    agentVol: 'Detects unusual volume activity that often precedes significant price moves, independent of price direction.',
+    agentML: 'Trained on historical EGX price, volume and technical features. Learns non-linear patterns invisible to rule-based agents.',
+    agentLLM: 'Reads Arabic and English financial news to incorporate sentiment and corporate announcements into the signal.',
+    agentPerfTitle: 'AGENT PERFORMANCE BREAKDOWN',
+    agentPerfDesc: 'Win rates and signal counts per agent over the last 30 and 90 days. This transparency lets you see which analytical layer drives accuracy on EGX.',
+    topStocksTitle: 'TOP STOCKS BY ALPHA GENERATED',
+    topStocksDesc: 'Stocks where Xmore signals have consistently delivered returns above the EGX30 benchmark. Minimum 3 resolved signals required.',
+    riskTitle: 'RISK METRICS EXPLAINED',
+    riskDesc: 'Institutional-grade risk statistics calculated from the live prediction history.',
+    transparencyTitle: 'AUDIT TRAIL & TRANSPARENCY COMMITMENT',
+    t1Label: 'Pre-Market Timestamp', t1Text: 'Every prediction is generated and logged before EGX opens. Time of generation is recorded and cannot be altered.',
+    t2Label: 'Immutable Signal Fields', t2Text: 'Core signal fields (direction, confidence, action) are write-once. Any modification attempt is logged in the audit table.',
+    t3Label: 'Live Data Only', t3Text: 'Performance metrics exclude any backtested or simulated predictions. Only real-time live signals count toward the statistics.',
+    t4Label: 'Market-Sourced Returns', t4Text: 'Actual returns are computed from EGX official closing prices, sourced from Mubasher data feeds and Yahoo Finance.',
+    logTitle: 'FULL PREDICTION LOG',
+    logDesc: 'Every live signal ever issued, with the actual next-day return and whether the directional call was correct. All entries are read-only — prediction fields are immutable after issuance.',
+    filterAll: 'All Signals', filterUp: 'UP only', filterDown: 'DOWN only',
+    colAgent: 'Agent', colSignals30: 'Signals 30D', colWin30: 'Win Rate 30D', colWin90: 'Win Rate 90D', colConf: 'Avg Confidence',
+    colSym: 'Symbol', colTrades: 'Signals', colWinRate: 'Win Rate', colAvgAlpha: 'Avg Alpha',
+    colDate: 'Date', colSignal: 'Signal', colConfidence: 'Confidence', colConviction: 'Conviction',
+    colActual1D: '1D Actual', colAlpha: 'Alpha', colHit: 'Hit?',
+    hitYes: '✓ YES', hitNo: '✗ NO', hitPending: 'Pending',
+    disclaimerTitle: 'Important Disclaimer:',
+    disclaimerText: 'All performance metrics are derived exclusively from live, pre-market predictions with immutable timestamps. No backtested, simulated, or backfilled data is included in these statistics. Past prediction accuracy does not guarantee future performance. Xmore signals are for informational purposes and do not constitute investment advice. Capital invested in equities is subject to market risk.',
+    loading: 'Loading…',
+    riskRows: [
+      { label: 'Max Drawdown', key: 'max_drawdown', desc: 'Largest peak-to-trough cumulative loss. Lower is better.', negate: true },
+      { label: 'Volatility (ann.)', key: 'volatility', desc: 'Annualised standard deviation of daily returns.', negate: false },
+      { label: 'Sharpe Ratio', key: 'sharpe_ratio', desc: 'Risk-adjusted return. >1 = strong. >2 = exceptional.', negate: false },
+      { label: 'Profit Factor', key: 'profit_factor', desc: 'Gross profit ÷ gross loss. >1.5 indicates robust edge.', negate: false },
+      { label: 'Avg 1D Return', key: 'avg_return_1d', desc: 'Mean return per signal, next-day basis.', negate: false },
+      { label: 'Avg Alpha', key: 'avg_alpha_1d', desc: 'Mean excess return vs EGX30 per signal.', negate: false },
+    ],
+    rollingLabels: { win_rate: 'Win Rate', alpha: 'Avg Alpha', sharpe_ratio: 'Sharpe', max_drawdown: 'Max DD', volatility: 'Volatility', profit_factor: 'Profit Factor', trades: 'Signals' }
+  },
+  ar: {
+    back: '← الرئيسية',
+    logoTag: 'سجل الأداء',
+    liveBadge: 'توقعات حية فقط',
+    exportBtn: '⬇ تصدير CSV',
+    heroTitle: 'توقعات أسهم البورصة المصرية بالذكاء الاصطناعي — أداء موثّق',
+    heroBody: 'كل إشارة معروضة أدناه صدرت <strong>قبل افتتاح السوق</strong> عبر نظام Xmore متعدد العوامل، وسُجِّلت بختم زمني غير قابل للتعديل. لم يُعدَّل أي توقع أو يُحذف أو يُضاف بعد الواقعة. ما تراه هو ما أُعلن — ربحاً كان أم خسارة.',
+    pill1: '5 عوامل ذكاء اصطناعي', pill2: 'توافق موزون', pill3: 'أسهم البورصة المصرية', pill4: 'آلي. محايد.',
+    trackingSince: 'تاريخ البدء', lastUpdate: 'آخر تحديث',
+    kpiSignals: 'إجمالي الإشارات', kpiSignalsDesc: 'إشارات حية مختومة زمنياً حتى الآن',
+    kpiWinRate: 'معدل النجاح', kpiWinRateDesc: '% من الإشارات الصحيحة في اتجاه السعر اليومي',
+    kpiAlpha: 'متوسط الألفا vs EGX30', kpiAlphaDesc: 'العائد الزائد لكل إشارة فوق المؤشر القياسي',
+    kpiBeat: 'تفوّق على المؤشر', kpiBeatDesc: 'إشارات تفوقت على EGX30 في نفس اليوم',
+    kpiSharpe: 'نسبة شارب', kpiSharpeDesc: 'العائد المعدّل للمخاطر (سنوياً). أكثر من 1 قوي.',
+    kpiPF: 'معامل الربح', kpiPFDesc: 'الأرباح الإجمالية ÷ الخسائر الإجمالية. أكثر من 1.5 متين.',
+    rollingTitle: 'نوافذ الأداء المتجددة',
+    rollingDesc: 'يُقاس الأداء عبر فترات زمنية متعددة لتقييم الاتساق — لا فترة واحدة مختارة. النظام القوي يُؤدي بشكل ثابت عبر كل النوافذ.',
+    equityTitle: 'العائد التراكمي: إشارات Xmore مقابل مؤشر EGX 30',
+    equityDesc: 'يُركّب هذا الرسم البياني متوسط العائد اليومي لجميع إشارات Xmore (باللون الأزرق) مقارنةً بعائد مؤشر EGX 30 في نفس اليوم (باللون الرمادي). الفجوة المتسعة تمثل الألفا — القيمة المُضافة فوق ما يمنحه السوق مجاناً.',
+    legendXmore: 'إشارات Xmore', legendBench: 'مؤشر EGX 30',
+    noData: 'لا توجد توقعات محسومة بعد.',
+    methodTitle: 'كيف تُصنع التوقعات — مجموعة العوامل',
+    methodDesc: 'يستخدم Xmore خمسة عوامل ذكاء اصطناعي مستقلة، كل منها يحلّل نفس السهم من زاوية مختلفة. تُدمج إشاراتهم الفردية في درجة توافق واحدة. لا عامل واحد يتحكم في النتيجة — الخلاف بين العوامل يُرفع كعلامة مخاطرة.',
+    agentMA: 'نموذج اتباع الاتجاه باستخدام تقاطعات المتوسطات المتحركة للكشف عن تحولات الزخم.',
+    agentRSI: 'يحدد حالات التشبع في البيع أو الشراء باستخدام مؤشر القوة النسبية لإشارات الارتداد.',
+    agentVol: 'يرصد نشاط حجم التداول غير الطبيعي الذي كثيراً ما يسبق تحركات سعرية مهمة.',
+    agentML: 'مدرَّب على بيانات تاريخية لأسعار وأحجام وميزات تقنية لأسهم البورصة المصرية. يتعلم أنماطاً غير خطية.',
+    agentLLM: 'يقرأ الأخبار المالية بالعربية والإنجليزية لدمج المزاج العام والإعلانات الشركاتية في الإشارة.',
+    agentPerfTitle: 'تفصيل أداء العوامل',
+    agentPerfDesc: 'معدلات النجاح وأعداد الإشارات لكل عامل خلال آخر 30 و90 يوماً. هذه الشفافية تُريك أي طبقة تحليلية تقود الدقة في البورصة المصرية.',
+    topStocksTitle: 'أفضل الأسهم بالألفا المُحقق',
+    topStocksDesc: 'أسهم أسفرت فيها إشارات Xmore باستمرار عن عوائد تتجاوز مؤشر EGX 30. الحد الأدنى 3 إشارات محسومة.',
+    riskTitle: 'مقاييس المخاطر موضّحة',
+    riskDesc: 'إحصاءات مخاطر على المستوى المؤسسي محسوبة من سجل التوقعات الحية.',
+    transparencyTitle: 'مسار التدقيق والتزام الشفافية',
+    t1Label: 'ختم زمني قبل السوق', t1Text: 'كل توقع يُولَّد ويُسجَّل قبل افتتاح البورصة المصرية. وقت التوليد مسجَّل ولا يمكن تعديله.',
+    t2Label: 'حقول إشارة غير قابلة للتعديل', t2Text: 'حقول الإشارة الأساسية (الاتجاه، الثقة، الإجراء) تُكتب مرة واحدة. أي محاولة تعديل تُسجَّل في جدول التدقيق.',
+    t3Label: 'بيانات حية فقط', t3Text: 'مقاييس الأداء تستثني أي توقعات باك تيست أو محاكاة. فقط الإشارات الحية الفعلية تُحتسب في الإحصاءات.',
+    t4Label: 'عوائد من مصادر السوق', t4Text: 'العوائد الفعلية محسوبة من أسعار إغلاق البورصة المصرية الرسمية، المصدر Mubasher و Yahoo Finance.',
+    logTitle: 'سجل التوقعات الكامل',
+    logDesc: 'كل إشارة حية صدرت على الإطلاق، مع العائد الفعلي في اليوم التالي ومدى صحة الاتجاه المتوقع. جميع السجلات للقراءة فقط — حقول التوقع غير قابلة للتعديل بعد الإصدار.',
+    filterAll: 'جميع الإشارات', filterUp: 'صاعد فقط', filterDown: 'هابط فقط',
+    colAgent: 'العامل', colSignals30: 'إشارات 30 يوم', colWin30: 'نجاح 30 يوم', colWin90: 'نجاح 90 يوم', colConf: 'متوسط الثقة',
+    colSym: 'الرمز', colTrades: 'إشارات', colWinRate: 'معدل النجاح', colAvgAlpha: 'متوسط الألفا',
+    colDate: 'التاريخ', colSignal: 'الإشارة', colConfidence: 'الثقة', colConviction: 'الاقتناع',
+    colActual1D: 'الفعلي 1 يوم', colAlpha: 'الألفا', colHit: 'نجح؟',
+    hitYes: '✓ نعم', hitNo: '✗ لا', hitPending: 'قيد الانتظار',
+    disclaimerTitle: 'تنبيه مهم:',
+    disclaimerText: 'جميع مقاييس الأداء مستمدة حصرياً من التوقعات الحية قبل السوق ذات الطوابع الزمنية الثابتة. لا تتضمن هذه الإحصاءات أي بيانات باك تيست أو محاكاة أو إضافة بعد الواقعة. دقة التوقعات السابقة لا تضمن الأداء المستقبلي. إشارات Xmore للأغراض المعلوماتية فقط ولا تشكل نصيحة استثمارية. رأس المال المستثمر في الأسهم عرضة لمخاطر السوق.',
+    loading: 'جارٍ التحميل…',
+    riskRows: [
+      { label: 'أقصى تراجع', key: 'max_drawdown', desc: 'أكبر خسارة تراكمية من القمة للقاع. أقل هو أفضل.', negate: true },
+      { label: 'التقلب (سنوي)', key: 'volatility', desc: 'الانحراف المعياري السنوي للعوائد اليومية.', negate: false },
+      { label: 'نسبة شارب', key: 'sharpe_ratio', desc: 'العائد المعدَّل للمخاطر. أكثر من 1 قوي. أكثر من 2 استثنائي.', negate: false },
+      { label: 'معامل الربح', key: 'profit_factor', desc: 'الربح الإجمالي ÷ الخسارة الإجمالية. أكثر من 1.5 يدل على ميزة متينة.', negate: false },
+      { label: 'متوسط العائد 1 يوم', key: 'avg_return_1d', desc: 'متوسط العائد لكل إشارة على أساس يومي.', negate: false },
+      { label: 'متوسط الألفا', key: 'avg_alpha_1d', desc: 'متوسط العائد الزائد مقارنة بـ EGX30 لكل إشارة.', negate: false },
+    ],
+    rollingLabels: { win_rate: 'معدل النجاح', alpha: 'متوسط الألفا', sharpe_ratio: 'شارب', max_drawdown: 'أقصى تراجع', volatility: 'التقلب', profit_factor: 'معامل الربح', trades: 'إشارات' }
+  }
+};
+
+function t(key) { return I18N[_LANG][key] ?? I18N['en'][key] ?? key; }
+
+function trToggleLang() {
+  _LANG = _LANG === 'en' ? 'ar' : 'en';
+  const html = document.getElementById('trHtml');
+  html.setAttribute('lang', _LANG);
+  html.setAttribute('dir', _LANG === 'ar' ? 'rtl' : 'ltr');
+  document.getElementById('trLangBtn').textContent = _LANG === 'en' ? 'عر' : 'EN';
+  applyI18n();
+  renderRolling();
+  renderRiskRows();
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val !== undefined) el.innerHTML = val;
+  });
+  // Select options
+  document.querySelectorAll('[data-i18n] option, select option[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key) el.textContent = t(key);
+  });
+  // Rebuild table headers from i18n keys
+  rebuildTableHeaders();
+}
+
+function rebuildTableHeaders() {
+  const agentHead = document.querySelector('#agentTable thead tr');
+  if (agentHead) {
+    const keys = ['colAgent','colSignals30','colWin30','colWin90','colConf'];
+    agentHead.querySelectorAll('th').forEach((th, i) => { th.textContent = t(keys[i]); });
+  }
+  const logHead = document.querySelector('.tr-table--log thead tr');
+  if (logHead) {
+    const keys = ['colDate','colSym','colSignal','colConfidence','colConviction','colActual1D','colAlpha','colHit'];
+    logHead.querySelectorAll('th').forEach((th, i) => { th.textContent = t(keys[i]); });
+  }
+}
+
+// ── State ──────────────────────────────────────────────────────
+let activeDays = 30;
+let logPage = 1;
+let logTotalPages = 1;
+let summaryCache = {};
+let equityChart = null;
+let logDataCache = [];
+
+// ── Init ───────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  applyI18n();
+
+  document.querySelectorAll('.tr-period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tr-period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeDays = parseInt(btn.dataset.days);
+      loadAll();
+    });
+  });
+
+  loadAll();
+});
+
+function loadAll() {
+  loadSummary();
+  loadEquityCurve();
+  loadAgents();
+  loadStocks();
+  logPage = 1;
+  loadLog();
+}
+
+// ── Helpers ────────────────────────────────────────────────────
+function fmt(v, decimals = 1) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toFixed(decimals);
+}
+function fmtPct(v, decimals = 1) {
+  if (v == null || isNaN(v)) return '—';
+  const n = Number(v);
+  return (n > 0 ? '+' : '') + n.toFixed(decimals) + '%';
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(String(d).includes('T') ? d : d + 'T00:00:00');
+  return dt.toLocaleDateString(_LANG === 'ar' ? 'ar-EG' : 'en-GB', { day:'2-digit', month:'short', year:'numeric' });
+}
+function colorClass(v, invert = false) {
+  const n = Number(v);
+  if (isNaN(n)) return '';
+  if (invert) return n > 0 ? 'neg' : 'pos';
+  return n > 0 ? 'pos' : n < 0 ? 'neg' : '';
+}
+
+// ── Summary ────────────────────────────────────────────────────
+async function loadSummary() {
+  try {
+    const r = await fetch(`/api/performance-v2/summary?days=${activeDays}`);
+    const data = await r.json();
+    summaryCache = data;
+
+    if (!data.available) {
+      ['kpiTotal','kpiWin','kpiAlpha','kpiBeat','kpiSharpe','kpiPF'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+      return;
+    }
+
+    const g = data.global;
+
+    setKpi('kpiTotal', g.total_predictions, '', 'neutral');
+    setKpi('kpiWin', g.win_rate + '%', '', g.win_rate >= 55 ? 'positive' : g.win_rate >= 45 ? 'neutral' : 'negative');
+    setKpi('kpiAlpha', fmtPct(g.avg_alpha_1d, 3), '', g.avg_alpha_1d > 0 ? 'positive' : 'negative');
+    setKpi('kpiBeat', g.beat_benchmark_pct + '%', '', g.beat_benchmark_pct >= 55 ? 'positive' : 'neutral');
+    setKpi('kpiSharpe', fmt(g.sharpe_ratio, 2), '', g.sharpe_ratio >= 1 ? 'positive' : g.sharpe_ratio >= 0 ? 'neutral' : 'negative');
+    setKpi('kpiPF', fmt(g.profit_factor, 2), '', g.profit_factor >= 1.5 ? 'positive' : g.profit_factor >= 1 ? 'neutral' : 'negative');
+
+    // Hero dates
+    if (g.first_prediction) document.getElementById('heroSince').textContent = fmtDate(g.first_prediction);
+    if (g.last_prediction)  document.getElementById('heroLast').textContent = fmtDate(g.last_prediction);
+
+    // Date range disclaimer
+    const dr = document.getElementById('trDateRange');
+    if (dr && g.first_prediction && g.last_prediction) {
+      dr.textContent = `Data range: ${fmtDate(g.first_prediction)} → ${fmtDate(g.last_prediction)} · ${g.total_predictions} signals`;
+    }
+
+    renderRolling(data.rolling);
+    renderRiskRows(g);
+
+  } catch (e) {
+    console.error('Summary error:', e);
+  }
+}
+
+function setKpi(id, val, _unused, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = val;
+  el.className = 'tr-kpi-value ' + (cls || '');
+}
+
+// ── Rolling windows ────────────────────────────────────────────
+let _rollingData = null;
+
+async function renderRolling(rolling) {
+  if (rolling) _rollingData = rolling;
+  if (!_rollingData) return;
+  const rolling_ = _rollingData;
+
+  const labels = t('rollingLabels');
+  const container = document.getElementById('trRollingCards');
+  const windows = [['30d','30D'],['60d','60D'],['90d','90D']];
+
+  container.innerHTML = windows.map(([key, label]) => {
+    const w = rolling_[key];
+    if (!w) return '';
+    const rows = [
+      { label: labels.trades,       val: w.trades,         fmt: v => v },
+      { label: labels.win_rate,     val: w.win_rate,       fmt: v => v + '%' },
+      { label: labels.alpha,        val: w.alpha,          fmt: v => fmtPct(v, 3), cls: colorClass(w.alpha) },
+      { label: labels.sharpe_ratio, val: w.sharpe_ratio,   fmt: v => fmt(v, 2),    cls: colorClass(w.sharpe_ratio) },
+      { label: labels.max_drawdown, val: w.max_drawdown,   fmt: v => '-' + fmt(v, 2) + '%', cls: 'neg' },
+      { label: labels.profit_factor,val: w.profit_factor,  fmt: v => fmt(v, 2),    cls: colorClass(w.profit_factor - 1) },
+    ];
+    return `<div class="tr-rolling-card">
+      <div class="tr-rolling-card-title">${label} — ${w.trades} signals</div>
+      ${rows.map(r => `<div class="tr-rolling-row">
+        <span class="tr-rolling-row-label">${r.label}</span>
+        <span class="tr-rolling-row-val ${r.cls||''}">${r.fmt(r.val)}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+// ── Risk rows ──────────────────────────────────────────────────
+let _globalData = null;
+
+function renderRiskRows(global_) {
+  if (global_) _globalData = global_;
+  if (!_globalData) return;
+  const g = _globalData;
+  const rows = t('riskRows');
+  const container = document.getElementById('riskRows');
+  if (!container) return;
+
+  container.innerHTML = rows.map(r => {
+    const raw = g[r.key];
+    const n = Number(raw);
+    const cls = r.negate
+      ? (n > 0 ? 'neg' : 'pos')
+      : (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
+    const display = r.key === 'max_drawdown'
+      ? '-' + fmt(Math.abs(n), 2) + '%'
+      : r.key === 'volatility'
+        ? fmt(n * 100, 2) + '%'
+        : r.key.includes('return') || r.key.includes('alpha')
+          ? fmtPct(n, 3)
+          : fmt(n, 2);
+    return `<div class="tr-risk-row">
+      <span class="tr-risk-label">${r.label}</span>
+      <span class="tr-risk-val ${cls}">${display}</span>
+      <span class="tr-risk-desc">${r.desc}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Equity Curve ───────────────────────────────────────────────
+async function loadEquityCurve() {
+  try {
+    const r = await fetch(`/api/performance-v2/equity-curve?days=${activeDays}`);
+    const data = await r.json();
+
+    const empty = document.getElementById('equityEmpty');
+    const footer = document.getElementById('equityFooter');
+
+    if (!data.series || !data.series.length) {
+      if (empty) empty.style.display = 'flex';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+
+    const labels = data.series.map(p => fmtDate(p.date));
+    const xmore  = data.series.map(p => p.xmore);
+    const egx30  = data.series.map(p => p.egx30);
+
+    const ctx = document.getElementById('equityCurveChart').getContext('2d');
+    if (equityChart) equityChart.destroy();
+
+    equityChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: t('legendXmore'),
+            data: xmore,
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102,126,234,0.08)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          },
+          {
+            label: t('legendBench'),
+            data: egx30,
+            borderColor: '#444',
+            backgroundColor: 'rgba(68,68,68,0.04)',
+            borderWidth: 1.5,
+            fill: false,
+            tension: 0.3,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+            borderDash: [4, 4],
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1a1a1a',
+            borderColor: '#2a2a2a',
+            borderWidth: 1,
+            titleColor: '#aaa',
+            bodyColor: '#e0e0e0',
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y > 0 ? '+' : ''}${ctx.parsed.y.toFixed(2)}%`
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#555', maxTicksLimit: 8, font: { size: 10 } },
+            grid: { color: '#1f1f1f' }
+          },
+          y: {
+            ticks: {
+              color: '#555',
+              font: { size: 10 },
+              callback: v => (v > 0 ? '+' : '') + v.toFixed(1) + '%'
+            },
+            grid: { color: '#1f1f1f' }
+          }
+        }
+      }
+    });
+
+    if (footer) {
+      const totalAlpha = data.total_alpha;
+      const cls = totalAlpha > 0 ? 'tr-alpha-pos' : 'tr-alpha-neg';
+      footer.innerHTML = `
+        <span class="tr-chart-stat">Xmore cumulative: <strong>${data.total_xmore > 0 ? '+' : ''}${Number(data.total_xmore).toFixed(2)}%</strong></span>
+        <span class="tr-chart-stat">EGX30 benchmark: <strong>${data.total_egx30 > 0 ? '+' : ''}${Number(data.total_egx30).toFixed(2)}%</strong></span>
+        <span class="tr-chart-stat">Total alpha: <strong class="${cls}">${totalAlpha > 0 ? '+' : ''}${Number(totalAlpha).toFixed(2)}%</strong></span>
+      `;
+    }
+
+  } catch (e) {
+    console.error('Equity curve error:', e);
+  }
+}
+
+// ── Agents ─────────────────────────────────────────────────────
+async function loadAgents() {
+  try {
+    const r = await fetch('/api/performance-v2/by-agent');
+    const data = await r.json();
+    const tbody = document.getElementById('agentTableBody');
+    if (!data.agents || !data.agents.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="tr-loading">${t('noData')}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.agents.map(a => {
+      const wr30 = Number(a.win_rate_30d);
+      const wr90 = Number(a.win_rate_90d);
+      return `<tr>
+        <td style="font-weight:600;color:#aaa">${a.agent}</td>
+        <td>${a.predictions_30d}</td>
+        <td>
+          <div class="tr-win-bar">
+            <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr30,100)}%"></div></div>
+            <span class="${wr30>=55?'tr-alpha-pos':wr30<45?'tr-alpha-neg':''}">${fmt(wr30)}%</span>
+          </div>
+        </td>
+        <td>
+          <div class="tr-win-bar">
+            <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr90,100)}%"></div></div>
+            <span class="${wr90>=55?'tr-alpha-pos':wr90<45?'tr-alpha-neg':''}">${fmt(wr90)}%</span>
+          </div>
+        </td>
+        <td>${a.avg_confidence_30d ? fmt(a.avg_confidence_30d) + '%' : '—'}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('agentTableBody').innerHTML = `<tr><td colspan="5" class="tr-loading">—</td></tr>`;
+  }
+}
+
+// ── Stocks ─────────────────────────────────────────────────────
+async function loadStocks() {
+  try {
+    const r = await fetch(`/api/performance-v2/by-stock?days=${activeDays}`);
+    const data = await r.json();
+    const tbody = document.getElementById('stockTableBody');
+    if (!data.stocks || !data.stocks.length) {
+      tbody.innerHTML = `<tr><td colspan="4" class="tr-loading">${t('noData')}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = data.stocks.slice(0, 12).map(s => {
+      const wr = Number(s.win_rate);
+      const alpha = Number(s.avg_alpha);
+      return `<tr>
+        <td style="font-weight:700">${s.symbol}</td>
+        <td>${s.total}</td>
+        <td>
+          <div class="tr-win-bar">
+            <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr,100)}%"></div></div>
+            <span>${fmt(wr)}%</span>
+          </div>
+        </td>
+        <td class="${alpha>0?'tr-alpha-pos':'tr-alpha-neg'}">${fmtPct(alpha, 3)}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('stockTableBody').innerHTML = `<tr><td colspan="4" class="tr-loading">—</td></tr>`;
+  }
+}
+
+// ── Prediction Log ─────────────────────────────────────────────
+async function loadLog() {
+  logDataCache = [];
+  const tbody = document.getElementById('logTableBody');
+  tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">${t('loading')}</td></tr>`;
+
+  try {
+    const filter = document.getElementById('logFilter').value;
+    const url = `/api/performance-v2/predictions/history?page=${logPage}&limit=25`;
+    const r = await fetch(url);
+    const data = await r.json();
+
+    logDataCache = data.predictions || [];
+    const pag = data.pagination || {};
+    logTotalPages = pag.pages || 1;
+
+    let rows = logDataCache;
+    if (filter) rows = rows.filter(p => p.final_signal === filter || p.action === filter);
+
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">${t('noData')}</td></tr>`;
+      renderPagination(pag);
+      return;
+    }
+
+    tbody.innerHTML = rows.map(p => {
+      const signal = p.final_signal || p.action || '—';
+      const sigCls = signal === 'UP' || signal === 'BUY' ? 'tr-signal-up' : signal === 'DOWN' || signal === 'SELL' ? 'tr-signal-down' : '';
+      const alpha = Number(p.alpha_1d);
+      const ret1d = Number(p.actual_next_day_return);
+      const correct = p.was_correct;
+      let hitHtml = `<span class="tr-hit-pending">${t('hitPending')}</span>`;
+      if (correct === true || correct === 1 || correct === 't' || correct === 'true') {
+        hitHtml = `<span class="tr-hit-yes">${t('hitYes')}</span>`;
+      } else if (correct === false || correct === 0 || correct === 'f' || correct === 'false') {
+        hitHtml = `<span class="tr-hit-no">${t('hitNo')}</span>`;
+      }
+      const name = p.name_en || p.symbol;
+      return `<tr>
+        <td>${fmtDate(p.prediction_date || p.recommendation_date)}</td>
+        <td><strong>${p.symbol}</strong><br><span style="color:#666;font-size:10px">${name !== p.symbol ? name : ''}</span></td>
+        <td class="${sigCls}">${signal}</td>
+        <td>${p.consensus_confidence != null ? fmt(p.consensus_confidence) + '%' : p.confidence != null ? fmt(p.confidence)+'%' : '—'}</td>
+        <td>${p.conviction || '—'}</td>
+        <td class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${ret1d != null && !isNaN(ret1d) ? fmtPct(ret1d, 2) : '—'}</td>
+        <td class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${p.alpha_1d != null && !isNaN(alpha) ? fmtPct(alpha, 3) : '—'}</td>
+        <td>${hitHtml}</td>
+      </tr>`;
+    }).join('');
+
+    renderPagination(pag);
+
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">Error loading log.</td></tr>`;
+    console.error('Log error:', e);
+  }
+}
+
+function renderPagination(pag) {
+  const el = document.getElementById('logPagination');
+  if (!el || !pag || pag.pages <= 1) { if(el) el.innerHTML=''; return; }
+
+  const { page, pages, total } = pag;
+  let html = '';
+
+  html += `<button class="tr-page-btn" onclick="goPage(${page-1})" ${page<=1?'disabled':''}>‹</button>`;
+
+  const start = Math.max(1, page - 2);
+  const end   = Math.min(pages, page + 2);
+
+  if (start > 1) html += `<button class="tr-page-btn" onclick="goPage(1)">1</button>`;
+  if (start > 2) html += `<span class="tr-page-info">…</span>`;
+  for (let i = start; i <= end; i++) {
+    html += `<button class="tr-page-btn${i===page?' active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  if (end < pages - 1) html += `<span class="tr-page-info">…</span>`;
+  if (end < pages) html += `<button class="tr-page-btn" onclick="goPage(${pages})">${pages}</button>`;
+
+  html += `<button class="tr-page-btn" onclick="goPage(${page+1})" ${page>=pages?'disabled':''}>›</button>`;
+  html += `<span class="tr-page-info">${total} total</span>`;
+
+  el.innerHTML = html;
+}
+
+function goPage(p) {
+  logPage = p;
+  loadLog();
+  window.scrollTo({ top: document.getElementById('logTableBody').closest('.tr-section').offsetTop - 80, behavior: 'smooth' });
+}
+
+// ── CSV Export ─────────────────────────────────────────────────
+async function exportCSV() {
+  try {
+    const r = await fetch(`/api/performance-v2/predictions/history?page=1&limit=1000`);
+    const data = await r.json();
+    const rows = data.predictions || [];
+    if (!rows.length) { alert('No data to export.'); return; }
+
+    const headers = ['Date','Symbol','Signal','Confidence','Conviction','1D_Actual','Alpha_1D','Hit'];
+    const csv = [
+      headers.join(','),
+      ...rows.map(p => {
+        const correct = p.was_correct;
+        const hit = (correct===true||correct===1||correct==='t') ? 'YES' : (correct===false||correct===0||correct==='f') ? 'NO' : 'PENDING';
+        return [
+          p.prediction_date || p.recommendation_date,
+          p.symbol,
+          p.final_signal || p.action || '',
+          p.consensus_confidence ?? p.confidence ?? '',
+          p.conviction || '',
+          p.actual_next_day_return ?? '',
+          p.alpha_1d ?? '',
+          hit
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `xmore-track-record-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+  } catch (e) {
+    console.error('Export error:', e);
+  }
+}
