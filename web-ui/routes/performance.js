@@ -378,8 +378,11 @@ router.get('/predictions/history', async (req, res) => {
             LIMIT ${ph(1)} OFFSET ${ph(2)}
         `, [limit, offset]);
 
+        const countDateFilter = isPostgres
+            ? `prediction_date <= CURRENT_DATE`
+            : `prediction_date <= date('now')`;
         const countRow = await dbGet(`
-            SELECT COUNT(*) AS cnt FROM consensus_results WHERE ${dateFilter}
+            SELECT COUNT(*) AS cnt FROM consensus_results WHERE ${countDateFilter}
         `);
         const total = parseInt(countRow?.cnt || countRow?.count || 0);
 

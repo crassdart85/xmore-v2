@@ -10,7 +10,7 @@ name: Trading System Automation
 #  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
 #  14:00              Sun–Thu  egx-daily-snapshot             (backup EGX data export, 16:00 Cairo)
 #  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
-#  06,12,18           Daily    catchup-evaluation             (resolve expired predictions)
+#  :00                Hourly   catchup-evaluation             (resolve expired predictions → track-record data)
 #  13:30              Sun–Thu  etf-egx-all (EGX ETF post-close: tape+nav+holdings+fv+pd)
 #  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
 #  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
@@ -34,8 +34,8 @@ on:
     # Full nightly pipeline (00:00 Cairo+1 = 22:00 UTC) — includes briefing + portfolios
     - cron: '0 22 * * 0-5'
 
-    # Catchup evaluation: 3× daily
-    - cron: '0 6,12,18 * * *'
+    # Catchup evaluation: hourly (fills actual_next_day_return for track-record page)
+    - cron: '0 * * * *'
 
     # ── ETF jobs (EGX post-close, Africa/Cairo UTC+2) ──
     # All EGX ETF scrapes combined in one trigger (15:30 Cairo = 13:30 UTC, Sun–Thu)
