@@ -33,13 +33,20 @@
     }
     .docs-logo { font-size: 22px; font-weight: 800; color: var(--accent); letter-spacing: -0.5px; }
     .docs-title { font-size: 14px; color: var(--text2); }
-    .docs-header-links { margin-left: auto; display: flex; gap: 12px; }
-    .docs-header-links a {
+    .docs-header-links { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+    .docs-header-links a, .lang-toggle-btn {
       color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 600;
       padding: 6px 14px; border: 1px solid var(--accent); border-radius: 6px;
       transition: background .15s;
     }
     .docs-header-links a:hover { background: rgba(0,212,170,.12); }
+    .lang-toggle-btn {
+      background: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .lang-toggle-btn:hover { background: rgba(0,212,170,.12); }
+
 
     /* ── Layout ── */
     .docs-layout { display: flex; max-width: 1200px; margin: 0 auto; }
@@ -60,7 +67,7 @@
     /* ── Section ── */
     .docs-section { margin-bottom: 64px; scroll-margin-top: 80px; }
     .docs-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .docs-section-icon { font-size: 28px; }
+    .docs-section-icon { display: none; }
     .docs-section-title { font-size: 22px; font-weight: 700; }
     .docs-section-badge { font-size: 11px; padding: 3px 8px; border-radius: 99px; font-weight: 600; }
     .badge-live { background: rgba(63,185,80,.15); color: var(--pos); }
@@ -125,7 +132,7 @@
     .mock-btn { background: rgba(0,212,170,.15); color: var(--accent); border: 1px solid var(--accent); border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: default; white-space: nowrap; }
     .mock-rate-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 16px; }
     .mock-rate-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px; text-align: center; }
-    .mock-rate-icon { font-size: 20px; margin-bottom: 4px; }
+    .mock-rate-icon { display: none; }
     .mock-rate-val { font-size: 16px; font-weight: 700; }
     .mock-rate-lbl { font-size: 10px; color: var(--text2); margin-top: 2px; }
     .mock-sector-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; }
@@ -140,9 +147,18 @@
     .mock-horizon-btn.active { background: rgba(0,212,170,.15); color: var(--accent); font-weight: 600; }
 
     /* ── Code block ── */
+    code, .docs-code {
+      font-family: 'Courier New', monospace;
+      background: rgba(139,148,158,.15);
+      color: var(--text);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
     .docs-code {
+      display: block;
       background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-      padding: 16px; font-family: 'Courier New', monospace; font-size: 12.5px; color: #a5d6ff;
+      padding: 16px; font-size: 12.5px; color: #a5d6ff;
       overflow-x: auto; margin-bottom: 20px;
     }
     .docs-code .comment { color: var(--text2); }
@@ -208,6 +224,46 @@
     .inline-badge { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; vertical-align: middle; margin-left: 4px; }
     .inline-badge.pro { background: rgba(0,212,170,.2); color: var(--accent); }
     .inline-badge.new { background: rgba(245,158,11,.2); color: var(--accent3); }
+
+    /* ── RTL Overrides ── */
+    .docs-rtl {
+      font-family: Tahoma, Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+    .docs-rtl .docs-layout {
+      flex-direction: row-reverse;
+    }
+    .docs-rtl .docs-sidebar a {
+      text-align: right;
+    }
+    .docs-rtl .docs-sidebar h3 {
+      text-align: right;
+    }
+    .docs-rtl .docs-header-links {
+        margin-left: 0;
+        margin-right: auto;
+    }
+    .docs-rtl .docs-section-header {
+      flex-direction: row-reverse;
+    }
+    .docs-rtl .docs-main, .docs-rtl .docs-desc, .docs-rtl .feature-card h4, .docs-rtl .feature-card p, .docs-rtl h3, .docs-rtl .tip-box, .docs-rtl .warn-box, .docs-rtl .docs-sidebar, .docs-rtl h1, .docs-rtl .footer-left, .docs-rtl .footer-back {
+      text-align: right;
+    }
+    .docs-rtl .steps li {
+        padding: 10px 44px 10px 0;
+    }
+    .docs-rtl .steps li::before {
+        left: auto;
+        right: 0;
+    }
+    .docs-rtl .tip-box, .docs-rtl .warn-box {
+        border-left: none;
+        border-right-width: 3px;
+        border-right-style: solid;
+        border-radius: 8px 0 0 8px;
+    }
+    .docs-rtl .tip-box { border-right-color: var(--accent); }
+    .docs-rtl .warn-box { border-right-color: var(--accent3); }
+
   </style>
 </head>
 <body>
@@ -215,10 +271,11 @@
 <!-- ══════════ HEADER ══════════ -->
 <header class="docs-header">
   <div class="docs-logo">Xmore</div>
-  <div class="docs-title">Feature Documentation</div>
+  <div class="docs-title" data-i18n="header-subtitle">Feature Documentation</div>
   <div class="docs-header-links">
-    <a href="/">← Dashboard</a>
+    <a href="/" data-i18n="nav-back">← Dashboard</a>
     <a href="/pro">PRO ↗</a>
+    <button id="langToggleBtn" class="lang-toggle-btn" onclick="toggleDocsLang()">عربي</button>
   </div>
 </header>
 
@@ -226,23 +283,23 @@
 
   <!-- ══════════ SIDEBAR ══════════ -->
   <nav class="docs-sidebar">
-    <h3>Contents</h3>
-    <a href="#overview">Overview</a>
-    <a href="#predictions">Predictions</a>
-    <a class="toc-sub" href="#comparison">Stock Comparison</a>
-    <a class="toc-sub" href="#aibrief">AI Brief</a>
-    <a href="#portfolio">Portfolio</a>
-    <a class="toc-sub" href="#alerts">Price Alerts</a>
-    <a href="#rates">Rates Tab</a>
-    <a href="#performance">Performance</a>
-    <a class="toc-sub" href="#multihorizon">Multi-horizon</a>
-    <a href="#forecasts">Forecast Portfolios</a>
-    <a href="#pro">Xmore Pro</a>
-    <a class="toc-sub" href="#macro">Macro Brief</a>
-    <a href="#etf">ETF Dashboard</a>
-    <a href="#assistant">Market Assistant</a>
-    <a href="#admin">Admin Panel</a>
-    <a href="#timemachine">Time Machine</a>
+    <h3 data-i18n="sidebar-title">Contents</h3>
+    <a href="#overview" data-i18n="sb-overview">Overview</a>
+    <a href="#predictions" data-i18n="sb-predictions">Predictions</a>
+    <a class="toc-sub" href="#comparison" data-i18n="sb-comparison">Stock Comparison</a>
+    <a class="toc-sub" href="#aibrief" data-i18n="sb-aibrief">AI Brief</a>
+    <a href="#portfolio" data-i18n="sb-portfolio">Portfolio</a>
+    <a class="toc-sub" href="#alerts" data-i18n="sb-alerts">Price Alerts</a>
+    <a href="#rates" data-i18n="sb-rates">Rates Tab</a>
+    <a href="#performance" data-i18n="sb-performance">Performance</a>
+    <a class="toc-sub" href="#multihorizon" data-i18n="sb-multihorizon">Multi-horizon</a>
+    <a href="#forecasts" data-i18n="sb-forecasts">Forecast Portfolios</a>
+    <a href="#pro" data-i18n="sb-pro">Xmore Pro</a>
+    <a class="toc-sub" href="#macro" data-i18n="sb-macro">Macro Brief</a>
+    <a href="#etf" data-i18n="sb-etf">ETF Dashboard</a>
+    <a href="#assistant" data-i18n="sb-assistant">Market Assistant</a>
+    <a href="#admin" data-i18n="sb-admin">Admin Panel</a>
+    <a href="#timemachine" data-i18n="sb-timemachine">Time Machine</a>
   </nav>
 
   <!-- ══════════ MAIN ══════════ -->
@@ -250,8 +307,8 @@
 
     <!-- INTRO -->
     <div style="margin-bottom: 40px;">
-      <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 8px;">Xmore Documentation</h1>
-      <p style="color: var(--text2); font-size: 15px; max-width: 680px;">
+      <h1 style="font-size: 32px; font-weight: 800; margin-bottom: 8px;" data-i18n="intro-h1">Xmore Documentation</h1>
+      <p style="color: var(--text2); font-size: 15px; max-width: 680px;" data-i18n="intro-p">
         Xmore is an AI-powered stock prediction system for the Egyptian Exchange (EGX) and global markets.
         This page documents every feature available on the dashboard and Xmore Pro.
       </p>
@@ -259,19 +316,19 @@
 
     <!-- TOC PILLS -->
     <div class="toc-pills">
-      <a href="#predictions" class="toc-pill">📈 Predictions</a>
-      <a href="#comparison" class="toc-pill">⇔ Compare</a>
-      <a href="#aibrief" class="toc-pill">🤖 AI Brief</a>
-      <a href="#portfolio" class="toc-pill">💼 Portfolio</a>
-      <a href="#alerts" class="toc-pill">🔔 Alerts</a>
-      <a href="#rates" class="toc-pill">💱 Rates</a>
-      <a href="#performance" class="toc-pill">🏆 Performance</a>
-      <a href="#forecasts" class="toc-pill">🔮 Forecasts</a>
-      <a href="#pro" class="toc-pill">⚡ Pro</a>
-      <a href="#etf" class="toc-pill">🌍 ETF</a>
-      <a href="#assistant" class="toc-pill">💬 Assistant</a>
-      <a href="#admin" class="toc-pill">🛠 Admin</a>
-      <a href="/admin" class="toc-pill">🔌 API Ref (Admin)</a>
+      <a href="#predictions" class="toc-pill" data-i18n="toc-predictions">Predictions</a>
+      <a href="#comparison" class="toc-pill" data-i18n="toc-comparison">Compare</a>
+      <a href="#aibrief" class="toc-pill" data-i18n="toc-aibrief">AI Brief</a>
+      <a href="#portfolio" class="toc-pill" data-i18n="toc-portfolio">Portfolio</a>
+      <a href="#alerts" class="toc-pill" data-i18n="toc-alerts">Alerts</a>
+      <a href="#rates" class="toc-pill" data-i18n="toc-rates">Rates</a>
+      <a href="#performance" class="toc-pill" data-i18n="toc-performance">Performance</a>
+      <a href="#forecasts" class="toc-pill" data-i18n="toc-forecasts">Forecasts</a>
+      <a href="#pro" class="toc-pill" data-i18n="toc-pro">Pro</a>
+      <a href="#etf" class="toc-pill" data-i18n="toc-etf">ETF</a>
+      <a href="#assistant" class="toc-pill" data-i18n="toc-assistant">Assistant</a>
+      <a href="#admin" class="toc-pill" data-i18n="toc-admin">Admin</a>
+      <a href="/admin" class="toc-pill" data-i18n="toc-api">API Ref (Admin)</a>
     </div>
 
     <!-- ════════════════════════════════ -->
@@ -279,43 +336,43 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="overview">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🏠</span>
-        <h2 class="docs-section-title">Overview</h2>
-        <span class="docs-section-badge badge-live">Live</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s1-title">Overview</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s1-badge">Live</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s1-desc">
         Xmore aggregates signals from 5 AI agents — Moving Average, RSI, Volume Spike, Random Forest ML, and Gemini LLM —
         into a unified consensus score. The dashboard auto-refreshes data on every EGX trading day.
       </p>
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>🤖 5 AI Agents</h4>
-          <p>MA Crossover, RSI, Volume Spike, Random Forest, and Gemini LLM each vote independently with weighted confidence.</p>
+          <h4 data-i18n="s1-c1-h">5 AI Agents</h4>
+          <p data-i18n="s1-c1-p">MA Crossover, RSI, Volume Spike, Random Forest, and Gemini LLM each vote independently with weighted confidence.</p>
         </div>
         <div class="feature-card">
-          <h4>📊 Xmore Score</h4>
-          <p>0–100 composite bullishness score. ≥65 = strong buy zone; ≤35 = bearish. Updated daily after market close.</p>
+          <h4 data-i18n="s1-c2-h">Xmore Score</h4>
+          <p data-i18n="s1-c2-p">0–100 composite bullishness score. ≥65 = strong buy zone; ≤35 = bearish. Updated daily after market close.</p>
         </div>
         <div class="feature-card">
-          <h4>🌐 Bilingual</h4>
-          <p>Full English / Arabic toggle. All labels, signals, and dates switch language. Arabic uses RTL layout.</p>
+          <h4 data-i18n="s1-c3-h">Bilingual</h4>
+          <p data-i18n="s1-c3-p">Full English / Arabic toggle. All labels, signals, and dates switch language. Arabic uses RTL layout.</p>
         </div>
         <div class="feature-card">
-          <h4>🌙 Dark / Light theme</h4>
-          <p>Theme preference saved to localStorage and persists across sessions.</p>
+          <h4 data-i18n="s1-c4-h">Dark / Light theme</h4>
+          <p data-i18n="s1-c4-p">Theme preference saved to localStorage and persists across sessions.</p>
         </div>
         <div class="feature-card">
-          <h4>📱 Responsive</h4>
-          <p>Mobile-optimised layout. Tables scroll horizontally on small screens. All modals are touch-friendly.</p>
+          <h4 data-i18n="s1-c5-h">Responsive</h4>
+          <p data-i18n="s1-c5-p">Mobile-optimised layout. Tables scroll horizontally on small screens. All modals are touch-friendly.</p>
         </div>
         <div class="feature-card">
-          <h4>🔐 Auth</h4>
-          <p>Sign Up / Sign In with email. JWT stored in HTTP-only cookie. Portfolio, alerts, and forecasts are per-user.</p>
+          <h4 data-i18n="s1-c6-h">Auth</h4>
+          <p data-i18n="s1-c6-p">Sign Up / Sign In with email. JWT stored in HTTP-only cookie. Portfolio, alerts, and forecasts are per-user.</p>
         </div>
       </div>
       <div class="tip-box">
-        <div class="tip-label">Quick start</div>
-        Visit <a href="/" style="color:var(--accent)">xmore-project.onrender.com</a> → sign up for free → add stocks to your watchlist → check the Predictions tab each morning before market open (09:00 Cairo).
+        <div class="tip-label" data-i18n="s1-tip-label">Quick start</div>
+        <div data-i18n="s1-tip-body">Visit <a href="/" style="color:var(--accent)">xmore-project.onrender.com</a> → sign up for free → add stocks to your watchlist → check the Predictions tab each morning before market open (09:00 Cairo).</div>
       </div>
     </section>
 
@@ -324,11 +381,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="predictions">
       <div class="docs-section-header">
-        <span class="docs-section-icon">📈</span>
-        <h2 class="docs-section-title">Predictions</h2>
-        <span class="docs-section-badge badge-live">Main Tab</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s2-title">Predictions</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s2-badge">Main Tab</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s2-desc">
         The Predictions tab is the core screen. It shows today's AI consensus signal for every tracked EGX stock.
         Data is computed nightly after market close and reflects the prior session's closing prices.
       </p>
@@ -355,8 +412,8 @@
           </div>
           <div style="display:flex; gap:8px; margin-bottom:12px;">
             <div class="mock-input" style="flex:2">Search symbol or name…</div>
-            <div class="mock-btn">⇔ Compare</div>
-            <div class="mock-btn">🔍 Screener</div>
+            <div class="mock-btn">Compare</div>
+            <div class="mock-btn">Screener</div>
           </div>
           <table class="mock-table">
             <thead><tr>
@@ -374,30 +431,30 @@
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📡 Consensus Signal</h4>
-          <p>BUY / HOLD / SELL derived from majority vote across all active agents. Displayed with conviction label (Strong/Moderate/Weak).</p>
+          <h4 data-i18n="s2-c1-h">Consensus Signal</h4>
+          <p data-i18n="s2-c1-p">BUY / HOLD / SELL derived from majority vote across all active agents. Displayed with conviction label (Strong/Moderate/Weak).</p>
         </div>
         <div class="feature-card">
-          <h4>🔢 Xmore Score</h4>
-          <p>0–100 bull/bear composite. Color-coded: green ≥65, red ≤35, grey in-between.</p>
+          <h4 data-i18n="s2-c2-h">Xmore Score</h4>
+          <p data-i18n="s2-c2-p">0–100 bull/bear composite. Color-coded: green ≥65, red ≤35, grey in-between.</p>
         </div>
         <div class="feature-card">
-          <h4>🔍 Screener</h4>
-          <p>Filter by signal (BUY/SELL), confidence threshold, sector, and volume. Results sortable by any column.</p>
+          <h4 data-i18n="s2-c3-h">Screener</h4>
+          <p data-i18n="s2-c3-p">Filter by signal (BUY/SELL), confidence threshold, sector, and volume. Results sortable by any column.</p>
         </div>
         <div class="feature-card">
-          <h4>📰 Sentiment Badge</h4>
-          <p>Colour-coded news sentiment (Positive / Neutral / Negative) beside each stock, derived from Gemini LLM analysis of latest headlines.</p>
+          <h4 data-i18n="s2-c4-h">Sentiment Badge</h4>
+          <p data-i18n="s2-c4-p">Colour-coded news sentiment (Positive / Neutral / Negative) beside each stock, derived from Gemini LLM analysis of latest headlines.</p>
         </div>
       </div>
 
-      <h3 style="margin-bottom:12px; font-size:16px;">How to read a signal row</h3>
+      <h3 style="margin-bottom:12px; font-size:16px;" data-i18n="s2-steps-title">How to read a signal row</h3>
       <ol class="steps">
-        <li><strong>Signal</strong> — BUY means majority of agents predict price will rise within 5 trading days.</li>
-        <li><strong>Confidence</strong> — weighted average certainty across agreeing agents (0–100%). Higher = more conviction.</li>
-        <li><strong>Xmore Score</strong> — bull pressure index. Score of 80 means 80% of composite weight is bullish.</li>
-        <li><strong>Agents column</strong> — e.g. "4/5" = 4 of 5 agents voted for the consensus direction.</li>
-        <li><strong>Price</strong> — last closing price in EGP from EGX or TradingView Scanner.</li>
+        <li data-i18n="s2-step1"><strong>Signal</strong> — BUY means majority of agents predict price will rise within 5 trading days.</li>
+        <li data-i18n="s2-step2"><strong>Confidence</strong> — weighted average certainty across agreeing agents (0–100%). Higher = more conviction.</li>
+        <li data-i18n="s2-step3"><strong>Xmore Score</strong> — bull pressure index. Score of 80 means 80% of composite weight is bullish.</li>
+        <li data-i18n="s2-step4"><strong>Agents column</strong> — e.g. "4/5" = 4 of 5 agents voted for the consensus direction.</li>
+        <li data-i18n="s2-step5"><strong>Price</strong> — last closing price in EGP from EGX or TradingView Scanner.</li>
       </ol>
     </section>
 
@@ -406,12 +463,12 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="comparison">
       <div class="docs-section-header">
-        <span class="docs-section-icon">⇔</span>
-        <h2 class="docs-section-title">Stock Comparison Tool</h2>
-        <span class="docs-section-badge badge-new">New</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s2b-title">Stock Comparison Tool</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s2b-badge">New</span>
       </div>
-      <p class="docs-desc">
-        Compare up to 4 EGX stocks side-by-side across all AI metrics. Click the <strong>⇔ Compare</strong> button
+      <p class="docs-desc" data-i18n="s2b-desc">
+        Compare up to 4 EGX stocks side-by-side across all AI metrics. Click the <strong>Compare</strong> button
         on the Predictions tab screener bar to open the comparison modal.
       </p>
 
@@ -445,17 +502,17 @@
               <tr><td class="label-col">Bull Score</td><td>0.82</td><td>0.71</td><td>0.51</td><td>0.28</td></tr>
               <tr><td class="label-col">Bear Score</td><td>0.18</td><td>0.29</td><td>0.49</td><td>0.72</td></tr>
               <tr><td class="label-col">Price (EGP)</td><td>62.40</td><td>18.90</td><td>9.15</td><td>4.30</td></tr>
-              <tr><td class="label-col">AI Brief</td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">📄 Brief</span></td></tr>
+              <tr><td class="label-col">AI Brief</td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">Brief</span></td><td><span class="mock-btn" style="font-size:11px;padding:3px 8px;">Brief</span></td></tr>
             </tbody>
           </table>
         </div>
       </div>
 
       <ol class="steps">
-        <li>Click <strong>⇔ Compare</strong> in the Predictions tab search bar.</li>
-        <li>Type up to 4 stock symbols (e.g. COMI, EKHW, HRHO).</li>
-        <li>Click <strong>Compare</strong> to fetch live consensus data for all symbols in parallel.</li>
-        <li>Review the side-by-side table — click any <strong>📄 Brief</strong> button for an AI narrative.</li>
+        <li data-i18n="s2b-step1">Click <strong>Compare</strong> in the Predictions tab search bar.</li>
+        <li data-i18n="s2b-step2">Type up to 4 stock symbols (e.g. COMI, EKHW, HRHO).</li>
+        <li data-i18n="s2b-step3">Click <strong>Compare</strong> to fetch live consensus data for all symbols in parallel.</li>
+        <li data-i18n="s2b-step4">Review the side-by-side table — click any <strong>Brief</strong> button for an AI narrative.</li>
       </ol>
     </section>
 
@@ -464,11 +521,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="aibrief">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🤖</span>
-        <h2 class="docs-section-title">Per-stock AI Brief</h2>
-        <span class="docs-section-badge badge-new">New</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s2c-title">Per-stock AI Brief</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s2c-badge">New</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s2c-desc">
         Every stock can generate a 3-sentence Gemini-powered analyst brief covering current stance, key risk, and short-term outlook.
         Briefs are cached for 1 hour to minimise API cost.
       </p>
@@ -492,8 +549,8 @@
       </div>
 
       <div class="tip-box">
-        <div class="tip-label">Availability</div>
-        AI Brief requires <code>GOOGLE_API_KEY</code> to be configured. Briefs are accessible from the Comparison Tool modal and from individual stock rows in Predictions (via the 📄 icon when visible).
+        <div class="tip-label" data-i18n="s2c-tip-label">Availability</div>
+        <div data-i18n="s2c-tip-body">AI Brief requires <code>GOOGLE_API_KEY</code> to be configured. Briefs are accessible from the Comparison Tool modal and from individual stock rows in Predictions (via the 📄 icon when visible).</div>
       </div>
     </section>
 
@@ -502,11 +559,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="portfolio">
       <div class="docs-section-header">
-        <span class="docs-section-icon">💼</span>
-        <h2 class="docs-section-title">Virtual Portfolio</h2>
-        <span class="docs-section-badge badge-live">Portfolio Tab</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s3-title">Virtual Portfolio</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s3-badge">Portfolio Tab</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s3-desc">
         Track your real or virtual trades with full EGP P&amp;L accounting. Each position records entry price, quantity,
         and date. The portfolio calculates live cost vs current market value using the latest price feed.
       </p>
@@ -545,29 +602,29 @@
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📊 EGP Totals Strip</h4>
-          <p>Four live pills: Total Invested, Market Value, P&amp;L (EGP), Return %. Updated on every portfolio load.</p>
+          <h4 data-i18n="s3-c1-h">EGP Totals Strip</h4>
+          <p data-i18n="s3-c1-p">Four live pills: Total Invested, Market Value, P&amp;L (EGP), Return %. Updated on every portfolio load.</p>
         </div>
         <div class="feature-card">
-          <h4>🍕 Sector Breakdown</h4>
-          <p>Visual bar chart showing portfolio weight per sector. Helps identify concentration risk.</p>
+          <h4 data-i18n="s3-c2-h">Sector Breakdown</h4>
+          <p data-i18n="s3-c2-p">Visual bar chart showing portfolio weight per sector. Helps identify concentration risk.</p>
         </div>
         <div class="feature-card">
-          <h4>📋 Open Positions Table</h4>
-          <p>Symbol, entry date, entry price, quantity, current price, cost EGP, market value EGP, P&amp;L EGP, % return.</p>
+          <h4 data-i18n="s3-c3-h">Open Positions Table</h4>
+          <p data-i18n="s3-c3-p">Symbol, entry date, entry price, quantity, current price, cost EGP, market value EGP, P&amp;L EGP, % return.</p>
         </div>
         <div class="feature-card">
-          <h4>📜 Trade History</h4>
-          <p>All closed trades with entry/exit dates and final return %. Win rate and average return in the stats strip.</p>
+          <h4 data-i18n="s3-c4-h">Trade History</h4>
+          <p data-i18n="s3-c4-p">All closed trades with entry/exit dates and final return %. Win rate and average return in the stats strip.</p>
         </div>
       </div>
 
-      <h3 style="margin-bottom:12px; font-size:16px;">Adding a position</h3>
+      <h3 style="margin-bottom:12px; font-size:16px;" data-i18n="s3-steps-title">Adding a position</h3>
       <ol class="steps">
-        <li>Go to the <strong>Trades</strong> tab → <em>Add Trade</em> form.</li>
-        <li>Enter <strong>Symbol</strong> (e.g. COMI), <strong>Entry Price</strong>, <strong>Quantity</strong>, and <strong>Date</strong>.</li>
-        <li>Click <strong>Add</strong>. The position appears immediately in Portfolio with live P&amp;L.</li>
-        <li>To close: click the ✕ on the position row, enter exit price.</li>
+        <li data-i18n="s3-step1">Go to the <strong>Trades</strong> tab → <em>Add Trade</em> form.</li>
+        <li data-i18n="s3-step2">Enter <strong>Symbol</strong> (e.g. COMI), <strong>Entry Price</strong>, <strong>Quantity</strong>, and <strong>Date</strong>.</li>
+        <li data-i18n="s3-step3">Click <strong>Add</strong>. The position appears immediately in Portfolio with live P&amp;L.</li>
+        <li data-i18n="s3-step4">To close: click the ✕ on the position row, enter exit price.</li>
       </ol>
     </section>
 
@@ -576,11 +633,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="alerts">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🔔</span>
-        <h2 class="docs-section-title">Price Alerts</h2>
-        <span class="docs-section-badge badge-new">New</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s3b-title">Price Alerts</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s3b-badge">New</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s3b-desc">
         Set price threshold alerts for any EGX stock. Alerts auto-trigger when the current price crosses your target —
         no background job required. The system checks all active alerts when you open the Portfolio tab.
       </p>
@@ -605,7 +662,7 @@
             <span class="mock-alert-price">64.00 EGP</span>
             <span style="font-size:11px;color:var(--text2)">now: 62.40</span>
             <span class="mock-tag active">Active</span>
-            <span style="color:var(--neg);cursor:pointer;margin-left:auto">🗑</span>
+            <span style="color:var(--neg);cursor:pointer;margin-left:auto">Delete</span>
           </div>
           <div class="mock-alert-row">
             <span class="mock-alert-sym">ORWE</span>
@@ -613,7 +670,7 @@
             <span class="mock-alert-price">4.00 EGP</span>
             <span style="font-size:11px;color:var(--text2)">now: 4.30</span>
             <span class="mock-tag active">Active</span>
-            <span style="color:var(--neg);cursor:pointer;margin-left:auto">🗑</span>
+            <span style="color:var(--neg);cursor:pointer;margin-left:auto">Delete</span>
           </div>
           <div class="mock-alert-row" style="opacity:.6">
             <span class="mock-alert-sym">EKHW</span>
@@ -621,27 +678,27 @@
             <span class="mock-alert-price">22.00 EGP</span>
             <span style="font-size:11px;color:var(--text2)">triggered 12 Mar</span>
             <span class="mock-tag triggered">Triggered</span>
-            <span style="color:var(--neg);cursor:pointer;margin-left:auto">🗑</span>
+            <span style="color:var(--neg);cursor:pointer;margin-left:auto">Delete</span>
           </div>
         </div>
       </div>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>Above / Below conditions</h4>
-          <p>Create an alert for when a stock rises above or falls below a specific EGP price.</p>
+          <h4 data-i18n="s3b-c1-h">Above / Below conditions</h4>
+          <p data-i18n="s3b-c1-p">Create an alert for when a stock rises above or falls below a specific EGP price.</p>
         </div>
         <div class="feature-card">
-          <h4>Auto-trigger at read time</h4>
-          <p>When you load the Portfolio tab, the server checks all active alerts against the latest price and marks any triggered ones — no separate cron needed.</p>
+          <h4 data-i18n="s3b-c2-h">Auto-trigger at read time</h4>
+          <p data-i18n="s3b-c2-p">When you load the Portfolio tab, the server checks all active alerts against the latest price and marks any triggered ones — no separate cron needed.</p>
         </div>
         <div class="feature-card">
-          <h4>20 alert limit</h4>
-          <p>Up to 20 active alerts per user account. Delete triggered alerts to free slots.</p>
+          <h4 data-i18n="s3b-c3-h">20 alert limit</h4>
+          <p data-i18n="s3b-c3-p">Up to 20 active alerts per user account. Delete triggered alerts to free slots.</p>
         </div>
         <div class="feature-card">
-          <h4>Current price shown</h4>
-          <p>Each alert row shows the current live price so you can see how close the threshold is.</p>
+          <h4 data-i18n="s3b-c4-h">Current price shown</h4>
+          <p data-i18n="s3b-c4-p">Each alert row shows the current live price so you can see how close the threshold is.</p>
         </div>
       </div>
     </section>
@@ -651,11 +708,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="rates">
       <div class="docs-section-header">
-        <span class="docs-section-icon">💱</span>
-        <h2 class="docs-section-title">Rates Tab</h2>
-        <span class="docs-section-badge badge-new">New</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s4-title">Rates Tab</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s4-badge">New</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s4-desc">
         Live FX and gold rates with 90-day sparkline history charts. Data is fetched from the open exchange-rate API
         on every page load and stored in the database — building a historical record automatically.
       </p>
@@ -667,10 +724,10 @@
         </div>
         <div class="mockup-body">
           <div class="mock-rate-grid">
-            <div class="mock-rate-card"><div class="mock-rate-icon">💵</div><div class="mock-rate-val">49.85</div><div class="mock-rate-lbl">USD / EGP</div></div>
-            <div class="mock-rate-card"><div class="mock-rate-icon">🇸🇦</div><div class="mock-rate-val">13.29</div><div class="mock-rate-lbl">USD / SAR</div></div>
-            <div class="mock-rate-card"><div class="mock-rate-icon">🥇</div><div class="mock-rate-val">2,940</div><div class="mock-rate-lbl">Gold (USD/oz)</div></div>
-            <div class="mock-rate-card"><div class="mock-rate-icon">⚖️</div><div class="mock-rate-val">7,850</div><div class="mock-rate-lbl">Gold Pound (EGP)</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon"></div><div class="mock-rate-val">49.85</div><div class="mock-rate-lbl">USD / EGP</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon"></div><div class="mock-rate-val">13.29</div><div class="mock-rate-lbl">USD / SAR</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon"></div><div class="mock-rate-val">2,940</div><div class="mock-rate-lbl">Gold (USD/oz)</div></div>
+            <div class="mock-rate-card"><div class="mock-rate-icon"></div><div class="mock-rate-val">7,850</div><div class="mock-rate-lbl">Gold Pound (EGP)</div></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
             <div>
@@ -701,20 +758,20 @@
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>Live rate cards</h4>
-          <p>USD/EGP, USD/SAR, SAR/EGP, XAU/USD (gold), 24K gold per gram EGP, 21K per gram EGP, Gold Pound EGP.</p>
+          <h4 data-i18n="s4-c1-h">Live rate cards</h4>
+          <p data-i18n="s4-c1-p">USD/EGP, USD/SAR, SAR/EGP, XAU/USD (gold), 24K gold per gram EGP, 21K per gram EGP, Gold Pound EGP.</p>
         </div>
         <div class="feature-card">
-          <h4>Sparkline history</h4>
-          <p>Canvas-rendered 90-day charts for each rate — no external chart library, pure 2D canvas API.</p>
+          <h4 data-i18n="s4-c2-h">Sparkline history</h4>
+          <p data-i18n="s4-c2-p">Canvas-rendered 90-day charts for each rate — no external chart library, pure 2D canvas API.</p>
         </div>
         <div class="feature-card">
-          <h4>Auto-accumulating history</h4>
-          <p>Every time any user fetches /api/fx-rates, the rate is stored in the <code>fx_rates_history</code> table — one row per day, upserted.</p>
+          <h4 data-i18n="s4-c3-h">Auto-accumulating history</h4>
+          <p data-i18n="s4-c3-p">Every time any user fetches /api/fx-rates, the rate is stored in the <code>fx_rates_history</code> table — one row per day, upserted.</p>
         </div>
         <div class="feature-card">
-          <h4>Header FX strip (Pro)</h4>
-          <p>USD/EGP, USD/SAR, SAR/EGP live rates also appear in the Xmore Pro header bar, refreshed hourly.</p>
+          <h4 data-i18n="s4-c4-h">Header FX strip (Pro)</h4>
+          <p data-i18n="s4-c4-p">USD/EGP, USD/SAR, SAR/EGP live rates also appear in the Xmore Pro header bar, refreshed hourly.</p>
         </div>
       </div>
     </section>
@@ -724,11 +781,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="performance">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🏆</span>
-        <h2 class="docs-section-title">Performance Dashboard</h2>
-        <span class="docs-section-badge badge-live">Performance Tab</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s5-title">Performance Dashboard</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s5-badge">Performance Tab</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s5-desc">
         Tracks the real-world accuracy of every agent. Predictions are evaluated after the 5-day trading horizon
         by comparing predicted direction to actual price movement. Agents compete transparently.
       </p>
@@ -765,11 +822,11 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="multihorizon">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🎯</span>
-        <h2 class="docs-section-title">Multi-horizon Signal Evaluation</h2>
-        <span class="docs-section-badge badge-new">New</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s5b-title">Multi-horizon Signal Evaluation</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s5b-badge">New</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s5b-desc">
         Beyond the default D+5, Xmore now evaluates consensus signals at <strong>D+10</strong> and <strong>D+20</strong>
         trading days. This reveals which stocks' AI signals remain accurate over longer horizons.
       </p>
@@ -798,9 +855,9 @@
         </div>
       </div>
 
-      <div class="tip-box">
-        <div class="tip-label">Data requirement</div>
-        D+10 and D+20 results only appear for stocks that have at least 3 evaluated predictions at that horizon. New entries accumulate as <code>evaluate.py</code> runs daily.
+      <div class="warn-box">
+        <div class="tip-label" data-i18n="s5b-tip-label">Data requirement</div>
+        <div data-i18n="s5b-tip-body">D+10 and D+20 results only appear for stocks that have at least 3 evaluated predictions at that horizon. New entries accumulate as <code>evaluate.py</code> runs daily.</div>
       </div>
     </section>
 
@@ -809,31 +866,31 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="forecasts">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🔮</span>
-        <h2 class="docs-section-title">Forecast Portfolios</h2>
-        <span class="docs-section-badge badge-live">Forecasts Tab</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s6-title">Forecast Portfolios</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s6-badge">Forecasts Tab</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s6-desc">
         Build a named portfolio with a custom horizon (1m to 2y) and Xmore will forecast each stock's expected
         return using all active agents. Daily actuals are recorded and compared against the forecast.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📋 Custom Portfolios</h4>
-          <p>Create multiple named portfolios (e.g. "Conservative Q2", "Aggressive 6M") each with its own stocks and horizon.</p>
+          <h4 data-i18n="s6-c1-h">Custom Portfolios</h4>
+          <p data-i18n="s6-c1-p">Create multiple named portfolios (e.g. "Conservative Q2", "Aggressive 6M") each with its own stocks and horizon.</p>
         </div>
         <div class="feature-card">
-          <h4>📅 Six Horizons</h4>
-          <p>1 month (21 trading days), 2m, 3m, 6m, 1 year, 2 years. Forecast auto-runs on creation.</p>
+          <h4 data-i18n="s6-c2-h">Six Horizons</h4>
+          <p data-i18n="s6-c2-p">1 month (21 trading days), 2m, 3m, 6m, 1 year, 2 years. Forecast auto-runs on creation.</p>
         </div>
         <div class="feature-card">
-          <h4>📈 Daily Actuals Tracking</h4>
-          <p>A cron records the actual closing price each day. The chart overlays forecast vs actual return over time.</p>
+          <h4 data-i18n="s6-c3-h">Daily Actuals Tracking</h4>
+          <p data-i18n="s6-c3-p">A cron records the actual closing price each day. The chart overlays forecast vs actual return over time.</p>
         </div>
         <div class="feature-card">
-          <h4>📝 Business Narrative</h4>
-          <p>Auto-generated plain-English summary: scenario, phase (early/mid/late), avg forecast gap, and per-position beat count.</p>
+          <h4 data-i18n="s6-c4-h">Business Narrative</h4>
+          <p data-i18n="s6-c4-p">Auto-generated plain-English summary: scenario, phase (early/mid/late), avg forecast gap, and per-position beat count.</p>
         </div>
       </div>
 
@@ -863,39 +920,39 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="pro">
       <div class="docs-section-header">
-        <span class="docs-section-icon">⚡</span>
-        <h2 class="docs-section-title">Xmore Pro Dashboard</h2>
-        <span class="docs-section-badge badge-pro">Pro</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s7-title">Xmore Pro Dashboard</h2>
+        <span class="docs-section-badge badge-pro" data-i18n="s7-badge">Pro</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s7-desc">
         A standalone professional terminal at <a href="/pro" style="color:var(--accent)">/pro</a> — dark terminal theme,
         live EGX market overview, Top Gainers/Losers, sector performance, FX rates strip, and forecast portfolios in one screen.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📊 EGX Market Overview</h4>
-          <p>TradingView Advanced Chart (EGX30, 5-min area) + EGX blue-chip stock table with live consensus signals.</p>
+          <h4 data-i18n="s7-c1-h">EGX Market Overview</h4>
+          <p data-i18n="s7-c1-p">TradingView Advanced Chart (EGX30, 5-min area) + EGX blue-chip stock table with live consensus signals.</p>
         </div>
         <div class="feature-card">
-          <h4>📈 Top Gainers / Losers</h4>
-          <p>8-row tables of the session's best and worst performers with signal badges and confidence.</p>
+          <h4 data-i18n="s7-c2-h">Top Gainers / Losers</h4>
+          <p data-i18n="s7-c2-p">8-row tables of the session's best and worst performers with signal badges and confidence.</p>
         </div>
         <div class="feature-card">
-          <h4>🏭 Sector Performance</h4>
-          <p>Horizontal bar chart of average % return per sector, colour-coded green/red.</p>
+          <h4 data-i18n="s7-c3-h">Sector Performance</h4>
+          <p data-i18n="s7-c3-p">Horizontal bar chart of average % return per sector, colour-coded green/red.</p>
         </div>
         <div class="feature-card">
-          <h4>💱 FX Rates Strip</h4>
-          <p>Live USD/EGP, USD/SAR, SAR/EGP in the header bar. Updates hourly.</p>
+          <h4 data-i18n="s7-c4-h">FX Rates Strip</h4>
+          <p data-i18n="s7-c4-p">Live USD/EGP, USD/SAR, SAR/EGP in the header bar. Updates hourly.</p>
         </div>
         <div class="feature-card">
-          <h4>🌐 Bilingual (EN/AR)</h4>
-          <p>Full RTL Arabic support via <code>proToggleLang()</code>. All section labels and signals switch language.</p>
+          <h4 data-i18n="s7-c5-h">Bilingual (EN/AR)</h4>
+          <p data-i18n="s7-c5-p">Full RTL Arabic support via <code>proToggleLang()</code>. All section labels and signals switch language.</p>
         </div>
         <div class="feature-card">
-          <h4>📰 Macro Brief</h4>
-          <p>Gemini-powered grounded macro overview with web citations. Auto-loads on page open, refreshes hourly.</p>
+          <h4 data-i18n="s7-c6-h">Macro Brief</h4>
+          <p data-i18n="s7-c6-p">Gemini-powered grounded macro overview with web citations. Auto-loads on page open, refreshes hourly.</p>
         </div>
       </div>
     </section>
@@ -905,31 +962,31 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="macro">
       <div class="docs-section-header">
-        <span class="docs-section-icon">📰</span>
-        <h2 class="docs-section-title">Macro Brief</h2>
-        <span class="docs-section-badge badge-live">Pro + Chat</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s7b-title">Macro Brief</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s7b-badge">Pro + Chat</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s7b-desc">
         A Gemini 2.5 Flash grounded web search producing a structured Egyptian macro overview:
         EGX index level, USD/EGP rate, inflation, interest rate, key market movers, and 3 web source citations.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>🔍 Grounded web search</h4>
-          <p>Uses Google Search grounding to pull real-time macro data — not just the training cutoff.</p>
+          <h4 data-i18n="s7b-c1-h">Grounded web search</h4>
+          <p data-i18n="s7b-c1-p">Uses Google Search grounding to pull real-time macro data — not just the training cutoff.</p>
         </div>
         <div class="feature-card">
-          <h4>🔗 Web source pills</h4>
-          <p>Clickable blue citation pills for each web source used in the response.</p>
+          <h4 data-i18n="s7b-c2-h">Web source pills</h4>
+          <p data-i18n="s7b-c2-p">Clickable blue citation pills for each web source used in the response.</p>
         </div>
         <div class="feature-card">
-          <h4>🔄 Auto-refresh</h4>
-          <p>Macro Brief auto-loads on Pro page open and refreshes every 60 minutes via <code>setInterval</code>.</p>
+          <h4 data-i18n="s7b-c3-h">Auto-refresh</h4>
+          <p data-i18n="s7b-c3-p">Macro Brief auto-loads on Pro page open and refreshes every 60 minutes via <code>setInterval</code>.</p>
         </div>
         <div class="feature-card">
-          <h4>💬 Chat quick chip</h4>
-          <p>"📊 Macro Brief" quick chip in the Market Assistant chat widget also triggers the macro endpoint.</p>
+          <h4 data-i18n="s7b-c4-h">Chat quick chip</h4>
+          <p data-i18n="s7b-c4-p">"Macro Brief" quick chip in the Market Assistant chat widget also triggers the macro endpoint.</p>
         </div>
       </div>
     </section>
@@ -939,31 +996,31 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="etf">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🌍</span>
-        <h2 class="docs-section-title">ETF Dashboard</h2>
-        <span class="docs-section-badge badge-live">ETF Tab</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s8-title">ETF Dashboard</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s8-badge">ETF Tab</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s8-desc">
         Tracks both <strong>Egyptian EGX-listed ETFs</strong> (via Mubasher) and <strong>Global ETFs</strong>
         (EGPT, EEMX, FM, FRDM via yfinance). Holdings, premium/discount, NAV, and fund volume.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>🇪🇬 EGX Local ETFs</h4>
-          <p>~13 funds from Mubasher. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.</p>
+          <h4 data-i18n="s8-c1-h">EGX Local ETFs</h4>
+          <p data-i18n="s8-c1-p">~13 funds from Mubasher. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.</p>
         </div>
         <div class="feature-card">
-          <h4>🌐 Global ETFs</h4>
-          <p>NYSE/NASDAQ-listed Egypt-focused ETFs (EGPT, EEMX, etc.). Price table with daily change and volume.</p>
+          <h4 data-i18n="s8-c2-h">Global ETFs</h4>
+          <p data-i18n="s8-c2-p">NYSE/NASDAQ-listed Egypt-focused ETFs (EGPT, EEMX, etc.). Price table with daily change and volume.</p>
         </div>
         <div class="feature-card">
-          <h4>📋 Holdings Modal</h4>
-          <p>Click any ETF card to see the top holdings with weight %, last updated date, and country exposure.</p>
+          <h4 data-i18n="s8-c3-h">Holdings Modal</h4>
+          <p data-i18n="s8-c3-p">Click any ETF card to see the top holdings with weight %, last updated date, and country exposure.</p>
         </div>
         <div class="feature-card">
-          <h4>📄 ETF RAG Documents</h4>
-          <p>PDF factsheets uploaded in Admin are embedded via Gemini and searchable via the Market Assistant.</p>
+          <h4 data-i18n="s8-c4-h">ETF RAG Documents</h4>
+          <p data-i18n="s8-c4-p">PDF factsheets uploaded in Admin are embedded via Gemini and searchable via the Market Assistant.</p>
         </div>
       </div>
     </section>
@@ -973,31 +1030,31 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="assistant">
       <div class="docs-section-header">
-        <span class="docs-section-icon">💬</span>
-        <h2 class="docs-section-title">Market Assistant</h2>
-        <span class="docs-section-badge badge-live">Chat Widget</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s9-title">Market Assistant</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s9-badge">Chat Widget</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s9-desc">
         An AI chat widget powered by Gemini with full context injection: live prices, consensus signals,
         sentiment, ETF prices, and — when logged in — your personal forecast portfolio data.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📊 Live market context</h4>
-          <p>Every message includes today's gainers/losers, volume leaders, sentiment, and consensus signals as background context.</p>
+          <h4 data-i18n="s9-c1-h">Live market context</h4>
+          <p data-i18n="s9-c1-p">Every message includes today's gainers/losers, volume leaders, sentiment, and consensus signals as background context.</p>
         </div>
         <div class="feature-card">
-          <h4>🔮 Portfolio context</h4>
-          <p>When signed in, the assistant knows your forecast portfolios and can answer questions about positions vs forecasts.</p>
+          <h4 data-i18n="s9-c2-h">Portfolio context</h4>
+          <p data-i18n="s9-c2-p">When signed in, the assistant knows your forecast portfolios and can answer questions about positions vs forecasts.</p>
         </div>
         <div class="feature-card">
-          <h4>📰 News-aware</h4>
-          <p>Arabic-aware search extracts keywords from your question to find relevant recent headlines before answering.</p>
+          <h4 data-i18n="s9-c3-h">News-aware</h4>
+          <p data-i18n="s9-c3-p">Arabic-aware search extracts keywords from your question to find relevant recent headlines before answering.</p>
         </div>
         <div class="feature-card">
-          <h4>⚡ Quick chips</h4>
-          <p>"📊 Macro Brief", "📈 Top Movers", "🎯 Buy Signals" — one-tap prompts for common questions.</p>
+          <h4 data-i18n="s9-c4-h">Quick chips</h4>
+          <p data-i18n="s9-c4-p">"Macro Brief", "Top Movers", "Buy Signals" — one-tap prompts for common questions.</p>
         </div>
       </div>
     </section>
@@ -1007,31 +1064,31 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="admin">
       <div class="docs-section-header">
-        <span class="docs-section-icon">🛠</span>
-        <h2 class="docs-section-title">Admin Panel</h2>
-        <span class="docs-section-badge badge-pro">Admin Only</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s10-title">Admin Panel</h2>
+        <span class="docs-section-badge badge-pro" data-i18n="s10-badge">Admin Only</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s10-desc">
         Accessed at <code>/admin</code>. Requires ADMIN_USERNAME + ADMIN_PASSWORD credentials (JWT-protected).
         Contains system health, report upload, RAG embedding status, ETF documents, and user reports.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📤 Report Upload</h4>
-          <p>Upload PDF/image market reports (up to 25 MB). Text extracted via pdf-parse; images OCR'd via tesseract.js. Auto-embedded if GOOGLE_API_KEY is set.</p>
+          <h4 data-i18n="s10-c1-h">Report Upload</h4>
+          <p data-i18n="s10-c1-p">Upload PDF/image market reports (up to 25 MB). Text extracted via pdf-parse; images OCR'd via tesseract.js. Auto-embedded if GOOGLE_API_KEY is set.</p>
         </div>
         <div class="feature-card">
-          <h4>🧠 Ask Reports (RAG)</h4>
-          <p>Semantic search over embedded market report chunks. Shows AI answer + source document citations.</p>
+          <h4 data-i18n="s10-c2-h">Ask Reports (RAG)</h4>
+          <p data-i18n="s10-c2-p">Semantic search over embedded market report chunks. Shows AI answer + source document citations.</p>
         </div>
         <div class="feature-card">
-          <h4>💊 System Health</h4>
-          <p>Live DB row counts, latest prediction date, agent status, and pending embedding jobs.</p>
+          <h4 data-i18n="s10-c3-h">System Health</h4>
+          <p data-i18n="s10-c3-p">Live DB row counts, latest prediction date, agent status, and pending embedding jobs.</p>
         </div>
         <div class="feature-card">
-          <h4>📄 ETF Documents</h4>
-          <p>View all uploaded ETF factsheets in the <code>rag_document</code> table with embedding job status.</p>
+          <h4 data-i18n="s10-c4-h">ETF Documents</h4>
+          <p data-i18n="s10-c4-p">View all uploaded ETF factsheets in the <code>rag_document</code> table with embedding job status.</p>
         </div>
       </div>
     </section>
@@ -1041,39 +1098,39 @@
     <!-- ════════════════════════════════ -->
     <section class="docs-section" id="timemachine">
       <div class="docs-section-header">
-        <span class="docs-section-icon">⏳</span>
-        <h2 class="docs-section-title">Time Machine</h2>
-        <span class="docs-section-badge badge-live">History Tab</span>
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s11-title">Time Machine</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s11-badge">History Tab</span>
       </div>
-      <p class="docs-desc">
+      <p class="docs-desc" data-i18n="s11-desc">
         Replay any past trading session. Select a historical date to see what the AI agents predicted
         that day, alongside actual price outcomes — useful for backtesting your own strategy.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
-          <h4>📅 Date picker</h4>
-          <p>Select any past EGX trading day. Predictions and prices are loaded from the database snapshot for that date.</p>
+          <h4 data-i18n="s11-c1-h">Date picker</h4>
+          <p data-i18n="s11-c1-p">Select any past EGX trading day. Predictions and prices are loaded from the database snapshot for that date.</p>
         </div>
         <div class="feature-card">
-          <h4>✅ Outcome overlay</h4>
-          <p>Green ✓ / Red ✗ icons show which signals were correct — the actual price move is shown alongside.</p>
+          <h4 data-i18n="s11-c2-h">Outcome overlay</h4>
+          <p data-i18n="s11-c2-p">Green ✓ / Red ✗ icons show which signals were correct — the actual price move is shown alongside.</p>
         </div>
         <div class="feature-card">
-          <h4>📊 Session stats</h4>
-          <p>Overall accuracy, best and worst calls for the selected date, per-agent win rate for that session.</p>
+          <h4 data-i18n="s11-c3-h">Session stats</h4>
+          <p data-i18n="s11-c3-p">Overall accuracy, best and worst calls for the selected date, per-agent win rate for that session.</p>
         </div>
         <div class="feature-card">
-          <h4>🏋️ Backtest mode</h4>
-          <p>Pivot levels and trend signals from the Session Sheet complement Time Machine for trade planning.</p>
+          <h4 data-i18n="s11-c4-h">Backtest mode</h4>
+          <p data-i18n="s11-c4-p">Pivot levels and trend signals from the Session Sheet complement Time Machine for trade planning.</p>
         </div>
       </div>
     </section>
 
     <!-- Footer -->
     <div style="padding: 32px 0 16px; border-top: 1px solid var(--border); color: var(--text2); font-size: 13px; display:flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-      <span>Xmore — AI Stock Prediction for EGX &amp; Global Markets</span>
-      <span><a href="/" style="color:var(--accent); text-decoration:none;">← Back to Dashboard</a></span>
+      <span class="footer-left" data-i18n="footer-left">Xmore — AI Stock Prediction for EGX &amp; Global Markets</span>
+      <span class="footer-back"><a href="/" style="color:var(--accent); text-decoration:none;" data-i18n="footer-back">← Back to Dashboard</a></span>
     </div>
 
   </main>
@@ -1091,8 +1148,145 @@
         if (active) active.classList.add('active');
       }
     });
-  }, { threshold: 0.3 });
+  }, { threshold: 0.3, rootMargin: "-61px 0px 0px 0px" });
   sections.forEach(s => obs.observe(s));
+</script>
+<script>
+// I18N Script
+const i18n = {
+  en: {
+    'header-subtitle': "Feature Documentation",
+    'nav-back': "← Dashboard",
+    'sidebar-title': "Contents",
+    'intro-h1': "Xmore Documentation",
+    'intro-p': "Xmore is an AI-powered stock prediction system for the Egyptian Exchange (EGX) and global markets. This page documents every feature available on the dashboard and Xmore Pro.",
+    'sb-overview': "Overview", 'sb-predictions': "Predictions", 'sb-comparison': "Stock Comparison", 'sb-aibrief': "AI Brief", 'sb-portfolio': "Portfolio", 'sb-alerts': "Price Alerts", 'sb-rates': "Rates Tab", 'sb-performance': "Performance", 'sb-multihorizon': "Multi-horizon", 'sb-forecasts': "Forecast Portfolios", 'sb-pro': "Xmore Pro", 'sb-macro': "Macro Brief", 'sb-etf': "ETF Dashboard", 'sb-assistant': "Market Assistant", 'sb-admin': "Admin Panel", 'sb-timemachine': "Time Machine",
+    'toc-predictions': "Predictions", 'toc-comparison': "Compare", 'toc-aibrief': "AI Brief", 'toc-portfolio': "Portfolio", 'toc-alerts': "Alerts", 'toc-rates': "Rates", 'toc-performance': "Performance", 'toc-forecasts': "Forecasts", 'toc-pro': "Pro", 'toc-etf': "ETF", 'toc-assistant': "Assistant", 'toc-admin': "Admin", 'toc-api': "API Ref (Admin)",
+    's1-title': "Overview", 's1-badge': "Live", 's1-desc': "Xmore aggregates signals from 5 AI agents — Moving Average, RSI, Volume Spike, Random Forest ML, and Gemini LLM — into a unified consensus score. The dashboard auto-refreshes data on every EGX trading day.",
+    's1-c1-h': "5 AI Agents", 's1-c1-p': "MA Crossover, RSI, Volume Spike, Random Forest, and Gemini LLM each vote independently with weighted confidence.", 's1-c2-h': "Xmore Score", 's1-c2-p': "0–100 composite bullishness score. ≥65 = strong buy zone; ≤35 = bearish. Updated daily after market close.", 's1-c3-h': "Bilingual", 's1-c3-p': "Full English / Arabic toggle. All labels, signals, and dates switch language. Arabic uses RTL layout.", 's1-c4-h': "Dark / Light theme", 's1-c4-p': "Theme preference saved to localStorage and persists across sessions.", 's1-c5-h': "Responsive", 's1-c5-p': "Mobile-optimised layout. Tables scroll horizontally on small screens. All modals are touch-friendly.", 's1-c6-h': "Auth", 's1-c6-p': "Sign Up / Sign In with email. JWT stored in HTTP-only cookie. Portfolio, alerts, and forecasts are per-user.", 's1-tip-label': "Quick start", 's1-tip-body': `Visit &lt;a href="/" style="color:var(--accent)"&gt;xmore-project.onrender.com&lt;/a&gt; → sign up for free → add stocks to your watchlist → check the Predictions tab each morning before market open (09:00 Cairo).`,
+    's2-title': "Predictions", 's2-badge': "Main Tab", 's2-desc': "The Predictions tab is the core screen. It shows today's AI consensus signal for every tracked EGX stock. Data is computed nightly after market close and reflects the prior session's closing prices.",
+    's2-c1-h': "Consensus Signal", 's2-c1-p': "BUY / HOLD / SELL derived from majority vote across all active agents. Displayed with conviction label (Strong/Moderate/Weak).", 's2-c2-h': "Xmore Score", 's2-c2-p': "0–100 bull/bear composite. Color-coded: green ≥65, red ≤35, grey in-between.", 's2-c3-h': "Screener", 's2-c3-p': "Filter by signal (BUY/SELL), confidence threshold, sector, and volume. Results sortable by any column.", 's2-c4-h': "Sentiment Badge", 's2-c4-p': "Colour-coded news sentiment (Positive / Neutral / Negative) beside each stock, derived from Gemini LLM analysis of latest headlines.",
+    's2-steps-title': "How to read a signal row", 's2-step1': "&lt;strong&gt;Signal&lt;/strong&gt; — BUY means majority of agents predict price will rise within 5 trading days.", 's2-step2': "&lt;strong&gt;Confidence&lt;/strong&gt; — weighted average certainty across agreeing agents (0–100%). Higher = more conviction.", 's2-step3': "&lt;strong&gt;Xmore Score&lt;/strong&gt; — bull pressure index. Score of 80 means 80% of composite weight is bullish.", 's2-step4': '&lt;strong&gt;Agents column&lt;/strong&gt; — e.g. "4/5" = 4 of 5 agents voted for the consensus direction.', 's2-step5': "&lt;strong&gt;Price&lt;/strong&gt; — last closing price in EGP from EGX or TradingView Scanner.",
+    's2b-title': "Stock Comparison Tool", 's2b-badge': "New", 's2b-desc': "Compare up to 4 EGX stocks side-by-side across all AI metrics. Click the &lt;strong&gt;Compare&lt;/strong&gt; button on the Predictions tab screener bar to open the comparison modal.",
+    's2b-step1': "Click &lt;strong&gt;Compare&lt;/strong&gt; in the Predictions tab search bar.", 's2b-step2': "Type up to 4 stock symbols (e.g. COMI, EKHW, HRHO).", 's2b-step3': "Click &lt;strong&gt;Compare&lt;/strong&gt; to fetch live consensus data for all symbols in parallel.", 's2b-step4': "Review the side-by-side table — click any &lt;strong&gt;Brief&lt;/strong&gt; button for an AI narrative.",
+    's2c-title': "Per-stock AI Brief", 's2c-badge': "New", 's2c-desc': "Every stock can generate a 3-sentence Gemini-powered analyst brief covering current stance, key risk, and short-term outlook. Briefs are cached for 1 hour to minimise API cost.", 's2c-tip-label': "Availability", 's2c-tip-body': "AI Brief requires &lt;code&gt;GOOGLE_API_KEY&lt;/code&gt; to be configured. Briefs are accessible from the Comparison Tool modal and from individual stock rows in Predictions (via the 📄 icon when visible).",
+    's3-title': "Virtual Portfolio", 's3-badge': "Portfolio Tab", 's3-desc': "Track your real or virtual trades with full EGP P&amp;L accounting. Each position records entry price, quantity, and date. The portfolio calculates live cost vs current market value using the latest price feed.",
+    's3-c1-h': "EGP Totals Strip", 's3-c1-p': "Four live pills: Total Invested, Market Value, P&amp;L (EGP), Return %. Updated on every portfolio load.", 's3-c2-h': "Sector Breakdown", 's3-c2-p': "Visual bar chart showing portfolio weight per sector. Helps identify concentration risk.", 's3-c3-h': "Open Positions Table", 's3-c3-p': "Symbol, entry date, entry price, quantity, current price, cost EGP, market value EGP, P&amp;L EGP, % return.", 's3-c4-h': "Trade History", 's3-c4-p': "All closed trades with entry/exit dates and final return %. Win rate and average return in the stats strip.",
+    's3-steps-title': "Adding a position", 's3-step1': "Go to the &lt;strong&gt;Trades&lt;/strong&gt; tab → &lt;em&gt;Add Trade&lt;/em&gt; form.", 's3-step2': "Enter &lt;strong&gt;Symbol&lt;/strong&gt; (e.g. COMI), &lt;strong&gt;Entry Price&lt;/strong&gt;, &lt;strong&gt;Quantity&lt;/strong&gt;, and &lt;strong&gt;Date&lt;/strong&gt;.", 's3-step3': "Click &lt;strong&gt;Add&lt;/strong&gt;. The position appears immediately in Portfolio with live P&amp;L.", 's3-step4': "To close: click the ✕ on the position row, enter exit price.",
+    's3b-title': "Price Alerts", 's3b-badge': "New", 's3b-desc': "Set price threshold alerts for any EGX stock. Alerts auto-trigger when the current price crosses your target — no background job required. The system checks all active alerts when you open the Portfolio tab.",
+    's3b-c1-h': "Above / Below conditions", 's3b-c1-p': "Create an alert for when a stock rises above or falls below a specific EGP price.", 's3b-c2-h': "Auto-trigger at read time", 's3b-c2-p': "When you load the Portfolio tab, the server checks all active alerts against the latest price and marks any triggered ones — no separate cron needed.", 's3b-c3-h': "20 alert limit", 's3b-c3-p': "Up to 20 active alerts per user account. Delete triggered alerts to free slots.", 's3b-c4-h': "Current price shown", 's3b-c4-p': "Each alert row shows the current live price so you can see how close the threshold is.",
+    's4-title': "Rates Tab", 's4-badge': "New", 's4-desc': "Live FX and gold rates with 90-day sparkline history charts. Data is fetched from the open exchange-rate API on every page load and stored in the database — building a historical record automatically.",
+    's4-c1-h': "Live rate cards", 's4-c1-p': "USD/EGP, USD/SAR, SAR/EGP, XAU/USD (gold), 24K gold per gram EGP, 21K per gram EGP, Gold Pound EGP.", 's4-c2-h': "Sparkline history", 's4-c2-p': "Canvas-rendered 90-day charts for each rate — no external chart library, pure 2D canvas API.", 's4-c3-h': "Auto-accumulating history", 's4-c3-p': "Every time any user fetches /api/fx-rates, the rate is stored in the &lt;code&gt;fx_rates_history&lt;/code&gt; table — one row per day, upserted.", 's4-c4-h': "Header FX strip (Pro)", 's4-c4-p': "USD/EGP, USD/SAR, SAR/EGP live rates also appear in the Xmore Pro header bar, refreshed hourly.",
+    's5-title': "Performance Dashboard", 's5-badge': "Performance Tab", 's5-desc': "Tracks the real-world accuracy of every agent. Predictions are evaluated after the 5-day trading horizon by comparing predicted direction to actual price movement. Agents compete transparently.",
+    's5b-title': "Multi-horizon Signal Evaluation", 's5b-badge': "New", 's5b-desc': "Beyond the default D+5, Xmore now evaluates consensus signals at &lt;strong&gt;D+10&lt;/strong&gt; and &lt;strong&gt;D+20&lt;/strong&gt; trading days. This reveals which stocks' AI signals remain accurate over longer horizons.", 's5b-tip-label': "Data requirement", 's5b-tip-body': "D+10 and D+20 results only appear for stocks that have at least 3 evaluated predictions at that horizon. New entries accumulate as &lt;code&gt;evaluate.py&lt;/code&gt; runs daily.",
+    's6-title': "Forecast Portfolios", 's6-badge': "Forecasts Tab", 's6-desc': "Build a named portfolio with a custom horizon (1m to 2y) and Xmore will forecast each stock's expected return using all active agents. Daily actuals are recorded and compared against the forecast.",
+    's6-c1-h': "Custom Portfolios", 's6-c1-p': 'Create multiple named portfolios (e.g. "Conservative Q2", "Aggressive 6M") each with its own stocks and horizon.', 's6-c2-h': "Six Horizons", 's6-c2-p': "1 month (21 trading days), 2m, 3m, 6m, 1 year, 2 years. Forecast auto-runs on creation.", 's6-c3-h': "Daily Actuals Tracking", 's6-c3-p': "A cron records the actual closing price each day. The chart overlays forecast vs actual return over time.", 's6-c4-h': "Business Narrative", 's6-c4-p': "Auto-generated plain-English summary: scenario, phase (early/mid/late), avg forecast gap, and per-position beat count.",
+    's7-title': "Xmore Pro Dashboard", 's7-badge': "Pro", 's7-desc': 'A standalone professional terminal at &lt;a href="/pro" style="color:var(--accent)"&gt;/pro&lt;/a&gt; — dark terminal theme, live EGX market overview, Top Gainers/Losers, sector performance, FX rates strip, and forecast portfolios in one screen.',
+    's7-c1-h': "EGX Market Overview", 's7-c1-p': "TradingView Advanced Chart (EGX30, 5-min area) + EGX blue-chip stock table with live consensus signals.", 's7-c2-h': "Top Gainers / Losers", 's7-c2-p': "8-row tables of the session's best and worst performers with signal badges and confidence.", 's7-c3-h': "Sector Performance", 's7-c3-p': "Horizontal bar chart of average % return per sector, colour-coded green/red.", 's7-c4-h': "FX Rates Strip", 's7-c4-p': "Live USD/EGP, USD/SAR, SAR/EGP in the header bar. Updates hourly.", 's7-c5-h': "Bilingual (EN/AR)", 's7-c5-p': "Full RTL Arabic support via &lt;code&gt;proToggleLang()&lt;/code&gt;. All section labels and signals switch language.", 's7-c6-h': "Macro Brief", 's7-c6-p': "Gemini-powered grounded macro overview with web citations. Auto-loads on page open, refreshes hourly.",
+    's7b-title': "Macro Brief", 's7b-badge': "Pro + Chat", 's7b-desc': "A Gemini 2.5 Flash grounded web search producing a structured Egyptian macro overview: EGX index level, USD/EGP rate, inflation, interest rate, key market movers, and 3 web source citations.",
+    's7b-c1-h': "Grounded web search", 's7b-c1-p': "Uses Google Search grounding to pull real-time macro data — not just the training cutoff.", 's7b-c2-h': "Web source pills", 's7b-c2-p': "Clickable blue citation pills for each web source used in the response.", 's7b-c3-h': "Auto-refresh", 's7b-c3-p': "Macro Brief auto-loads on Pro page open and refreshes every 60 minutes via &lt;code&gt;setInterval&lt;/code&gt;.", 's7b-c4-h': "Chat quick chip", 's7b-c4-p': '"Macro Brief" quick chip in the Market Assistant chat widget also triggers the macro endpoint.',
+    's8-title': "ETF Dashboard", 's8-badge': "ETF Tab", 's8-desc': "Tracks both &lt;strong&gt;Egyptian EGX-listed ETFs&lt;/strong&gt; (via Mubasher) and &lt;strong&gt;Global ETFs&lt;/strong&gt; (EGPT, EEMX, FM, FRDM via yfinance). Holdings, premium/discount, NAV, and fund volume.",
+    's8-c1-h': "EGX Local ETFs", 's8-c1-p': "~13 funds from Mubasher. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.", 's8-c2-h': "Global ETFs", 's8-c2-p': "NYSE/NASDAQ-listed Egypt-focused ETFs (EGPT, EEMX, etc.). Price table with daily change and volume.", 's8-c3-h': "Holdings Modal", 's8-c3-p': "Click any ETF card to see the top holdings with weight %, last updated date, and country exposure.", 's8-c4-h': "ETF RAG Documents", 's8-c4-p': "PDF factsheets uploaded in Admin are embedded via Gemini and searchable via the Market Assistant.",
+    's9-title': "Market Assistant", 's9-badge': "Chat Widget", 's9-desc': "An AI chat widget powered by Gemini with full context injection: live prices, consensus signals, sentiment, ETF prices, and — when logged in — your personal forecast portfolio data.",
+    's9-c1-h': "Live market context", 's9-c1-p': "Every message includes today's gainers/losers, volume leaders, sentiment, and consensus signals as background context.", 's9-c2-h': "Portfolio context", 's9-c2-p': "When signed in, the assistant knows your forecast portfolios and can answer questions about positions vs forecasts.", 's9-c3-h': "News-aware", 's9-c3-p': "Arabic-aware search extracts keywords from your question to find relevant recent headlines before answering.", 's9-c4-h': "Quick chips", 's9-c4-p': '"Macro Brief", "Top Movers", "Buy Signals" — one-tap prompts for common questions.',
+    's10-title': "Admin Panel", 's10-badge': "Admin Only", 's10-desc': "Accessed at &lt;code&gt;/admin&lt;/code&gt;. Requires ADMIN_USERNAME + ADMIN_PASSWORD credentials (JWT-protected). Contains system health, report upload, RAG embedding status, ETF documents, and user reports.",
+    's10-c1-h': "Report Upload", 's10-c1-p': "Upload PDF/image market reports (up to 25 MB). Text extracted via pdf-parse; images OCR'd via tesseract.js. Auto-embedded if GOOGLE_API_KEY is set.", 's10-c2-h': "Ask Reports (RAG)", 's10-c2-p': "Semantic search over embedded market report chunks. Shows AI answer + source document citations.", 's10-c3-h': "System Health", 's10-c3-p': "Live DB row counts, latest prediction date, agent status, and pending embedding jobs.", 's10-c4-h': "ETF Documents", 's10-c4-p': "View all uploaded ETF factsheets in the &lt;code&gt;rag_document&lt;/code&gt; table with embedding job status.",
+    's11-title': "Time Machine", 's11-badge': "History Tab", 's11-desc': "Replay any past trading session. Select a historical date to see what the AI agents predicted that day, alongside actual price outcomes — useful for backtesting your own strategy.",
+    's11-c1-h': "Date picker", 's11-c1-p': "Select any past EGX trading day. Predictions and prices are loaded from the database snapshot for that date.", 's11-c2-h': "Outcome overlay", 's11-c2-p': "Green ✓ / Red ✗ icons show which signals were correct — the actual price move is shown alongside.", 's11-c3-h': "Session stats", 's11-c3-p': "Overall accuracy, best and worst calls for the selected date, per-agent win rate for that session.", 's11-c4-h': "Backtest mode", 's11-c4-p': "Pivot levels and trend signals from the Session Sheet complement Time Machine for trade planning.",
+    'footer-left': "Xmore — AI Stock Prediction for EGX &amp; Global Markets", 'footer-back': "← Back to Dashboard"
+  },
+  ar: {
+    'header-subtitle': "توثيق الميزات",
+    'nav-back': "← لوحة التحكم",
+    'sidebar-title': "المحتويات",
+    'intro-h1': "توثيق إكسمور",
+    'intro-p': "إكسمور هو نظام توقع أسهم مدعوم بالذكاء الاصطناعي للبورصة المصرية (EGX) والأسواق العالمية. توثّق هذه الصفحة كل ميزة متاحة في لوحة التحكم وإكسمور برو.",
+    'sb-overview': "نظرة عامة", 'sb-predictions': "التنبؤات", 'sb-comparison': "مقارنة الأسهم", 'sb-aibrief': "ملخص الذكاء الاصطناعي", 'sb-portfolio': "المحفظة", 'sb-alerts': "تنبيهات الأسعار", 'sb-rates': "تبويب الأسعار", 'sb-performance': "الأداء", 'sb-multihorizon': "آفاق متعددة", 'sb-forecasts': "محافظ التوقعات", 'sb-pro': "إكسمور برو", 'sb-macro': "الملخص الاقتصادي الكلي", 'sb-etf': "لوحة صناديق الاستثمار", 'sb-assistant': "المساعد السوقي", 'sb-admin': "لوحة الإدارة", 'sb-timemachine': "آلة الزمن",
+    'toc-predictions': "التنبؤات", 'toc-comparison': "مقارنة", 'toc-aibrief': "ملخص AI", 'toc-portfolio': "المحفظة", 'toc-alerts': "التنبيهات", 'toc-rates': "الأسعار", 'toc-performance': "الأداء", 'toc-forecasts': "التوقعات", 'toc-pro': "برو", 'toc-etf': "صناديق الاستثمار", 'toc-assistant': "المساعد", 'toc-admin': "الإدارة", 'toc-api': "مرجع API (إدارة)",
+    's1-title': "نظرة عامة", 's1-badge': "مباشر", 's1-desc': "يجمع إكسمور الإشارات من 5 وكلاء ذكاء اصطناعي — المتوسط المتحرك، مؤشر القوة النسبية، ارتفاع الحجم، الغابة العشوائية، و Gemini LLM — في درجة إجماع موحدة. تُحدَّث البيانات تلقائياً في كل يوم تداول بالبورصة المصرية.",
+    's1-c1-h': "5 وكلاء ذكاء اصطناعي", 's1-c1-p': "يُصوّت كل من: تقاطع المتوسط المتحرك، RSI، ارتفاع الحجم، الغابة العشوائية، و Gemini LLM بصورة مستقلة بثقة موزونة.", 's1-c2-h': "درجة إكسمور", 's1-c2-p': "درجة صعودية مركبة من 0 إلى 100. ≥65 = منطقة شراء قوية؛ ≤35 = ضغط هبوطي. تُحدَّث يومياً بعد إغلاق السوق.", 's1-c3-h': "ثنائي اللغة", 's1-c3-p': "تبديل كامل بين الإنجليزية والعربية. تتغير جميع التسميات والإشارات والتواريخ. تستخدم العربية تخطيط RTL.", 's1-c4-h': "الوضع الداكن / الفاتح", 's1-c4-p': "يُحفظ تفضيل المظهر في localStorage ويبقى عبر الجلسات.", 's1-c5-h': "متوافق مع الجوال", 's1-c5-p': "تصميم محسّن للجوال. الجداول قابلة للتمرير الأفقي على الشاشات الصغيرة. جميع النوافذ المنبثقة تدعم اللمس.", 's1-c6-h': "نظام تسجيل الدخول", 's1-c6-p': "تسجيل الدخول والإنشاء بالبريد الإلكتروني. يُخزَّن JWT في ملف تعريف ارتباط HTTP-only. المحفظة والتنبيهات والتوقعات خاصة بكل مستخدم.", 's1-tip-label': "البداية السريعة", 's1-tip-body': `زُر &lt;a href="/" style="color:var(--accent)"&gt;xmore-project.onrender.com&lt;/a&gt; ← أنشئ حساباً مجانياً ← أضف الأسهم إلى قائمتك ← تحقق من تبويب التنبؤات كل صباح قبل افتتاح السوق (09:00 القاهرة).`,
+    's2-title': "التنبؤات", 's2-badge': "التبويب الرئيسي", 's2-desc': "تبويب التنبؤات هو الشاشة الأساسية. يعرض إشارة الإجماع اليومية للذكاء الاصطناعي لكل سهم مُتابَع في البورصة المصرية. تُحسَب البيانات ليلاً بعد إغلاق السوق وتعكس أسعار الإغلاق للجلسة السابقة.",
+    's2-c1-h': "إشارة الإجماع", 's2-c1-p': "شراء / انتظار / بيع مشتق من التصويت الأغلبي عبر جميع الوكلاء النشطين. يُعرض مع تسمية الاقتناع (قوي/متوسط/ضعيف).", 's2-c2-h': "درجة إكسمور", 's2-c2-p': "مركب صعودي/هبوطي من 0 إلى 100. مُرمَّز بالألوان: أخضر ≥65، أحمر ≤35، رمادي بينهما.", 's2-c3-h': "المرشح", 's2-c3-p': "تصفية حسب الإشارة (شراء/بيع) ومستوى الثقة والقطاع والحجم. النتائج قابلة للترتيب حسب أي عمود.", 's2-c4-h': "شارة المشاعر", 's2-c4-p': "مشاعر الأخبار مُرمَّزة بالألوان (إيجابية / محايدة / سلبية) بجانب كل سهم، مستخرجة من تحليل Gemini LLM لآخر العناوين.",
+    's2-steps-title': "كيفية قراءة صف الإشارة", 's2-step1': "&lt;strong&gt;الإشارة&lt;/strong&gt; — شراء يعني أن غالبية الوكلاء يتوقعون ارتفاع السعر خلال 5 أيام تداول.", 's2-step2': "&lt;strong&gt;الثقة&lt;/strong&gt; — متوسط اليقين الموزون عبر الوكلاء المتفقين (0–100%). أعلى = اقتناع أكبر.", 's2-step3': "&lt;strong&gt;درجة إكسمور&lt;/strong&gt; — مؤشر ضغط الصعود. درجة 80 تعني أن 80% من الوزن المركب صاعد.", 's2-step4': `&lt;strong&gt;عمود الوكلاء&lt;/strong&gt; — مثلاً "4/5" = 4 من 5 وكلاء صوّتوا لاتجاه الإجماع.`, 's2-step5': "&lt;strong&gt;السعر&lt;/strong&gt; — آخر سعر إغلاق بالجنيه المصري من البورصة المصرية أو TradingView Scanner.",
+    's2b-title': "أداة مقارنة الأسهم", 's2b-badge': "جديد", 's2b-desc': "قارن حتى 4 أسهم في البورصة المصرية جنباً إلى جنب عبر جميع مقاييس الذكاء الاصطناعي. انقر على زر &lt;strong&gt;مقارنة&lt;/strong&gt; في شريط المرشح بتبويب التنبؤات.",
+    's2b-step1': "انقر على &lt;strong&gt;مقارنة&lt;/strong&gt; في شريط البحث بتبويب التنبؤات.", 's2b-step2': "أدخل حتى 4 رموز أسهم (مثال: COMI، EKHW، HRHO).", 's2b-step3': "انقر &lt;strong&gt;مقارنة&lt;/strong&gt; لجلب بيانات الإجماع الحية لجميع الرموز في آنٍ واحد.", 's2b-step4': "راجع الجدول المقارن — انقر على أي زر &lt;strong&gt;ملخص&lt;/strong&gt; للحصول على سرد من الذكاء الاصطناعي.",
+    's2c-title': "ملخص الذكاء الاصطناعي لكل سهم", 's2c-badge': "جديد", 's2c-desc': "يمكن لكل سهم توليد ملخص تحليلي من 3 جمل مدعوم بـ Gemini يغطي الموقف الحالي والمخاطر الرئيسية والتوقعات قصيرة المدى. تُخزَّن الملخصات مؤقتاً لمدة ساعة.", 's2c-tip-label': "التوافر", 's2c-tip-body': "يتطلب ملخص AI تهيئة &lt;code&gt;GOOGLE_API_KEY&lt;/code&gt;. الملخصات متاحة من نافذة أداة المقارنة ومن صفوف الأسهم الفردية في التنبؤات (عبر أيقونة 📄 عند ظهورها).",
+    's3-title': "المحفظة الافتراضية", 's3-badge': "تبويب المحفظة", 's3-desc': "تتبّع صفقاتك الحقيقية أو الافتراضية مع محاسبة كاملة للربح والخسارة بالجنيه المصري. تُسجّل كل صفقة سعر الدخول والكمية والتاريخ. تحسب المحفظة التكلفة الحية مقابل القيمة السوقية الحالية.",
+    's3-c1-h': "شريط الإجماليات بالجنيه", 's3-c1-p': "أربع بطاقات حية: إجمالي الاستثمار، القيمة السوقية، الربح والخسارة (EGP)، نسبة العائد. تُحدَّث عند كل تحميل للمحفظة.", 's3-c2-h': "توزيع القطاعات", 's3-c2-p': "مخطط شريطي يعرض وزن المحفظة لكل قطاع. يساعد على تحديد مخاطر التركيز.", 's3-c3-h': "جدول الصفقات المفتوحة", 's3-c3-p': "الرمز، تاريخ الدخول، سعر الدخول، الكمية، السعر الحالي، التكلفة (EGP)، القيمة السوقية (EGP)، الربح/الخسارة، نسبة العائد.", 's3-c4-h': "سجل الصفقات", 's3-c4-p': "جميع الصفقات المغلقة مع تواريخ الدخول والخروج والعائد النهائي. معدل الفوز ومتوسط العائد في شريط الإحصاءات.",
+    's3-steps-title': "إضافة صفقة", 's3-step1': "انتقل إلى تبويب &lt;strong&gt;الصفقات&lt;/strong&gt; ← نموذج &lt;em&gt;إضافة صفقة&lt;/em&gt;.", 's3-step2': "أدخل &lt;strong&gt;الرمز&lt;/strong&gt; (مثال: COMI)، &lt;strong&gt;سعر الدخول&lt;/strong&gt;، &lt;strong&gt;الكمية&lt;/strong&gt;، و&lt;strong&gt;التاريخ&lt;/strong&gt;.", 's3-step3': "انقر &lt;strong&gt;إضافة&lt;/strong&gt;. تظهر الصفقة فوراً في المحفظة مع الربح والخسارة الحية.", 's3-step4': "للإغلاق: انقر ✕ في صف الصفقة، أدخل سعر الخروج.",
+    's3b-title': "تنبيهات الأسعار", 's3b-badge': "جديد", 's3b-desc': "اضبط تنبيهات عتبة السعر لأي سهم في البورصة المصرية. تُطلَق التنبيهات تلقائياً عند تجاوز السعر الحالي للهدف المحدد. يفحص النظام جميع التنبيهات النشطة عند فتح تبويب المحفظة.",
+    's3b-c1-h': "شروط أعلى / أقل من", 's3b-c1-p': "أنشئ تنبيهاً عند ارتفاع سهم فوق أو انخفاضه تحت سعر محدد بالجنيه المصري.", 's3b-c2-h': "إطلاق تلقائي عند القراءة", 's3b-c2-p': "عند تحميل تبويب المحفظة، يفحص الخادم جميع التنبيهات النشطة مقابل السعر الأخير ويُعلَّم المُطلَقة — دون الحاجة لمهمة مجدولة منفصلة.", 's3b-c3-h': "حد 20 تنبيهاً", 's3b-c3-p': "حتى 20 تنبيهاً نشطاً لكل حساب مستخدم. احذف التنبيهات المُطلَقة لتحرير مساحة.", 's3b-c4-h': "السعر الحالي معروض", 's3b-c4-p': "يعرض كل صف تنبيه السعر الحالي الحي حتى تتمكن من رؤية مدى القرب من العتبة.",
+    's4-title': "تبويب الأسعار", 's4-badge': "جديد", 's4-desc': "أسعار العملات الأجنبية والذهب الحية مع مخططات تاريخية لمدة 90 يوماً. تُجلَب البيانات من واجهة برمجة أسعار الصرف المفتوحة عند كل تحميل للصفحة وتُخزَّن في قاعدة البيانات تلقائياً.",
+    's4-c1-h': "بطاقات الأسعار الحية", 's4-c1-p': "دولار/جنيه، دولار/ريال، ريال/جنيه، ذهب/دولار، ذهب 24 قيراط/غرام (EGP)، ذهب 21 قيراط/غرام (EGP)، الجنيه الذهب (EGP).", 's4-c2-h': "مخططات التاريخ", 's4-c2-p': "مخططات 90 يوماً مُرسَمة بـ Canvas لكل سعر — بدون مكتبة مخططات خارجية، واجهة Canvas ثنائية الأبعاد فقط.", 's4-c3-h': "تاريخ متراكم تلقائياً", 's4-c3-p': "في كل مرة يجلب فيها أي مستخدم /api/fx-rates، يُخزَّن السعر في جدول &lt;code&gt;fx_rates_history&lt;/code&gt; — صف واحد لكل يوم.", 's4-c4-h': "شريط العملات في الرأس (برو)", 's4-c4-p': "تظهر أسعار دولار/جنيه، دولار/ريال، ريال/جنيه أيضاً في شريط رأس إكسمور برو، يُحدَّث كل ساعة.",
+    's5-title': "لوحة الأداء", 's5-badge': "تبويب الأداء", 's5-desc': "يتتبع الدقة الواقعية لكل وكيل. تُقيَّم التنبؤات بعد أفق التداول البالغ 5 أيام بمقارنة الاتجاه المتنبأ به مع الحركة الفعلية للسعر. تتنافس الوكلاء بشفافية تامة.",
+    's5b-title': "تقييم الإشارات متعدد الآفاق", 's5b-badge': "جديد", 's5b-desc': "إلى جانب الإعداد الافتراضي D+5، يُقيّم إكسمور الآن إشارات الإجماع عند &lt;strong&gt;D+10&lt;/strong&gt; و&lt;strong&gt;D+20&lt;/strong&gt; يوم تداول. هذا يكشف أي الأسهم تبقى إشاراتها دقيقة على آفاق أطول.", 's5b-tip-label': "متطلبات البيانات", 's5b-tip-body': "تظهر نتائج D+10 وD+20 فقط للأسهم التي لديها 3 تنبؤات مُقيَّمة على الأقل في ذلك الأفق. تتراكم الإدخالات الجديدة مع تشغيل &lt;code&gt;evaluate.py&lt;/code&gt; يومياً.",
+    's6-title': "محافظ التوقعات", 's6-badge': "تبويب التوقعات", 's6-desc': "أنشئ محفظة بأفق مخصص (شهر إلى سنتين) وسيتنبأ إكسمور بالعائد المتوقع لكل سهم باستخدام جميع الوكلاء النشطين. تُسجَّل الأرقام الفعلية اليومية وتُقارَن بالتوقعات.",
+    's6-c1-h': "محافظ مخصصة", 's6-c1-p': 'أنشئ محافظ متعددة بأسماء (مثل: "محافظ الربع الثاني"، "عدواني 6 أشهر") لكل منها أسهمها وأفقها الخاص.', 's6-c2-h': "ستة آفاق زمنية", 's6-c2-p': "شهر واحد (21 يوم تداول)، شهرين، 3 أشهر، 6 أشهر، سنة، سنتان. يعمل التوقع تلقائياً عند الإنشاء.", 's6-c3-h': "تتبع الأرقام اليومية الفعلية", 's6-c3-p': "تُسجّل مهمة مجدولة سعر الإغلاق الفعلي يومياً. يُراكب المخطط العائد المتوقع مقابل الفعلي عبر الزمن.", 's6-c4-h': "السرد التجاري", 's6-c4-p': "ملخص نصي تلقائي: السيناريو، المرحلة (مبكرة/وسطى/متأخرة)، متوسط الفجوة عن التوقع، وعدد الصفقات المتفوقة.",
+    's7-title': "لوحة إكسمور برو", 's7-badge': "برو", 's7-desc': 'طرفية احترافية مستقلة في &lt;a href="/pro" style="color:var(--accent)"&gt;/pro&lt;/a&gt; — مظهر طرفية داكن، نظرة عامة حية لسوق البورصة المصرية، أعلى الرابحين/الخاسرين، أداء القطاعات، شريط أسعار العملات، ومحافظ التوقعات في شاشة واحدة.',
+    's7-c1-h': "نظرة عامة على سوق البورصة المصرية", 's7-c1-p': "مخطط TradingView المتقدم (EGX30، منطقة 5 دقائق) + جدول أسهم البورصة المصرية مع إشارات الإجماع الحية.", 's7-c2-h': "أعلى الرابحين / الخاسرين", 's7-c2-p': "جداول من 8 صفوف لأفضل وأسوأ أداء في الجلسة مع شارات الإشارة ومستوى الثقة.", 's7-c3-h': "أداء القطاعات", 's7-c3-p': "مخطط شريطي أفقي لمتوسط العائد النسبي لكل قطاع، مُرمَّز أخضر/أحمر.", 's7-c4-h': "شريط أسعار العملات", 's7-c4-p': "أسعار دولار/جنيه، دولار/ريال، ريال/جنيه الحية في شريط الرأس. يُحدَّث كل ساعة.", 's7-c5-h': "ثنائي اللغة (EN/AR)", 's7-c5-p': "دعم كامل للعربية RTL عبر &lt;code&gt;proToggleLang()&lt;/code&gt;. تتغير جميع التسميات والإشارات.", 's7-c6-h': "الملخص الاقتصادي الكلي", 's7-c6-p': "نظرة عامة كلية مدعومة بـ Gemini مع استشهادات ويب. تُحمَّل تلقائياً عند فتح الصفحة وتُحدَّث كل ساعة.",
+    's7b-title': "الملخص الاقتصادي الكلي", 's7b-badge': "برو + الدردشة", 's7b-desc': "بحث ويب موثوق بـ Gemini 2.5 Flash ينتج نظرة عامة هيكلية للاقتصاد الكلي المصري: مستوى مؤشر البورصة، سعر الدولار/الجنيه، التضخم، معدل الفائدة، أبرز محركات السوق، و3 مصادر ويب للاستشهاد.",
+    's7b-c1-h': "بحث ويب موثوق", 's7b-c1-p': "يستخدم توثيق Google Search لجلب بيانات كلية آنية — ليس فقط بيانات التدريب.", 's7b-c2-h': "بطاقات المصادر", 's7b-c2-p': "بطاقات استشهاد زرقاء قابلة للنقر لكل مصدر ويب مستخدم في الرد.", 's7b-c3-h': "التحديث التلقائي", 's7b-c3-p': "يُحمَّل الملخص تلقائياً عند فتح صفحة برو ويُحدَّث كل 60 دقيقة عبر &lt;code&gt;setInterval&lt;/code&gt;.", 's7b-c4-h': "اختصار الدردشة", 's7b-c4-p': `"الملخص الكلي" اختصار في المساعد السوقي يُشغّل أيضاً نقطة نهاية الملخص الكلي.`,
+    's8-title': "لوحة صناديق الاستثمار", 's8-badge': "تبويب صناديق الاستثمار", 's8-desc': "يتتبع كلاً من &lt;strong&gt;صناديق ETF المدرجة في البورصة المصرية&lt;/strong&gt; (عبر مباشر) و&lt;strong&gt;صناديق ETF العالمية&lt;/strong&gt; (EGPT، EEMX، FM، FRDM عبر yfinance). الحيازات، العلاوة/الخصم، صافي قيمة الأصول، وحجم الصندوق.",
+    's8-c1-h': "صناديق ETF المحلية", 's8-c1-p': "~13 صندوقاً من مباشر. السعر، صافي قيمة الأصول، العلاوة/الخصم، حجم الصندوق. شبكة بطاقات مع نافذة الحيازات.", 's8-c2-h': "صناديق ETF العالمية", 's8-c2-p': "صناديق ETF المدرجة في NYSE/NASDAQ المتركزة على مصر (EGPT، EEMX، إلخ). جدول أسعار مع التغيير اليومي والحجم.", 's8-c3-h': "نافذة الحيازات", 's8-c3-p': "انقر على أي بطاقة صندوق لرؤية أعلى الحيازات بنسبة الوزن، تاريخ آخر تحديث، والتعرض الجغرافي.", 's8-c4-h': "وثائق RAG لصناديق الاستثمار", 's8-c4-p': "نشرات PDF المرفوعة في لوحة الإدارة تُدمَج عبر Gemini وتكون قابلة للبحث عبر المساعد السوقي.",
+    's9-title': "المساعد السوقي", 's9-badge': "أداة الدردشة", 's9-desc': "أداة دردشة ذكاء اصطناعي مدعومة بـ Gemini مع حقن كامل للسياق: الأسعار الحية، إشارات الإجماع، المشاعر، أسعار الصناديق، وبيانات محافظ التوقعات الشخصية عند تسجيل الدخول.",
+    's9-c1-h': "سياق السوق الحي", 's9-c1-p': "كل رسالة تتضمن رابحي وخاسري اليوم، قادة الحجم، المشاعر، وإشارات الإجماع كسياق خلفي.", 's9-c2-h': "سياق المحفظة", 's9-c2-p': "عند تسجيل الدخول، يعرف المساعد محافظ التوقعات الخاصة بك ويمكنه الإجابة على أسئلة حول الصفقات مقابل التوقعات.", 's9-c3-h': "مدرك للأخبار", 's9-c3-p': "البحث المدرك للعربية يستخلص الكلمات المفتاحية من سؤالك للعثور على العناوين الأخيرة ذات الصلة قبل الإجابة.", 's9-c4-h': "الاختصارات السريعة", 's9-c4-p': `"الملخص الكلي"، "أبرز المتحركين"، "إشارات الشراء" — أوامر بنقرة واحدة للأسئلة الشائعة.`,
+    's10-title': "لوحة الإدارة", 's10-badge': "للمسؤولين فقط", 's10-desc': "يُفتح عند &lt;code&gt;/admin&lt;/code&gt;. يتطلب بيانات ADMIN_USERNAME + ADMIN_PASSWORD (محمي بـ JWT). يحتوي على صحة النظام، رفع التقارير، حالة تضمين RAG، وثائق الصناديق، وتقارير المستخدمين.",
+    's10-c1-h': "رفع التقارير", 's10-c1-p': "ارفع تقارير السوق بصيغة PDF/صورة (حتى 25 ميغابايت). النصوص تُستخرج عبر pdf-parse؛ الصور تُعالَج بـ OCR عبر tesseract.js. تُدمَج تلقائياً إذا تم ضبط GOOGLE_API_KEY.", 's10-c2-h': "استفسار التقارير (RAG)", 's10-c2-p': "بحث دلالي عبر أجزاء تقارير السوق المُدمَجة. يعرض إجابة الذكاء الاصطناعي + استشهادات المستندات المصدر.", 's10-c3-h': "صحة النظام", 's10-c3-p': "عدد صفوف قاعدة البيانات الحية، تاريخ آخر توقع، حالة الوكلاء، ومهام التضمين المعلقة.", 's10-c4-h': "وثائق الصناديق", 's10-c4-p': "عرض جميع نشرات صناديق الاستثمار المرفوعة في جدول &lt;code&gt;rag_document&lt;/code&gt; مع حالة مهمة التضمين.",
+    's11-title': "آلة الزمن", 's11-badge': "تبويب السجل", 's11-desc': "أعد تشغيل أي جلسة تداول سابقة. اختر تاريخاً تاريخياً لرؤية ما توقعه وكلاء الذكاء الاصطناعي في ذلك اليوم إلى جانب نتائج الأسعار الفعلية — مفيد لاختبار استراتيجيتك الخاصة.",
+    's11-c1-h': "منتقي التاريخ", 's11-c1-p': "اختر أي يوم تداول سابق في البورصة المصرية. تُحمَّل التنبؤات والأسعار من لقطة قاعدة البيانات لذلك التاريخ.", 's11-c2-h': "تراكب النتائج", 's11-c2-p': "أيقونات خضراء ✓ / حمراء ✗ تُظهر الإشارات الصحيحة — تُعرض حركة السعر الفعلية بجانبها.", 's11-c3-h': "إحصاءات الجلسة", 's11-c3-p': "الدقة الإجمالية، أفضل وأسوأ التوقعات للتاريخ المختار، ومعدل الفوز لكل وكيل في تلك الجلسة.", 's11-c4-h': "وضع الاختبار الخلفي", 's11-c4-p': "مستويات المحور وإشارات الاتجاه من صفحة الجلسة تُكمّل آلة الزمن لتخطيط الصفقات.",
+    'footer-left': "إكسمور — توقع أسهم بالذكاء الاصطناعي للبورصة المصرية والأسواق العالمية", 'footer-back': "← العودة للوحة التحكم"
+  }
+};
+
+const langToggleBtn = document.getElementById('langToggleBtn');
+
+function setDocsLang(lang) {
+  if (lang !== 'ar' && lang !== 'en') {
+    lang = 'en';
+  }
+
+  const isRTL = lang === 'ar';
+  document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+  document.documentElement.lang = lang;
+  document.body.classList.toggle('docs-rtl', isRTL);
+
+  langToggleBtn.innerText = isRTL ? 'English' : 'عربي';
+
+  const elements = document.querySelectorAll('[data-i18n]');
+  elements.forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[lang] && i18n[lang][key]) {
+      el.innerHTML = i18n[lang][key];
+    }
+  });
+
+  try {
+    localStorage.setItem('docs-lang', lang);
+  } catch (e) {
+    console.warn("Could not save language preference to localStorage.", e);
+  }
+}
+
+function toggleDocsLang() {
+  const currentLang = localStorage.getItem('docs-lang') || 'en';
+  const newLang = currentLang === 'en' ? 'ar' : 'en';
+  setDocsLang(newLang);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  try {
+    const savedLang = localStorage.getItem('docs-lang');
+    if (savedLang) {
+      setDocsLang(savedLang);
+    } else {
+      setDocsLang('en'); // Default to English
+    }
+  } catch (e) {
+    console.warn("Could not retrieve language preference from localStorage.", e);
+    setDocsLang('en');
+  }
+});
+
 </script>
 </body>
 </html>
