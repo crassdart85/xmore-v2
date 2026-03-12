@@ -12,6 +12,7 @@ import os
 import json
 import pandas as pd
 from datetime import datetime, timedelta
+from typing import Optional
 import config
 from database import get_connection
 from sentiment_gemini import get_latest_sentiment
