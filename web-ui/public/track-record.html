@@ -23,7 +23,7 @@
         <button class="tr-period-btn" data-days="365" data-i18n-val="all">ALL</button>
       </div>
       <button class="tr-lang-btn" id="trLangBtn" onclick="trToggleLang()">عر</button>
-      <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">⬇ Export CSV</button>
+      <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">Export CSV</button>
     </div>
   </header>
 
@@ -283,22 +283,18 @@
       <div class="tr-section-title" data-i18n="transparencyTitle">AUDIT TRAIL & TRANSPARENCY COMMITMENT</div>
       <div class="tr-transparency-grid">
         <div class="tr-transparency-item">
-          <div class="tr-transparency-icon">🕒</div>
           <div class="tr-transparency-label" data-i18n="t1Label">Pre-Market Timestamp</div>
           <div class="tr-transparency-text" data-i18n="t1Text">Every prediction is generated and logged before EGX opens. Time of generation is recorded and cannot be altered.</div>
         </div>
         <div class="tr-transparency-item">
-          <div class="tr-transparency-icon">🔒</div>
           <div class="tr-transparency-label" data-i18n="t2Label">Immutable Signal Fields</div>
           <div class="tr-transparency-text" data-i18n="t2Text">Core signal fields (direction, confidence, action) are write-once. Any modification attempt is logged in the audit table.</div>
         </div>
         <div class="tr-transparency-item">
-          <div class="tr-transparency-icon">📊</div>
           <div class="tr-transparency-label" data-i18n="t3Label">Live Data Only</div>
           <div class="tr-transparency-text" data-i18n="t3Text">Performance metrics exclude any backtested or simulated predictions. Only real-time live signals count toward the statistics.</div>
         </div>
         <div class="tr-transparency-item">
-          <div class="tr-transparency-icon">🌐</div>
           <div class="tr-transparency-label" data-i18n="t4Label">Market-Sourced Returns</div>
           <div class="tr-transparency-text" data-i18n="t4Text">Actual returns are computed from EGX official closing prices, sourced from Mubasher data feeds and Yahoo Finance.</div>
         </div>
