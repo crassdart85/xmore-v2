@@ -2809,6 +2809,9 @@ function _etfBuildCard(i, group) {
     if (group === 'etps') {
         const underlying = i.underlying_index || '—';
         const issuer = i.issuer || '—';
+        const navVal  = _fmtNum(i.nav_value);
+        const ret3m   = _fmtPct(i.pct_change);   // stored as 3-month return from Mubasher
+        const ret3mCls = _pctClass(i.pct_change);
         return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
             <div class="etf-card-header">
                 <div class="etf-card-symbol-row">
@@ -2818,8 +2821,8 @@ function _etfBuildCard(i, group) {
             </div>
             <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
             <div class="etf-card-issuer">Issuer: ${issuer}</div>
-            <div class="etf-card-row"><span class="etf-label">Price</span><span class="etf-value">${price}</span></div>
-            <div class="etf-card-row"><span class="etf-label">Change</span><span class="etf-value ${pctCls}">${pct}</span></div>
+            <div class="etf-card-row"><span class="etf-label">NAV</span><span class="etf-value">${navVal}</span></div>
+            <div class="etf-card-row"><span class="etf-label">3M Return</span><span class="etf-value ${ret3mCls}">${ret3m}</span></div>
             <div class="etf-card-row"><span class="etf-label">Underlying</span><span class="etf-value">${underlying}</span></div>
             <div class="etf-card-row"><span class="etf-label">Liquidity</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
         </div>`;

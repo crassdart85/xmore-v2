@@ -21,7 +21,17 @@
         <div id="tv-ticker-tape" class="tv-ticker-container"></div>
 
         <header>
+            <h1>Xmore</h1>
+            <p class="subtitle">AI Stock Prediction Dashboard</p>
             <div class="header-buttons">
+                <!-- User auth area -->
+                <div id="userInfoBar" class="user-info-bar" style="display:none;">
+                    <span id="userEmail" class="user-email"></span>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+                <div id="loginPrompt" class="login-prompt">
+                    <button id="showAuthBtn" class="auth-trigger-btn">🔐 Login / Sign Up</button>
+                </div>
                 <a href="/docs" class="pro-link-btn" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Docs</a>
                 <a href="/pro" class="pro-link-btn">PRO ↗</a>
                 <button id="themeBtn" class="theme-btn" title="Toggle dark mode">
@@ -30,16 +40,6 @@
                 </button>
                 <button id="langBtn" class="lang-btn">عربي</button>
             </div>
-            <!-- User auth area -->
-            <div id="userInfoBar" class="user-info-bar" style="display:none;">
-                <span id="userEmail" class="user-email"></span>
-                <button id="logoutBtn" class="logout-btn">Logout</button>
-            </div>
-            <div id="loginPrompt" class="login-prompt">
-                <button id="showAuthBtn" class="auth-trigger-btn">🔐 Login / Sign Up</button>
-            </div>
-            <h1>Xmore</h1>
-            <p class="subtitle">AI Stock Prediction Dashboard</p>
         </header>
 
         <section id="globalPerfSnapshot" class="global-snapshot-bar">

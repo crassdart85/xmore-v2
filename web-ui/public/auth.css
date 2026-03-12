@@ -254,15 +254,8 @@
 
 /* Login Prompt in Header */
 .login-prompt {
-    position: absolute;
-    top: 12px;
-    left: 16px;
-    z-index: 10;
-}
-
-[dir="rtl"] .login-prompt {
-    left: auto;
-    right: 16px;
+    display: flex;
+    align-items: center;
 }
 
 .auth-trigger-btn {
