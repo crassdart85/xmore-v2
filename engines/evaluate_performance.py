@@ -170,6 +170,8 @@ def resolve_1day_outcomes() -> int:
 
             # Check if benchmark columns exist (they may not on older SQLite dbs)
             try:
+                if DATABASE_URL:
+                    cursor.execute("SAVEPOINT ev_1d")
                 update_sql = f"""
                     UPDATE trade_recommendations SET
                         actual_next_day_return = {_ph(1)},
@@ -185,8 +187,12 @@ def resolve_1day_outcomes() -> int:
                     actual_return, benchmark_return, buyhold_return, alpha,
                     was_correct, MODEL_VERSION, rec["id"]
                 ])
+                if DATABASE_URL:
+                    cursor.execute("RELEASE SAVEPOINT ev_1d")
             except Exception:
                 # Fallback: update only existing columns (SQLite without migration)
+                if DATABASE_URL:
+                    cursor.execute("ROLLBACK TO SAVEPOINT ev_1d")
                 update_sql = f"""
                     UPDATE trade_recommendations SET
                         actual_next_day_return = {_ph(1)},
@@ -266,6 +272,8 @@ def resolve_5day_outcomes() -> int:
             alpha_5d = round(actual_5d - benchmark_5d, 4) if benchmark_5d is not None else None
 
             try:
+                if DATABASE_URL:
+                    cursor.execute("SAVEPOINT ev_5d")
                 update_sql = f"""
                     UPDATE trade_recommendations SET
                         actual_5day_return = {_ph(1)},
@@ -275,8 +283,12 @@ def resolve_5day_outcomes() -> int:
                     WHERE id = {_ph(5)}
                 """
                 _execute(cursor, update_sql, [actual_5d, benchmark_5d, buyhold_5d, alpha_5d, rec["id"]])
+                if DATABASE_URL:
+                    cursor.execute("RELEASE SAVEPOINT ev_5d")
             except Exception:
                 # Fallback for SQLite without benchmark columns
+                if DATABASE_URL:
+                    cursor.execute("ROLLBACK TO SAVEPOINT ev_5d")
                 update_sql = f"""
                     UPDATE trade_recommendations SET actual_5day_return = {_ph(1)} WHERE id = {_ph(2)}
                 """
