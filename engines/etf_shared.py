@@ -153,7 +153,11 @@ def get_or_create_instrument(conn, symbol: str, exchange: str, defaults: Optiona
             VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
             ON CONFLICT (exchange, symbol) DO UPDATE
               SET name       = COALESCE(EXCLUDED.name, instrument.name),
-                  type       = COALESCE(EXCLUDED.type, instrument.type),
+                  type       = CASE
+                                 WHEN instrument.type IS NULL OR instrument.type = 'ETF'
+                                 THEN COALESCE(EXCLUDED.type, instrument.type)
+                                 ELSE instrument.type
+                               END,
                   issuer     = COALESCE(EXCLUDED.issuer, instrument.issuer),
                   updated_at = EXCLUDED.updated_at
             RETURNING instrument_id
@@ -167,8 +171,12 @@ def get_or_create_instrument(conn, symbol: str, exchange: str, defaults: Optiona
             VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
         """, (type_, region, symbol, isin, name, exchange, currency, country, issuer, underlying_index, today))
         # Update type + issuer on existing rows (SQLite INSERT OR IGNORE skips on conflict)
+        # Only overwrite type if existing type is null or the generic 'ETF' (prevents downgrading)
         cur.execute(f"""
-            UPDATE instrument SET type = {ph}, issuer = COALESCE({ph}, issuer), updated_at = {ph}
+            UPDATE instrument SET
+              type = CASE WHEN type IS NULL OR type = 'ETF' THEN {ph} ELSE type END,
+              issuer = COALESCE({ph}, issuer),
+              updated_at = {ph}
             WHERE exchange = {ph} AND symbol = {ph}
         """, (type_, issuer, today, exchange, symbol))
         cur.execute(f"SELECT id FROM instrument WHERE exchange = {ph} AND symbol = {ph}", (exchange, symbol))

@@ -595,6 +595,10 @@ async function initializeDatabase() {
 
     // ENUMs (idempotent — EXCEPTION WHEN duplicate_object THEN NULL)
     await pool.query(`DO $$ BEGIN CREATE TYPE instrument_type AS ENUM ('EQUITY','ETF','INDEX','FX','RATE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    // Add ETP subtypes to instrument_type enum (safe — ALTER TYPE IF NOT EXISTS value)
+    for (const v of ['COMMODITY_ETP','GOLD_ETP','INDEX_TRACKER','STRUCTURED_NOTE','ETN','ETP','UNKNOWN_ETP','EQUITY_FUND']) {
+      await pool.query(`DO $$ BEGIN ALTER TYPE instrument_type ADD VALUE IF NOT EXISTS '${v}'; EXCEPTION WHEN others THEN NULL; END $$`);
+    }
     await pool.query(`DO $$ BEGIN CREATE TYPE exchange_code   AS ENUM ('EGX','NYSE','NASDAQ','LSE','XETRA','TSX','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
     await pool.query(`DO $$ BEGIN CREATE TYPE currency_code   AS ENUM ('EGP','USD','EUR','GBP','CAD','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
     await pool.query(`DO $$ BEGIN CREATE TYPE etf_region      AS ENUM ('LOCAL_EGX','GLOBAL'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
@@ -1081,6 +1085,13 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_consensus_date ON consensus_results(prediction_date)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(email_lower)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlist(user_id)');
+
+    // Migration: reclassify EGX commodity funds from 'ETF' → 'COMMODITY_ETP'
+    // issuer column was set to cls_en ('COMMODITY') by etf_egx_mubasher.py
+    try {
+      const res = await pool.query(`UPDATE instrument SET type = 'COMMODITY_ETP' WHERE exchange = 'EGX' AND issuer = 'COMMODITY' AND type = 'ETF'`);
+      if (res.rowCount > 0) console.log(`✅ Reclassified ${res.rowCount} EGX commodity fund(s) → COMMODITY_ETP`);
+    } catch(e) { console.log('⚠️  Commodity ETP migration skipped:', e.message); }
 
     console.log('✅ Database initialized successfully!');
 
