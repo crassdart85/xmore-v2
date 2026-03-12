@@ -183,6 +183,25 @@
       </table>
     </div>
 
+    <!-- Walk-Forward Backtest Results -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="backtestTitle">WALK-FORWARD BACKTEST — ML AGENT VALIDATION</div>
+      <p class="tr-section-desc" data-i18n="backtestDesc">
+        The ML RandomForest agent is independently validated using a walk-forward methodology:
+        the model is trained on historical EGX data, then tested on the following unseen period —
+        simulating real-world deployment without look-ahead bias. Results are recalculated every Sunday.
+        This section shows out-of-sample accuracy, directional accuracy, and the hypothetical signal P&amp;L
+        for each stock the ML agent has evaluated.
+      </p>
+      <div class="tr-backtest-note" data-i18n="backtestNote">
+        Note: Walk-forward backtest results are separate from the live prediction log above.
+        They measure the ML agent's historical edge on past data — not real capital deployed.
+      </div>
+      <div id="backtestContent">
+        <div class="tr-loading" data-i18n="loading">Loading…</div>
+      </div>
+    </div>
+
     <!-- Two-col: Best Stocks + Max Drawdown context -->
     <div class="tr-two-col">
 

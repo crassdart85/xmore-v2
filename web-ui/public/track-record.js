@@ -62,7 +62,12 @@ const I18N = {
       { label: 'Avg 1D Return', key: 'avg_return_1d', desc: 'Mean return per signal, next-day basis.', negate: false },
       { label: 'Avg Alpha', key: 'avg_alpha_1d', desc: 'Mean excess return vs EGX30 per signal.', negate: false },
     ],
-    rollingLabels: { win_rate: 'Win Rate', alpha: 'Avg Alpha', sharpe_ratio: 'Sharpe', max_drawdown: 'Max DD', volatility: 'Volatility', profit_factor: 'Profit Factor', trades: 'Signals' }
+    rollingLabels: { win_rate: 'Win Rate', alpha: 'Avg Alpha', sharpe_ratio: 'Sharpe', max_drawdown: 'Max DD', volatility: 'Volatility', profit_factor: 'Profit Factor', trades: 'Signals' },
+    backtestTitle: 'WALK-FORWARD BACKTEST — ML AGENT VALIDATION',
+    backtestDesc: 'The ML RandomForest agent is independently validated using a walk-forward methodology: the model is trained on historical EGX data, then tested on the following unseen period — simulating real-world deployment without look-ahead bias. Results are recalculated every Sunday. This section shows out-of-sample accuracy, directional accuracy, and the hypothetical signal P&L for each stock the ML agent has evaluated.',
+    backtestNote: 'Note: Walk-forward backtest results are separate from the live prediction log above. They measure the ML agent\'s historical edge on past data — not real capital deployed.',
+    backtestEmpty: 'Backtest results will appear after the first Sunday run.',
+    colAccuracy: 'Accuracy', colDirAcc: 'Directional Acc.', colSignalPnl: 'Signal P&L', colLastRun: 'Last Run',
   },
   ar: {
     back: '← الرئيسية',
@@ -122,7 +127,12 @@ const I18N = {
       { label: 'متوسط العائد 1 يوم', key: 'avg_return_1d', desc: 'متوسط العائد لكل إشارة على أساس يومي.', negate: false },
       { label: 'متوسط الألفا', key: 'avg_alpha_1d', desc: 'متوسط العائد الزائد مقارنة بـ EGX30 لكل إشارة.', negate: false },
     ],
-    rollingLabels: { win_rate: 'معدل النجاح', alpha: 'متوسط الألفا', sharpe_ratio: 'شارب', max_drawdown: 'أقصى تراجع', volatility: 'التقلب', profit_factor: 'معامل الربح', trades: 'إشارات' }
+    rollingLabels: { win_rate: 'معدل النجاح', alpha: 'متوسط الألفا', sharpe_ratio: 'شارب', max_drawdown: 'أقصى تراجع', volatility: 'التقلب', profit_factor: 'معامل الربح', trades: 'إشارات' },
+    backtestTitle: 'اختبار السير للأمام — التحقق من عامل التعلم الآلي',
+    backtestDesc: 'يخضع عامل RandomForest للتعلم الآلي للتحقق المستقل باستخدام منهجية السير للأمام: يُدرَّب النموذج على بيانات البورصة المصرية التاريخية، ثم يُختبر على الفترة التالية غير المرئية — محاكاةً للنشر الفعلي دون انحياز للمستقبل. تُعاد حساب النتائج كل يوم أحد. يعرض هذا القسم دقة خارج العينة والدقة الاتجاهية وربح/خسارة الإشارة الافتراضية لكل سهم.',
+    backtestNote: 'ملاحظة: نتائج الاختبار الخلفي منفصلة عن سجل التوقعات الحية أعلاه. تقيس الأفضلية التاريخية لعامل التعلم الآلي على بيانات الماضي — وليس رأس مال حقيقي مستثمر.',
+    backtestEmpty: 'ستظهر نتائج الاختبار الخلفي بعد أول تشغيل يوم الأحد.',
+    colAccuracy: 'الدقة', colDirAcc: 'الدقة الاتجاهية', colSignalPnl: 'ربح/خسارة الإشارة', colLastRun: 'آخر تشغيل',
   }
 };
 
@@ -196,6 +206,7 @@ function loadAll() {
   loadEquityCurve();
   loadAgents();
   loadStocks();
+  loadBacktest();
   logPage = 1;
   loadLog();
 }
@@ -591,6 +602,92 @@ function goPage(p) {
   logPage = p;
   loadLog();
   window.scrollTo({ top: document.getElementById('logTableBody').closest('.tr-section').offsetTop - 80, behavior: 'smooth' });
+}
+
+// ── Walk-Forward Backtest ───────────────────────────────────────
+async function loadBacktest() {
+  const container = document.getElementById('backtestContent');
+  if (!container) return;
+  container.innerHTML = `<div class="tr-loading">${t('loading')}</div>`;
+
+  try {
+    const r = await fetch('/api/backtest/results');
+    const data = await r.json();
+
+    if (!Array.isArray(data) || !data.length) {
+      container.innerHTML = `<div class="tr-loading">${t('backtestEmpty')}</div>`;
+      return;
+    }
+
+    // Sort by directional_accuracy desc
+    const sorted = [...data].sort((a, b) => Number(b.directional_accuracy) - Number(a.directional_accuracy));
+
+    // Aggregate stats for summary strip
+    const avgAcc  = sorted.reduce((s, r) => s + Number(r.accuracy || 0), 0) / sorted.length;
+    const avgDir  = sorted.reduce((s, r) => s + Number(r.directional_accuracy || 0), 0) / sorted.length;
+    const avgPnl  = sorted.reduce((s, r) => s + Number(r.signal_pnl_pct || 0), 0) / sorted.length;
+    const runDate = sorted[0]?.run_date;
+
+    container.innerHTML = `
+      <div class="tr-bt-summary">
+        <div class="tr-bt-stat">
+          <div class="tr-bt-stat-label">${_LANG === 'ar' ? 'الأسهم المُختبرة' : 'Stocks Tested'}</div>
+          <div class="tr-bt-stat-val">${sorted.length}</div>
+        </div>
+        <div class="tr-bt-stat">
+          <div class="tr-bt-stat-label">${_LANG === 'ar' ? 'متوسط الدقة' : 'Avg Accuracy'}</div>
+          <div class="tr-bt-stat-val ${avgAcc >= 55 ? 'pos' : avgAcc >= 45 ? '' : 'neg'}">${fmt(avgAcc)}%</div>
+        </div>
+        <div class="tr-bt-stat">
+          <div class="tr-bt-stat-label">${_LANG === 'ar' ? 'متوسط الدقة الاتجاهية' : 'Avg Directional Acc.'}</div>
+          <div class="tr-bt-stat-val ${avgDir >= 55 ? 'pos' : avgDir >= 45 ? '' : 'neg'}">${fmt(avgDir)}%</div>
+        </div>
+        <div class="tr-bt-stat">
+          <div class="tr-bt-stat-label">${_LANG === 'ar' ? 'متوسط ربح الإشارة' : 'Avg Signal P&L'}</div>
+          <div class="tr-bt-stat-val ${avgPnl > 0 ? 'pos' : avgPnl < 0 ? 'neg' : ''}">${fmtPct(avgPnl, 2)}</div>
+        </div>
+        <div class="tr-bt-stat">
+          <div class="tr-bt-stat-label">${_LANG === 'ar' ? 'آخر تشغيل' : 'Last Run'}</div>
+          <div class="tr-bt-stat-val" style="font-size:13px">${fmtDate(runDate)}</div>
+        </div>
+      </div>
+      <div class="tr-table-wrap">
+        <table class="tr-table tr-table--backtest">
+          <thead>
+            <tr>
+              <th>${t('colSym')}</th>
+              <th>${t('colAccuracy')}</th>
+              <th>${t('colDirAcc')}</th>
+              <th>${t('colSignalPnl')}</th>
+              <th>${t('colLastRun')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.map(row => {
+              const acc  = Number(row.accuracy);
+              const dir  = Number(row.directional_accuracy);
+              const pnl  = Number(row.signal_pnl_pct);
+              return `<tr>
+                <td style="font-weight:700">${row.symbol}</td>
+                <td class="${acc >= 55 ? 'tr-alpha-pos' : acc < 45 ? 'tr-alpha-neg' : ''}">${fmt(acc)}%</td>
+                <td>
+                  <div class="tr-win-bar">
+                    <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(dir, 100)}%"></div></div>
+                    <span class="${dir >= 55 ? 'tr-alpha-pos' : dir < 45 ? 'tr-alpha-neg' : ''}">${fmt(dir)}%</span>
+                  </div>
+                </td>
+                <td class="${pnl > 0 ? 'tr-alpha-pos' : pnl < 0 ? 'tr-alpha-neg' : ''}">${fmtPct(pnl, 2)}</td>
+                <td style="color:#555;font-size:11px">${fmtDate(row.run_date)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch (e) {
+    container.innerHTML = `<div class="tr-loading">—</div>`;
+    console.error('Backtest error:', e);
+  }
 }
 
 // ── CSV Export ─────────────────────────────────────────────────
