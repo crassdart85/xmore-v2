@@ -59,6 +59,7 @@
                 <button class="admin-tab-btn" data-tab="tab-ask-reports" role="tab">Ask Reports</button>
                 <button class="admin-tab-btn" data-tab="tab-settings" role="tab">Settings</button>
                 <button class="admin-tab-btn" data-tab="tab-etf-docs" role="tab">ETF Docs</button>
+                <button class="admin-tab-btn" data-tab="tab-api-ref" role="tab">API Reference</button>
             </div>
             <div class="admin-tab-config-wrap">
                 <button class="admin-tab-config-btn" id="tabConfigBtn" title="Show / hide tabs" aria-expanded="false" aria-controls="tabConfigPanel">&#9881;</button>
@@ -514,6 +515,66 @@
                         <tr><td colspan="6" class="no-data">Click Refresh to load</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- API REFERENCE                                    -->
+        <!-- ================================================ -->
+        <section class="section admin-tab-panel" id="tab-api-ref" role="tabpanel">
+            <h2>API Reference</h2>
+            <p class="admin-muted">All endpoints return JSON. Auth endpoints require a valid session cookie. Admin endpoints require <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+
+            <div style="background:var(--card-bg);border:1px solid var(--border-color);padding:16px;font-family:'Courier New',monospace;font-size:12.5px;color:var(--text-secondary);overflow-x:auto;margin-top:16px;line-height:1.9;">
+<span style="color:var(--text-muted)"># ── Predictions &amp; Consensus ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/consensus                    <span style="color:var(--text-muted)">→ array of all stocks with signals</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/stocks/:symbol/brief         <span style="color:var(--text-muted)">→ {brief} Gemini 3-sentence AI narrative</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/signal-accuracy?horizon=10   <span style="color:var(--text-muted)">→ per-stock accuracy at D+5/D+10/D+20</span>
+
+<span style="color:var(--text-muted)"># ── Prices ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/prices                        <span style="color:var(--text-muted)">→ latest close price for all symbols</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/prices/:symbol                <span style="color:var(--text-muted)">→ price history for one symbol</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/sentiment                     <span style="color:var(--text-muted)">→ latest sentiment per stock</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/stats                         <span style="color:var(--text-muted)">→ {total_stocks, latestDate, …}</span>
+
+<span style="color:var(--text-muted)"># ── Portfolio &amp; Trades ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/trades/portfolio              <span style="color:var(--text-muted)">→ {open_positions, closed_positions, stats, totals, sector_breakdown}</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/trades/positions             <span style="color:var(--text-muted)">→ add position {symbol, entry_price, quantity, entry_date}</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/trades/alerts                 <span style="color:var(--text-muted)">→ list alerts (auto-triggers active ones)</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/trades/alerts                 <span style="color:var(--text-muted)">→ create alert {symbol, condition, target_price}</span>
+<span style="color:var(--accent);font-weight:700">DELETE</span> /api/trades/alerts/:id          <span style="color:var(--text-muted)">→ delete alert</span>
+
+<span style="color:var(--text-muted)"># ── FX &amp; Rates ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/fx-rates                      <span style="color:var(--text-muted)">→ {USD_EGP, USD_SAR, SAR_EGP, XAU_USD, …}</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/fx-rates/history?days=90      <span style="color:var(--text-muted)">→ array of daily rate rows (oldest first)</span>
+
+<span style="color:var(--text-muted)"># ── Forecast Portfolios ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts           <span style="color:var(--text-muted)">→ list user portfolios</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/portfolio-forecasts           <span style="color:var(--text-muted)">→ create portfolio + run forecast</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts/:id/results  <span style="color:var(--text-muted)">→ per-stock forecast results</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts/:id/chart    <span style="color:var(--text-muted)">→ forecast vs actuals time series</span>
+
+<span style="color:var(--text-muted)"># ── ETF ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/instruments               <span style="color:var(--text-muted)">→ all ETF instruments</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/prices/:symbol            <span style="color:var(--text-muted)">→ price history</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/nav/:symbol               <span style="color:var(--text-muted)">→ NAV history</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/holdings/:symbol          <span style="color:var(--text-muted)">→ holdings snapshot</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/country-exposure          <span style="color:var(--text-muted)">→ country weights</span>
+
+<span style="color:var(--text-muted)"># ── RAG / Chat ──</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/chat                      <span style="color:var(--text-muted)">→ {message} → {reply} market assistant</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/macro                     <span style="color:var(--text-muted)">→ {} → {answer, sources[]} grounded macro brief</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/ask                       <span style="color:var(--text-muted)">→ {question} → {answer} report RAG (admin)</span>
+
+<span style="color:var(--text-muted)"># ── Auth ──</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/signup                   <span style="color:var(--text-muted)">→ {email, password} → sets cookie</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/login                    <span style="color:var(--text-muted)">→ {email, password} → sets cookie</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/logout                   <span style="color:var(--text-muted)">→ clears cookie</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/auth/me                       <span style="color:var(--text-muted)">→ {id, email} if logged in</span>
+            </div>
+
+            <div style="margin-top:16px;padding:12px 16px;background:var(--no-data-bg);border-left:3px solid var(--border-color);font-size:13px;color:var(--text-secondary);">
+                <strong>Auth note:</strong> Portfolio, alerts, and forecast endpoints require a valid session cookie (set by /api/auth/login).
+                Pass <code>credentials: 'include'</code> on all fetch calls from the frontend.
             </div>
         </section>
 

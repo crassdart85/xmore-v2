@@ -243,7 +243,6 @@
     <a href="#assistant">Market Assistant</a>
     <a href="#admin">Admin Panel</a>
     <a href="#timemachine">Time Machine</a>
-    <a href="#api">API Reference</a>
   </nav>
 
   <!-- ══════════ MAIN ══════════ -->
@@ -272,6 +271,7 @@
       <a href="#etf" class="toc-pill">🌍 ETF</a>
       <a href="#assistant" class="toc-pill">💬 Assistant</a>
       <a href="#admin" class="toc-pill">🛠 Admin</a>
+      <a href="/admin" class="toc-pill">🔌 API Ref (Admin)</a>
     </div>
 
     <!-- ════════════════════════════════ -->
@@ -1067,72 +1067,6 @@
           <h4>🏋️ Backtest mode</h4>
           <p>Pivot levels and trend signals from the Session Sheet complement Time Machine for trade planning.</p>
         </div>
-      </div>
-    </section>
-
-    <!-- ════════════════════════════════ -->
-    <!-- 12. API REFERENCE -->
-    <!-- ════════════════════════════════ -->
-    <section class="docs-section" id="api">
-      <div class="docs-section-header">
-        <span class="docs-section-icon">🔌</span>
-        <h2 class="docs-section-title">API Reference</h2>
-        <span class="docs-section-badge badge-live">REST</span>
-      </div>
-      <p class="docs-desc">All endpoints return JSON. Auth endpoints require a valid session cookie. Admin endpoints require <code>Authorization: Bearer &lt;token&gt;</code>.</p>
-
-      <div class="docs-code">
-<span class="comment"># ── Predictions & Consensus ──</span>
-<span class="key">GET</span>  /api/consensus                    <span class="comment">→ array of all stocks with signals</span>
-<span class="key">GET</span>  /api/stocks/:symbol/brief         <span class="comment">→ {brief} Gemini 3-sentence AI narrative</span>
-<span class="key">GET</span>  /api/signal-accuracy?horizon=10   <span class="comment">→ per-stock accuracy at D+5/D+10/D+20</span>
-
-<span class="comment"># ── Prices ──</span>
-<span class="key">GET</span>  /api/prices                        <span class="comment">→ latest close price for all symbols</span>
-<span class="key">GET</span>  /api/prices/:symbol                <span class="comment">→ price history for one symbol</span>
-<span class="key">GET</span>  /api/sentiment                     <span class="comment">→ latest sentiment per stock</span>
-<span class="key">GET</span>  /api/stats                         <span class="comment">→ {total_stocks, latestDate, …}</span>
-
-<span class="comment"># ── Portfolio & Trades ──</span>
-<span class="key">GET</span>  /api/trades/portfolio              <span class="comment">→ {open_positions, closed_positions, stats, totals, sector_breakdown}</span>
-<span class="key">POST</span> /api/trades/positions             <span class="comment">→ add position {symbol, entry_price, quantity, entry_date}</span>
-<span class="key">GET</span>  /api/trades/alerts                 <span class="comment">→ list alerts (auto-triggers active ones)</span>
-<span class="key">POST</span> /api/trades/alerts                 <span class="comment">→ create alert {symbol, condition, target_price}</span>
-<span class="key">DELETE</span> /api/trades/alerts/:id          <span class="comment">→ delete alert</span>
-
-<span class="comment"># ── FX & Rates ──</span>
-<span class="key">GET</span>  /api/fx-rates                      <span class="comment">→ {USD_EGP, USD_SAR, SAR_EGP, XAU_USD, …}</span>
-<span class="key">GET</span>  /api/fx-rates/history?days=90      <span class="comment">→ array of daily rate rows (oldest first)</span>
-
-<span class="comment"># ── Forecast Portfolios ──</span>
-<span class="key">GET</span>  /api/portfolio-forecasts           <span class="comment">→ list user portfolios</span>
-<span class="key">POST</span> /api/portfolio-forecasts           <span class="comment">→ create portfolio + run forecast</span>
-<span class="key">GET</span>  /api/portfolio-forecasts/:id/results  <span class="comment">→ per-stock forecast results</span>
-<span class="key">GET</span>  /api/portfolio-forecasts/:id/chart    <span class="comment">→ forecast vs actuals time series</span>
-
-<span class="comment"># ── ETF ──</span>
-<span class="key">GET</span>  /api/etf/instruments               <span class="comment">→ all ETF instruments</span>
-<span class="key">GET</span>  /api/etf/prices/:symbol            <span class="comment">→ price history</span>
-<span class="key">GET</span>  /api/etf/nav/:symbol               <span class="comment">→ NAV history</span>
-<span class="key">GET</span>  /api/etf/holdings/:symbol          <span class="comment">→ holdings snapshot</span>
-<span class="key">GET</span>  /api/etf/country-exposure          <span class="comment">→ country weights</span>
-
-<span class="comment"># ── RAG / Chat ──</span>
-<span class="key">POST</span> /api/rag/chat                      <span class="comment">→ {message} → {reply} market assistant</span>
-<span class="key">POST</span> /api/rag/macro                     <span class="comment">→ {} → {answer, sources[]} grounded macro brief</span>
-<span class="key">POST</span> /api/rag/ask                       <span class="comment">→ {question} → {answer} report RAG (admin)</span>
-
-<span class="comment"># ── Auth ──</span>
-<span class="key">POST</span> /api/auth/signup                   <span class="comment">→ {email, password} → sets cookie</span>
-<span class="key">POST</span> /api/auth/login                    <span class="comment">→ {email, password} → sets cookie</span>
-<span class="key">POST</span> /api/auth/logout                   <span class="comment">→ clears cookie</span>
-<span class="key">GET</span>  /api/auth/me                       <span class="comment">→ {id, email} if logged in</span>
-      </div>
-
-      <div class="warn-box">
-        <div class="tip-label">Auth note</div>
-        Portfolio, alerts, and forecast endpoints require a valid session cookie (set by /api/auth/login).
-        Pass <code>credentials: 'include'</code> on all fetch calls from the frontend.
       </div>
     </section>
 
