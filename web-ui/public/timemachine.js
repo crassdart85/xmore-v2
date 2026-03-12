@@ -84,14 +84,15 @@
         const twoYearsAgo = new Date(today);
         twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-        dateInput.max = yesterday.toISOString().split('T')[0];
-        dateInput.min = twoYearsAgo.toISOString().split('T')[0];
+        const fmtLocal = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        dateInput.max = fmtLocal(yesterday);
+        dateInput.min = fmtLocal(twoYearsAgo);
 
         // Default to 6 months ago
         if (!dateInput.value) {
             const sixMonths = new Date(today);
             sixMonths.setMonth(sixMonths.getMonth() - 6);
-            dateInput.value = sixMonths.toISOString().split('T')[0];
+            dateInput.value = fmtLocal(sixMonths);
         }
 
         // Amount ↔ slider sync
@@ -124,7 +125,7 @@
                 } else {
                     d.setMonth(d.getMonth() - months);
                 }
-                const str = d.toISOString().split('T')[0];
+                const str = fmtLocal(d);
                 // Clamp to min
                 dateInput.value = str < dateInput.min ? dateInput.min : str;
 
