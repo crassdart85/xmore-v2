@@ -365,6 +365,7 @@ router.get('/predictions/history', async (req, res) => {
                 cr.symbol, ${isPostgres ? 's.name_en,' : ''}
                 cr.prediction_date, cr.final_signal, cr.confidence AS consensus_confidence,
                 cr.conviction, cr.bull_score, cr.bear_score, cr.risk_action,
+                cr.is_simulated,
                 tr.action, tr.actual_next_day_return, tr.benchmark_1d_return,
                 tr.alpha_1d, tr.was_correct
             FROM consensus_results cr

@@ -659,12 +659,41 @@ body {
 @media (max-width: 900px) { .tr-bt-summary { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 640px) { .tr-bt-summary { grid-template-columns: repeat(2, 1fr); } }
 
+/* ─── SIM tag ────────────────────────────────────────────────── */
+.tr-sim-tag {
+  display: inline-block;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: rgba(255,171,0,0.10);
+  border: 1px solid rgba(255,171,0,0.30);
+  color: var(--tr-amber);
+  border-radius: 2px;
+  padding: 1px 4px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
 /* ─── Loading / empty ────────────────────────────────────────── */
 .tr-loading {
   color: var(--tr-muted);
   font-size: 12px;
   padding: 16px 10px;
   text-align: center;
+}
+
+/* ─── Prevent horizontal overflow globally ───────────────────── */
+html, body { overflow-x: hidden; max-width: 100%; }
+
+.tr-section-title {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* All tables scroll horizontally on small screens */
+.tr-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
@@ -677,14 +706,28 @@ body {
   .tr-two-col   { grid-template-columns: 1fr; }
   .tr-hero      { flex-direction: column; }
   .tr-hero-stat-group { flex-direction: row; }
+  .tr-header-controls { flex-wrap: wrap; gap: 6px; }
 }
 @media (max-width: 640px) {
   .tr-kpi-strip { grid-template-columns: repeat(2, 1fr); }
   .tr-kpi-value { font-size: 20px; }
   .tr-agent-cards { grid-template-columns: 1fr 1fr; }
   .tr-transparency-grid { grid-template-columns: 1fr; }
-  .tr-header    { padding: 10px 14px; }
-  .tr-container { padding: 14px; gap: 14px; }
-  .tr-hero      { padding: 20px; }
-  .tr-hero-title { font-size: 16px; }
+  .tr-header    { padding: 8px 12px; gap: 8px; }
+  .tr-header-brand { min-width: 0; overflow: hidden; }
+  .tr-logo      { font-size: 12px; }
+  .tr-live-badge { display: none; }
+  .tr-container { padding: 12px; gap: 12px; }
+  .tr-hero      { padding: 16px; }
+  .tr-hero-title { font-size: 15px; }
+  .tr-section   { padding: 16px; }
+  .tr-period-btn { padding: 4px 8px; font-size: 10px; }
+  .tr-export-btn { font-size: 10px; padding: 5px 8px; }
+  .tr-lang-btn  { font-size: 11px; padding: 5px 10px; }
+  /* Tables: allow horizontal scroll, min width so columns don't squash */
+  .tr-table { min-width: 480px; }
+  .tr-table--log { min-width: 560px; }
+  .tr-table--backtest { min-width: 380px; }
+  /* Rolling cards stack */
+  .tr-rolling-cards { grid-template-columns: 1fr; }
 }

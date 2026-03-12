@@ -1,0 +1,38 @@
+name: Backfill Historical Predictions
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days to backfill (default: 60)'
+        required: false
+        default: '60'
+
+env:
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize database schema
+        run: python -c "from database import create_tables; create_tables()"
+
+      - name: Backfill historical predictions
+        run: python backfill_predictions.py --days ${{ github.event.inputs.days || 60 }}
