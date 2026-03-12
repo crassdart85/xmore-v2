@@ -289,7 +289,7 @@ jobs:
   # Resolves predictions whose target_date has passed between pipeline runs
   # ──────────────────────────────────────────────
   catchup-evaluation:
-    if: github.event.schedule == '0 6,12,18 * * *' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 * * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -313,6 +313,7 @@ jobs:
 
       # One-time cleanup: remove 0%-change evaluations caused by stale yfinance prices
       - name: Clean stale evaluations (0% change artifact)
+        continue-on-error: true
         run: python fix_stale_evaluations.py
 
       # Agent prediction accuracy (evaluations table)
