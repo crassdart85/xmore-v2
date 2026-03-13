@@ -128,9 +128,20 @@ def insert_consensus(conn, symbol, date, sig, conviction, confidence, bull_score
         ))
 
 
+def _evaluate_correctness(action_db, actual_return):
+    if action_db == 'BUY':
+        return actual_return > 0
+    elif action_db == 'SELL':
+        return actual_return < 0
+    elif action_db == 'HOLD':
+        return actual_return >= -2.0
+    return None
+
+
 def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
                      entry_price, stop_loss_price, target_price,
-                     stop_loss_pct, target_pct, dry_run):
+                     stop_loss_pct, target_pct, dry_run,
+                     actual_next_day_return=None):
     if dry_run:
         return
     ph = _ph()
@@ -139,6 +150,8 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
     signal_db = 'UP'
     risk_reward = round(target_pct / stop_loss_pct, 2) if stop_loss_pct else 0
     user_id = 1  # default user
+    was_correct = _evaluate_correctness(action_db, actual_next_day_return) \
+        if actual_next_day_return is not None else None
 
     if DATABASE_URL:
         cur.execute(f"""
@@ -147,15 +160,15 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
                  confidence, conviction, risk_action,
                  close_price, stop_loss_pct, target_pct,
                  stop_loss_price, target_price, risk_reward_ratio,
-                 is_simulated)
-            VALUES ({','.join([ph]*15)})
+                 is_simulated, actual_next_day_return, was_correct)
+            VALUES ({','.join([ph]*17)})
             ON CONFLICT (user_id, symbol, recommendation_date) DO NOTHING
         """, (
             user_id, symbol, date, action_db, signal_db,
             confidence, conviction, 'PROCEED',
             entry_price, stop_loss_pct * 100, target_pct * 100,
             stop_loss_price, target_price, risk_reward,
-            True
+            True, actual_next_day_return, was_correct
         ))
     else:
         cur.execute(f"""
@@ -164,15 +177,25 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
                  confidence, conviction, risk_action,
                  close_price, stop_loss_pct, target_pct,
                  stop_loss_price, target_price, risk_reward_ratio,
-                 is_simulated)
-            VALUES ({','.join([ph]*15)})
+                 is_simulated, actual_next_day_return, was_correct)
+            VALUES ({','.join([ph]*17)})
         """, (
             user_id, symbol, date, action_db, signal_db,
             confidence, conviction, 'PROCEED',
             entry_price, stop_loss_pct * 100, target_pct * 100,
             stop_loss_price, target_price, risk_reward,
-            1
+            1, actual_next_day_return, was_correct
         ))
+
+
+def get_next_day_return(price_data, symbol, day, entry_price):
+    """Compute actual_next_day_return using already-fetched price_data."""
+    prices = price_data.get(symbol, [])
+    future = sorted([p for p in prices if p['date'] > day], key=lambda p: p['date'])
+    if not future or not entry_price or entry_price <= 0:
+        return None
+    next_close = future[0]['close']
+    return round((next_close - entry_price) / entry_price * 100, 4)
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -235,6 +258,9 @@ def run(days: int = 60, dry_run: bool = False):
                         final_signal, conviction, confidence, bull_score, bear_score,
                         sig_data['agents_agree'], dry_run
                     )
+                    actual_return = get_next_day_return(
+                        price_data, symbol, day, sig_data['entry_price']
+                    )
                     insert_trade_rec(
                         conn, symbol, day,
                         sig_data['action'], confidence, conviction,
@@ -243,7 +269,8 @@ def run(days: int = 60, dry_run: bool = False):
                         sig_data['target_price'],
                         0.05 if sig_data['action'] == 'strong_buy' else 0.07,
                         0.15 if sig_data['action'] == 'strong_buy' else 0.10,
-                        dry_run
+                        dry_run,
+                        actual_next_day_return=actual_return
                     )
                     inserted += 1
                     day_inserted += 1
@@ -267,6 +294,50 @@ def run(days: int = 60, dry_run: bool = False):
                 logger.info(f"  {day}: +{day_inserted} signals inserted")
 
     logger.info(f"\n✅ Done. Inserted={inserted}, Skipped={skipped}, Errors={errors}")
+
+    # ── Patch already-existing simulated rows that still have NULL returns ──
+    if not dry_run:
+        ph = _ph()
+        updated = 0
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"""
+                SELECT id, symbol, recommendation_date, close_price, action
+                FROM trade_recommendations
+                WHERE is_simulated = {'TRUE' if DATABASE_URL else '1'}
+                AND actual_next_day_return IS NULL
+                AND close_price IS NOT NULL AND close_price > 0
+            """)
+            rows = cur.fetchall()
+            pending = [
+                dict(zip([d[0] for d in cur.description], r)) if not isinstance(r, dict) else r
+                for r in rows
+            ]
+
+        for rec in pending:
+            day = str(rec['recommendation_date'])
+            sym = rec['symbol']
+            entry = rec['close_price']
+            actual = get_next_day_return(price_data, sym, day, entry)
+            if actual is None:
+                continue
+            action_db = rec['action']
+            wc = _evaluate_correctness(action_db, actual)
+            try:
+                with get_connection() as conn:
+                    cur = conn.cursor()
+                    cur.execute(f"""
+                        UPDATE trade_recommendations
+                        SET actual_next_day_return = {ph}, was_correct = {ph}
+                        WHERE id = {ph}
+                    """, (actual, wc, rec['id']))
+                    conn.commit()
+                updated += 1
+            except Exception as e:
+                logger.debug(f"  patch {sym} {day}: {e}")
+
+        if updated:
+            logger.info(f"✅ Patched {updated} existing simulated rows with actual returns")
 
     if not dry_run and inserted > 0:
         logger.info("\n🔄 Running evaluate_performance to fill actual returns …")
