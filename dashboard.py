@@ -49,7 +49,7 @@ latest_date = prices['date'].max().strftime('%Y-%m-%d')
 col4.metric("Latest Data", latest_date)
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["🚀 Comparison: Future vs History", "📈 Price Charts", "🧐 Detailed Evaluation"])
+tab1, tab2, tab3, tab4 = st.tabs(["🚀 Comparison: Future vs History", "📈 Price Charts", "🧐 Detailed Evaluation", "⚙️ Execution Quality"])
 
 with tab1:
     st.header("🔮 Future Targets vs 📜 Historical Reality")
@@ -167,4 +167,119 @@ with tab3:
 st.sidebar.markdown("### ℹ️ About")
 st.sidebar.info("Xmore2 is a hobby-grade system for the EGX. Use for educational purposes only.")
 st.sidebar.markdown("---")
+with tab4:
+    st.header("⚙️ Execution Quality")
+    st.caption("Friction-adjusted signal analysis — EGX-specific transaction costs, slippage, and regime filtering.")
+
+    # ── 1. Regime Status ──────────────────────────────────────────────────────
+    st.subheader("📡 Market Regime (EGX30)")
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from engines.regime_filter import RegimeFilter
+        rf = RegimeFilter()
+        regime_info = rf.get_current_regime()
+        regime = regime_info.get("regime", "UNKNOWN")
+        regime_color = {"BULL": "🟢", "NEUTRAL": "🟡", "BEAR": "🔴"}.get(regime, "⚪")
+        col_r1, col_r2, col_r3, col_r4 = st.columns(4)
+        col_r1.metric("Regime", f"{regime_color} {regime}")
+        col_r2.metric("EGX30 Price", f"{regime_info.get('egx30_price', 'N/A'):,}" if regime_info.get("egx30_price") else "N/A")
+        col_r3.metric("MA20", f"{regime_info.get('ma20', 'N/A'):,}" if regime_info.get("ma20") else "N/A")
+        col_r4.metric("Distance from MA", f"{regime_info.get('distance_from_ma_pct', 0):.1f}%")
+        longs_ok = regime_info.get("new_longs_allowed", False)
+        if longs_ok:
+            st.success("✅ New long positions ALLOWED")
+        else:
+            st.error("🚫 New long positions BLOCKED — market not in BULL regime")
+    except Exception as e:
+        st.warning(f"Regime filter unavailable: {e}")
+
+    st.divider()
+
+    # ── 2. Friction Cost Summary ──────────────────────────────────────────────
+    st.subheader("💸 Friction Cost Summary")
+    try:
+        conn_exec = sqlite3.connect("stocks.db")
+        period_days = st.slider("Analysis period (days)", 7, 90, 30, key="exec_period")
+        cutoff = (datetime.now() - timedelta(days=period_days)).strftime("%Y-%m-%d")
+
+        cost_df = pd.read_sql(
+            """SELECT SUM(round_trip_cost_egp) as total_cost,
+                      AVG(round_trip_cost_egp / NULLIF(position_value_egp,0) * 100) as avg_cost_pct,
+                      COUNT(*) as total_signals,
+                      SUM(CASE WHEN execution_approved = 0 THEN 1 ELSE 0 END) as blocked_count
+               FROM trade_recommendations
+               WHERE recommendation_date >= ?""",
+            conn_exec, params=[cutoff]
+        )
+        row = cost_df.iloc[0]
+        col_c1, col_c2, col_c3, col_c4 = st.columns(4)
+        col_c1.metric("Total Round-Trip Costs", f"EGP {row.get('total_cost') or 0:,.0f}")
+        col_c2.metric("Avg Cost % of Position", f"{row.get('avg_cost_pct') or 0:.3f}%")
+        col_c3.metric("Total Signals", int(row.get("total_signals") or 0))
+        col_c4.metric("Signals Blocked", int(row.get("blocked_count") or 0))
+    except Exception as e:
+        st.info(f"Cost data not available: {e}")
+
+    st.divider()
+
+    # ── 3. Blocked Signals Log ────────────────────────────────────────────────
+    st.subheader("🚫 Blocked Signals (last 20)")
+    try:
+        blocked_df = pd.read_sql(
+            """SELECT ticker, action, signal_date, block_reason, raw_price,
+                      expected_return, edge_ratio, regime_at_block, created_at
+               FROM blocked_signals
+               ORDER BY created_at DESC LIMIT 20""",
+            conn_exec
+        )
+        if blocked_df.empty:
+            st.info("No blocked signals recorded yet.")
+        else:
+            st.dataframe(blocked_df, use_container_width=True)
+    except Exception as e:
+        st.info(f"blocked_signals table not available: {e}")
+
+    st.divider()
+
+    # ── 4. Trailing Stop Monitor ──────────────────────────────────────────────
+    st.subheader("📍 Open Position Trailing Stop Monitor")
+    try:
+        positions_df = pd.read_sql(
+            """SELECT symbol, recommendation_date as entry_date, close_price as entry_price,
+                      days_held, trailing_stop_active, trailing_stop_price, stop_loss_price,
+                      target_price, realistic_fill_price, edge_ratio
+               FROM trade_recommendations
+               WHERE action = 'BUY'
+               AND (execution_approved = 1 OR execution_approved IS NULL)
+               AND actual_next_day_return IS NULL
+               ORDER BY days_held DESC""",
+            conn_exec
+        )
+        if positions_df.empty:
+            st.info("No open positions tracked.")
+        else:
+            positions_df["trailing_active"] = positions_df["trailing_stop_active"].map(
+                {0: "❌", 1: "✅", None: "—"}
+            )
+            positions_df["dist_to_target"] = (
+                (positions_df["target_price"] - positions_df["entry_price"])
+                / positions_df["entry_price"] * 100
+            ).round(2)
+            positions_df["dist_to_stop"] = (
+                (positions_df["entry_price"] - positions_df["stop_loss_price"])
+                / positions_df["entry_price"] * 100
+            ).round(2)
+            st.dataframe(
+                positions_df[[
+                    "symbol", "entry_date", "entry_price", "days_held",
+                    "trailing_active", "trailing_stop_price", "stop_loss_price",
+                    "target_price", "dist_to_target", "dist_to_stop", "edge_ratio"
+                ]],
+                use_container_width=True
+            )
+        conn_exec.close()
+    except Exception as e:
+        st.info(f"Position data not available: {e}")
+
 st.sidebar.caption("v2.1 Enhanced")

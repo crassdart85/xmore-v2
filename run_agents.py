@@ -869,6 +869,158 @@ from engines.pivot_engine import enrich_recommendation
 from engines.briefing_generator import generate_daily_briefing
 from utils.trading_calendar import should_generate_recommendations
 
+# ─────────────────────────────────────────────────────────────────────────────
+# EXECUTION REALISM LAYER — friction-adjusted signals (v1.0)
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    from engines.execution_agent import ExecutionAgent
+    from engines.regime_filter import RegimeFilter
+    _EXECUTION_REALISM_ENABLED = True
+except Exception as _er_err:
+    logger.warning(f"Execution realism layer not available: {_er_err}")
+    _EXECUTION_REALISM_ENABLED = False
+
+
+def _log_blocked_signal(signal: dict, conn, regime_info: str = ""):
+    """Persist a blocked signal to the blocked_signals audit table."""
+    try:
+        cursor = conn.cursor()
+        ph = "%s" if os.getenv("DATABASE_URL") else "?"
+        cursor.execute(
+            f"""
+            INSERT INTO blocked_signals
+                (ticker, action, signal_date, consensus_score, block_reason,
+                 raw_price, expected_return, edge_ratio, regime_at_block)
+            VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+            """,
+            (
+                signal.get("ticker", signal.get("symbol", "")),
+                signal.get("action", ""),
+                signal.get("date", ""),
+                signal.get("consensus_score", signal.get("confidence", 0)),
+                signal.get("block_reason", ""),
+                signal.get("raw_price", signal.get("close_price", 0)),
+                signal.get("expected_return_pct", signal.get("target_pct", 0)),
+                signal.get("edge_ratio", None),
+                regime_info,
+            ),
+        )
+    except Exception as e:
+        logger.debug(f"[ExecRealism] Could not log blocked signal: {e}")
+
+
+def _fetch_market_data_for_exec(symbol: str, conn) -> dict:
+    """Pull avg_daily_volume and prev_close from DB for execution checks."""
+    try:
+        cursor = conn.cursor()
+        ph = "%s" if os.getenv("DATABASE_URL") else "?"
+        if os.getenv("DATABASE_URL"):
+            cursor.execute(
+                """SELECT close, volume FROM prices WHERE symbol = %s
+                   ORDER BY date DESC LIMIT 20""",
+                (symbol,),
+            )
+        else:
+            cursor.execute(
+                "SELECT close, volume FROM prices WHERE symbol = ? ORDER BY date DESC LIMIT 20",
+                (symbol,),
+            )
+        rows = cursor.fetchall()
+        if not rows:
+            return {}
+        volumes = [r["volume"] for r in rows if r.get("volume")]
+        avg_vol = int(sum(volumes) / len(volumes)) if volumes else 0
+        prev_close = rows[0]["close"] if rows else 0
+        return {"avg_daily_volume": avg_vol, "prev_close": prev_close}
+    except Exception as e:
+        logger.debug(f"[ExecRealism] market data fetch error for {symbol}: {e}")
+        return {}
+
+
+def apply_execution_realism(
+    recs: list, conn, portfolio_value_egp: float = 500_000.0
+) -> list:
+    """
+    Gates all BUY recommendations through execution realism checks.
+    SELL and HOLD pass through unchanged.
+    Returns list of approved recs (with adjusted fill prices for BUYs).
+    """
+    if not _EXECUTION_REALISM_ENABLED:
+        return recs
+
+    exec_agent     = ExecutionAgent(portfolio_value_egp=portfolio_value_egp)
+    regime_filter  = RegimeFilter()
+    approved       = []
+
+    # Check market regime once for all BUY signals
+    long_allowed, regime_reason = regime_filter.is_long_allowed()
+    regime_info = regime_filter.get_current_regime()
+    regime_str  = regime_info.get("regime", "UNKNOWN")
+
+    for rec in recs:
+        action = (rec.get("action") or "HOLD").upper()
+
+        # Non-BUY signals pass through without execution checks
+        if action != "BUY":
+            rec["execution_approved"] = True
+            approved.append(rec)
+            continue
+
+        # Regime gate
+        if not long_allowed:
+            rec["blocked"]            = True
+            rec["block_reason"]       = f"REGIME_FILTER: {regime_reason}"
+            rec["execution_approved"] = False
+            _log_blocked_signal(rec, conn, regime_str)
+            logger.info(f"  [BLOCKED] {rec.get('symbol')} — {rec['block_reason']}")
+            continue
+
+        # Fetch market data
+        market_data = _fetch_market_data_for_exec(rec.get("symbol", ""), conn)
+        if not market_data:
+            rec["execution_approved"] = True  # fail-open if no data
+            approved.append(rec)
+            continue
+
+        market_data["portfolio_value_egp"] = portfolio_value_egp
+
+        # Build signal dict for execution agent
+        signal = {
+            "ticker":              rec.get("symbol", ""),
+            "action":              action,
+            "raw_price":           rec.get("close_price") or 0,
+            "expected_return_pct": (rec.get("target_pct") or 0) / 100,
+            "stop_loss_pct":       (rec.get("stop_loss_pct") or 0) / 100,
+            "consensus_score":     rec.get("confidence") or 0,
+        }
+
+        result = exec_agent.evaluate_signal(signal, market_data)
+
+        if result["approved"]:
+            rec.update({
+                "realistic_fill_price": result["realistic_fill_price"],
+                "position_value_egp":   result["position_value_egp"],
+                "round_trip_cost_egp":  result["round_trip_cost_egp"],
+                "edge_ratio":           result["edge_ratio"],
+                "split_required":       result["split_required"],
+                "realistic_stop_price": result["realistic_stop_price"],
+                "execution_approved":   True,
+            })
+            logger.info(
+                f"  [APPROVED] {rec.get('symbol')} fill={result['realistic_fill_price']:.4f} "
+                f"edge={result['edge_ratio']}x"
+            )
+            approved.append(rec)
+        else:
+            rec["blocked"]            = True
+            rec["block_reason"]       = result["rejection_reason"]
+            rec["execution_approved"] = False
+            rec["edge_ratio"]         = result["edge_ratio"]
+            _log_blocked_signal(rec, conn, regime_str)
+            logger.info(f"  [BLOCKED] {rec.get('symbol')} — {result['rejection_reason']}")
+
+    return approved
+
 
 def generate_and_store_briefing(trading_date):
     """Gather data from DB, generate the daily briefing, and store it."""
@@ -1185,7 +1337,11 @@ def generate_daily_trade_recommendations(trading_date):
             
             # Sort
             user_recs.sort(key=lambda r: r["priority"], reverse=True)
-            
+
+            # ── Execution realism gate ─────────────────────────────────────
+            user_recs = apply_execution_realism(user_recs, conn)
+            # ──────────────────────────────────────────────────────────────
+
             # Store & Update Positions
             for rec in user_recs:
                 store_trade_recommendation(user_id, rec, trading_date)
