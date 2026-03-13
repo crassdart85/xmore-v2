@@ -160,15 +160,15 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
                  confidence, conviction, risk_action,
                  close_price, stop_loss_pct, target_pct,
                  stop_loss_price, target_price, risk_reward_ratio,
-                 is_simulated, actual_next_day_return, was_correct)
-            VALUES ({','.join([ph]*17)})
+                 is_simulated, is_live, actual_next_day_return, was_correct)
+            VALUES ({','.join([ph]*18)})
             ON CONFLICT (user_id, symbol, recommendation_date) DO NOTHING
         """, (
             user_id, symbol, date, action_db, signal_db,
             confidence, conviction, 'PROCEED',
             entry_price, stop_loss_pct * 100, target_pct * 100,
             stop_loss_price, target_price, risk_reward,
-            True, actual_next_day_return, was_correct
+            True, True, actual_next_day_return, was_correct
         ))
     else:
         cur.execute(f"""
@@ -177,14 +177,14 @@ def insert_trade_rec(conn, symbol, date, action_raw, confidence, conviction,
                  confidence, conviction, risk_action,
                  close_price, stop_loss_pct, target_pct,
                  stop_loss_price, target_price, risk_reward_ratio,
-                 is_simulated, actual_next_day_return, was_correct)
-            VALUES ({','.join([ph]*17)})
+                 is_simulated, is_live, actual_next_day_return, was_correct)
+            VALUES ({','.join([ph]*18)})
         """, (
             user_id, symbol, date, action_db, signal_db,
             confidence, conviction, 'PROCEED',
             entry_price, stop_loss_pct * 100, target_pct * 100,
             stop_loss_price, target_price, risk_reward,
-            1, actual_next_day_return, was_correct
+            1, 1, actual_next_day_return, was_correct
         ))
 
 
@@ -305,7 +305,6 @@ def run(days: int = 60, dry_run: bool = False):
                 SELECT id, symbol, recommendation_date, close_price, action
                 FROM trade_recommendations
                 WHERE is_simulated = {'TRUE' if DATABASE_URL else '1'}
-                AND actual_next_day_return IS NULL
                 AND close_price IS NOT NULL AND close_price > 0
             """)
             rows = cur.fetchall()
@@ -319,16 +318,15 @@ def run(days: int = 60, dry_run: bool = False):
             sym = rec['symbol']
             entry = rec['close_price']
             actual = get_next_day_return(price_data, sym, day, entry)
-            if actual is None:
-                continue
             action_db = rec['action']
-            wc = _evaluate_correctness(action_db, actual)
+            wc = _evaluate_correctness(action_db, actual) if actual is not None else None
             try:
                 with get_connection() as conn:
                     cur = conn.cursor()
                     cur.execute(f"""
                         UPDATE trade_recommendations
-                        SET actual_next_day_return = {ph}, was_correct = {ph}
+                        SET actual_next_day_return = {ph}, was_correct = {ph},
+                            is_live = {'TRUE' if DATABASE_URL else '1'}
                         WHERE id = {ph}
                     """, (actual, wc, rec['id']))
                     conn.commit()
