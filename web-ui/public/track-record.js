@@ -236,39 +236,80 @@ function colorClass(v, invert = false) {
 // ── Summary ────────────────────────────────────────────────────
 async function loadSummary() {
   try {
-    const r = await fetch(`/api/performance-v2/summary?days=${activeDays}`);
+    const r = await fetch(`/api/track-record/summary?days=${activeDays}`);
     const data = await r.json();
     summaryCache = data;
 
-    if (!data.available) {
-      ['kpiTotal','kpiWin','kpiAlpha','kpiBeat','kpiSharpe','kpiPF'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = '—';
-      });
-      return;
+    // Support both new /api/track-record/summary shape and old /api/performance-v2/summary shape
+    const isNewShape = !!data.kpi_windows;
+
+    if (isNewShape) {
+      const total = data.total_live_signals || 0;
+      if (!total) {
+        ['kpiTotal','kpiWin','kpiAlpha','kpiBeat','kpiSharpe','kpiPF'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = '—';
+        });
+        return;
+      }
+
+      // Use the selected window (or 90d as default for hero KPIs)
+      const winKey = activeDays <= 30 ? '30d' : activeDays <= 60 ? '60d' : '90d';
+      const w = data.kpi_windows[winKey] || data.kpi_windows['90d'] || {};
+      const winRate = w.directional_accuracy != null ? (w.directional_accuracy * 100).toFixed(1) : null;
+      const alpha   = w.alpha_vs_egx30 ?? null;
+      const sharpe  = w.sharpe_ratio ?? null;
+
+      setKpi('kpiTotal', total, '', 'neutral');
+      setKpi('kpiWin',   winRate != null ? winRate + '%' : '—', '', winRate >= 55 ? 'positive' : winRate >= 45 ? 'neutral' : 'negative');
+      setKpi('kpiAlpha', alpha != null ? fmtPct(alpha, 3) : '—', '', alpha > 0 ? 'positive' : 'negative');
+      setKpi('kpiBeat',  '—', '', 'neutral');
+      setKpi('kpiSharpe', sharpe != null ? fmt(sharpe, 2) : '—', '', sharpe >= 1 ? 'positive' : sharpe >= 0 ? 'neutral' : 'negative');
+      setKpi('kpiPF',    '—', '', 'neutral');
+
+      // Hero dates
+      const since = data.live_since;
+      const last  = data.last_updated;
+      if (since) document.getElementById('heroSince').textContent = fmtDate(since);
+      if (last)  document.getElementById('heroLast').textContent  = fmtDate(last);
+
+      const dr = document.getElementById('trDateRange');
+      if (dr && since && last) {
+        dr.textContent = `Data range: ${fmtDate(since)} → ${fmtDate(last)} · ${total} live signals`;
+      }
+
+      // Rolling windows from kpi_windows
+      renderRolling(data.kpi_windows);
+
+    } else {
+      // Old shape fallback
+      if (!data.available) {
+        ['kpiTotal','kpiWin','kpiAlpha','kpiBeat','kpiSharpe','kpiPF'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.textContent = '—';
+        });
+        return;
+      }
+
+      const g = data.global;
+      setKpi('kpiTotal', g.total_predictions, '', 'neutral');
+      setKpi('kpiWin', g.win_rate + '%', '', g.win_rate >= 55 ? 'positive' : g.win_rate >= 45 ? 'neutral' : 'negative');
+      setKpi('kpiAlpha', fmtPct(g.avg_alpha_1d, 3), '', g.avg_alpha_1d > 0 ? 'positive' : 'negative');
+      setKpi('kpiBeat', g.beat_benchmark_pct + '%', '', g.beat_benchmark_pct >= 55 ? 'positive' : 'neutral');
+      setKpi('kpiSharpe', fmt(g.sharpe_ratio, 2), '', g.sharpe_ratio >= 1 ? 'positive' : g.sharpe_ratio >= 0 ? 'neutral' : 'negative');
+      setKpi('kpiPF', fmt(g.profit_factor, 2), '', g.profit_factor >= 1.5 ? 'positive' : g.profit_factor >= 1 ? 'neutral' : 'negative');
+
+      if (g.first_prediction) document.getElementById('heroSince').textContent = fmtDate(g.first_prediction);
+      if (g.last_prediction)  document.getElementById('heroLast').textContent = fmtDate(g.last_prediction);
+
+      const dr = document.getElementById('trDateRange');
+      if (dr && g.first_prediction && g.last_prediction) {
+        dr.textContent = `Data range: ${fmtDate(g.first_prediction)} → ${fmtDate(g.last_prediction)} · ${g.total_predictions} signals`;
+      }
+
+      renderRolling(data.rolling);
+      renderRiskRows(g);
     }
-
-    const g = data.global;
-
-    setKpi('kpiTotal', g.total_predictions, '', 'neutral');
-    setKpi('kpiWin', g.win_rate + '%', '', g.win_rate >= 55 ? 'positive' : g.win_rate >= 45 ? 'neutral' : 'negative');
-    setKpi('kpiAlpha', fmtPct(g.avg_alpha_1d, 3), '', g.avg_alpha_1d > 0 ? 'positive' : 'negative');
-    setKpi('kpiBeat', g.beat_benchmark_pct + '%', '', g.beat_benchmark_pct >= 55 ? 'positive' : 'neutral');
-    setKpi('kpiSharpe', fmt(g.sharpe_ratio, 2), '', g.sharpe_ratio >= 1 ? 'positive' : g.sharpe_ratio >= 0 ? 'neutral' : 'negative');
-    setKpi('kpiPF', fmt(g.profit_factor, 2), '', g.profit_factor >= 1.5 ? 'positive' : g.profit_factor >= 1 ? 'neutral' : 'negative');
-
-    // Hero dates
-    if (g.first_prediction) document.getElementById('heroSince').textContent = fmtDate(g.first_prediction);
-    if (g.last_prediction)  document.getElementById('heroLast').textContent = fmtDate(g.last_prediction);
-
-    // Date range disclaimer
-    const dr = document.getElementById('trDateRange');
-    if (dr && g.first_prediction && g.last_prediction) {
-      dr.textContent = `Data range: ${fmtDate(g.first_prediction)} → ${fmtDate(g.last_prediction)} · ${g.total_predictions} signals`;
-    }
-
-    renderRolling(data.rolling);
-    renderRiskRows(g);
 
   } catch (e) {
     console.error('Summary error:', e);
@@ -297,16 +338,23 @@ async function renderRolling(rolling) {
   container.innerHTML = windows.map(([key, label]) => {
     const w = rolling_[key];
     if (!w) return '';
+    // Normalise: new shape uses directional_accuracy+alpha_vs_egx30; old uses win_rate+alpha+trades
+    const trades  = w.trades      ?? w.total_signals ?? 0;
+    const winRate = w.win_rate    ?? (w.directional_accuracy != null ? parseFloat((w.directional_accuracy * 100).toFixed(1)) : null);
+    const alpha   = w.alpha       ?? w.alpha_vs_egx30 ?? null;
+    const sharpe  = w.sharpe_ratio ?? null;
+    const maxDD   = w.max_drawdown ?? null;
+    const pf      = w.profit_factor ?? null;
     const rows = [
-      { label: labels.trades,       val: w.trades,         fmt: v => v },
-      { label: labels.win_rate,     val: w.win_rate,       fmt: v => v + '%' },
-      { label: labels.alpha,        val: w.alpha,          fmt: v => fmtPct(v, 3), cls: colorClass(w.alpha) },
-      { label: labels.sharpe_ratio, val: w.sharpe_ratio,   fmt: v => fmt(v, 2),    cls: colorClass(w.sharpe_ratio) },
-      { label: labels.max_drawdown, val: w.max_drawdown,   fmt: v => '-' + fmt(v, 2) + '%', cls: 'neg' },
-      { label: labels.profit_factor,val: w.profit_factor,  fmt: v => fmt(v, 2),    cls: colorClass(w.profit_factor - 1) },
+      { label: labels.trades,       val: trades,    fmt: v => v },
+      { label: labels.win_rate,     val: winRate,   fmt: v => v != null ? v + '%' : '—' },
+      { label: labels.alpha,        val: alpha,     fmt: v => v != null ? fmtPct(v, 3) : '—', cls: colorClass(alpha) },
+      { label: labels.sharpe_ratio, val: sharpe,    fmt: v => v != null ? fmt(v, 2) : '—',    cls: colorClass(sharpe) },
+      { label: labels.max_drawdown, val: maxDD,     fmt: v => v != null ? '-' + fmt(v, 2) + '%' : '—', cls: 'neg' },
+      { label: labels.profit_factor,val: pf,        fmt: v => v != null ? fmt(v, 2) : '—',    cls: colorClass(pf != null ? pf - 1 : null) },
     ];
     return `<div class="tr-rolling-card">
-      <div class="tr-rolling-card-title">${label} — ${w.trades} signals</div>
+      <div class="tr-rolling-card-title">${label} — ${trades} signals</div>
       ${rows.map(r => `<div class="tr-rolling-row">
         <span class="tr-rolling-row-label">${r.label}</span>
         <span class="tr-rolling-row-val ${r.cls||''}">${r.fmt(r.val)}</span>
@@ -350,7 +398,7 @@ function renderRiskRows(global_) {
 // ── Equity Curve ───────────────────────────────────────────────
 async function loadEquityCurve() {
   try {
-    const r = await fetch(`/api/performance-v2/equity-curve?days=${activeDays}`);
+    const r = await fetch(`/api/track-record/equity-curve?days=${activeDays}`);
     const data = await r.json();
 
     const empty = document.getElementById('equityEmpty');
@@ -451,7 +499,7 @@ async function loadEquityCurve() {
 // ── Agents ─────────────────────────────────────────────────────
 async function loadAgents() {
   try {
-    const r = await fetch('/api/performance-v2/by-agent');
+    const r = await fetch('/api/track-record/agents');
     const data = await r.json();
     const tbody = document.getElementById('agentTableBody');
     if (!data.agents || !data.agents.length) {
@@ -487,19 +535,21 @@ async function loadAgents() {
 // ── Stocks ─────────────────────────────────────────────────────
 async function loadStocks() {
   try {
-    const r = await fetch(`/api/performance-v2/by-stock?days=${activeDays}`);
+    const r = await fetch(`/api/track-record/top-stocks?days=${activeDays}`);
     const data = await r.json();
     const tbody = document.getElementById('stockTableBody');
-    if (!data.stocks || !data.stocks.length) {
+    const stocks = data.top_by_alpha || data.stocks || [];
+    if (!stocks.length) {
       tbody.innerHTML = `<tr><td colspan="4" class="tr-loading">${t('noData')}</td></tr>`;
       return;
     }
-    tbody.innerHTML = data.stocks.slice(0, 12).map(s => {
+    tbody.innerHTML = stocks.slice(0, 12).map(s => {
       const wr = Number(s.win_rate);
-      const alpha = Number(s.avg_alpha);
+      const alpha = Number(s.alpha_avg ?? s.avg_alpha);
+      const count = s.signal_count ?? s.total;
       return `<tr>
         <td style="font-weight:700">${s.symbol}</td>
-        <td>${s.total}</td>
+        <td>${count}</td>
         <td>
           <div class="tr-win-bar">
             <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr,100)}%"></div></div>
@@ -522,16 +572,17 @@ async function loadLog() {
 
   try {
     const filter = document.getElementById('logFilter').value;
-    const url = `/api/performance-v2/predictions/history?page=${logPage}&limit=25`;
+    const url = `/api/track-record/predictions?page=${logPage}&limit=25`;
     const r = await fetch(url);
     const data = await r.json();
 
     logDataCache = data.predictions || [];
-    const pag = data.pagination || {};
-    logTotalPages = pag.pages || 1;
+    // New endpoint returns top-level pagination fields; old returned data.pagination
+    const pag = data.pagination || { page: data.page, pages: data.pages, total: data.total };
+    logTotalPages = pag.pages || data.pages || 1;
 
     let rows = logDataCache;
-    if (filter) rows = rows.filter(p => p.final_signal === filter || p.action === filter);
+    if (filter) rows = rows.filter(p => (p.signal || p.final_signal || p.action) === filter);
 
     if (!rows.length) {
       tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">${t('noData')}</td></tr>`;
@@ -540,28 +591,32 @@ async function loadLog() {
     }
 
     tbody.innerHTML = rows.map(p => {
-      const signal = p.final_signal || p.action || '—';
+      // Support both old field names and new normalized names
+      const signal = p.signal || p.final_signal || p.action || '—';
       const sigCls = signal === 'UP' || signal === 'BUY' ? 'tr-signal-up' : signal === 'DOWN' || signal === 'SELL' ? 'tr-signal-down' : '';
-      const alpha = Number(p.alpha_1d);
-      const ret1d = Number(p.actual_next_day_return);
-      const correct = p.was_correct;
+      const alpha  = Number(p.alpha ?? p.alpha_1d);
+      const ret1d  = Number(p.actual_return ?? p.actual_next_day_return);
+      const outcome = p.outcome;
+      const correct  = p.was_correct;
       let hitHtml = `<span class="tr-hit-pending">${t('hitPending')}</span>`;
-      if (correct === true || correct === 1 || correct === 't' || correct === 'true') {
+      if (outcome === 'WIN' || correct === true || correct === 1 || correct === 't' || correct === 'true') {
         hitHtml = `<span class="tr-hit-yes">${t('hitYes')}</span>`;
-      } else if (correct === false || correct === 0 || correct === 'f' || correct === 'false') {
+      } else if (outcome === 'LOSS' || correct === false || correct === 0 || correct === 'f' || correct === 'false') {
         hitHtml = `<span class="tr-hit-no">${t('hitNo')}</span>`;
       }
-      const name = p.name_en || p.symbol;
+      const name = p.name || p.name_en || p.symbol;
+      const conf = p.confidence ?? p.consensus_confidence;
       const simTag = (p.is_simulated === true || p.is_simulated === 1 || p.is_simulated === 't')
         ? `<span class="tr-sim-tag">SIM</span>` : '';
+      const rowDate = p.date || p.prediction_date || p.recommendation_date;
       return `<tr>
-        <td>${fmtDate(p.prediction_date || p.recommendation_date)}${simTag}</td>
+        <td>${fmtDate(rowDate)}${simTag}</td>
         <td><strong>${p.symbol}</strong><br><span style="color:#666;font-size:10px">${name !== p.symbol ? name : ''}</span></td>
         <td class="${sigCls}">${signal}</td>
-        <td>${p.consensus_confidence != null ? fmt(p.consensus_confidence) + '%' : p.confidence != null ? fmt(p.confidence)+'%' : '—'}</td>
+        <td>${conf != null ? fmt(conf) + '%' : '—'}</td>
         <td>${p.conviction || '—'}</td>
-        <td class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${ret1d != null && !isNaN(ret1d) ? fmtPct(ret1d, 2) : '—'}</td>
-        <td class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${p.alpha_1d != null && !isNaN(alpha) ? fmtPct(alpha, 3) : '—'}</td>
+        <td class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(ret1d) && ret1d != null ? fmtPct(ret1d, 2) : '—'}</td>
+        <td class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ?? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
         <td>${hitHtml}</td>
       </tr>`;
     }).join('');
@@ -613,16 +668,18 @@ async function loadBacktest() {
   container.innerHTML = `<div class="tr-loading">${t('loading')}</div>`;
 
   try {
-    const r = await fetch('/api/backtest/results');
+    const r = await fetch('/api/track-record/backtest');
     const data = await r.json();
 
-    if (!Array.isArray(data) || !data.length) {
+    // New endpoint wraps results; old returned a bare array
+    const results = Array.isArray(data) ? data : (data.results || []);
+    if (data.status === 'pending' || !results.length) {
       container.innerHTML = `<div class="tr-loading">${t('backtestEmpty')}</div>`;
       return;
     }
 
     // Sort by directional_accuracy desc
-    const sorted = [...data].sort((a, b) => Number(b.directional_accuracy) - Number(a.directional_accuracy));
+    const sorted = [...results].sort((a, b) => Number(b.directional_accuracy) - Number(a.directional_accuracy));
 
     // Aggregate stats for summary strip
     const avgAcc  = sorted.reduce((s, r) => s + Number(r.accuracy || 0), 0) / sorted.length;
@@ -693,38 +750,6 @@ async function loadBacktest() {
 }
 
 // ── CSV Export ─────────────────────────────────────────────────
-async function exportCSV() {
-  try {
-    const r = await fetch(`/api/performance-v2/predictions/history?page=1&limit=1000`);
-    const data = await r.json();
-    const rows = data.predictions || [];
-    if (!rows.length) { alert('No data to export.'); return; }
-
-    const headers = ['Date','Symbol','Signal','Confidence','Conviction','1D_Actual','Alpha_1D','Hit'];
-    const csv = [
-      headers.join(','),
-      ...rows.map(p => {
-        const correct = p.was_correct;
-        const hit = (correct===true||correct===1||correct==='t') ? 'YES' : (correct===false||correct===0||correct==='f') ? 'NO' : 'PENDING';
-        return [
-          p.prediction_date || p.recommendation_date,
-          p.symbol,
-          p.final_signal || p.action || '',
-          p.consensus_confidence ?? p.confidence ?? '',
-          p.conviction || '',
-          p.actual_next_day_return ?? '',
-          p.alpha_1d ?? '',
-          hit
-        ].join(',');
-      })
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `xmore-track-record-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-  } catch (e) {
-    console.error('Export error:', e);
-  }
+function exportCSV() {
+  window.location.href = `/api/track-record/predictions/export?days=${activeDays}`;
 }

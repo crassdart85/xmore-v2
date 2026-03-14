@@ -17,6 +17,7 @@ const { router: portfolioForecastsRouter, attachDb: attachPortfolioForecastsDb }
 const { router: ragRouter, attachDb: attachRagDb } = require('./routes/rag');
 const { router: etfRouter, attachDb: attachEtfDb } = require('./routes/etf');
 const { router: scoringRouter, attachDb: attachScoringDb } = require('./routes/scoring');
+const { router: trackRecordRouter, attachDb: attachTrackRecordDb } = require('./routes/track-record');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -137,6 +138,7 @@ attachPortfolioForecastsDb(db, isPostgres);
 attachRagDb(db, isPostgres);
 attachEtfDb(db, isPostgres);
 attachScoringDb(db, isPostgres);
+attachTrackRecordDb(db, isPostgres);
 
 app.use('/api', authRouter);
 app.use('/api', stocksRouter);
@@ -167,6 +169,7 @@ app.use('/api/portfolio-forecasts', portfolioForecastsRouter);
 app.use('/api/rag', ragRouter);
 app.use('/api/etf', etfRouter);
 app.use('/api/signals', scoringRouter);
+app.use('/api/track-record', trackRecordRouter);
 
 // ============================================
 // API ENDPOINTS
