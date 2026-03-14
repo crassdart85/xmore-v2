@@ -13,9 +13,21 @@ Supports:
 
 import math
 import os
+from datetime import datetime
 from database import get_connection
 
 DATABASE_URL = os.getenv('DATABASE_URL')
+
+# EGX-correct risk parameters
+try:
+    from config.execution_config import EGX_RISK_FREE_RATE_ANNUAL, EGX_TRADING_DAYS_PER_YEAR
+except ImportError:
+    EGX_RISK_FREE_RATE_ANNUAL = 0.2725
+    EGX_TRADING_DAYS_PER_YEAR = 247
+
+# Daily risk-free rate: (1 + annual) ^ (1/247) - 1
+EGX_DAILY_RF = (1 + EGX_RISK_FREE_RATE_ANNUAL) ** (1 / EGX_TRADING_DAYS_PER_YEAR) - 1
+MINIMUM_TRADES_FOR_METRICS = 30
 
 
 # ─── SQL HELPERS ───────────────────────────────────────────────
@@ -161,36 +173,39 @@ def get_performance_summary(
 
 # ─── METRIC CALCULATIONS ──────────────────────────────────────
 
-def sharpe_ratio(returns: list, risk_free_rate: float = 0.0, annualize: bool = True) -> float:
+def sharpe_ratio(returns: list, risk_free_rate: float = None, annualize: bool = True) -> float:
     """
-    Sharpe Ratio = (avg_return - risk_free_rate) / stdev(returns)
-    Annualized assuming ~252 trading days.
+    Sharpe Ratio = (avg_return - daily_rf) / stdev(returns)
+    Annualized using EGX_TRADING_DAYS_PER_YEAR (247, Sun–Thu).
+    Defaults to Egypt CBE risk-free rate (~27.25% annual).
     """
     if len(returns) < 2:
         return 0.0
 
-    mean = avg(returns)
+    daily_rf = EGX_DAILY_RF if risk_free_rate is None else risk_free_rate
+    m = avg(returns)
     std = stddev(returns)
 
     if std == 0:
         return 0.0
 
-    daily_sharpe = (mean - risk_free_rate) / std
+    daily_sharpe = (m - daily_rf) / std
 
     if annualize:
-        return daily_sharpe * math.sqrt(252)
+        return daily_sharpe * math.sqrt(EGX_TRADING_DAYS_PER_YEAR)
     return daily_sharpe
 
 
-def sortino_ratio(returns: list, risk_free_rate: float = 0.0) -> float:
+def sortino_ratio(returns: list, risk_free_rate: float = None) -> float:
     """
-    Sortino Ratio = (avg_return - risk_free_rate) / downside_deviation
-    Only penalizes negative returns (not all volatility).
+    Sortino Ratio = (avg_return - daily_rf) / downside_deviation
+    Only penalizes negative returns. Annualized with EGX 247-day calendar.
     """
     if len(returns) < 2:
         return 0.0
 
-    mean = avg(returns)
+    daily_rf = EGX_DAILY_RF if risk_free_rate is None else risk_free_rate
+    m = avg(returns)
     downside = [r for r in returns if r < 0]
 
     if not downside:
@@ -200,7 +215,7 @@ def sortino_ratio(returns: list, risk_free_rate: float = 0.0) -> float:
     if downside_std == 0:
         return 99.9
 
-    return ((mean - risk_free_rate) / downside_std) * math.sqrt(252)
+    return ((m - daily_rf) / downside_std) * math.sqrt(EGX_TRADING_DAYS_PER_YEAR)
 
 
 def max_drawdown(returns: list) -> float:
@@ -434,6 +449,286 @@ def get_equity_curve(user_id: int = None, days: int = 180) -> dict:
             "total_egx30": round(bench_cum, 2),
             "total_alpha": round(xmore_cum - bench_cum, 2)
         }
+
+
+# ─── INSTITUTIONAL METRICS ────────────────────────────────────
+
+def calculate_calmar_ratio(returns: list, max_dd: float) -> float:
+    """
+    Calmar Ratio = Annualized Return / Absolute Max Drawdown.
+    Returns 0.0 if max_dd is 0. Returns None if fewer than 20 data points.
+    """
+    if len(returns) < 20:
+        return None
+    if not max_dd:
+        return 0.0
+    mean_daily = avg(returns)
+    annual_return = (1 + mean_daily) ** EGX_TRADING_DAYS_PER_YEAR - 1
+    return round(annual_return / abs(max_dd), 4)
+
+
+def calculate_max_drawdown_details(equity_curve: list) -> dict:
+    """
+    Detailed drawdown analysis: peak, trough, recovery, duration.
+    equity_curve: list of cumulative portfolio values (not returns).
+    """
+    if not equity_curve or len(equity_curve) < 2:
+        return {
+            "max_drawdown_pct": 0.0, "drawdown_start_idx": None,
+            "drawdown_end_idx": None, "recovery_idx": None,
+            "drawdown_duration_days": 0, "recovery_duration_days": None,
+            "is_recovered": False,
+        }
+
+    peak = equity_curve[0]
+    peak_idx = 0
+    max_dd = 0.0
+    dd_start = 0
+    dd_end = 0
+
+    for i, val in enumerate(equity_curve):
+        if val > peak:
+            peak = val
+            peak_idx = i
+        dd_pct = (val - peak) / peak if peak != 0 else 0
+        if dd_pct < max_dd:
+            max_dd = dd_pct
+            dd_start = peak_idx
+            dd_end = i
+
+    # Find recovery index (new peak after trough)
+    recovery_idx = None
+    recovery_duration = None
+    trough_val = equity_curve[dd_start] * (1 + max_dd)  # approximate peak value
+    pre_dd_peak = equity_curve[dd_start]
+    for i in range(dd_end + 1, len(equity_curve)):
+        if equity_curve[i] >= pre_dd_peak:
+            recovery_idx = i
+            recovery_duration = recovery_idx - dd_end
+            break
+
+    return {
+        "max_drawdown_pct": round(max_dd, 6),
+        "drawdown_start_idx": dd_start,
+        "drawdown_end_idx": dd_end,
+        "recovery_idx": recovery_idx,
+        "drawdown_duration_days": dd_end - dd_start,
+        "recovery_duration_days": recovery_duration,
+        "is_recovered": recovery_idx is not None,
+    }
+
+
+def calculate_rolling_sharpe(returns: list, window: int = 30) -> list:
+    """Rolling Sharpe ratio over `window` EGX trading days."""
+    if len(returns) < window:
+        return []
+    result = []
+    for i in range(window, len(returns) + 1):
+        window_returns = returns[i - window:i]
+        s = sharpe_ratio(window_returns)
+        result.append({"day_index": i - 1, "sharpe": round(s, 4)})
+    return result
+
+
+def calculate_win_loss_ratio(trades: list) -> dict:
+    """
+    Detailed win/loss analysis from a list of trade dicts with 'return_pct'.
+    """
+    if not trades:
+        return {
+            "win_rate": 0, "avg_win_pct": 0, "avg_loss_pct": 0,
+            "win_loss_ratio": 0, "profit_factor": 0, "expectancy_pct": 0,
+            "largest_win_pct": 0, "largest_loss_pct": 0,
+            "consecutive_wins_max": 0, "consecutive_losses_max": 0,
+        }
+
+    returns = [float(t.get("return_pct") or t.get("actual_next_day_return") or 0) for t in trades]
+    wins  = [r for r in returns if r > 0]
+    losses = [r for r in returns if r < 0]
+    total = len(returns)
+
+    win_rate   = len(wins) / total if total else 0
+    loss_rate  = 1 - win_rate
+    avg_win    = avg(wins) if wins else 0
+    avg_loss   = avg(losses) if losses else 0
+    wl_ratio   = abs(avg_win / avg_loss) if avg_loss != 0 else 99.9 if avg_win > 0 else 0
+    gross_wins = sum(wins)
+    gross_loss = abs(sum(losses))
+    pf         = gross_wins / gross_loss if gross_loss > 0 else (99.9 if gross_wins > 0 else 0)
+    expectancy = (win_rate * avg_win) + (loss_rate * avg_loss)
+
+    # Consecutive streaks
+    max_wins = max_losses = cur_wins = cur_losses = 0
+    for r in returns:
+        if r > 0:
+            cur_wins += 1
+            cur_losses = 0
+            max_wins = max(max_wins, cur_wins)
+        elif r < 0:
+            cur_losses += 1
+            cur_wins = 0
+            max_losses = max(max_losses, cur_losses)
+        else:
+            cur_wins = cur_losses = 0
+
+    return {
+        "win_rate":            round(win_rate, 4),
+        "avg_win_pct":         round(avg_win, 4),
+        "avg_loss_pct":        round(avg_loss, 4),
+        "win_loss_ratio":      round(wl_ratio, 4),
+        "profit_factor":       round(pf, 4),
+        "expectancy_pct":      round(expectancy, 4),
+        "largest_win_pct":     round(max(wins), 4) if wins else 0,
+        "largest_loss_pct":    round(min(losses), 4) if losses else 0,
+        "consecutive_wins_max": max_wins,
+        "consecutive_losses_max": max_losses,
+    }
+
+
+def calculate_benchmark_comparison(portfolio_returns: list, benchmark_returns: list) -> dict:
+    """Alpha, beta, information ratio, up/down capture vs EGX30."""
+    if not portfolio_returns or not benchmark_returns:
+        return {
+            "portfolio_total_return": 0, "benchmark_total_return": 0,
+            "alpha_total": 0, "alpha_annualized": 0, "beta": 0,
+            "correlation": 0, "information_ratio": 0, "tracking_error": 0,
+            "up_capture": 0, "down_capture": 0, "outperformance_days_pct": 0,
+        }
+
+    n = min(len(portfolio_returns), len(benchmark_returns))
+    p = portfolio_returns[:n]
+    b = benchmark_returns[:n]
+
+    p_total = cumulative_return(p)
+    b_total = cumulative_return(b)
+
+    excess = [pi - bi for pi, bi in zip(p, b)]
+    te = stddev(excess)
+    ir = (avg(excess) / te * math.sqrt(EGX_TRADING_DAYS_PER_YEAR)) if te > 0 else 0
+
+    # Beta
+    mean_p, mean_b = avg(p), avg(b)
+    cov = sum((pi - mean_p) * (bi - mean_b) for pi, bi in zip(p, b)) / max(n - 1, 1)
+    var_b = stddev(b) ** 2
+    beta = cov / var_b if var_b > 0 else 0
+
+    # Pearson correlation
+    std_p, std_b = stddev(p), stddev(b)
+    corr = (cov / (std_p * std_b)) if std_p > 0 and std_b > 0 else 0
+
+    # Alpha annualized
+    mean_daily_p = avg(p)
+    mean_daily_b = avg(b)
+    annual_p = (1 + mean_daily_p) ** EGX_TRADING_DAYS_PER_YEAR - 1
+    annual_b = (1 + mean_daily_b) ** EGX_TRADING_DAYS_PER_YEAR - 1
+    alpha_annual = annual_p - annual_b
+
+    # Up/down capture
+    up_days   = [(pi, bi) for pi, bi in zip(p, b) if bi > 0]
+    down_days = [(pi, bi) for pi, bi in zip(p, b) if bi < 0]
+    up_capture   = (avg([pi for pi, _ in up_days]) / avg([bi for _, bi in up_days])) if up_days else 0
+    down_capture = (avg([pi for pi, _ in down_days]) / avg([bi for _, bi in down_days])) if down_days else 0
+
+    outperform_pct = sum(1 for e in excess if e > 0) / n if n > 0 else 0
+
+    return {
+        "portfolio_total_return":  round(p_total, 4),
+        "benchmark_total_return":  round(b_total, 4),
+        "alpha_total":             round(p_total - b_total, 4),
+        "alpha_annualized":        round(alpha_annual, 4),
+        "beta":                    round(beta, 4),
+        "correlation":             round(corr, 4),
+        "information_ratio":       round(ir, 4),
+        "tracking_error":          round(te * math.sqrt(EGX_TRADING_DAYS_PER_YEAR), 4),
+        "up_capture":              round(up_capture, 4),
+        "down_capture":            round(down_capture, 4),
+        "outperformance_days_pct": round(outperform_pct, 4),
+    }
+
+
+def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
+    """
+    Master function: computes and returns all institutional metrics in one call.
+    """
+    cursor = db_connection.cursor()
+
+    if DATABASE_URL:
+        date_filter = f"recommendation_date >= CURRENT_DATE - {days}"
+        live_filter = "(is_live = TRUE OR is_live IS NULL)"
+    else:
+        date_filter = f"recommendation_date >= date('now', '-{days} days')"
+        live_filter = "(is_live = 1 OR is_live IS NULL)"
+
+    try:
+        cursor.execute(f"""
+            SELECT recommendation_date, actual_next_day_return,
+                   benchmark_1d_return, alpha_1d, was_correct
+            FROM trade_recommendations
+            WHERE actual_next_day_return IS NOT NULL
+            AND {live_filter}
+            AND {date_filter}
+            ORDER BY recommendation_date ASC
+        """)
+        cols = [d[0] for d in cursor.description]
+        rows = [dict(zip(cols, r)) if not isinstance(r, dict) else r for r in cursor.fetchall()]
+    except Exception:
+        rows = []
+
+    trade_count = len(rows)
+    returns_1d  = [float(r["actual_next_day_return"]) for r in rows if r.get("actual_next_day_return") is not None]
+    bench_1d    = [float(r["benchmark_1d_return"]) for r in rows if r.get("benchmark_1d_return") is not None]
+
+    # Data quality warnings
+    warnings = []
+    if trade_count < MINIMUM_TRADES_FOR_METRICS:
+        warnings.append(
+            f"Only {trade_count} completed trades. "
+            f"Minimum {MINIMUM_TRADES_FOR_METRICS} required for reliable ratio calculations. "
+            f"Displayed metrics are indicative only."
+        )
+    if days < 60:
+        warnings.append(
+            "Performance period under 60 days. "
+            "Annualized figures may be misleading for short periods."
+        )
+
+    # Build equity curve for drawdown details
+    equity_curve = []
+    running = 100.0
+    for r in returns_1d:
+        running *= (1 + r / 100)
+        equity_curve.append(running)
+
+    # Collect trade dicts for win/loss
+    trades_for_wl = [
+        {"return_pct": float(r["actual_next_day_return"])}
+        for r in rows if r.get("actual_next_day_return") is not None
+    ]
+
+    mdd = max_drawdown(returns_1d)
+    mdd_details = calculate_max_drawdown_details(equity_curve)
+    sr  = sharpe_ratio(returns_1d)
+    so  = sortino_ratio(returns_1d)
+    cal = calculate_calmar_ratio(returns_1d, abs(mdd)) if returns_1d else None
+    rolling_sh = calculate_rolling_sharpe(returns_1d, window=30)
+    wl  = calculate_win_loss_ratio(trades_for_wl)
+    bench = calculate_benchmark_comparison(returns_1d, bench_1d) if bench_1d else {}
+
+    return {
+        "period_days":          days,
+        "generated_at":         datetime.utcnow().isoformat() + "Z",
+        "trade_count":          trade_count,
+        "sharpe_ratio":         round(sr, 4),
+        "sortino_ratio":        round(so, 4),
+        "calmar_ratio":         round(cal, 4) if cal is not None else None,
+        "max_drawdown":         mdd_details,
+        "rolling_sharpe_30d":   rolling_sh,
+        "win_loss":             wl,
+        "benchmark":            bench,
+        "risk_free_rate_used":  EGX_RISK_FREE_RATE_ANNUAL,
+        "minimum_trades_met":   trade_count >= MINIMUM_TRADES_FOR_METRICS,
+        "data_quality_warning": " | ".join(warnings),
+    }
 
 
 # ─── HELPERS ──────────────────────────────────────────────────

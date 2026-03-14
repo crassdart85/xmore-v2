@@ -48,6 +48,22 @@ const PERF_TRANSLATIONS = {
         auditNew: 'New',
         auditNoEntries: 'No entries',
         sortino: 'Sortino',
+        institutionalMetrics: 'Institutional Metrics',
+        sharpeRatio:          'Sharpe Ratio',
+        sortinoRatio:         'Sortino Ratio',
+        calmarRatio:          'Calmar Ratio',
+        informationRatio:     'Information Ratio',
+        maxDrawdown:          'Max Drawdown',
+        recoveryTime:         'Recovery Time',
+        betaVsBenchmark:      'Beta vs EGX30',
+        downCapture:          'Down Capture',
+        benchmarkComparison:  'Benchmark Comparison',
+        riskFreeRateApplied:  'Risk-Free Rate Applied',
+        rollingShарpe:        '30-Day Rolling Sharpe',
+        notEnoughData:        'Min. 30 trades required',
+        exportReport:         'Export Report',
+        days:                 'days',
+        notRecovered:         'Not Recovered',
     },
     ar: {
         perfTitle: 'أداء إكسمور',
@@ -98,6 +114,22 @@ const PERF_TRANSLATIONS = {
         auditNew: 'الجديد',
         auditNoEntries: 'لا توجد مدخلات',
         sortino: 'سورتينو',
+        institutionalMetrics: 'مقاييس مؤسسية',
+        sharpeRatio:          'نسبة شارب',
+        sortinoRatio:         'نسبة سورتينو',
+        calmarRatio:          'نسبة كالمار',
+        informationRatio:     'نسبة المعلومات',
+        maxDrawdown:          'أقصى تراجع',
+        recoveryTime:         'وقت الاسترداد',
+        betaVsBenchmark:      'بيتا مقابل EGX30',
+        downCapture:          'معدل التراجع',
+        benchmarkComparison:  'مقارنة المرجع',
+        riskFreeRateApplied:  'معدل الخطر المطبق',
+        rollingShарpe:        'شارب المتجدد 30 يوم',
+        notEnoughData:        'مطلوب 30 صفقة على الأقل',
+        exportReport:         'تصدير التقرير',
+        days:                 'يوم',
+        notRecovered:         'لم يُسترد',
     }
 };
 
@@ -117,11 +149,12 @@ async function loadPerformanceDashboard() {
     container.innerHTML = `<p class="loading">${pt('loading')}</p>`;
 
     try {
-        const [summary, agents, equity, history] = await Promise.all([
+        const [summary, agents, equity, history, fullReport] = await Promise.all([
             fetch('/api/performance-v2/summary').then(r => r.json()).catch(() => ({ available: false })),
             fetch('/api/performance-v2/by-agent').then(r => r.json()).catch(() => ({ agents: [] })),
             fetch(`/api/performance-v2/equity-curve?days=${perfEquityCurveDays}`).then(r => r.json()).catch(() => ({ series: [] })),
-            fetch(`/api/performance-v2/predictions/history?page=${perfHistoryPage}&limit=10`).then(r => r.json()).catch(() => ({ predictions: [] }))
+            fetch(`/api/performance-v2/predictions/history?page=${perfHistoryPage}&limit=10`).then(r => r.json()).catch(() => ({ predictions: [] })),
+            fetch('/api/performance-v2/full-report?days=90').then(r => r.json()).catch(() => ({ available: false }))
         ]);
 
         if (!summary.available) {
@@ -133,6 +166,7 @@ async function loadPerformanceDashboard() {
         container.innerHTML = '';
         container.appendChild(buildHealth(summary));
         container.appendChild(buildProofOfEdge(summary, equity));
+        container.appendChild(buildInstitutionalMetrics(summary, fullReport));
         container.appendChild(buildStability(summary));
         container.appendChild(buildAgentAccountability(agents));
         container.appendChild(buildTransparency(summary, history));
@@ -303,6 +337,106 @@ function buildSinceInception(summary) {
             ${metricCard(pt('firstLive'), g.first_prediction ? String(g.first_prediction).slice(0, 10) : 'N/A')}
             ${metricCard(pt('totalLive'), '-', '', '', 'perfInceptionTotal')}
         </div>
+    `);
+}
+
+function buildInstitutionalMetrics(summary, fullReport) {
+    const im = summary.institutional_metrics || {};
+    const warn = im.data_quality_warning;
+    const warnBanner = warn
+        ? `<div class="perf-quality-warning">⚠ ${warn}</div>` : '';
+
+    const colorSharpe = (v) => v >= 1.5 ? 'inst-green' : v >= 0.8 ? 'inst-amber' : 'inst-red';
+    const colorSortino = (v) => v >= 2 ? 'inst-green' : v >= 1 ? 'inst-amber' : 'inst-red';
+    const colorCalmar = (v) => v >= 2 ? 'inst-green' : v >= 1 ? 'inst-amber' : 'inst-red';
+    const colorIR = (v) => v >= 0.75 ? 'inst-green' : v >= 0.4 ? 'inst-amber' : 'inst-red';
+    const colorMdd = (v) => { const n = parseFloat(v); return n > -10 ? 'inst-green' : n > -20 ? 'inst-amber' : 'inst-red'; };
+    const colorRec = (days) => days == null ? 'inst-red' : days <= 10 ? 'inst-green' : days <= 20 ? 'inst-amber' : 'inst-red';
+    const colorBeta = (v) => v < 0.8 ? 'inst-green' : v <= 1.2 ? 'inst-amber' : 'inst-red';
+    const colorDown = (v) => { const n = v * 100; return n < 80 ? 'inst-green' : n <= 100 ? 'inst-amber' : 'inst-red'; };
+
+    const instCard = (label, value, colorClass, tip) =>
+        `<div class="inst-card" title="${tip}">
+            <div class="inst-label">${label}</div>
+            <div class="inst-value ${colorClass}">${value}</div>
+         </div>`;
+
+    const sharpe  = im.sharpe_ratio ?? '—';
+    const sortino = im.sortino_ratio ?? '—';
+    const calmar  = im.calmar_ratio ?? '—';
+    const ir      = im.information_ratio ?? '—';
+    const mdd     = im.max_drawdown_pct ?? '—';
+    const recDays = im.recovery_duration_days;
+    const recStr  = im.max_drawdown_recovered === false ? pt('notRecovered') : recDays != null ? `${recDays} ${pt('days')}` : '—';
+    const beta    = im.beta_vs_benchmark ?? '—';
+    const downCap = im.down_capture_ratio ?? 0;
+    const downStr = downCap !== '—' ? `${(Number(downCap) * 100).toFixed(0)}%` : '—';
+
+    // Rolling Sharpe sparkline
+    const rsData = (fullReport?.rolling_sharpe_30d || []).map(d => d.sharpe);
+    let sparklineSvg = '';
+    if (rsData.length >= 2) {
+        const W = 200, H = 50;
+        const minV = Math.min(...rsData), maxV = Math.max(...rsData);
+        const rangeV = maxV - minV || 1;
+        const pts = rsData.map((v, i) => {
+            const x = (i / (rsData.length - 1)) * W;
+            const y = H - ((v - minV) / rangeV) * H;
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const lastV = rsData[rsData.length - 1];
+        const lineColor = lastV >= 1 ? '#10b981' : '#ef4444';
+        sparklineSvg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:50px;display:block">
+            <polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="1.5"/>
+            <line x1="0" y1="${(H - (1 - minV) / rangeV * H).toFixed(1)}" x2="${W}" y2="${(H - (1 - minV) / rangeV * H).toFixed(1)}" stroke="#6b7280" stroke-width="0.5" stroke-dasharray="3,3"/>
+        </svg>`;
+    }
+
+    // Benchmark comparison table
+    const benchTotalXmore = fullReport?.portfolio_returns ? fullReport.portfolio_returns.reduce((a, b) => a + b, 0).toFixed(2) : '—';
+    const benchTotalEgx30 = fullReport?.benchmark_returns ? fullReport.benchmark_returns.reduce((a, b) => a + b, 0).toFixed(2) : '—';
+    const alpha = (benchTotalXmore !== '—' && benchTotalEgx30 !== '—') ? (Number(benchTotalXmore) - Number(benchTotalEgx30)).toFixed(2) : '—';
+    const fmtR = v => v === '—' ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`;
+    const benchTable = `
+        <table class="inst-bench-table">
+            <thead><tr><th></th><th>Xmore2</th><th>EGX30</th></tr></thead>
+            <tbody>
+                <tr><td>Total Return</td><td class="${Number(benchTotalXmore) > Number(benchTotalEgx30) ? 'inst-highlight' : ''}">${fmtR(benchTotalXmore)}</td><td>${fmtR(benchTotalEgx30)}</td></tr>
+                <tr><td>Alpha</td><td class="inst-highlight">${fmtR(alpha)}</td><td>—</td></tr>
+                <tr><td>Sharpe</td><td class="${Number(sharpe) > 0.43 ? 'inst-highlight' : ''}">${sharpe}</td><td>~0.43</td></tr>
+                <tr><td>Max Drawdown</td><td class="${parseFloat(mdd) > -19.8 ? 'inst-highlight' : ''}">${mdd}</td><td>~-19.8%</td></tr>
+                <tr><td>Up Capture</td><td class="inst-highlight">${im.up_capture_ratio != null ? `${(Number(im.up_capture_ratio) * 100).toFixed(0)}%` : '—'}</td><td>—</td></tr>
+                <tr><td>Down Capture</td><td class="${Number(downCap) < 1 ? 'inst-highlight' : ''}">${downStr}</td><td>—</td></tr>
+            </tbody>
+        </table>`;
+
+    return createSection(`
+        <div class="inst-header">
+            <h3>${pt('institutionalMetrics')}</h3>
+            <a href="/api/performance-v2/export-summary" target="_blank" class="perf-action-btn inst-export-btn">${pt('exportReport')} ↗</a>
+        </div>
+        ${warnBanner}
+        <div class="inst-grid">
+            ${instCard(pt('sharpeRatio'), sharpe, colorSharpe(Number(sharpe)), 'Return per unit of risk, adjusted for Egypt CBE rate (27.25%)')}
+            ${instCard(pt('sortinoRatio'), sortino, colorSortino(Number(sortino)), 'Like Sharpe, but only penalizes downside volatility')}
+            ${instCard(pt('calmarRatio'), calmar, colorCalmar(Number(calmar)), 'Annualized return divided by maximum drawdown depth')}
+            ${instCard(pt('informationRatio'), ir, colorIR(Number(ir)), 'Alpha per unit of tracking error vs EGX30')}
+            ${instCard(pt('maxDrawdown'), mdd, colorMdd(mdd), 'Largest peak-to-trough decline in portfolio value')}
+            ${instCard(pt('recoveryTime'), recStr, colorRec(recDays), 'Trading days from drawdown trough to new equity high')}
+            ${instCard(pt('betaVsBenchmark'), beta, colorBeta(Number(beta)), 'Portfolio sensitivity to EGX30 movements. <1 = less volatile')}
+            ${instCard(pt('downCapture'), downStr, colorDown(Number(downCap)), 'How much of EGX30 down days the portfolio captures. <80% is excellent')}
+        </div>
+        <div class="inst-sub-row">
+            <div class="inst-sub-card">
+                <div class="inst-sub-label">${pt('rollingShарpe')}</div>
+                ${sparklineSvg || `<div style="color:var(--text-muted);font-size:11px;padding:8px 0">${pt('notEnoughData')}</div>`}
+            </div>
+            <div class="inst-sub-card">
+                <div class="inst-sub-label">${pt('benchmarkComparison')}</div>
+                ${benchTable}
+            </div>
+        </div>
+        <div class="inst-rf-note">${pt('riskFreeRateApplied')}: ${im.risk_free_rate_applied || '27.25%'} (Egypt CBE)</div>
     `);
 }
 

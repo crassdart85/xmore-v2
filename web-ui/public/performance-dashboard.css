@@ -359,3 +359,105 @@
 [dir="rtl"] .perf-table td {
     text-align: right;
 }
+
+/* ── Institutional Metrics ──────────────────────────────────── */
+.inst-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.inst-header h3 { margin: 0; }
+.inst-export-btn {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+.perf-quality-warning {
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #d97706;
+    margin-bottom: 10px;
+}
+.inst-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.inst-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    cursor: default;
+    transition: border-color 0.2s;
+}
+.inst-card:hover { border-color: var(--accent); }
+.inst-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.inst-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+}
+.inst-green { color: #10b981; }
+.inst-amber { color: #f59e0b; }
+.inst-red   { color: #ef4444; }
+
+.inst-sub-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.inst-sub-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+.inst-sub-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+.inst-bench-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-family: monospace;
+}
+.inst-bench-table th {
+    color: var(--text-muted);
+    text-align: left;
+    padding: 3px 8px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 10px;
+}
+.inst-bench-table td {
+    padding: 3px 8px;
+    border-bottom: 1px solid var(--border-light);
+}
+.inst-highlight { color: #f59e0b; font-weight: 700; }
+.inst-rf-note {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+@media (max-width: 640px) {
+    .inst-grid { grid-template-columns: repeat(2, 1fr); }
+    .inst-sub-row { grid-template-columns: 1fr; }
+}
+[dir="rtl"] .inst-bench-table th,
+[dir="rtl"] .inst-bench-table td { text-align: right; }

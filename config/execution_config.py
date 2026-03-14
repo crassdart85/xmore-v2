@@ -47,6 +47,10 @@ TRAILING_STOP_ACTIVATION_DAY = 20   # Trailing stop kicks in after day 20
 TRAILING_STOP_PCT             = 0.06 # 6% trailing stop once activated
 HARD_MAX_HOLDING_DAYS         = 45  # Absolute maximum — failsafe only
 
+# ─── EGX PERFORMANCE BENCHMARKS ────────────────────────────────────────────
+EGX_RISK_FREE_RATE_ANNUAL = 0.2725   # Egypt CBE overnight deposit rate — update quarterly
+EGX_TRADING_DAYS_PER_YEAR = 247      # Sun–Thu, ~52 weeks minus public holidays
+
 # ─── MARKET REGIME FILTER ───────────────────────────────────────────────────
 REGIME_MA_PERIOD       = 20         # EGX30 20-day moving average
 REGIME_TICKER          = "^CASE30"  # Yahoo Finance ticker for EGX30
