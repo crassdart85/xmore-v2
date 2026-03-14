@@ -193,6 +193,18 @@ router.get('/summary', async (req, res) => {
 });
 
 
+// ─── DEBUG: raw count (remove after debugging) ────────────────
+router.get('/debug-count', async (req, res) => {
+    try {
+        const r1 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL`, []);
+        const r2 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND (is_live = ${boolTrue()} OR is_live IS NULL)`, []);
+        const r3 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()}`, []);
+        const r4 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()} AND actual_next_day_return IS NOT NULL`, []);
+        const r5 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()} AND is_live = ${boolTrue()}`, []);
+        res.json({ with_return: r1, with_return_and_live: r2, simulated: r3, simulated_with_return: r4, simulated_and_live: r5 });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── PUBLIC: Per-agent comparison ─────────────────────────────
 router.get('/by-agent', async (req, res) => {
     try {
