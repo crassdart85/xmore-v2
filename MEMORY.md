@@ -215,7 +215,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - Dashboard auto-refreshes data on language switch
 - Prediction horizon: 1 day (changed from 7 days for faster evaluation)
 
-## Recent Changes (Feb 2026)
+\n\n## Mar 14, 2026 — UI/Deploy Fixes\n- **Render boot crash**: fixed a duplicate catch block in web-ui/routes/performance.js that caused SyntaxError: missing ) after argument list on startup.\n- **Header cleanup**: removed absolute positioning from header controls and user info bar to prevent overlap; tightened small-screen behavior in web-ui/public/style.css + web-ui/public/auth.css.\n- **Snapshot bar**: removed \u201cLive-Only Data\u201d pill from the global performance snapshot bar (web-ui/public/app.js, web-ui/public/style.css).\n\n## Recent Changes (Feb 2026)
 - **Time Machine Short-Window No-Data Fix (Feb 18, 2026)**:
   - Increased Time Machine historical warmup window in `engines/timemachine_data.py` from 60 to 180 days so recent start dates still have enough context for indicators.
   - Relaxed strict preflight in `engines/timemachine.py` to validate in-range price availability (instead of requiring 50-row history per symbol), preventing false "insufficient data" failures.
