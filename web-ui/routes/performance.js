@@ -92,10 +92,6 @@ router.get('/summary', async (req, res) => {
             if (isTableMissing(e)) return res.json({ available: false, message: 'No resolved predictions yet.' });
             throw e;
         }
-        } catch (e) {
-            if (isTableMissing(e)) return res.json({ available: false, message: 'No resolved predictions yet.' });
-            throw e;
-        }
         if (!rows.length) return res.json({ available: false, message: 'No resolved predictions yet.' });
 
         const toNum = (v) => Number(v || 0);
@@ -375,7 +371,7 @@ router.get('/by-stock', async (req, res) => {
                 ${isPostgres
                 ? `ROUND((SUM(CASE WHEN tr.was_correct = TRUE THEN 1 ELSE 0 END))::numeric / NULLIF(COUNT(*), 0) * 100, 1)`
                 : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 1)`
-            } AS win_rate
+            }, AS win_rate
             FROM trade_recommendations tr
             ${isPostgres ? 'JOIN egx30_stocks s ON tr.symbol = s.symbol' : ''}
             WHERE tr.was_correct IS NOT NULL

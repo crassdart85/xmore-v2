@@ -83,6 +83,11 @@
   1. `evaluate.py`: `r.ok = 1` → `r.ok = TRUE` (PG BOOLEAN type mismatch, was breaking daily pipeline)
   2. `app.js formatDate()`: now strips ISO timestamp to `YYYY-MM-DD` — fixes "02:00" display on date cards
   3. `data/egx_live_scraper.py`: `df.loc[:, ~df.columns.duplicated()]` after rename — fixes "truth value of a Series is ambiguous" from duplicate Arabic→English column mapping
+ 
+## Mar 14, 2026 — UI/Deploy Fixes
+- **Render boot crash**: fixed a duplicate `catch` block in `web-ui/routes/performance.js` that caused `SyntaxError: missing ) after argument list` on startup.
+- **Header cleanup**: removed absolute positioning from header controls and user info bar to prevent overlap; tightened small-screen behavior in `web-ui/public/style.css` + `web-ui/public/auth.css`.
+- **Snapshot bar**: removed “Live-Only Data” pill from the global performance snapshot bar (`web-ui/public/app.js`, `web-ui/public/style.css`).
 
 ## Forecast Engine — Pure JS (Feb 21, 2026)
 - **Root cause of prod error**: Render `env: node` has no Python packages → `spawn('python3', timemachine_forecast.py)` fails immediately with `ModuleNotFoundError`

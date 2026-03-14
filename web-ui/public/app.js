@@ -330,7 +330,6 @@ const TRANSLATIONS = {
 
         // Search
         searchPlaceholder: 'Search by stock symbol or company name...',
-        liveOnlyData: 'Live-Only Data',
         snapshotAlpha30d: '30-Day Alpha vs EGX30',
         snapshotSharpe30d: 'Sharpe Ratio (30D)',
         snapshotMaxDd30d: 'Max Drawdown (30D)',
@@ -653,7 +652,6 @@ const TRANSLATIONS = {
         refreshing: 'جاري التحديث...',
 
         searchPlaceholder: 'البحث برمز السهم أو اسم الشركة...',
-        liveOnlyData: 'بيانات حية فقط',
         snapshotAlpha30d: 'ألفا 30 يوم مقابل EGX30',
         snapshotSharpe30d: 'نسبة شارب (30 يوم)',
         snapshotMaxDd30d: 'أقصى تراجع (30 يوم)',
@@ -1489,9 +1487,6 @@ async function loadGlobalSnapshotBar() {
         `;
 
         el.innerHTML = `
-            <div class="global-snapshot-head">
-                <span class="live-only-pill">${t('liveOnlyData')}</span>
-            </div>
             <div class="global-snapshot-grid">
                 ${card('gsAlpha30', t('snapshotAlpha30d'), alpha30 > 0 ? 'positive' : alpha30 < 0 ? 'negative' : 'neutral', t('tooltipAlpha'))}
                 ${card('gsSharpe30', t('snapshotSharpe30d'), sharpe >= 1 ? 'positive' : sharpe > 0 ? 'neutral' : 'negative', t('tooltipSharpe'))}

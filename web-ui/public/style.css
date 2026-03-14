@@ -1257,13 +1257,13 @@ footer {
    HEADER BUTTONS (Language & Dark Mode)
    ============================================ */
 .header-buttons {
-    position: absolute;
-    top: 0;
-    right: 32px;
+    margin-left: auto;
+    margin-inline-start: auto;
     height: 56px;
     display: flex;
     gap: 6px;
     align-items: center;
+    flex-wrap: nowrap;
 }
 
 .lang-btn {
@@ -1354,8 +1354,8 @@ footer {
 }
 
 .rtl .header-buttons {
-    right: auto;
-    left: 20px;
+    margin-left: 0;
+    margin-right: auto;
 }
 
 .rtl .stock-cell {
@@ -1452,7 +1452,7 @@ footer {
     }
 
     .header-buttons {
-        right: 20px;
+        margin-left: auto;
     }
 }
 
@@ -1511,7 +1511,7 @@ footer {
     }
 
     .header-buttons {
-        right: 12px;
+        margin-left: auto;
     }
 
     .tab-btn {
@@ -1597,8 +1597,6 @@ footer {
     }
 
     .header-buttons {
-        top: 10px;
-        right: 10px;
         gap: 8px;
     }
 
@@ -1614,8 +1612,7 @@ footer {
     }
 
     .rtl .header-buttons {
-        right: auto;
-        left: 10px;
+        margin-right: auto;
     }
 
     .rtl .company-name {
@@ -1652,7 +1649,7 @@ footer {
     }
 
     .header-buttons {
-        right: 10px;
+        gap: 6px;
     }
 
     h1 {
@@ -1755,9 +1752,10 @@ footer {
     }
 
     .header-buttons {
-        top: 8px;
-        right: 8px;
         gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        height: auto;
     }
 
     .lang-btn {
@@ -1772,8 +1770,7 @@ footer {
     }
 
     .rtl .header-buttons {
-        right: auto;
-        left: 8px;
+        margin-right: auto;
     }
 }
 
@@ -1784,8 +1781,9 @@ footer {
     }
 
     header {
-        padding: 35px 10px;
-        padding-top: 50px;
+        padding: 6px 10px;
+        height: auto;
+        min-height: 48px;
     }
 
     h1 {
@@ -1830,9 +1828,10 @@ footer {
     }
 
     .header-buttons {
-        top: 6px;
-        right: 6px;
         gap: 4px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        height: auto;
     }
 
     .theme-btn {
@@ -1846,8 +1845,7 @@ footer {
     }
 
     .rtl .header-buttons {
-        right: auto;
-        left: 6px;
+        margin-right: auto;
     }
 
     .rtl .company-name {
@@ -1858,8 +1856,9 @@ footer {
 /* Landscape phones */
 @media (max-width: 768px) and (orientation: landscape) {
     header {
-        padding: 30px 15px;
-        padding-top: 50px;
+        padding: 6px 15px;
+        height: auto;
+        min-height: 48px;
     }
 
     .stats-grid {
@@ -2804,22 +2803,6 @@ footer {
     background: var(--card-bg);
 }
 
-.global-snapshot-head {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 10px;
-}
-
-.live-only-pill {
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid #16a34a;
-    color: #16a34a;
-    background: rgba(22, 163, 74, 0.12);
-}
-
 .global-snapshot-grid {
     display: grid;
     grid-template-columns: repeat(5, minmax(120px, 1fr));
@@ -3134,8 +3117,7 @@ footer {
 /* Badge entrance */
 .signal-badge,
 .sentiment-badge,
-.health-badge,
-.live-only-pill {
+.health-badge {
     animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes badgePop {
