@@ -870,6 +870,97 @@ from engines.briefing_generator import generate_daily_briefing
 from utils.trading_calendar import should_generate_recommendations
 
 # ─────────────────────────────────────────────────────────────────────────────
+# UNIVERSAL INVESTOR SCORING LAYER — composite score + 6 output modes (v1.0)
+# ─────────────────────────────────────────────────────────────────────────────
+try:
+    from engines.scoring_formatter import (
+        ScoringFormatter, calculate_composite_score, derive_components_from_rec
+    )
+    _SCORING_ENABLED = True
+except Exception as _sc_err:
+    logger.warning(f"Scoring formatter not available: {_sc_err}")
+    _SCORING_ENABLED = False
+
+
+def _populate_scored_signals(recs: list, conn, regime: str = "NEUTRAL") -> None:
+    """
+    Upsert composite scores for today's approved recommendations into scored_signals.
+    Uses ON CONFLICT (symbol, signal_date) DO UPDATE to handle reruns gracefully.
+    """
+    if not _SCORING_ENABLED or not recs:
+        return
+    try:
+        cursor = conn.cursor()
+        ph = "%s" if os.getenv("DATABASE_URL") else "?"
+        is_pg = bool(os.getenv("DATABASE_URL"))
+
+        sf = ScoringFormatter("standard_100")
+
+        for rec in recs:
+            try:
+                components = derive_components_from_rec(rec, regime=regime)
+                entry      = sf.build_scored_entry(rec.get("symbol", ""), rec, components)
+
+                import json
+                all_fmt_json = json.dumps(entry["all_formats"])
+
+                if is_pg:
+                    cursor.execute("SAVEPOINT sc_upsert")
+                    upsert_sql = f"""
+                        INSERT INTO scored_signals
+                            (symbol, signal_date, action, composite_score, scoring_mode,
+                             score_value, consensus_score, execution_score, regime_score,
+                             momentum_score, meets_threshold, all_formats)
+                        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+                        ON CONFLICT (symbol, signal_date)
+                        DO UPDATE SET
+                            composite_score = EXCLUDED.composite_score,
+                            score_value     = EXCLUDED.score_value,
+                            all_formats     = EXCLUDED.all_formats,
+                            meets_threshold = EXCLUDED.meets_threshold
+                    """
+                else:
+                    upsert_sql = f"""
+                        INSERT OR REPLACE INTO scored_signals
+                            (symbol, signal_date, action, composite_score, scoring_mode,
+                             score_value, consensus_score, execution_score, regime_score,
+                             momentum_score, meets_threshold, all_formats)
+                        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+                    """
+
+                cursor.execute(upsert_sql, (
+                    entry["symbol"],
+                    entry["signal_date"],
+                    entry["action"],
+                    entry["composite_score"],
+                    entry["scoring_mode"],
+                    entry["score_value"],
+                    entry["consensus_score"],
+                    entry["execution_score"],
+                    entry["regime_score"],
+                    entry["momentum_score"],
+                    entry["meets_threshold"],
+                    all_fmt_json,
+                ))
+
+                if is_pg:
+                    cursor.execute("RELEASE SAVEPOINT sc_upsert")
+
+            except Exception as row_err:
+                if is_pg:
+                    try:
+                        cursor.execute("ROLLBACK TO SAVEPOINT sc_upsert")
+                    except Exception:
+                        pass
+                logger.warning(f"scored_signals upsert failed for {rec.get('symbol')}: {row_err}")
+
+        conn.commit()
+        logger.info(f"  [SCORING] {len(recs)} signals scored and stored")
+    except Exception as e:
+        logger.warning(f"_populate_scored_signals failed: {e}")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # EXECUTION REALISM LAYER — friction-adjusted signals (v1.0)
 # ─────────────────────────────────────────────────────────────────────────────
 try:
@@ -1340,6 +1431,10 @@ def generate_daily_trade_recommendations(trading_date):
 
             # ── Execution realism gate ─────────────────────────────────────
             user_recs = apply_execution_realism(user_recs, conn)
+            # ──────────────────────────────────────────────────────────────
+
+            # ── Universal Investor Scoring ─────────────────────────────────
+            _populate_scored_signals(user_recs, conn)
             # ──────────────────────────────────────────────────────────────
 
             # Store & Update Positions

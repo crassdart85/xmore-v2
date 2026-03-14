@@ -914,6 +914,27 @@ def create_tables():
             )
         """)
 
+        # Table 36: Universal Investor Scoring — scored_signals
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS scored_signals (
+                id               {auto_id},
+                symbol           TEXT NOT NULL,
+                signal_date      DATE NOT NULL,
+                action           TEXT NOT NULL DEFAULT 'HOLD',
+                composite_score  REAL NOT NULL,
+                scoring_mode     TEXT NOT NULL DEFAULT 'standard_100',
+                score_value      TEXT NOT NULL,
+                consensus_score  REAL,
+                execution_score  REAL,
+                regime_score     REAL,
+                momentum_score   REAL,
+                meets_threshold  BOOLEAN DEFAULT FALSE,
+                all_formats      TEXT,
+                created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, signal_date)
+            )
+        """)
+
         # Create indexes for common queries
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")

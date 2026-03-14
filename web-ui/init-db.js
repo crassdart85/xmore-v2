@@ -847,7 +847,30 @@ async function initializeDatabase() {
     await pool.query('CREATE INDEX IF NOT EXISTS idx_sse_symbol  ON stock_signal_evals(symbol, prediction_date DESC)');
     await pool.query('CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)');
 
-    console.log('✅ New tables (alerts, fx_history, signal_evals) ready');
+    // scored_signals — Universal Investor Scoring
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS scored_signals (
+        id               SERIAL PRIMARY KEY,
+        symbol           TEXT NOT NULL,
+        signal_date      DATE NOT NULL,
+        action           TEXT NOT NULL DEFAULT 'HOLD',
+        composite_score  REAL NOT NULL,
+        scoring_mode     TEXT NOT NULL DEFAULT 'standard_100',
+        score_value      TEXT NOT NULL,
+        consensus_score  REAL,
+        execution_score  REAL,
+        regime_score     REAL,
+        momentum_score   REAL,
+        meets_threshold  BOOLEAN DEFAULT FALSE,
+        all_formats      TEXT,
+        created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(symbol, signal_date)
+      )
+    `);
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_scored_date   ON scored_signals(signal_date DESC)');
+    await pool.query('CREATE INDEX IF NOT EXISTS idx_scored_symbol ON scored_signals(symbol)');
+
+    console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals) ready');
 
     // Seed ALL EGX stocks (~190)
     console.log('🌱 Seeding EGX stocks...');

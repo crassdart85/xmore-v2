@@ -5575,3 +5575,119 @@ button:active, .btn:active, .tab-btn:active {
     .rates-history-grid { grid-template-columns: 1fr; }
     .comp-symbol-row input { width: 100%; }
 }
+
+/* ─── Universal Investor Scoring Panel ──────────────────────────── */
+.scoring-panel-wrapper {
+    margin-top: 28px;
+    padding: 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+.scoring-panel-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.scoring-mode-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+.scoring-mode-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-right: 4px;
+}
+.scoring-mode-btn {
+    padding: 4px 12px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.scoring-mode-btn.active,
+.scoring-mode-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+}
+.scoring-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.scoring-table th {
+    text-align: left;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border-light);
+    text-transform: uppercase;
+}
+.scoring-table td {
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border-light);
+    color: var(--text-secondary);
+}
+.scoring-row.scoring-above-threshold td {
+    color: var(--text-primary);
+}
+.scoring-symbol {
+    font-weight: 700;
+    color: var(--accent) !important;
+    font-family: monospace;
+}
+.scoring-score {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #4ade80 !important;
+}
+.scoring-composite {
+    color: var(--text-muted) !important;
+    font-family: monospace;
+    font-size: 0.8rem;
+}
+.scoring-threshold {
+    color: #4ade80 !important;
+    font-weight: 700;
+    text-align: center;
+}
+.scoring-mini-bar {
+    display: flex;
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--border-light);
+    width: 100%;
+    min-width: 80px;
+}
+.scoring-bar-seg {
+    height: 100%;
+    transition: width 0.3s;
+}
+.scoring-bar-consensus { background: #4ade80; }
+.scoring-bar-execution { background: #60a5fa; }
+.scoring-bar-regime    { background: #f59e0b; }
+.scoring-bar-momentum  { background: #a78bfa; }
+.scoring-no-data {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin: 8px 0;
+}
+@media (max-width: 600px) {
+    .scoring-table th:nth-child(3),
+    .scoring-table td:nth-child(3),
+    .scoring-table th:nth-child(4),
+    .scoring-table td:nth-child(4) { display: none; }
+    .scoring-mode-bar { gap: 4px; }
+}

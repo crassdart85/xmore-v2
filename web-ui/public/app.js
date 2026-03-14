@@ -383,6 +383,22 @@ const TRANSLATIONS = {
         convictionModerate: 'Moderate',
         convictionLow: 'Low',
         convictionBlocked: 'Blocked',
+        scoringModeLabel: 'Score Mode',
+        scoringModeXmoreNative: 'Xmore (0–1)',
+        scoringModeStandard100: 'Score (0–100)',
+        scoringModeLetterGrade: 'Grade',
+        scoringModeStars: 'Stars',
+        scoringModeSignalTier: 'Tier',
+        scoringModeConviction: 'Conviction',
+        scoringPanelTitle: 'Investor Scoring',
+        scoringComposite: 'Composite Score',
+        scoringComponents: 'Components',
+        scoringConsensus: 'Consensus',
+        scoringExecution: 'Execution',
+        scoringRegime: 'Regime',
+        scoringMomentum: 'Momentum',
+        scoringMeetsThreshold: 'Actionable',
+        scoringNoData: 'No scored signals yet.',
         riskWarnings: 'Risk Warnings',
         agentSignals: 'Agent Signals',
         yourWatchlist: 'Your Watchlist',
@@ -687,6 +703,22 @@ const TRANSLATIONS = {
         convictionModerate: 'متوسطة',
         convictionLow: 'منخفضة',
         convictionBlocked: 'محظور',
+        scoringModeLabel: 'وضع التقييم',
+        scoringModeXmoreNative: 'Xmore (0–1)',
+        scoringModeStandard100: 'درجة (0–100)',
+        scoringModeLetterGrade: 'تقدير',
+        scoringModeStars: 'نجوم',
+        scoringModeSignalTier: 'مستوى',
+        scoringModeConviction: 'اقتناع',
+        scoringPanelTitle: 'تقييم المستثمرين',
+        scoringComposite: 'الدرجة المركبة',
+        scoringComponents: 'المكونات',
+        scoringConsensus: 'إجماع',
+        scoringExecution: 'تنفيذ',
+        scoringRegime: 'النظام',
+        scoringMomentum: 'زخم',
+        scoringMeetsThreshold: 'قابل للتنفيذ',
+        scoringNoData: 'لا توجد إشارات مُقيَّمة بعد.',
         riskWarnings: 'تحذيرات المخاطر',
         agentSignals: 'إشارات الوكلاء',
         yourWatchlist: 'أسهمك المتابعة',
@@ -948,6 +980,7 @@ async function switchLanguage() {
     loadStats();
     loadPredictions();
     loadConsensus();
+    loadScoringPanel();
     loadPerformance();
     loadPerformanceDetailed();
     loadEvaluations();
@@ -1514,6 +1547,7 @@ window.addEventListener('load', async () => {
         // Load all independent data in parallel
         loadStats();
         loadConsensus();
+        loadScoringPanel();
         loadPerformance();
         loadPerformanceDetailed();
         loadEvaluations();
@@ -2325,6 +2359,100 @@ async function loadConsensus() {
         cardsContainer.innerHTML = `<p class="error-message">${t('errorConsensus')}</p>`;
     }
 }
+
+// ─── Universal Investor Scoring Panel ───────────────────────────────────────
+
+let _currentScoringMode = 'standard_100';
+
+const SCORING_MODE_LABELS = {
+    en: {
+        xmore_native: 'Xmore (0–1)',
+        standard_100: 'Score (0–100)',
+        letter_grade: 'Grade',
+        stars:        'Stars',
+        signal_tier:  'Tier',
+        conviction:   'Conviction',
+    },
+    ar: {
+        xmore_native: 'Xmore (0–1)',
+        standard_100: 'درجة (0–100)',
+        letter_grade: 'تقدير',
+        stars:        'نجوم',
+        signal_tier:  'مستوى',
+        conviction:   'اقتناع',
+    },
+};
+
+async function loadScoringPanel() {
+    const container = document.getElementById('scoringPanelContainer');
+    if (!container) return;
+
+    try {
+        const res = await fetch(`${API_URL}/signals/scored/compare?days=1&action=BUY`);
+        if (!res.ok) throw new Error('scoring API not available');
+        const data = await res.json();
+
+        container.innerHTML = buildScoringPanelHTML(data);
+    } catch (err) {
+        const container2 = document.getElementById('scoringPanelContainer');
+        if (container2) container2.innerHTML = `<p class="scoring-no-data">${t('scoringNoData')}</p>`;
+    }
+}
+
+function buildScoringPanelHTML(data) {
+    const signals = data.signals || [];
+    const modes   = ['xmore_native', 'standard_100', 'letter_grade', 'stars', 'signal_tier', 'conviction'];
+    const labels  = SCORING_MODE_LABELS[currentLang] || SCORING_MODE_LABELS.en;
+
+    const modeSelect = `<div class="scoring-mode-bar">
+        <span class="scoring-mode-label">${t('scoringModeLabel')}:</span>
+        ${modes.map(m => `<button class="scoring-mode-btn${m === _currentScoringMode ? ' active' : ''}"
+            onclick="setScoringMode('${m}')">${labels[m]}</button>`).join('')}
+    </div>`;
+
+    if (!signals.length) {
+        return modeSelect + `<p class="scoring-no-data">${t('scoringNoData')}</p>`;
+    }
+
+    const rows = signals.map(sig => {
+        const sc   = sig.scores || {};
+        const val  = sc[_currentScoringMode] !== undefined ? sc[_currentScoringMode] : '—';
+        const disp = _currentScoringMode === 'stars' ? '★'.repeat(Math.round(val)) + ' ' + val : val;
+        const comp = sig.components || {};
+        return `<tr class="scoring-row${sig.meets_threshold ? ' scoring-above-threshold' : ''}">
+            <td class="scoring-symbol">${sig.symbol}</td>
+            <td class="scoring-score">${disp}</td>
+            <td class="scoring-composite">${(sig.composite_score * 100).toFixed(0)}</td>
+            <td class="scoring-bar-cell">
+                <div class="scoring-mini-bar">
+                    <span class="scoring-bar-seg scoring-bar-consensus" style="width:${(comp.consensus||0)*100}%"></span>
+                    <span class="scoring-bar-seg scoring-bar-execution" style="width:${(comp.execution||0)*100}%"></span>
+                    <span class="scoring-bar-seg scoring-bar-regime"    style="width:${(comp.regime||0)*100}%"></span>
+                    <span class="scoring-bar-seg scoring-bar-momentum"  style="width:${(comp.momentum||0)*100}%"></span>
+                </div>
+            </td>
+            <td class="scoring-threshold">${sig.meets_threshold ? '✓' : ''}</td>
+        </tr>`;
+    }).join('');
+
+    return `${modeSelect}
+    <table class="scoring-table">
+        <thead><tr>
+            <th>${t('stock')}</th>
+            <th>${(SCORING_MODE_LABELS[currentLang] || SCORING_MODE_LABELS.en)[_currentScoringMode]}</th>
+            <th>${t('scoringComposite')}</th>
+            <th>${t('scoringComponents')}</th>
+            <th>${t('scoringMeetsThreshold')}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function setScoringMode(mode) {
+    _currentScoringMode = mode;
+    loadScoringPanel();
+}
+
 
 function renderConsensusCard(item) {
     const isArabic = currentLang === 'ar';
