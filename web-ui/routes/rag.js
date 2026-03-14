@@ -331,6 +331,17 @@ Major Sectors on EGX:
 Banking, Real Estate & Construction, Telecommunications, Food & Beverage,
 Chemicals & Petrochemicals, Steel & Industrial, Ports & Logistics,
 Healthcare, Fintech, Textiles, Energy, Cement, Tourism & Hospitality
+
+XMORE KNOWLEDGE SOURCES (FOR THIS ASSISTANT):
+- Live market data: latest prices, top gainers/losers, most active volume
+- Consensus signals + per-stock sentiment snapshots
+- Admin-uploaded market reports (RAG chunks)
+- ETF factsheets & prospectuses (RAG chunks)
+- News RAG chunks with recency weighting (news_rag_chunks)
+- Custom news sources + manual feeds (custom_source_articles)
+- Event intelligence + structured events (if embedded into rag_chunks)
+- Portfolio forecasts + actual performance (user-specific, when logged in)
+- FX history and alert signals (when tables exist)
 `.trim();
 
 // ── POST /api/rag/chat — General EGX research chat ──────────────────────────
@@ -409,39 +420,69 @@ router.post('/chat', optionalAuth, async (req, res) => {
             })));
         }
 
-        // 3. Try RAG chunks if any exist
-        let reportContext = '';
+        // 3. RAG knowledge base (reports + ETFs + embedded news/event intel)
+        let ragContext = '';
+        let qEmbedding = null;
         try {
-            const chunkCount = await dbGet(
-                `SELECT COUNT(*) as cnt FROM rag_chunks WHERE source_type = ${ph(1)} AND embedding IS NOT NULL`,
-                ['market_report']
-            );
-            if (chunkCount && (chunkCount.cnt > 0 || chunkCount['COUNT(*)'] > 0)) {
-                const qEmbedding = await embedText(question.trim());
-                const allChunks = await dbAll(
-                    `SELECT rc.source_id, rc.chunk_text, rc.embedding, mr.filename
-                     FROM rag_chunks rc
-                     LEFT JOIN market_reports mr ON mr.id = rc.source_id
-                     WHERE rc.source_type = ${ph(1)} AND rc.embedding IS NOT NULL`,
-                    ['market_report']
-                );
-                const topChunks = allChunks.map(c => {
-                    let emb; try { emb = JSON.parse(c.embedding); } catch { emb = null; }
-                    return { ...c, sim: cosineSim(qEmbedding, emb) };
-                }).sort((a, b) => b.sim - a.sim).slice(0, 3);
+            qEmbedding = await embedText(question.trim());
+            const chunks = await retrieveTopChunks(qEmbedding, 6, null);
+            const topChunks = chunks
+                .map(c => ({ ...c, sim: c.similarity ?? 0 }))
+                .filter(c => c.sim > 0.4)
+                .slice(0, 4);
 
-                if (topChunks.length > 0 && topChunks[0].sim > 0.4) {
-                    reportContext = '\n\nRelevant report excerpts:\n' + topChunks.map(c =>
-                        `[${c.filename || 'Report'}]: ${c.chunk_text.slice(0, 300)}`
-                    ).join('\n\n');
-                    sources.push(...topChunks.filter(c => c.sim > 0.4).map(c => ({
-                        type: 'report', title: c.filename || `Report ${c.source_id}`,
-                        source: 'Market Report', date: null, url: null
-                    })));
-                }
+            if (topChunks.length > 0) {
+                ragContext = '\n\nKnowledge base excerpts:\n' + topChunks.map(c => {
+                    const meta  = c.source_meta || {};
+                    const label = meta.filename || meta.title || meta.headline || `${c.source_type} ${c.source_id}`;
+                    return `[${label}]: ${c.chunk_text.slice(0, 320)}`;
+                }).join('\n\n');
+                sources.push(...topChunks.map(c => {
+                    const meta = c.source_meta || {};
+                    return {
+                        type: c.source_type,
+                        title: meta.filename || meta.title || meta.headline || `${c.source_type} ${c.source_id}`,
+                        source: meta.publisher || meta.source || meta.outlet || c.source_type,
+                        date: meta.date || meta.upload_date || meta.published_at || null,
+                        url: meta.url || null
+                    };
+                }));
             }
         } catch (_e) {
-            // No chunks available — skip silently
+            // No rag_chunks available — skip silently
+        }
+
+        // 3b. News RAG chunks (recency-weighted semantic matches)
+        let newsRagContext = '';
+        try {
+            if (!qEmbedding) qEmbedding = await embedText(question.trim());
+            const newsChunks = await dbAll(
+                `SELECT id, title, source_name, published_at, article_url, content, embedding
+                 FROM news_rag_chunks
+                 ORDER BY published_at DESC
+                 LIMIT 200`,
+                []
+            );
+            const scored = newsChunks.map(r => {
+                let emb; try { emb = JSON.parse(r.embedding); } catch { emb = null; }
+                return { ...r, sim: cosineSim(qEmbedding, emb) };
+            }).sort((a, b) => b.sim - a.sim).slice(0, 3);
+
+            const topNews = scored.filter(s => s.sim > 0.4);
+            if (topNews.length > 0) {
+                newsRagContext = '\n\nRelevant news RAG excerpts:\n' + topNews.map(n =>
+                    `[${n.source_name || 'News'} | ${n.published_at || 'date'}] ${n.title}: ${String(n.content || '').slice(0, 260)}`
+                ).join('\n\n');
+                sources.push(...topNews.map(n => ({
+                    type: 'news_rag',
+                    title: n.title,
+                    source: n.source_name || 'News',
+                    date: n.published_at || null,
+                    url: n.article_url || null
+                })));
+            }
+        } catch (_e) {
+            // news_rag_chunks missing — skip silently
         }
 
         // 4. Live market data context
@@ -598,10 +639,30 @@ router.post('/chat', optionalAuth, async (req, res) => {
             } catch (_e) { /* silently skip if tables missing */ }
         }
 
+        // 5b. Custom news sources (if available)
+        try {
+            const customRows = await dbAll(
+                `SELECT a.title, a.published_at, a.url, s.name AS source
+                 FROM custom_source_articles a
+                 JOIN custom_news_sources s ON s.id = a.source_id
+                 ORDER BY a.published_at DESC
+                 LIMIT 8`,
+                []
+            );
+            if (customRows.length > 0) {
+                const extra = customRows.map(r =>
+                    `- [${r.published_at || 'date'}] ${r.title} (${r.source || 'Custom'})`
+                ).join('\n');
+                if (extra) {
+                    newsContext += `\n\nCustom sources:\n${extra}`;
+                }
+            }
+        } catch (_e) { /* tables optional */ }
+
         // 6. Build prompt and generate
         const symbolNote = symbol ? `\nFocus on: ${symbol}` : '';
         const prompt = `You are an expert EGX financial research assistant with access to live market data.
-Use the live market data, stock reference, EGX knowledge, and recent news to answer questions.
+Use the live market data, stock reference, EGX knowledge, and knowledge base excerpts to answer questions.
 When discussing the user's portfolios, use the portfolio data provided — show actual vs forecast performance.
 Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
 ${symbolNote}
@@ -613,7 +674,8 @@ ${portfolioBlock}
 
 Recent news:
 ${newsContext || 'No recent news in database.'}
-${reportContext}
+${ragContext}
+${newsRagContext}
 
 User question: ${question}`;
 

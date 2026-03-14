@@ -126,6 +126,11 @@
 - `engines/simulation_core.py`: `_apply_news_drift_adjustments()` in `fit()` — graceful fallback
 - New dep: `trafilatura>=1.8.0` (both requirements files)
 
+## RAG Assistant Update (Mar 14, 2026)
+- `/api/rag/chat` now pulls from all RAG sources: market reports, ETF documents, embedded news/event intel chunks.
+- Added semantic matching against `news_rag_chunks` and included custom news sources in context when available.
+- Updated EGX knowledge block to list all internal data sources used by the assistant.
+
 ## AI Research Assistant — EGX Knowledge (Mar 2, 2026)
 - `web-ui/routes/rag.js` `/api/rag/chat` endpoint enriched with EGX context
 - `EGX_MARKET_KNOWLEDGE` static block: market facts, trading hours (10:00–14:30 Cairo Sun–Thu), currency (EGP), indices (EGX30/70/100), symbol format (TICKER.CA), regulator (FRA), 250+ companies, 15+ sectors
