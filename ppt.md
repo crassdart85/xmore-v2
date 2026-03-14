@@ -152,9 +152,25 @@ All surfaces: **bilingual EN/AR with full RTL layout**.
 
 ### Transparent, audited, bilingual
 
-- **Live predictions** since March 2026 — evaluated at D+1 and D+5 by comparing predicted direction to actual close
+- **Live predictions** since 11 January 2026 — evaluated at D+1 and D+5 by comparing predicted direction to actual close
 - **60-day historical simulation** — same agent logic applied to past EGX prices, clearly tagged **SIM**
 - **Walk-forward backtest** — re-runs every Sunday on all ~190 EGX stocks
+
+**Live production numbers (verified on Render, March 2026):**
+
+| Metric | Value | Notes |
+|---|---|---|
+| Signals evaluated | **277** | Live since Jan 11, 2026 |
+| Win rate (D+1) | **46.9%** | Predicted direction = actual direction |
+| Avg return per signal | **+0.27%** | D+1, including losers |
+| Win/Loss ratio | **1.44×** | Winners avg 44% larger than losers |
+| Profit factor | **1.34** | Gross profit ÷ gross loss |
+| Expectancy per trade | **+0.23%** | Expected return on any signal |
+| Sharpe Ratio | **1.70** | EGX-calibrated (CBE 27.25%, 247 days) |
+| Sortino Ratio | **3.43** | Downside-only volatility penalised |
+| Information Ratio | **1.71** | Alpha consistency vs EGX30 |
+| Max consecutive wins | **10** | Longest winning streak |
+| Max consecutive losses | **9** | Longest losing streak |
 
 **Track Record page features:**
 - Equity curve: cumulative Xmore return vs EGX30 benchmark (Chart.js)
@@ -306,7 +322,7 @@ Vanilla JS Dashboard (bilingual, dark/light, responsive)
 4. **Institutionally measured** — EGX-correct risk metrics (CBE 27.25%), public track record
 5. **6-mode scoring** — the same signal expressed in any format an investor prefers
 6. **Open by design** — predictions and performance are public; trust is earned, not claimed
-7. **Production-running** — live daily since March 2026, automated pipeline, zero manual intervention
+7. **Production-running** — live since Jan 11, 2026; 277+ signals evaluated; automated pipeline, zero manual intervention
 8. **Fast by architecture** — pre-computed results mean the API always responds in < 500 ms
 
 > **Xmore turns Egypt's information asymmetry into a solvable engineering problem.**
