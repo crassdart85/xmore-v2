@@ -300,6 +300,10 @@
     <a href="#etf" data-i18n="sb-etf">ETF Dashboard</a>
     <a href="#assistant" data-i18n="sb-assistant">Market Assistant</a>
     <a href="#timemachine" data-i18n="sb-timemachine">Time Machine</a>
+    <a href="#session" data-i18n="sb-session">Session Sheet</a>
+    <a href="#trackrecord" data-i18n="sb-trackrecord">Track Record</a>
+    <a href="#execution" data-i18n="sb-execution">Execution Realism</a>
+    <a href="#scoring" data-i18n="sb-scoring">Investor Scoring</a>
   </nav>
 
   <!-- ══════════ MAIN ══════════ -->
@@ -1089,6 +1093,182 @@
       </div>
     </section>
 
+    <!-- ════════════════════════════════ -->
+    <!-- 12. SESSION SHEET -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="session">
+      <div class="docs-section-header">
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s12-title">Session Sheet</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s12-badge">Live</span>
+      </div>
+      <p class="docs-desc" data-i18n="s12-desc">A pre-market briefing page at <a href="/session" style="color:var(--accent)">/session</a> — pivot levels, ATR, trend bias, candlestick patterns, and a virtual position simulator for today's signals. Refreshes each morning before market open.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4 data-i18n="s12-c1-h">Pivot Levels</h4>
+          <p data-i18n="s12-c1-p">Classic daily pivots (P, R1, R2, S1, S2) computed from the prior session's OHLC data. Displayed alongside the current price to show where support and resistance sit today.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s12-c2-h">ATR &amp; Trend</h4>
+          <p data-i18n="s12-c2-p">14-day Average True Range gives the expected daily move in EGP. Trend bias (bullish / neutral / bearish) is derived from price position relative to a 20-day MA.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s12-c3-h">Candlestick Patterns</h4>
+          <p data-i18n="s12-c3-p">Automatic detection of 8 patterns on the last 3 candles: Doji, Hammer, Shooting Star, Bullish/Bearish Engulfing, Morning Star, Evening Star. Shown as coloured badges.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s12-c4-h">Position Simulator</h4>
+          <p data-i18n="s12-c4-p">Open a virtual trade directly from today's BUY signals. Enter an entry price, track live P&amp;L as the session progresses, and close with one tap. Stats strip shows win rate and avg return.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 13. TRACK RECORD -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="trackrecord">
+      <div class="docs-section-header">
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s13-title">Track Record</h2>
+        <span class="docs-section-badge badge-live" data-i18n="s13-badge">Public</span>
+      </div>
+      <p class="docs-desc" data-i18n="s13-desc">A public investor-facing performance page at <a href="/track-record" style="color:var(--accent)">/track-record</a> — no login required. Shows verified signal history, equity curve, risk metrics, and per-agent methodology cards. Designed for investor due-diligence.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4 data-i18n="s13-c1-h">KPI Strip</h4>
+          <p data-i18n="s13-c1-p">Hero metrics: total signals, directional accuracy, avg alpha per signal, win rate — with 30/60/90-day rolling windows selectable.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c2-h">Equity Curve</h4>
+          <p data-i18n="s13-c2-p">Chart.js line chart of cumulative portfolio returns vs EGX30 benchmark. Live predictions since March 2026 + 60-day historical simulation (clearly tagged SIM).</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c3-h">Risk Metrics</h4>
+          <p data-i18n="s13-c3-p">Sharpe ratio (EGX-correct 27.25% CBE rate), Sortino ratio, Calmar ratio, max drawdown %, and Information Ratio vs EGX30.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c4-h">Walk-Forward Backtest</h4>
+          <p data-i18n="s13-c4-p">Weekly walk-forward backtest results per stock — directional accuracy, signal P&amp;L %, ranked by best performers. Re-runs every Sunday.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c5-h">Prediction Log</h4>
+          <p data-i18n="s13-c5-p">Paginated table of every signal with date, symbol, predicted direction, actual outcome, and alpha. CSV export button for download.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c6-h">Bilingual</h4>
+          <p data-i18n="s13-c6-p">Full EN/AR toggle with RTL layout. All section titles, metric labels, and methodology descriptions switch language.</p>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <div class="tip-label" data-i18n="s13-tip-label">Transparency note</div>
+        <div data-i18n="s13-tip-body">Simulated signals (pre-March 2026) are generated using the same agent logic on historical EGX price data. They are clearly tagged <strong>SIM</strong> in the prediction log — no future price data is used at any point.</div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 14. EXECUTION REALISM -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="execution">
+      <div class="docs-section-header">
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s14-title">Execution Realism Layer</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s14-badge">Signal Gate</span>
+      </div>
+      <p class="docs-desc" data-i18n="s14-desc">Every BUY signal passes through a friction-aware gate before it is stored. The gate models real EGX transaction costs, liquidity-based slippage, market regime, and trailing stop management — blocking signals whose edge doesn't cover their real cost.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4 data-i18n="s14-c1-h">EGX Transaction Costs</h4>
+          <p data-i18n="s14-c1-p">Full round-trip cost: brokerage (0.15%) + stamp duty (0.15%) + FRA fee + EGX exchange fee + Misr clearing ≈ 0.70% per trade. A signal must offer ≥ 3× this cost to be approved.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s14-c2-h">Liquidity-Tiered Slippage</h4>
+          <p data-i18n="s14-c2-p">High-ADV stocks (>5M EGP/day): 10 bps slippage. Mid-ADV (>1M EGP): 25 bps. Low-ADV: 60 bps. BUY fill prices are adjusted up, SELL prices adjusted down.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s14-c3-h">Market Regime Filter</h4>
+          <p data-i18n="s14-c3-p">EGX30 vs its 20-day MA determines regime: BULL (≥+2%), NEUTRAL (0–2%), BEAR (&lt;0%). New long positions are blocked in BEAR regime to prevent buying into corrections.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s14-c4-h">Trailing Stop</h4>
+          <p data-i18n="s14-c4-p">Activates after 20 EGX trading days at 6% below the highest price since entry. The stop only ratchets up — never down. Hard exit at 45 trading days regardless of price.</p>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Execution gate — signal evaluation output</span>
+        </div>
+        <div class="mockup-body">
+          <table class="mock-table">
+            <thead><tr><th>Symbol</th><th>Action</th><th>Edge ratio</th><th>Fill price</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td><strong>COMI.CA</strong></td><td>BUY</td><td style="color:var(--pos)">8.4×</td><td>74.32 EGP</td><td style="color:var(--pos)">APPROVED</td></tr>
+              <tr><td><strong>GBCO.CA</strong></td><td>BUY</td><td style="color:var(--neg)">1.9×</td><td>—</td><td style="color:var(--neg)">BLOCKED (edge &lt; 3×)</td></tr>
+              <tr><td><strong>EKHW.CA</strong></td><td>BUY</td><td>—</td><td>—</td><td style="color:var(--neg)">BLOCKED (BEAR regime)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════ -->
+    <!-- 15. INVESTOR SCORING -->
+    <!-- ════════════════════════════════ -->
+    <section class="docs-section" id="scoring">
+      <div class="docs-section-header">
+        <span class="docs-section-icon"></span>
+        <h2 class="docs-section-title" data-i18n="s15-title">Investor Scoring</h2>
+        <span class="docs-section-badge badge-new" data-i18n="s15-badge">New</span>
+      </div>
+      <p class="docs-desc" data-i18n="s15-desc">A composite score (0–1) built from 4 weighted components is translated into 6 investor-facing formats simultaneously. Switch modes in the Consensus tab to see today's signals in the format that suits your audience.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <h4 data-i18n="s15-c1-h">Composite Formula</h4>
+          <p data-i18n="s15-c1-p">Consensus × 0.40 + Execution quality × 0.25 + Market regime × 0.20 + Momentum × 0.15. Missing components default to neutral (0.5) — no data gaps penalise the score.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s15-c2-h">6 Output Modes</h4>
+          <p data-i18n="s15-c2-p">Score (0–100), Letter grade (A+→F), Stars (1–5 at 0.5 resolution), Signal tier (S/A/B/C/D), Conviction (HIGH/MEDIUM/LOW), and Xmore native (0.00–1.00).</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s15-c3-h">Mode Selector</h4>
+          <p data-i18n="s15-c3-p">Pill buttons in the Consensus tab let you switch between all 6 modes instantly. The table re-renders without re-fetching — no page reload needed.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s15-c4-h">Institutional Metrics</h4>
+          <p data-i18n="s15-c4-p">EGX-correct Sharpe &amp; Sortino (27.25% CBE rate, 247 trading days), Calmar ratio, Information Ratio vs EGX30, rolling 30-day Sharpe sparkline, and max drawdown details with recovery time.</p>
+        </div>
+      </div>
+
+      <div class="mockup">
+        <div class="mockup-titlebar">
+          <div class="mockup-dot r"></div><div class="mockup-dot y"></div><div class="mockup-dot g"></div>
+          <span class="mockup-url">Consensus Tab → Investor Scoring panel — Score (0–100) mode</span>
+        </div>
+        <div class="mockup-body">
+          <table class="mock-table">
+            <thead><tr><th>Symbol</th><th>Score</th><th>Composite</th><th>Components</th><th>Actionable</th></tr></thead>
+            <tbody>
+              <tr><td><strong>COMI.CA</strong></td><td style="color:var(--pos)">84</td><td>0.84</td><td style="color:var(--text2)">C:88 E:75 R:100 M:72</td><td style="color:var(--pos)">✓</td></tr>
+              <tr><td><strong>HRHO.CA</strong></td><td style="color:var(--pos)">71</td><td>0.71</td><td style="color:var(--text2)">C:73 E:80 R:100 M:55</td><td style="color:var(--pos)">✓</td></tr>
+              <tr><td><strong>SKPC.CA</strong></td><td>54</td><td>0.54</td><td style="color:var(--text2)">C:60 E:40 R:50 M:60</td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tip-box">
+        <div class="tip-label" data-i18n="s15-tip-label">API access</div>
+        <div data-i18n="s15-tip-body">All 6 scores are available via <code>GET /api/signals/scored/compare</code> — returns a JSON array with every format in a single request. The <code>/morning-brief</code> endpoint provides top-N BUY signals with a daily summary for integration into reports.</div>
+      </div>
+    </section>
+
     <!-- Footer -->
     <div style="padding: 32px 0 16px; border-top: 1px solid var(--border); color: var(--text2); font-size: 13px; display:flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
       <span class="footer-left" data-i18n="footer-left">Xmore — AI Stock Prediction for EGX &amp; Global Markets</span>
@@ -1153,6 +1333,31 @@ const i18n = {
     's9-c1-h': "Live market context", 's9-c1-p': "Every message includes today's gainers/losers, volume leaders, sentiment, and consensus signals as background context.", 's9-c2-h': "Portfolio context", 's9-c2-p': "When signed in, the assistant knows your forecast portfolios and can answer questions about positions vs forecasts.", 's9-c3-h': "News-aware", 's9-c3-p': "Arabic-aware search extracts keywords from your question to find relevant recent headlines before answering.", 's9-c4-h': "Quick chips", 's9-c4-p': '"Macro Brief", "Top Movers", "Buy Signals" — one-tap prompts for common questions.',
     's11-title': "Time Machine", 's11-badge': "History Tab", 's11-desc': "Replay any past trading session. Select a historical date to see what the AI agents predicted that day, alongside actual price outcomes — useful for backtesting your own strategy.",
     's11-c1-h': "Date picker", 's11-c1-p': "Select any past EGX trading day. Predictions and prices are loaded from the database snapshot for that date.", 's11-c2-h': "Outcome overlay", 's11-c2-p': "Green ✓ / Red ✗ icons show which signals were correct — the actual price move is shown alongside.", 's11-c3-h': "Session stats", 's11-c3-p': "Overall accuracy, best and worst calls for the selected date, per-agent win rate for that session.", 's11-c4-h': "Backtest mode", 's11-c4-p': "Pivot levels and trend signals from the Session Sheet complement Time Machine for trade planning.",
+    'sb-session': "Session Sheet", 'sb-trackrecord': "Track Record", 'sb-execution': "Execution Realism", 'sb-scoring': "Investor Scoring",
+    's12-title': "Session Sheet", 's12-badge': "Live", 's12-desc': `A pre-market briefing page at <a href="/session" style="color:var(--accent)">/session</a> — pivot levels, ATR, trend bias, candlestick patterns, and a virtual position simulator for today's signals. Refreshes each morning before market open.`,
+    's12-c1-h': "Pivot Levels", 's12-c1-p': "Classic daily pivots (P, R1, R2, S1, S2) computed from the prior session's OHLC data. Displayed alongside the current price to show where support and resistance sit today.",
+    's12-c2-h': "ATR &amp; Trend", 's12-c2-p': "14-day Average True Range gives the expected daily move in EGP. Trend bias (bullish / neutral / bearish) is derived from price position relative to a 20-day MA.",
+    's12-c3-h': "Candlestick Patterns", 's12-c3-p': "Automatic detection of 8 patterns on the last 3 candles: Doji, Hammer, Shooting Star, Bullish/Bearish Engulfing, Morning Star, Evening Star. Shown as coloured badges.",
+    's12-c4-h': "Position Simulator", 's12-c4-p': "Open a virtual trade directly from today's BUY signals. Enter an entry price, track live P&amp;L as the session progresses, and close with one tap. Stats strip shows win rate and avg return.",
+    's13-title': "Track Record", 's13-badge': "Public", 's13-desc': `A public investor-facing performance page at <a href="/track-record" style="color:var(--accent)">/track-record</a> — no login required. Shows verified signal history, equity curve, risk metrics, and per-agent methodology cards. Designed for investor due-diligence.`,
+    's13-c1-h': "KPI Strip", 's13-c1-p': "Hero metrics: total signals, directional accuracy, avg alpha per signal, win rate — with 30/60/90-day rolling windows selectable.",
+    's13-c2-h': "Equity Curve", 's13-c2-p': "Chart.js line chart of cumulative portfolio returns vs EGX30 benchmark. Live predictions since March 2026 + 60-day historical simulation (clearly tagged SIM).",
+    's13-c3-h': "Risk Metrics", 's13-c3-p': "Sharpe ratio (EGX-correct 27.25% CBE rate), Sortino ratio, Calmar ratio, max drawdown %, and Information Ratio vs EGX30.",
+    's13-c4-h': "Walk-Forward Backtest", 's13-c4-p': "Weekly walk-forward backtest results per stock — directional accuracy, signal P&amp;L %, ranked by best performers. Re-runs every Sunday.",
+    's13-c5-h': "Prediction Log", 's13-c5-p': "Paginated table of every signal with date, symbol, predicted direction, actual outcome, and alpha. CSV export button for download.",
+    's13-c6-h': "Bilingual", 's13-c6-p': "Full EN/AR toggle with RTL layout. All section titles, metric labels, and methodology descriptions switch language.",
+    's13-tip-label': "Transparency note", 's13-tip-body': "Simulated signals (pre-March 2026) are generated using the same agent logic on historical EGX price data. They are clearly tagged <strong>SIM</strong> in the prediction log — no future price data is used at any point.",
+    's14-title': "Execution Realism Layer", 's14-badge': "Signal Gate", 's14-desc': "Every BUY signal passes through a friction-aware gate before it is stored. The gate models real EGX transaction costs, liquidity-based slippage, market regime, and trailing stop management — blocking signals whose edge doesn't cover their real cost.",
+    's14-c1-h': "EGX Transaction Costs", 's14-c1-p': "Full round-trip cost: brokerage (0.15%) + stamp duty (0.15%) + FRA fee + EGX exchange fee + Misr clearing ≈ 0.70% per trade. A signal must offer ≥ 3× this cost to be approved.",
+    's14-c2-h': "Liquidity-Tiered Slippage", 's14-c2-p': "High-ADV stocks (>5M EGP/day): 10 bps slippage. Mid-ADV (>1M EGP): 25 bps. Low-ADV: 60 bps. BUY fill prices are adjusted up, SELL prices adjusted down.",
+    's14-c3-h': "Market Regime Filter", 's14-c3-p': "EGX30 vs its 20-day MA determines regime: BULL (≥+2%), NEUTRAL (0–2%), BEAR (<0%). New long positions are blocked in BEAR regime to prevent buying into corrections.",
+    's14-c4-h': "Trailing Stop", 's14-c4-p': "Activates after 20 EGX trading days at 6% below the highest price since entry. The stop only ratchets up — never down. Hard exit at 45 trading days regardless of price.",
+    's15-title': "Investor Scoring", 's15-badge': "New", 's15-desc': "A composite score (0–1) built from 4 weighted components is translated into 6 investor-facing formats simultaneously. Switch modes in the Consensus tab to see today's signals in the format that suits your audience.",
+    's15-c1-h': "Composite Formula", 's15-c1-p': "Consensus × 0.40 + Execution quality × 0.25 + Market regime × 0.20 + Momentum × 0.15. Missing components default to neutral (0.5) — no data gaps penalise the score.",
+    's15-c2-h': "6 Output Modes", 's15-c2-p': "Score (0–100), Letter grade (A+→F), Stars (1–5 at 0.5 resolution), Signal tier (S/A/B/C/D), Conviction (HIGH/MEDIUM/LOW), and Xmore native (0.00–1.00).",
+    's15-c3-h': "Mode Selector", 's15-c3-p': "Pill buttons in the Consensus tab let you switch between all 6 modes instantly. The table re-renders without re-fetching — no page reload needed.",
+    's15-c4-h': "Institutional Metrics", 's15-c4-p': "EGX-correct Sharpe &amp; Sortino (27.25% CBE rate, 247 trading days), Calmar ratio, Information Ratio vs EGX30, rolling 30-day Sharpe sparkline, and max drawdown details with recovery time.",
+    's15-tip-label': "API access", 's15-tip-body': `All 6 scores are available via <code>GET /api/signals/scored/compare</code> — returns a JSON array with every format in a single request. The <code>/morning-brief</code> endpoint provides top-N BUY signals with a daily summary for integration into reports.`,
     'footer-left': "Xmore — AI Stock Prediction for EGX &amp; Global Markets", 'footer-back': "← Back to Dashboard"
   },
   ar: {
@@ -1192,6 +1397,31 @@ const i18n = {
     's9-c1-h': "سياق السوق الحي", 's9-c1-p': "كل رسالة تتضمن رابحي وخاسري اليوم، قادة الحجم، المشاعر، وإشارات الإجماع كسياق خلفي.", 's9-c2-h': "سياق المحفظة", 's9-c2-p': "عند تسجيل الدخول، يعرف المساعد محافظ التوقعات الخاصة بك ويمكنه الإجابة على أسئلة حول الصفقات مقابل التوقعات.", 's9-c3-h': "مدرك للأخبار", 's9-c3-p': "البحث المدرك للعربية يستخلص الكلمات المفتاحية من سؤالك للعثور على العناوين الأخيرة ذات الصلة قبل الإجابة.", 's9-c4-h': "الاختصارات السريعة", 's9-c4-p': `"الملخص الكلي"، "أبرز المتحركين"، "إشارات الشراء" — أوامر بنقرة واحدة للأسئلة الشائعة.`,
     's11-title': "آلة الزمن", 's11-badge': "تبويب السجل", 's11-desc': "أعد تشغيل أي جلسة تداول سابقة. اختر تاريخاً تاريخياً لرؤية ما توقعه وكلاء الذكاء الاصطناعي في ذلك اليوم إلى جانب نتائج الأسعار الفعلية — مفيد لاختبار استراتيجيتك الخاصة.",
     's11-c1-h': "منتقي التاريخ", 's11-c1-p': "اختر أي يوم تداول سابق في البورصة المصرية. تُحمَّل التنبؤات والأسعار من لقطة قاعدة البيانات لذلك التاريخ.", 's11-c2-h': "تراكب النتائج", 's11-c2-p': "أيقونات خضراء ✓ / حمراء ✗ تُظهر الإشارات الصحيحة — تُعرض حركة السعر الفعلية بجانبها.", 's11-c3-h': "إحصاءات الجلسة", 's11-c3-p': "الدقة الإجمالية، أفضل وأسوأ التوقعات للتاريخ المختار، ومعدل الفوز لكل وكيل في تلك الجلسة.", 's11-c4-h': "وضع الاختبار الخلفي", 's11-c4-p': "مستويات المحور وإشارات الاتجاه من صفحة الجلسة تُكمّل آلة الزمن لتخطيط الصفقات.",
+    'sb-session': "صفحة الجلسة", 'sb-trackrecord': "سجل الأداء", 'sb-execution': "واقعية التنفيذ", 'sb-scoring': "تقييم المستثمر",
+    's12-title': "صفحة الجلسة", 's12-badge': "مباشر", 's12-desc': `صفحة إحاطة ما قبل السوق على <a href="/session" style="color:var(--accent)">/session</a> — مستويات المحور، ATR، اتجاه الاتجاه، أنماط الشمعدانات، ومحاكي الصفقات الافتراضية لإشارات اليوم.`,
+    's12-c1-h': "مستويات المحور", 's12-c1-p': "المحاور اليومية الكلاسيكية (P, R1, R2, S1, S2) محسوبة من بيانات OHLC للجلسة السابقة. تُعرض جنباً إلى جنب مع السعر الحالي.",
+    's12-c2-h': "ATR والاتجاه", 's12-c2-p': "متوسط المدى الحقيقي لـ 14 يوماً يعطي الحركة اليومية المتوقعة بالجنيه المصري. يُستخلص اتجاه الحركة من موضع السعر بالنسبة للمتوسط المتحرك لـ 20 يوماً.",
+    's12-c3-h': "أنماط الشمعدانات", 's12-c3-p': "كشف تلقائي لـ 8 أنماط على آخر 3 شمعدانات: Doji، المطرقة، نجمة الرماية، الابتلاع الصاعد/الهابط، نجمة الصباح، نجمة المساء. تُعرض كشارات ملونة.",
+    's12-c4-h': "محاكي الصفقات", 's12-c4-p': "افتح صفقة افتراضية مباشرة من إشارات الشراء اليوم. أدخل سعر الدخول وتتبع الربح والخسارة الحية طوال الجلسة، وأغلق بنقرة واحدة.",
+    's13-title': "سجل الأداء", 's13-badge': "عام", 's13-desc': `صفحة أداء عامة للمستثمرين على <a href="/track-record" style="color:var(--accent)">/track-record</a> — لا يلزم تسجيل الدخول. تعرض سجل الإشارات الموثق ومنحنى حقوق الملكية ومقاييس المخاطر وبطاقات منهجية كل وكيل.`,
+    's13-c1-h': "شريط المؤشرات الرئيسية", 's13-c1-p': "مقاييس رئيسية: إجمالي الإشارات، الدقة الاتجاهية، متوسط الألفا لكل إشارة، معدل الفوز — مع نوافذ متداولة 30/60/90 يوماً قابلة للاختيار.",
+    's13-c2-h': "منحنى حقوق الملكية", 's13-c2-p': "مخطط Chart.js للعوائد التراكمية للمحفظة مقابل مؤشر EGX30. توقعات مباشرة منذ مارس 2026 + محاكاة تاريخية لـ 60 يوماً (مُعلَّمة بوضوح SIM).",
+    's13-c3-h': "مقاييس المخاطر", 's13-c3-p': "نسبة شارب (بمعدل البنك المركزي المصري الصحيح 27.25%)، نسبة سورتينو، نسبة كالمار، الحد الأقصى للانخفاض، ونسبة المعلومات مقابل EGX30.",
+    's13-c4-h': "الاختبار الخلفي المتقدم", 's13-c4-p': "نتائج الاختبار الخلفي المتقدم الأسبوعية لكل سهم — الدقة الاتجاهية ونسبة ربح الإشارة، مرتبة حسب الأفضل أداءً. يُعاد تشغيله كل أحد.",
+    's13-c5-h': "سجل التوقعات", 's13-c5-p': "جدول مُقسَّم لكل إشارة مع التاريخ والرمز والاتجاه المتوقع والنتيجة الفعلية والألفا. زر تصدير CSV للتنزيل.",
+    's13-c6-h': "ثنائي اللغة", 's13-c6-p': "تبديل كامل EN/AR مع تخطيط RTL. تتغير جميع عناوين الأقسام ومسميات المقاييس وأوصاف المنهجية.",
+    's13-tip-label': "ملاحظة الشفافية", 's13-tip-body': "الإشارات المحاكاة (قبل مارس 2026) مولَّدة بنفس منطق الوكلاء على بيانات أسعار EGX التاريخية. مُعلَّمة بوضوح <strong>SIM</strong> في سجل التوقعات — لا تُستخدَم بيانات أسعار مستقبلية في أي نقطة.",
+    's14-title': "طبقة واقعية التنفيذ", 's14-badge': "بوابة الإشارات", 's14-desc': "تمر كل إشارة شراء عبر بوابة واعية بتكاليف الاحتكاك قبل تخزينها. تُنمذج البوابة تكاليف معاملات EGX الحقيقية والانزلاق القائم على السيولة ونظام السوق وإدارة وقف الخسارة المتحرك.",
+    's14-c1-h': "تكاليف معاملات EGX", 's14-c1-p': "تكلفة الرحلة الكاملة: العمولة (0.15%) + رسوم الطابع (0.15%) + رسوم هيئة الرقابة المالية + رسوم البورصة + المقاصة ≈ 0.70% للصفقة. يجب أن تقدم الإشارة ≥ 3× هذه التكلفة للموافقة.",
+    's14-c2-h': "انزلاق مُدرَّج حسب السيولة", 's14-c2-p': "الأسهم عالية التداول (>5 مليون جنيه/يوم): انزلاق 10 نقطة أساس. متوسطة التداول (>1 مليون): 25 نقطة أساس. منخفضة التداول: 60 نقطة أساس.",
+    's14-c3-h': "فلتر نظام السوق", 's14-c3-p': "يحدد مؤشر EGX30 مقابل متوسطه المتحرك لـ 20 يوماً النظام: صاعد (≥+2%)، محايد (0–2%)، هابط (<0%). تُحظر المراكز الطويلة الجديدة في النظام الهابط.",
+    's14-c4-h': "وقف الخسارة المتحرك", 's14-c4-p': "يُفعَّل بعد 20 يوم تداول بالبورصة المصرية عند 6% تحت أعلى سعر منذ الدخول. يتحرك الوقف للأعلى فقط — لا يتراجع أبداً. خروج إجباري عند 45 يوم تداول.",
+    's15-title': "تقييم المستثمر", 's15-badge': "جديد", 's15-desc': "درجة مركبة (0–1) مبنية من 4 مكونات موزونة تُترجَم إلى 6 تنسيقات تواجه المستثمر في آنٍ واحد. بدّل الأوضاع في تبويب الإجماع لعرض إشارات اليوم بالتنسيق المناسب لجمهورك.",
+    's15-c1-h': "صيغة الدرجة المركبة", 's15-c1-p': "إجماع × 0.40 + جودة التنفيذ × 0.25 + نظام السوق × 0.20 + الزخم × 0.15. المكونات المفقودة تأخذ القيمة المحايدة (0.5) — لا تُعاقَب الفجوات في البيانات.",
+    's15-c2-h': "6 أوضاع مخرجات", 's15-c2-p': "درجة (0–100)، تقدير حرفي (A+←F)، نجوم (1–5 بدقة نصف نجمة)، مستوى الإشارة (S/A/B/C/D)، الاقتناع (عالي/متوسط/منخفض)، وإكسمور الأصلي (0.00–1.00).",
+    's15-c3-h': "محدد الوضع", 's15-c3-p': "أزرار بيضاوية في تبويب الإجماع تتيح التبديل بين الأوضاع الستة فوراً. الجدول يُعاد تصيّيره دون إعادة جلب البيانات.",
+    's15-c4-h': "مقاييس مؤسسية", 's15-c4-p': "نسبة شارب وسورتينو الصحيحة لـ EGX (معدل البنك المركزي المصري 27.25%، 247 يوم تداول)، نسبة كالمار، نسبة المعلومات مقابل EGX30، ومنحنى شارب المتدحرج لـ 30 يوماً.",
+    's15-tip-label': "الوصول عبر API", 's15-tip-body': `جميع الدرجات الستة متاحة عبر <code>GET /api/signals/scored/compare</code> — يُرجع مصفوفة JSON بكل التنسيقات في طلب واحد. نقطة النهاية <code>/morning-brief</code> توفر أفضل إشارات الشراء مع ملخص يومي للتكامل في التقارير.`,
     'footer-left': "إكسمور — توقع أسهم بالذكاء الاصطناعي للبورصة المصرية والأسواق العالمية", 'footer-back': "← العودة للوحة التحكم"
   }
 };
