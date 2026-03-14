@@ -8,7 +8,7 @@ const _PRO_I18N = {
     back: '← Dashboard', signIn: 'Sign In', signOut: 'Sign Out',
     modalTitle: 'Sign in to Xmore', login: 'Login', signUp: 'Sign Up',
     email: 'Email', password: 'Password',
-    tracked: 'TRACKED', upToday: 'UP TODAY', downToday: 'DOWN TODAY',
+    tracked: 'TRACKED', upToday: 'UP', downToday: 'DOWN',
     bestWinRate: 'BEST AGENT WIN RATE', lastData: 'LAST DATA',
     egx30Title: 'EGX 30 — Intraday', egxBlueChips: 'EGX Blue Chips',
     topGainers: 'Top Gainers', topLosers: 'Top Losers',
@@ -35,7 +35,7 @@ const _PRO_I18N = {
     back: '← الرئيسية', signIn: 'دخول', signOut: 'خروج',
     modalTitle: 'تسجيل الدخول إلى Xmore', login: 'دخول', signUp: 'تسجيل',
     email: 'البريد الإلكتروني', password: 'كلمة المرور',
-    tracked: 'متتبع', upToday: 'صاعد اليوم', downToday: 'هابط اليوم',
+    tracked: 'متتبع', upToday: 'صاعد', downToday: 'هابط',
     bestWinRate: 'أفضل معدل نجاح', lastData: 'آخر بيانات',
     egx30Title: 'EGX 30 — خلال اليوم', egxBlueChips: 'أسهم EGX الكبرى',
     topGainers: 'أعلى الرابحين', topLosers: 'أعلى الخاسرين',
@@ -338,7 +338,10 @@ function renderStats(prices, stats, perf) {
     agents.sort((a, b) => parseFloat(b.accuracy) - parseFloat(a.accuracy));
     const best = agents[0];
     document.getElementById('statWinRate').textContent  = parseFloat(best.accuracy).toFixed(1) + '%';
-    document.getElementById('statWinAgent').textContent = best.agent_name.replace('_Agent', '').replace('_', ' ');
+    const winAgentEl = document.getElementById('statWinAgent');
+    if (winAgentEl) {
+        winAgentEl.textContent = best.agent_name.replace('_Agent', '').replace('_', ' ');
+    }
   }
 }
 
@@ -493,7 +496,7 @@ async function loadMacroBrief() {
 
   } catch (err) {
     content.innerHTML = `<div style="color:var(--pro-red)">Error: ${escHtml(err.message)}</div>`;
-    btn.textContent = "📊 Load Today's Read";
+    btn.textContent = "📊 Load Read";
     btn.disabled = false;
   }
 }
