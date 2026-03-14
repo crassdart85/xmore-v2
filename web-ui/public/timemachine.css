@@ -131,6 +131,8 @@
     cursor: pointer;
     transition: transform 0.15s, opacity 0.15s;
     margin-top: 8px;
+    width: fit-content;
+    align-self: flex-start;
 }
 
 .tm-simulate-btn:hover {
