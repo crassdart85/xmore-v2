@@ -78,8 +78,10 @@ def get_performance_summary(
         if live_only:
             if DATABASE_URL:
                 conditions.append("tr.is_live = TRUE")
+                conditions.append("(tr.is_simulated = FALSE OR tr.is_simulated IS NULL)")
             else:
                 conditions.append("(tr.is_live = 1 OR tr.is_live IS NULL)")
+                conditions.append("(tr.is_simulated = 0 OR tr.is_simulated IS NULL)")
 
         if days:
             if DATABASE_URL:
@@ -342,10 +344,10 @@ def get_stock_performance(days: int = 90) -> list:
         cursor = conn.cursor()
 
         if DATABASE_URL:
-            live_filter = "tr.is_live = TRUE"
+            live_filter = "tr.is_live = TRUE AND (tr.is_simulated = FALSE OR tr.is_simulated IS NULL)"
             date_filter = "tr.recommendation_date >= CURRENT_DATE - %s"
         else:
-            live_filter = "(tr.is_live = 1 OR tr.is_live IS NULL)"
+            live_filter = "(tr.is_live = 1 OR tr.is_live IS NULL) AND (tr.is_simulated = 0 OR tr.is_simulated IS NULL)"
             date_filter = "tr.recommendation_date >= date('now', '-' || ? || ' days')"
 
         # Try joining with egx30_stocks for names; fallback if table not available
@@ -390,9 +392,11 @@ def get_equity_curve(user_id: int = None, days: int = 180) -> dict:
 
         if DATABASE_URL:
             conditions.append("tr.is_live = TRUE")
+            conditions.append("(tr.is_simulated = FALSE OR tr.is_simulated IS NULL)")
             conditions.append(f"tr.recommendation_date >= CURRENT_DATE - {_ph(1)}::integer")
         else:
             conditions.append("(tr.is_live = 1 OR tr.is_live IS NULL)")
+            conditions.append("(tr.is_simulated = 0 OR tr.is_simulated IS NULL)")
             conditions.append(f"tr.recommendation_date >= date('now', '-' || {_ph(1)} || ' days')")
         params.append(days)
 
@@ -655,9 +659,38 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
     if DATABASE_URL:
         date_filter = f"recommendation_date >= CURRENT_DATE - {days}"
         live_filter = "(is_live = TRUE OR is_live IS NULL)"
+        sim_filter  = "(is_simulated = FALSE OR is_simulated IS NULL)"
     else:
         date_filter = f"recommendation_date >= date('now', '-{days} days')"
         live_filter = "(is_live = 1 OR is_live IS NULL)"
+        sim_filter  = "(is_simulated = 0 OR is_simulated IS NULL)"
+
+    # Count live vs simulated for data_transparency reporting
+    try:
+        cursor.execute(f"""
+            SELECT
+                COUNT(*) FILTER (WHERE {sim_filter}) AS live_cnt,
+                COUNT(*) FILTER (WHERE is_simulated = {'TRUE' if DATABASE_URL else '1'}) AS sim_cnt,
+                MIN(CASE WHEN {sim_filter} THEN recommendation_date END) AS earliest_live
+            FROM trade_recommendations
+            WHERE actual_next_day_return IS NOT NULL
+            AND {live_filter}
+            AND {date_filter}
+        """)
+        tc_row = cursor.fetchone()
+        _live_count = int(tc_row[0] or 0)
+        _sim_count  = int(tc_row[1] or 0)
+        _earliest_live = str(tc_row[2]) if tc_row[2] else None
+    except Exception:
+        _live_count, _sim_count, _earliest_live = 0, 0, None
+
+    if _sim_count > 0:
+        import logging as _log
+        _log.getLogger(__name__).warning(
+            f"[METRICS] {_sim_count} simulated predictions found. "
+            f"EXCLUDED from all investor-facing metric calculations. "
+            f"Only {_live_count} live predictions are used."
+        )
 
     try:
         cursor.execute(f"""
@@ -666,6 +699,7 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
             AND {live_filter}
+            AND {sim_filter}
             AND {date_filter}
             ORDER BY recommendation_date ASC
         """)
@@ -728,6 +762,12 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
         "risk_free_rate_used":  EGX_RISK_FREE_RATE_ANNUAL,
         "minimum_trades_met":   trade_count >= MINIMUM_TRADES_FOR_METRICS,
         "data_quality_warning": " | ".join(warnings),
+        "data_transparency": {
+            "live_signals_count":         _live_count,
+            "simulated_signals_excluded": _sim_count,
+            "metrics_basis":              "live_only",
+            "earliest_live_signal_date":  _earliest_live,
+        },
     }
 
 

@@ -324,6 +324,11 @@ jobs:
       - name: Evaluate trade performance
         run: python -c "from engines.evaluate_performance import run_evaluation; run_evaluation()"
 
+      # Trailing stop checks — updates open positions held ≥20 days
+      - name: Run holding manager (trailing stops)
+        continue-on-error: true
+        run: python -c "from database import get_connection; from engines.holding_manager import HoldingManager; conn = get_connection(); HoldingManager(conn).run_daily_check(); conn.close()"
+
   # ══════════════════════════════════════════════════
   # ETF JOBS (EGX local + global Egypt-exposure ETFs)
   # ══════════════════════════════════════════════════

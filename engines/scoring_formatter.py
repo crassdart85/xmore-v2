@@ -14,6 +14,21 @@ Scoring modes:
   conviction    — HIGH / MEDIUM / LOW
 """
 
+# SCORE DISAMBIGUATION
+# There are two distinct scores in this system:
+#
+# 1. Xmore Score (0–100): bull×0.30 + (100−bear)×0.25 + agreement×0.25 + confidence×0.20
+#    Source: consensus_results.xmore_score
+#    Meaning: How bullish are the agents on this stock?
+#
+# 2. Composite Investor Score (0–1): consensus×0.40 + execution×0.25 + regime×0.20 + momentum×0.15
+#    Source: scored_signals.composite_score
+#    Meaning: How high-quality is this as a tradeable signal?
+#
+# These are NOT interchangeable. The Composite Score uses consensus_score (raw agent BUY vote
+# fraction, 0.0–1.0) as its consensus component — NOT the Xmore Score.
+# The Xmore Score is a bullishness index; the Composite Score is a trade-quality index.
+
 from __future__ import annotations
 import math
 from datetime import datetime
@@ -247,9 +262,17 @@ def derive_components_from_rec(rec: dict, regime: str = "NEUTRAL") -> dict:
     Used when components are not individually tracked — infers from
     the existing fields available in rec.
     """
-    # consensus_score: from confidence (0–100) or xmore_score (0–100)
-    raw_conf = rec.get("confidence") or rec.get("xmore_score") or 50
-    consensus_score = max(0.0, min(1.0, float(raw_conf) / 100.0))
+    # consensus_score: raw BUY vote fraction from agent consensus (preferred),
+    # fall back to confidence percentage. Do NOT use xmore_score — that is a
+    # separate bullishness index, not the consensus component of the composite score.
+    raw_bull = rec.get("bull")  # 0–100: % of agents that voted BUY
+    raw_conf = rec.get("confidence")  # 0–100: consensus confidence
+    if raw_bull is not None:
+        consensus_score = max(0.0, min(1.0, float(raw_bull) / 100.0))
+    elif raw_conf is not None:
+        consensus_score = max(0.0, min(1.0, float(raw_conf) / 100.0))
+    else:
+        consensus_score = 0.5  # neutral default when no agent data available
 
     # execution_score: from edge_ratio if available (target: 3× = 0.6, >10× = 1.0)
     edge = rec.get("edge_ratio")

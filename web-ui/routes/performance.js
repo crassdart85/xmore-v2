@@ -57,20 +57,41 @@ router.get('/summary', async (req, res) => {
         const liveFilter = isPostgres
             ? `(is_live = TRUE OR is_live IS NULL)`
             : `(is_live = 1 OR is_live IS NULL)`;
+        const simFilter = isPostgres
+            ? `(is_simulated = FALSE OR is_simulated IS NULL)`
+            : `(is_simulated = 0 OR is_simulated IS NULL)`;
         const dateFilter = isPostgres
             ? `recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
-        let rows = [];
+        let rows = [], simCount = 0, earliestLive = null;
         try {
             rows = await dbAll(`
                 SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
                 FROM trade_recommendations
                 WHERE actual_next_day_return IS NOT NULL
                 AND ${liveFilter}
+                AND ${simFilter}
                 AND ${dateFilter}
                 ORDER BY recommendation_date ASC
             `, [days]);
+            // Count excluded simulated rows for data_transparency
+            try {
+                const simRow = await dbGet(`
+                    SELECT COUNT(*) AS cnt,
+                           MIN(CASE WHEN ${simFilter} THEN recommendation_date END) AS earliest
+                    FROM trade_recommendations
+                    WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}
+                `, [days]);
+                simCount = rows.length; // live count is rows.length
+                const totalRow = await dbGet(`SELECT COUNT(*) AS cnt FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}`, [days]);
+                simCount = parseInt(totalRow?.cnt || 0) - rows.length;
+                earliestLive = simRow?.earliest || null;
+            } catch (_) {}
+        } catch (e) {
+            if (isTableMissing(e)) return res.json({ available: false, message: 'No resolved predictions yet.' });
+            throw e;
+        }
         } catch (e) {
             if (isTableMissing(e)) return res.json({ available: false, message: 'No resolved predictions yet.' });
             throw e;
@@ -213,6 +234,12 @@ router.get('/summary', async (req, res) => {
             ? `Only ${tradeCount} completed trades. Minimum 30 required for reliable metrics. Displayed metrics are indicative only.` : '';
 
         const institutional_metrics = {
+            data_transparency: {
+                live_signals_count:         rows.length,
+                simulated_signals_excluded: simCount,
+                metrics_basis:              'live_only',
+                earliest_live_signal_date:  earliestLive,
+            },
             sharpe_ratio:             Number(calcSharpeEgx(allR).toFixed(2)),
             sortino_ratio:            Number(calcSortinoEgx(allR).toFixed(2)),
             calmar_ratio:             Number(calcCalmar(allR, mddAll).toFixed(2)),
