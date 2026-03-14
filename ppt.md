@@ -11,6 +11,7 @@
 
 **Live at:** xmore-project.onrender.com
 **Market:** Egyptian Exchange (EGX) — ~190 stocks
+**Status:** Production · March 2026
 
 ---
 
@@ -23,6 +24,7 @@
 - **EGX-specific friction is ignored** — round-trip costs ≈ 0.70%, ±10% daily limit, thin liquidity in small caps frequently cause slippage that erodes gains
 - **No accountability** — signal providers in Egypt have no public track record; past calls vanish
 - **Language barrier** — all global quant tools are English-only; Arabic-speaking traders are underserved
+- **Benchmark manipulation** — performance ratios calculated with US 5% risk-free rate instead of Egypt CBE 27.25% — inflates Sharpe by 3–4×
 
 ---
 
@@ -31,14 +33,15 @@
 ### Xmore: a daily AI consensus engine built for EGX
 
 ```
-5 AI Agents → Consensus Engine → Execution Gate → Dashboard
+5 AI Agents → Consensus Engine → Execution Gate → 6-Mode Scoring → Dashboard
 ```
 
 Each trading day before 09:00 Cairo:
-1. Agents analyse every tracked EGX stock
-2. A weighted consensus BUY / HOLD / SELL is produced
-3. Signals are filtered through real friction (costs, liquidity, regime)
-4. Results are published in a bilingual (EN/AR) dashboard and API
+1. Five agents independently analyse every tracked EGX stock
+2. A weighted consensus BUY / HOLD / SELL is produced with an Xmore Score (0–100)
+3. BUY signals are filtered through real friction (costs, liquidity, regime)
+4. A composite investor score is translated into 6 output formats simultaneously
+5. Results are published in a bilingual (EN/AR) dashboard and API
 
 **No login required** to view signals — full transparency by design.
 
@@ -79,6 +82,8 @@ Most signal providers show raw alpha. Xmore shows **tradeable** alpha.
 
 Blocked signals are logged with reason — full audit trail.
 
+**All execution checks run during the pre-market pipeline — results are waiting when markets open.**
+
 ---
 
 ## Slide 6 — Institutional-Grade Performance Metrics
@@ -95,12 +100,38 @@ All ratios use **Egypt CBE rate (27.25%)** not US 5%, and **247 EGX trading days
 | **Information Ratio** | Alpha consistency vs EGX30 benchmark |
 | **Max Drawdown** | Peak-to-trough with recovery date |
 | **Rolling 30-day Sharpe** | Momentum of risk-adjusted performance |
+| **Beta vs EGX30** | Market sensitivity |
+| **Up/Down Capture** | How much of bull/bear moves Xmore participates in |
 
 A public **Track Record** page (`/track-record`) shows all metrics — no login required.
 
 ---
 
-## Slide 7 — Product Suite
+## Slide 7 — Universal Investor Scoring (6 Formats)
+
+### The same signal, in whatever language your audience speaks
+
+```
+Composite Score = Consensus×0.40 + Execution×0.25 + Regime×0.20 + Momentum×0.15
+```
+
+**All six formats are computed simultaneously — one score, six views:**
+
+| Mode | Example output | Actionable threshold |
+|---|---|---|
+| Xmore Native | 0.84 | ≥ 0.62 |
+| Score (0–100) | 84 | ≥ 62 |
+| Letter Grade | A | ≥ B |
+| Stars | ★★★★☆ (4.0) | ≥ 3.5 |
+| Signal Tier | A | ≥ B |
+| Conviction | HIGH | ≥ MEDIUM |
+
+All 6 are available simultaneously via API (`GET /api/signals/scored/compare`).
+Dashboard mode selector lets users toggle format without a page reload.
+
+---
+
+## Slide 8 — Product Suite
 
 ### One platform, multiple surfaces
 
@@ -111,29 +142,9 @@ A public **Track Record** page (`/track-record`) shows all metrics — no login 
 | **Xmore Pro** | `/pro` | Professional terminal — live market overview, macro brief |
 | **Track Record** | `/track-record` | Investors — verified performance, equity curve, risk metrics |
 | **Docs** | `/docs` | Onboarding — full bilingual feature documentation |
+| **Admin** | `/admin` | Operator — RAG documents, pipeline health, ETF management |
 
 All surfaces: **bilingual EN/AR with full RTL layout**.
-
----
-
-## Slide 8 — Investor Scoring (6 Formats)
-
-### The same signal, in whatever language your audience speaks
-
-```
-Composite Score = Consensus×0.40 + Execution×0.25 + Regime×0.20 + Momentum×0.15
-```
-
-| Mode | Example output | Threshold |
-|---|---|---|
-| Xmore Native | 0.84 | ≥ 0.62 |
-| Score (0–100) | 84 | ≥ 62 |
-| Letter Grade | A | ≥ B |
-| Stars | ★★★★☆ (4.0) | ≥ 3.5 |
-| Signal Tier | A | ≥ B |
-| Conviction | HIGH | ≥ MEDIUM |
-
-All 6 are available simultaneously via API (`GET /api/signals/scored/compare`).
 
 ---
 
@@ -145,14 +156,14 @@ All 6 are available simultaneously via API (`GET /api/signals/scored/compare`).
 - **60-day historical simulation** — same agent logic applied to past EGX prices, clearly tagged **SIM**
 - **Walk-forward backtest** — re-runs every Sunday on all ~190 EGX stocks
 
-**Key numbers (illustrative):**
-
-| Metric | Value |
-|---|---|
-| Directional accuracy (D+1) | Tracked live |
-| Average alpha vs EGX30 | Tracked live |
-| Signals evaluated | Growing daily |
-| Stocks covered | ~190 EGX listed |
+**Track Record page features:**
+- Equity curve: cumulative Xmore return vs EGX30 benchmark (Chart.js)
+- Rolling 30/60/90-day KPI windows
+- Per-agent methodology cards
+- Walk-forward backtest results table (sorted by directional accuracy)
+- Top stocks by alpha generated
+- Paginated prediction log with CSV export
+- Risk metrics: Sharpe, Sortino, Calmar, beta, drawdown details
 
 Public URL — share directly with prospective investors: `/track-record`
 
@@ -166,6 +177,7 @@ Public URL — share directly with prospective investors: `/track-record`
 - 13 locally-listed Egyptian ETFs sourced from Mubasher (Arabic scraper)
 - 4 global Egypt-focused ETFs (EGPT, EEMX, FM, FRDM) via yfinance
 - NAV, premium/discount, holdings modal, PDF factsheet RAG search
+- Commodity ETPs correctly classified (not mislabelled as equity ETFs)
 
 **FX & Gold Rates**
 - Live USD/EGP, USD/SAR, SAR/EGP, XAU/USD
@@ -201,15 +213,16 @@ Arabic-aware: keyword extraction works in both languages.
 ### Production-ready, cloud-native, zero-maintenance
 
 ```
-GitHub Actions (cron)
+GitHub Actions (cron, 9 jobs)
+        │
+        ├─ Python: 5 agents + consensus + execution gate + scoring + metrics
+        │          (ALL Python runs here — never on Render)
         ↓
-Python Agents (5 models + consensus)
+PostgreSQL (Render.com)
+        │  All pre-computed values stored here
         ↓
-Execution Gate (friction + regime filter)
-        ↓
-PostgreSQL on Render.com
-        ↓
-Node.js/Express API
+Node.js/Express API (Render.com)
+        │  Reads pre-computed rows — zero Python at request time
         ↓
 Vanilla JS Dashboard (bilingual, dark/light, responsive)
 ```
@@ -224,6 +237,8 @@ Vanilla JS Dashboard (bilingual, dark/light, responsive)
 | Hosting | Render.com — auto-deploy on push |
 | Auth | JWT in HTTP-only cookie |
 
+**Key architectural decision:** Python runs exclusively in CI. Node.js reads pre-computed results from PostgreSQL. This guarantees API response times < 500 ms regardless of model complexity.
+
 ---
 
 ## Slide 13 — Competitive Positioning
@@ -235,39 +250,64 @@ Vanilla JS Dashboard (bilingual, dark/light, responsive)
 | Friction-adjusted signals | ✓ | ✗ | ✗ |
 | Public audited track record | ✓ | ✗ | ✗ |
 | Arabic RTL interface | ✓ | Rare | Partial |
-| Institutional metrics (EGX RF) | ✓ | ✗ | ✗ |
+| EGX-correct risk metrics (CBE RF) | ✓ | ✗ | ✗ |
+| 6-mode investor scoring | ✓ | ✗ | ✗ |
 | ETF + macro intelligence | ✓ | Partial | ✗ |
 | RAG document search | ✓ | ✗ | ✗ |
+| Walk-forward backtest (weekly) | ✓ | ✗ | ✗ |
 | Free tier | ✓ | Varies | ✗ |
 
 ---
 
-## Slide 14 — Roadmap
+## Slide 14 — Architecture Strength: Why Pre-computation Wins
 
-### Near-term
-- [ ] Real-time intraday signal updates (websocket feed)
-- [ ] Push notifications (email / Telegram) when signal changes
-- [ ] Options on EGX derivatives when exchange enables them
-- [ ] Brokerage API integration (direct order placement)
+### The Python-on-Render constraint is by design, not by accident
 
-### Medium-term
-- [ ] Paid Pro tier with advanced screener and API access
-- [ ] Portfolio optimiser (mean-variance, EGX constraints)
-- [ ] Mobile app (React Native)
-- [ ] Expansion to ADX (Abu Dhabi) and Tadawul (Saudi)
+**The problem:** Render `env: node` cannot run Python. All statistical computation (Sharpe, regime filter, composite scoring) must be done elsewhere.
+
+**The response:** Every metric is pre-computed during scheduled GitHub Actions jobs and stored as a column value in PostgreSQL. The Node.js API is a thin read layer.
+
+**Why this is actually better:**
+
+| Naive approach | Xmore approach |
+|---|---|
+| Compute metrics on user request (Python process) | Pre-compute in CI, store result |
+| 10–30s response time for complex metrics | < 50 ms read from indexed column |
+| Cold-start failures if Python unavailable | DB always has the last known value |
+| Cannot serve 500 concurrent users | Scales horizontally with connection pool |
+
+**Real-time exceptions:** Gemini chat (Node.js ↔ Gemini API directly), FX rates (Node.js ↔ open.er-api.com directly), virtual P&L (pure arithmetic in Node.js).
 
 ---
 
-## Slide 15 — Summary
+## Slide 15 — Roadmap
+
+### Near-term
+- [ ] Real-time intraday signal updates (SSE from Node.js)
+- [ ] Push notifications (email / Telegram) when signal changes
+- [ ] Render Background Worker for on-demand Python — enables real-time regime re-check
+- [ ] Brokerage API integration (direct order placement)
+
+### Medium-term
+- [ ] Paid Pro tier with advanced screener and API access keys
+- [ ] Portfolio optimiser (mean-variance, EGX constraints)
+- [ ] Mobile app (React Native, same API)
+- [ ] Expansion to ADX (Abu Dhabi) and Tadawul (Saudi Arabia)
+
+---
+
+## Slide 16 — Summary
 
 ### Why Xmore
 
 1. **Only** pre-market AI consensus engine built specifically for EGX
 2. **Friction-realistic** — models actual Egyptian trading costs before recommending
 3. **Fully bilingual** — Arabic-first in a market where Arabic dominates
-4. **Institutionally measured** — EGX-correct risk metrics, public track record
-5. **Open by design** — predictions and performance are public; trust is earned, not claimed
-6. **Production-running** — live daily since March 2026, automated pipeline, zero manual intervention
+4. **Institutionally measured** — EGX-correct risk metrics (CBE 27.25%), public track record
+5. **6-mode scoring** — the same signal expressed in any format an investor prefers
+6. **Open by design** — predictions and performance are public; trust is earned, not claimed
+7. **Production-running** — live daily since March 2026, automated pipeline, zero manual intervention
+8. **Fast by architecture** — pre-computed results mean the API always responds in < 500 ms
 
 > **Xmore turns Egypt's information asymmetry into a solvable engineering problem.**
 

@@ -3,7 +3,7 @@
 
 | Field | Detail |
 |---|---|
-| **Document version** | 1.0 |
+| **Document version** | 1.2 |
 | **Date** | March 2026 |
 | **Status** | Live / In Production |
 | **Platform URL** | xmore-project.onrender.com |
@@ -26,7 +26,9 @@
 11. [Security Requirements](#11-security-requirements)
 12. [Performance & Metrics](#12-performance--metrics)
 13. [Constraints & Assumptions](#13-constraints--assumptions)
-14. [Glossary](#14-glossary)
+14. [Architectural Decisions & Trade-offs](#14-architectural-decisions--trade-offs)
+15. [Roadmap](#15-roadmap)
+16. [Glossary](#16-glossary)
 
 ---
 
@@ -35,6 +37,8 @@
 Xmore is a production-running AI-powered stock signal platform purpose-built for the Egyptian Exchange (EGX). It aggregates output from five heterogeneous AI agents into a single daily consensus signal for approximately 190 EGX-listed stocks, then gates each signal through a friction-aware execution layer before publishing results to a bilingual web dashboard.
 
 The platform targets three distinct user segments: retail traders seeking pre-market signals, professional investors requiring institutional-grade performance metrics, and prospective investors performing due diligence. All core functionality is available without registration; account creation unlocks personalised features (portfolio, alerts, forecast portfolios).
+
+**Key architectural principle:** All Python computation runs exclusively in GitHub Actions on a scheduled basis. The Node.js API server on Render.com reads pre-computed values from PostgreSQL — it never invokes Python at request time. This is a hard platform constraint with deliberate design responses detailed in Section 14.
 
 ---
 
@@ -81,7 +85,7 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 - AI signal generation for ~190 EGX-listed stocks (Sun–Thu trading calendar)
 - Five-agent consensus engine with weighted voting
-- Execution realism gate (costs, slippage, regime, trailing stops)
+- Execution realism gate (costs, slippage, regime, trailing stops) — runs in CI pipeline
 - Bilingual (EN/AR) web dashboard with dark/light theme
 - Virtual portfolio tracking with EGP P&L accounting
 - Price alerts (threshold-based, auto-triggered on page load)
@@ -89,7 +93,7 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 - ETF data: 13 EGX-local funds (Mubasher), 4 global funds (yfinance)
 - Live FX and gold prices with 90-day history
 - Institutional performance metrics (EGX-correct Sharpe, Sortino, Calmar, IR, MDD)
-- Universal investor scoring (6 output modes from a single composite score)
+- Universal investor scoring (6 output modes from a single composite score) — pre-computed in CI
 - Public track record page with equity curve, walk-forward backtest, prediction log
 - AI market assistant (Gemini RAG with full context injection)
 - Macro brief (Gemini grounded web search)
@@ -105,6 +109,7 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 - Coverage of non-EGX markets beyond ETF price display
 - Mobile native application
 - Options / derivatives trading signals (EGX derivatives not yet live)
+- On-demand Python execution triggered by user API requests
 
 ---
 
@@ -124,15 +129,18 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 ### 5.2 Execution Realism Gate (FR-EXEC)
 
+All execution realism logic runs during the CI pipeline in `run_agents.py` via `apply_execution_realism()`. Results are persisted to the database before the Node.js API serves them. No execution calculations happen at request time.
+
 | ID | Requirement |
 |---|---|
 | FR-EXEC-1 | Every BUY signal shall be evaluated against EGX full round-trip cost: brokerage (0.15%) + stamp duty (0.15%) + FRA fee (0.0125%) + EGX exchange fee (0.0125%) + Misr clearing (0.01%), × 2 legs |
 | FR-EXEC-2 | Signals with edge ratio < 3× round-trip cost shall be blocked and logged to `blocked_signals` table |
 | FR-EXEC-3 | System shall apply liquidity-tiered slippage: High ADV (>5M EGP/day) = 10 bps; Mid ADV (>1M EGP) = 25 bps; Low ADV = 60 bps |
-| FR-EXEC-4 | System shall determine EGX30 market regime (BULL/NEUTRAL/BEAR) daily using MA20 distance; new long positions shall be blocked when regime = BEAR |
+| FR-EXEC-4 | System shall determine EGX30 market regime (BULL/NEUTRAL/BEAR) daily using MA20 distance; new long positions shall be blocked when regime = BEAR; regime state persisted to `regime_log` |
 | FR-EXEC-5 | System shall model EGX daily ±10% price limits when computing realistic stop prices |
 | FR-EXEC-6 | Open positions shall have a trailing stop activating on day 20 at 6% below peak, ratcheting up only, with hard exit on day 45 |
 | FR-EXEC-7 | SELL and HOLD signals shall pass through execution gate unchanged |
+| FR-EXEC-8 | All execution columns (`execution_approved`, `edge_ratio`, `realistic_fill_price`, `round_trip_cost_pct`, `regime_at_signal`) shall be pre-populated in `trade_recommendations` by the pipeline |
 
 ### 5.3 Dashboard (FR-DASH)
 
@@ -174,6 +182,8 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 ### 5.7 Performance & Track Record (FR-PERF)
 
+All performance metrics are pre-computed by the Python pipeline and stored in PostgreSQL. The Node.js API returns pre-computed rows; it performs no statistical calculations at request time.
+
 | ID | Requirement |
 |---|---|
 | FR-PERF-1 | System shall compute EGX-correct Sharpe ratio using CBE rate (27.25% annual) and 247 trading days |
@@ -187,12 +197,15 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 ### 5.8 Investor Scoring (FR-SCORE)
 
+All scoring is computed during the daily pipeline and written to `scored_signals`. The API returns pre-stored rows.
+
 | ID | Requirement |
 |---|---|
 | FR-SCORE-1 | System shall compute a composite investor score (0–1) for each signal: `consensus×0.40 + execution×0.25 + regime×0.20 + momentum×0.15` |
 | FR-SCORE-2 | System shall translate the composite score into 6 output modes simultaneously: xmore_native (0–1), standard_100 (0–100 int), letter_grade (A+→F), stars (1–5, 0.5 resolution), signal_tier (S/A/B/C/D), conviction (HIGH/MEDIUM/LOW) |
-| FR-SCORE-3 | Dashboard shall provide a mode selector UI allowing users to switch between all 6 formats without re-fetching |
-| FR-SCORE-4 | API endpoints `GET /api/signals/scored`, `/scored/compare`, and `/morning-brief` shall be publicly available |
+| FR-SCORE-3 | All 6 format translations and a `meets_threshold` boolean shall be stored in `scored_signals.all_formats` (JSON column) at pipeline time |
+| FR-SCORE-4 | Dashboard shall provide a mode selector UI allowing users to switch between all 6 formats without re-fetching |
+| FR-SCORE-5 | API endpoints `GET /api/signals/scored`, `/scored/compare`, and `/morning-brief` shall be publicly available |
 
 ### 5.9 ETF & Rates (FR-ETF)
 
@@ -232,7 +245,7 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 - Signal pipeline shall complete by 09:00 Cairo time on each trading day
 
 ### 6.2 Performance
-- API response time for standard signal endpoints: < 500 ms at p95
+- API response time for standard signal endpoints: < 500 ms at p95 (all results are pre-computed; no Python at request time)
 - Dashboard initial load: < 3 seconds on a 4G connection
 - Database queries shall not perform full table scans on tables > 10,000 rows (indexes required)
 
@@ -244,6 +257,7 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 - GitHub Actions pipeline failures shall not corrupt existing data; each job is idempotent
 - All database writes shall use upsert (INSERT OR REPLACE / ON CONFLICT DO UPDATE)
 - PostgreSQL transaction errors shall be isolated per-row using SAVEPOINT/ROLLBACK TO SAVEPOINT
+- If execution realism or scoring modules fail, the core pipeline continues without them (fail-open design)
 
 ### 6.5 Internationalisation
 - All user-facing strings shall exist in both English and Arabic
@@ -265,37 +279,41 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 ┌─────────────────────────────────────────────────────┐
 │                  GitHub Actions                      │
 │  (9 scheduled cron jobs — Sun–Thu + weekly)          │
-└──────────────┬──────────────────────────────────────┘
-               │ runs Python scripts
-               ▼
-┌─────────────────────────────────────────────────────┐
-│              Python Agent Engine                     │
-│  run_agents.py → 5 agents → consensus_engine.py     │
-│       → execution_agent.py (friction gate)          │
-│       → scoring_formatter.py (6-mode score)         │
-│       → database.py (PostgreSQL / SQLite)           │
-└──────────────┬──────────────────────────────────────┘
-               │ writes to
-               ▼
+│                                                      │
+│  PYTHON EXECUTION BOUNDARY — all Python runs here   │
+│  ─────────────────────────────────────────────────  │
+│  run_agents.py                                       │
+│    → 5 AI agents → consensus_engine.py              │
+│    → apply_execution_realism() [friction gate]       │
+│    → _populate_scored_signals() [6-mode scoring]     │
+│    → evaluate_performance.py [D+1, D+5 outcomes]    │
+│    → engines/backtest.py [weekly walk-forward]       │
+│    → database.py writes to PostgreSQL               │
+└──────────────────────┬──────────────────────────────┘
+                       │ ALL results pre-computed and written
+                       ▼
 ┌─────────────────────────────────────────────────────┐
 │              PostgreSQL (Render.com)                 │
-│  36 tables — signals, prices, news, performance,    │
+│  36+ tables — signals, prices, news, performance,   │
 │  ETF, portfolio, RAG, scoring, execution audit       │
-└──────────────┬──────────────────────────────────────┘
-               │ queried by
-               ▼
+│                                                      │
+│  API boundary: Node.js reads; Python writes          │
+└──────────────────────┬──────────────────────────────┘
+                       │ SELECT only (no Python at request time)
+                       ▼
 ┌─────────────────────────────────────────────────────┐
-│          Node.js / Express API Server               │
-│  web-ui/server.js — 10 route modules               │
+│          Node.js / Express API Server (Render)      │
+│  web-ui/server.js — 11 route modules               │
 │  SQLite wrapper (local) / pg Pool (production)      │
-└──────────────┬──────────────────────────────────────┘
-               │ serves
-               ▼
+│  Returns pre-computed rows — zero Python calls      │
+└──────────────────────┬──────────────────────────────┘
+                       │ serves
+                       ▼
 ┌─────────────────────────────────────────────────────┐
 │            Vanilla JS Frontend                       │
 │  Dashboard (app.js) · Pro (pro.js)                  │
 │  Session (session.js) · Track Record (track-record.js)│
-│  Time Machine (timemachine.js)                       │
+│  Time Machine (timemachine.js) · Docs (docs.html)   │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -305,9 +323,22 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 |---|---|---|
 | Web server + API | Render.com (Node.js service) | Auto-deploys on push to `main` |
 | PostgreSQL | Render.com managed PostgreSQL | Schema initialised by `init-db.js` on each deploy |
-| Python pipeline | GitHub Actions | Runs on `ubuntu-latest` runners; SQLite not used in CI |
+| Python pipeline | GitHub Actions (`ubuntu-latest`) | 9 cron jobs; connects to production PostgreSQL via `DATABASE_URL` |
 | Static assets | Served by Express | `express.static()` from `web-ui/public/` |
 | Domain | Render-provided | `xmore-project.onrender.com` |
+
+### 7.3 Pre-computation Pattern (Critical)
+
+Because Python cannot run on Render at request time, every calculated value that a user might want to see must be pre-computed during a pipeline run and written to the database. The API is a thin read layer.
+
+**Pattern for each new metric:**
+
+1. Python script computes metric during scheduled CI job
+2. Metric is written to a named column or JSON field in PostgreSQL
+3. Node.js route does a simple `SELECT` and returns the stored value
+4. Frontend renders it directly — no in-browser calculation of statistical metrics
+
+This pattern guarantees sub-500ms API responses and zero on-demand Python dependency.
 
 ---
 
@@ -319,9 +350,10 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 |---|---|---|
 | `prices` | Daily OHLCV per symbol | symbol, date, open, high, low, close, volume |
 | `consensus_results` | Daily consensus signal per symbol | symbol, prediction_date, consensus_signal, xmore_score, bull, bear, is_live, is_simulated |
-| `trade_recommendations` | Enriched signals with execution data | symbol, recommendation_date, action, confidence, edge_ratio, execution_approved, alpha_1d, alpha_5d, patterns |
-| `scored_signals` | 6-mode composite scores | symbol, signal_date, composite_score, all_formats (JSON), meets_threshold |
+| `trade_recommendations` | Enriched signals with execution data | symbol, recommendation_date, action, confidence, edge_ratio, execution_approved, alpha_1d, alpha_5d, patterns, regime_at_signal |
+| `scored_signals` | 6-mode composite scores (pre-computed) | symbol, signal_date, composite_score, all_formats (JSON), meets_threshold |
 | `blocked_signals` | Audit log of rejected BUY signals | ticker, signal_date, block_reason, regime_at_block |
+| `regime_log` | Daily market regime history | date, regime, egx30_price, ma20, distance_pct |
 | `user_positions` | Virtual portfolio positions | user_id, symbol, entry_price, quantity, exit_price, return_pct |
 | `backtest_results` | Weekly walk-forward results | symbol, run_date, accuracy, directional_accuracy, signal_pnl_pct |
 | `fx_rates_history` | Daily FX and gold rates | date, USD_EGP, XAU_USD, GOLD_24K_EGP_G |
@@ -343,23 +375,23 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 | yfinance | EGX stock OHLCV, ETF prices, EGX30 index | Daily + intraday |
 | Mubasher (scraper) | EGX-listed ETF prices, NAV, volume | Daily |
 | NewsAPI / Finnhub | Market headlines for sentiment | Intraday (3×/day) |
-| open.er-api.com | FX rates + gold | On-demand (page load) |
-| Google Gemini 2.5 Flash | Sentiment, briefs, macro, RAG, chat | On-demand |
+| open.er-api.com | FX rates + gold | On-demand (page load via Node.js) |
+| Google Gemini 2.5 Flash | Sentiment, briefs, macro, RAG, chat | On-demand (Gemini API called from Node.js for chat/macro; from Python for signal sentiment) |
 
 ---
 
 ## 9. Integrations & External Dependencies
 
-| Service | Purpose | Credential |
-|---|---|---|
-| **Google Gemini API** | LLM agent, sentiment, RAG embeddings, macro brief, market assistant | `GOOGLE_API_KEY` |
-| **NewsAPI** | Market news headlines | `NEWS_API_KEY` |
-| **Finnhub** | Supplementary financial data | `FINNHUB_API_KEY` |
-| **yfinance** | EGX stock prices, ETF prices, EGX30 index (no key required) | — |
-| **Mubasher** | EGX ETF NAV and prices (web scraper) | — |
-| **open.er-api.com** | FX rates (no key required) | — |
-| **Render.com** | Hosting, PostgreSQL, managed TLS | Render account |
-| **GitHub Actions** | Scheduled pipeline CI/CD | `DATABASE_URL`, secrets |
+| Service | Purpose | Credential | Caller |
+|---|---|---|---|
+| **Google Gemini API** | LLM agent, sentiment (Python), RAG embeddings, macro brief, market assistant (Node.js) | `GOOGLE_API_KEY` | Both |
+| **NewsAPI** | Market news headlines | `NEWS_API_KEY` | Python (CI) |
+| **Finnhub** | Supplementary financial data | `FINNHUB_API_KEY` | Python (CI) |
+| **yfinance** | EGX stock prices, ETF prices, EGX30 index | — | Python (CI) |
+| **Mubasher** | EGX ETF NAV and prices (web scraper) | — | Python (CI) |
+| **open.er-api.com** | FX rates (no key required) | — | Node.js (request-time) |
+| **Render.com** | Hosting, PostgreSQL, managed TLS | Render account | — |
+| **GitHub Actions** | Scheduled pipeline CI/CD | `DATABASE_URL`, secrets | — |
 
 ---
 
@@ -367,25 +399,26 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 ### 10.1 Scheduled Jobs
 
-| Job | Cron (UTC) | Cairo Time | Purpose |
-|---|---|---|---|
-| `intraday-price-update` | `0 7,8,9,10,11,12 * * 0-4` | 09:00–14:00 | Live price snapshots during trading session |
-| `intraday-news-update` | `0 7,9,11 * * 0-4` | 09:00, 11:00, 13:00 | Refresh news + sentiment 3× during session |
-| `post-market-pipeline` | `30 12 * * 0-4` | 14:30 | Store closing prices, trigger evaluation |
-| `egx-daily-snapshot` | `0 14 * * 0-4` | 16:00 | Final daily data snapshot |
-| `daily-pipeline` | `0 22 * * 0-5` | 00:00+1 | Run all 5 agents, produce next-day signals |
-| `catchup-evaluation` | `0 * * * *` | Hourly | Resolve any pending D+1/D+5 outcomes |
-| `etf-egx-all` | `30 13 * * 0-4` | 15:30 | Fetch EGX ETF prices, NAV, volumes |
-| `etf-global-prices` | `30 21 * * 1-5` | 23:30 | Fetch global ETF prices from yfinance |
-| `weekly-backtest` | `0 7 * * 0` | 09:00 Sunday | Walk-forward backtest all symbols |
+| Job | Cron (UTC) | Cairo Time | Days | Purpose |
+|---|---|---|---|---|
+| `intraday-price-update` | `0 7,8,9,10,11,12 * * 0-4` | 09:00–14:00 | Sun–Thu | Live price snapshots during trading session |
+| `intraday-news-update` | `0 7,9,11 * * 0-4` | 09:00, 11:00, 13:00 | Sun–Thu | Refresh news + sentiment 3× during session |
+| `post-market-pipeline` | `30 12 * * 0-4` | 14:30 | Sun–Thu | Store closing prices, trigger evaluation |
+| `egx-daily-snapshot` | `0 14 * * 0-4` | 16:00 | Sun–Thu | Final daily data snapshot |
+| `daily-pipeline` | `0 22 * * 0-5` | 00:00+1 | Sun–Fri | Run all 5 agents → consensus → execution gate → scoring |
+| `catchup-evaluation` | `0 * * * *` | Hourly | Daily | Resolve any pending D+1/D+5 outcomes |
+| `etf-egx-all` | `30 13 * * 0-4` | 15:30 | Sun–Thu | Fetch EGX ETF prices, NAV, volumes |
+| `etf-global-prices` | `30 21 * * 1-5` | 23:30 | Mon–Fri | Fetch global ETF prices from yfinance |
+| `weekly-backtest` | `0 7 * * 0` | 09:00 | Sunday | Walk-forward backtest all symbols |
 
 ### 10.2 Pipeline Design Principles
 
 - **Idempotent** — all inserts use upsert; re-running a job produces identical state
-- **Fail-safe** — individual row errors do not abort the batch (SAVEPOINT isolation)
-- **Fail-open** — if execution realism or scoring modules are unavailable, the pipeline continues without them
+- **Fail-safe** — individual row errors do not abort the batch (SAVEPOINT isolation per row)
+- **Fail-open** — if execution realism or scoring modules are unavailable, the pipeline continues without them; partial results are better than zero results
 - **Audit-logged** — blocked signals, regime state, and evaluation outcomes are all persisted
 - **No manual steps** — zero human intervention required for normal operation
+- **Pre-computation first** — every value the API needs must be written to the database during the pipeline run, not calculated on demand
 
 ---
 
@@ -409,12 +442,12 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 | Metric | Definition | Calibration |
 |---|---|---|
-| Directional accuracy | % of signals where predicted direction = actual direction at D+1 | Evaluated daily |
-| Alpha (D+1) | Signal return − EGX30 return at D+1 | Stored in `alpha_1d` |
-| Alpha (D+5) | Signal return − EGX30 return at D+5 | Stored in `alpha_5d` |
-| Sharpe ratio | `(mean_excess_return / std_return) × sqrt(247)` | Risk-free rate: CBE 27.25% annual |
+| Directional accuracy | % of signals where predicted direction = actual direction at D+1 | Evaluated daily by `evaluate_performance.py` |
+| Alpha (D+1) | Signal return − EGX30 return at D+1 | Stored in `alpha_1d` column |
+| Alpha (D+5) | Signal return − EGX30 return at D+5 | Stored in `alpha_5d` column |
+| Sharpe ratio | `(mean_excess_return / std_return) × sqrt(247)` | Risk-free rate: CBE 27.25% annual; 247 EGX days |
 | Sortino ratio | `(mean_excess_return / downside_std) × sqrt(247)` | Downside-only deviation |
-| Calmar ratio | `annualised_return / abs(max_drawdown)` | Minimum 20 data points |
+| Calmar ratio | `annualised_return / abs(max_drawdown)` | Minimum 20 data points required |
 | Information ratio | `mean_alpha / std_alpha` | vs EGX30 benchmark |
 | Max drawdown | Peak-to-trough equity curve decline | With recovery date and duration |
 
@@ -428,38 +461,122 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 
 ### 12.3 Investor Scoring Thresholds
 
-| Mode | Actionable threshold |
-|---|---|
-| xmore_native | ≥ 0.62 |
-| standard_100 | ≥ 62 |
-| letter_grade | ≥ B |
-| stars | ≥ 3.5 |
-| signal_tier | ≥ B |
-| conviction | ≥ MEDIUM |
+| Mode | Example | Actionable threshold |
+|---|---|---|
+| xmore_native | 0.84 | ≥ 0.62 |
+| standard_100 | 84 | ≥ 62 |
+| letter_grade | A | ≥ B |
+| stars | ★★★★☆ | ≥ 3.5 |
+| signal_tier | A | ≥ B |
+| conviction | HIGH | ≥ MEDIUM |
 
 ---
 
 ## 13. Constraints & Assumptions
 
-### 13.1 Constraints
+### 13.1 Python on Render — Architectural Constraint
+
+**Constraint:** Render.com hosts Xmore as a Node.js (`env: node`) service. Python cannot be installed or executed on the Render web dyno. There is no worker dyno in the current tier.
+
+**Implication:** Every value that the Node.js API needs to return must already exist in the PostgreSQL database before the API request arrives. This means:
+
+- The execution realism layer (`execution_agent.py`, `regime_filter.py`, `holding_manager.py`) runs during the GitHub Actions `daily-pipeline` job — not when a user clicks a button
+- The investor scoring system (`scoring_formatter.py`) runs during `daily-pipeline` and writes to `scored_signals` — the API reads the row, it never calls Python
+- Performance metrics (`performance_metrics.py`) are computed during `catchup-evaluation` — the `/api/performance-v2/summary` endpoint returns pre-computed figures
+- Regime state is determined once per day in CI and stored in `regime_log` — the API returns the most recent stored regime
+
+**What this is NOT a limitation for:**
+
+| Feature | Works fine because… |
+|---|---|
+| Gemini market assistant / macro brief | Gemini API is called directly from Node.js at request time |
+| FX & gold rates | open.er-api.com is called from Node.js at request time |
+| Virtual P&L simulator | Pure arithmetic in Node.js, no Python needed |
+| Signal display | Reads pre-computed rows |
+| Track record equity curve | Reads pre-computed rows; chart drawn client-side |
+
+**Improvement path (Section 14.1):**
+
+The pre-computation pattern is intentional and performant — it means the API always returns instantly. Future improvements include adding a Render Background Worker (paid tier) for on-demand Python if real-time regime checks on user-requested symbols become a product requirement.
+
+### 13.2 Other Constraints
 
 - **EGX trading calendar**: Sunday–Thursday; Friday and Saturday are non-trading days. All pipeline jobs and holding-day calculations use this calendar.
 - **EGX daily price limit**: ±10% maximum move per session. Stop-loss orders can gap through this limit; the execution layer accounts for this.
 - **Render.com free tier**: Auto-spins down after inactivity; first request after spin-down may have cold-start latency of 30–60 seconds.
-- **yfinance dependency**: EGX data quality from Yahoo Finance is occasionally stale or missing; the pipeline handles this gracefully (fail-open).
-- **Gemini API quotas**: Gemini 2.5 Flash has rate limits; sentiment and brief generation includes retry logic and result caching.
-- **Python on Render**: Render `env: node` does not execute Python. All Python logic runs exclusively via GitHub Actions.
+- **yfinance dependency**: EGX data quality from Yahoo Finance is occasionally stale or missing; the pipeline handles this gracefully (fail-open, `NaN` checks before calculations).
+- **Gemini API quotas**: Gemini 2.5 Flash has rate limits; sentiment generation includes retry logic.
 
-### 13.2 Assumptions
+### 13.3 Assumptions
 
 - The Egypt CBE overnight deposit rate (currently 27.25%) will be reviewed quarterly and updated in `config/execution_config.py`.
 - EGX trading days per year (currently 247) will be reviewed annually for holiday adjustments.
 - The EGX30 index (`^CASE30` on Yahoo Finance) is used as the performance benchmark throughout.
-- Historical simulation data (60 days via `backfill_predictions.py`) is treated as transparent supplementary data — not presented as live performance.
+- Historical simulation data (60 days via `backfill_predictions.py`) is treated as transparent supplementary data — not presented as live performance. Simulated signals are tagged `SIM` in the prediction log.
 
 ---
 
-## 14. Glossary
+## 14. Architectural Decisions & Trade-offs
+
+### 14.1 Pre-computation vs On-demand Python
+
+**Decision:** All Python calculations are batch/scheduled, never request-time.
+
+**Rationale:**
+- Render.com `env: node` does not support Python — this is a hard platform constraint
+- Pre-computing during CI means the API response time is independent of calculation complexity
+- A signal for 190 stocks with execution scoring would take 10–30 seconds to compute on demand; from the database it takes < 50 ms
+- The pipeline already runs before market open — results are ready when users need them
+
+**Trade-off:** Regime state and scoring are 12–24 hours old by the time a user views them in the evening. For an end-of-day pre-market signal product this is acceptable — the signal itself is also a point-in-time calculation.
+
+**Future upgrade path:** A Render Background Worker (paid tier) or a dedicated Python microservice could enable on-demand re-scoring when a user requests it for a specific symbol. This would require duplicating the scoring logic in a stateless API-friendly form.
+
+### 14.2 SQLite Local / PostgreSQL Production Dual-mode
+
+**Decision:** `database.py` and `server.js` detect `DATABASE_URL` env var to switch between SQLite and PostgreSQL automatically.
+
+**Rationale:** Enables offline development without a database server. All queries use a `.all()/.get()/.run()` wrapper that maps between the two APIs.
+
+**Constraint:** Never use `.query()` on the wrapper — it maps to `pg.Pool.query()` only and breaks SQLite mode.
+
+### 14.3 No Agent Modification Policy
+
+**Decision:** New pipeline features (execution realism, scoring, metrics) are added as separate Python modules, never by modifying the 5 agent files.
+
+**Rationale:** Agents are independently testable black boxes. Mixing cross-cutting concerns (cost models, regime state) into agent logic would make each agent harder to unit-test and introduce subtle bugs where agent output changes based on market state that should be downstream.
+
+### 14.4 JavaScript-only Frontend
+
+**Decision:** No framework (React/Vue/Svelte); vanilla JS with ES6 modules.
+
+**Rationale:** Reduces build complexity, eliminates hydration overhead, and is directly servable by Express static middleware. Given the scope of the project (pre-market signals, one primary user interaction: viewing a table), the framework overhead is not justified.
+
+---
+
+## 15. Roadmap
+
+### 15.1 Near-term
+- [ ] Real-time intraday signal updates (websocket or SSE feed from Node.js)
+- [ ] Push notifications (email / Telegram) when a signal changes from HOLD to BUY
+- [ ] Options on EGX derivatives when the exchange enables them
+- [ ] Brokerage API integration (direct order placement)
+- [ ] Render Background Worker for on-demand scoring (Python) — removes the batch-only constraint
+
+### 15.2 Medium-term
+- [ ] Paid Pro tier with advanced screener and direct API access key
+- [ ] Portfolio optimiser (mean-variance, EGX constraints)
+- [ ] Mobile app (React Native, sharing the same API)
+- [ ] Expansion to ADX (Abu Dhabi) and Tadawul (Saudi)
+
+### 15.3 Architectural Improvements
+- [ ] On-demand regime re-check via a stateless Python microservice (FastAPI on a worker dyno) — eliminates the 24h staleness for regime state
+- [ ] Pre-compute performance metrics during `daily-pipeline` rather than `catchup-evaluation` to have them ready for overnight users
+- [ ] Streaming evaluation: compute D+1 outcomes at 14:30 Cairo (post-market) rather than waiting for the catchup cron
+
+---
+
+## 16. Glossary
 
 | Term | Definition |
 |---|---|
@@ -469,7 +586,7 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 | **BPS** | Basis points — 1 bps = 0.01% |
 | **Calmar Ratio** | Annualised return divided by maximum drawdown |
 | **CBE** | Central Bank of Egypt — sets the overnight deposit rate used as risk-free rate |
-| **Composite Score** | Weighted combination of consensus, execution, regime, and momentum sub-scores |
+| **Composite Score** | Weighted combination of consensus (40%), execution (25%), regime (20%), and momentum (15%) sub-scores |
 | **Consensus Signal** | BUY / HOLD / SELL derived from majority-weighted agent vote |
 | **D+1 / D+5** | Evaluation horizons — 1 trading day or 5 trading days after signal date |
 | **EGX** | Egyptian Exchange — the primary stock exchange of Egypt |
@@ -479,8 +596,9 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 | **MDD** | Maximum Drawdown — largest peak-to-trough decline in the equity curve |
 | **NAV** | Net Asset Value — per-unit fair value of an ETF |
 | **Pivot Levels** | Support/resistance levels calculated from prior session's High, Low, and Close |
+| **Pre-computation Pattern** | All Python metrics computed during CI pipeline jobs and stored in PostgreSQL; Node.js API reads stored values only |
 | **RAG** | Retrieval-Augmented Generation — using embedded document chunks to ground AI answers |
-| **Regime** | Market state (BULL / NEUTRAL / BEAR) based on EGX30 vs its 20-day moving average |
+| **Regime** | Market state (BULL / NEUTRAL / BEAR) based on EGX30 vs its 20-day moving average; determined once daily in CI |
 | **Round-trip cost** | Total transaction cost for entering and exiting a position (both legs) |
 | **Sharpe Ratio** | Risk-adjusted excess return: `(mean_return − RF) / std_return × sqrt(trading_days)` |
 | **SIM** | Simulated — tag applied to historical backfill predictions, distinct from live signals |
@@ -491,4 +609,4 @@ The Egyptian retail investment market lacks accessible, transparent, and Arabic-
 ---
 
 *Xmore — AI Stock Intelligence for the Egyptian Exchange*
-*Version 1.0 · March 2026*
+*Version 1.2 · March 2026*
