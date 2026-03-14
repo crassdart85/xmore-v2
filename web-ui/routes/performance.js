@@ -135,8 +135,108 @@ router.get('/summary', async (req, res) => {
         const r60 = buildStats(filterDays(60));
         const r90 = buildStats(filterDays(90));
 
+        // ── Institutional metrics (EGX-correct risk-free rate: 27.25%) ──
+        const EGX_RF = 0.2725;
+        const TRADING_DAYS = 247;
+        const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
+        const calcSharpeEgx = (arr) => {
+            if (arr.length < 2) return 0;
+            const m = mean(arr), s = stdev(arr);
+            return s > 0 ? ((m - dailyRf) / s) * Math.sqrt(TRADING_DAYS) : 0;
+        };
+        const calcSortinoEgx = (arr) => {
+            const m = mean(arr), dn = arr.filter(v => v < 0);
+            if (!dn.length) return 99.9;
+            const ds = stdev(dn);
+            return ds > 0 ? ((m - dailyRf) / ds) * Math.sqrt(TRADING_DAYS) : 99.9;
+        };
+        const calcCalmar = (arr, mdd) => {
+            if (arr.length < 20 || !mdd) return 0;
+            const ann = Math.pow(1 + mean(arr), TRADING_DAYS) - 1;
+            return ann / Math.abs(mdd);
+        };
+        const calcBeta = (pArr, bArr) => {
+            const n = Math.min(pArr.length, bArr.length);
+            if (n < 2) return 0;
+            const mp = mean(pArr.slice(0, n)), mb = mean(bArr.slice(0, n));
+            const cov = pArr.slice(0, n).reduce((a, v, i) => a + (v - mp) * (bArr[i] - mb), 0) / (n - 1);
+            const vb = Math.pow(stdev(bArr.slice(0, n)), 2);
+            return vb > 0 ? cov / vb : 0;
+        };
+        const calcIR = (pArr, bArr) => {
+            const n = Math.min(pArr.length, bArr.length);
+            if (n < 2) return 0;
+            const ex = pArr.slice(0, n).map((v, i) => v - bArr[i]);
+            const te = stdev(ex);
+            return te > 0 ? (mean(ex) / te) * Math.sqrt(TRADING_DAYS) : 0;
+        };
+        const calcCapture = (pArr, bArr, up) => {
+            const n = Math.min(pArr.length, bArr.length);
+            const days = [];
+            for (let i = 0; i < n; i++) if (up ? bArr[i] > 0 : bArr[i] < 0) days.push([pArr[i], bArr[i]]);
+            if (!days.length) return 0;
+            const ap = mean(days.map(d => d[0])), ab = mean(days.map(d => d[1]));
+            return ab !== 0 ? ap / ab : 0;
+        };
+        const calcDdDetails = (arr) => {
+            let cum = 0, peak = 0, maxDd = 0, ddEnd = 0, ddStart = 0, pkIdx = 0;
+            arr.forEach((r, i) => {
+                cum += r;
+                if (cum > peak) { peak = cum; pkIdx = i; }
+                const dd = peak > 0 ? (cum - peak) / peak : 0;
+                if (dd < maxDd) { maxDd = dd; ddEnd = i; ddStart = pkIdx; }
+            });
+            let rec = null;
+            const peakV = arr.slice(0, ddStart + 1).reduce((a, b) => a + b, 0);
+            let c2 = peakV;
+            for (let i = ddEnd + 1; i < arr.length; i++) { c2 += arr[i]; if (c2 >= peakV) { rec = i - ddEnd; break; } }
+            return { pct: maxDd, dur: ddEnd - ddStart, rec, recovered: rec !== null };
+        };
+        const calcWL = (arr) => {
+            const wins = arr.filter(v => v > 0), losses = arr.filter(v => v < 0);
+            const wr = arr.length ? wins.length / arr.length : 0;
+            const aw = wins.length ? mean(wins) : 0, al = losses.length ? mean(losses) : 0;
+            const wl = al !== 0 ? Math.abs(aw / al) : 99;
+            const pf = losses.length ? wins.reduce((a, b) => a + b, 0) / Math.abs(losses.reduce((a, b) => a + b, 0)) : 99;
+            let cW = 0, cL = 0, mW = 0, mL = 0;
+            arr.forEach(v => { if (v > 0) { cW++; cL = 0; mW = Math.max(mW, cW); } else if (v < 0) { cL++; cW = 0; mL = Math.max(mL, cL); } else { cW = cL = 0; } });
+            return { wr, aw, al, wl, pf, exp: wr * aw + (1 - wr) * al, mW, mL };
+        };
+
+        const allR = rows.map(r => toNum(r.actual_next_day_return));
+        const benchR = rows.map(r => toNum(r.benchmark_1d_return));
+        const mddAll = calcMaxDrawdown(allR);
+        const ddDet = calcDdDetails(allR);
+        const wl = calcWL(allR);
+        const tradeCount = rows.length;
+        const qWarn = tradeCount < 30
+            ? `Only ${tradeCount} completed trades. Minimum 30 required for reliable metrics. Displayed metrics are indicative only.` : '';
+
+        const institutional_metrics = {
+            sharpe_ratio:             Number(calcSharpeEgx(allR).toFixed(2)),
+            sortino_ratio:            Number(calcSortinoEgx(allR).toFixed(2)),
+            calmar_ratio:             Number(calcCalmar(allR, mddAll).toFixed(2)),
+            max_drawdown_pct:         `${(ddDet.pct * 100).toFixed(1)}%`,
+            max_drawdown_duration_days: ddDet.dur,
+            max_drawdown_recovered:   ddDet.recovered,
+            recovery_duration_days:   ddDet.rec,
+            information_ratio:        Number(calcIR(allR, benchR).toFixed(2)),
+            beta_vs_benchmark:        Number(calcBeta(allR, benchR).toFixed(2)),
+            up_capture_ratio:         Number(calcCapture(allR, benchR, true).toFixed(2)),
+            down_capture_ratio:       Number(calcCapture(allR, benchR, false).toFixed(2)),
+            win_loss_ratio:           Number(wl.wl.toFixed(2)),
+            expectancy_pct:           `${wl.exp >= 0 ? '+' : ''}${wl.exp.toFixed(2)}%`,
+            profit_factor:            Number(wl.pf.toFixed(2)),
+            consecutive_wins_max:     wl.mW,
+            consecutive_losses_max:   wl.mL,
+            risk_free_rate_applied:   '27.25%',
+            minimum_trades_met:       tradeCount >= 30,
+            data_quality_warning:     qWarn,
+        };
+
         return res.json({
             available: true,
+            institutional_metrics,
             global: {
                 total_predictions: allStats.trades,
                 wins: allStats.wins,
@@ -201,7 +301,9 @@ router.get('/debug-count', async (req, res) => {
         const r3 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()}`, []);
         const r4 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()} AND actual_next_day_return IS NOT NULL`, []);
         const r5 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()} AND is_live = ${boolTrue()}`, []);
-        res.json({ with_return: r1, with_return_and_live: r2, simulated: r3, simulated_with_return: r4, simulated_and_live: r5 });
+        const r6 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND (is_live = ${boolTrue()} OR is_live IS NULL) AND recommendation_date >= CURRENT_DATE - ${ph(1)}`, [365]);
+        const r7 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND (is_live = ${boolTrue()} OR is_live IS NULL) AND recommendation_date >= '2025-01-01'`, []);
+        res.json({ with_return: r1, with_return_and_live: r2, simulated: r3, simulated_with_return: r4, simulated_and_live: r5, with_date_param: r6, with_hardcoded_date: r7 });
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
@@ -441,6 +543,220 @@ router.get('/audit', async (req, res) => {
         }
         console.error('Audit trail error:', err);
         res.status(500).json({ error: 'Failed to load audit trail.' });
+    }
+});
+
+
+// ─── PUBLIC: Full institutional report (JSON) ──────────────────
+router.get('/full-report', async (req, res) => {
+    try {
+        const days = Math.min(parseInt(req.query.days) || 90, 365);
+        const liveFilter = isPostgres ? `(is_live = TRUE OR is_live IS NULL)` : `(is_live = 1 OR is_live IS NULL)`;
+        const dateFilter = isPostgres
+            ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
+
+        let rows = [];
+        try {
+            rows = await dbAll(`
+                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
+                FROM trade_recommendations
+                WHERE actual_next_day_return IS NOT NULL
+                AND ${liveFilter}
+                AND ${dateFilter}
+                ORDER BY recommendation_date ASC
+            `, [days]);
+        } catch (e) {
+            if (isTableMissing(e)) return res.json({ available: false });
+            throw e;
+        }
+        if (!rows.length) return res.json({ available: false, message: 'No resolved predictions yet.' });
+
+        const toNum = v => Number(v || 0);
+        const mean = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        const stdev = arr => {
+            if (arr.length < 2) return 0;
+            const m = mean(arr);
+            return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1));
+        };
+        const TRADING_DAYS = 247, EGX_RF = 0.2725;
+        const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
+
+        const allR  = rows.map(r => toNum(r.actual_next_day_return));
+        const benchR = rows.map(r => toNum(r.benchmark_1d_return));
+        const window = 30;
+        const rollingSharpe = [];
+        for (let i = window; i <= allR.length; i++) {
+            const w = allR.slice(i - window, i);
+            const m = mean(w), s = stdev(w);
+            rollingSharpe.push({ day_index: i - 1, sharpe: s > 0 ? Number(((m - dailyRf) / s * Math.sqrt(TRADING_DAYS)).toFixed(4)) : 0 });
+        }
+
+        // Equity curve
+        let cum = 100;
+        const equityCurve = allR.map(r => { cum *= (1 + r / 100); return Number(cum.toFixed(4)); });
+
+        const tradeCount = rows.length;
+        const warnings = [];
+        if (tradeCount < 30) warnings.push(`Only ${tradeCount} completed trades. Minimum 30 required for reliable metrics.`);
+        if (days < 60) warnings.push('Performance period under 60 days. Annualized figures may be misleading.');
+
+        return res.json({
+            available: true,
+            period_days: days,
+            generated_at: new Date().toISOString(),
+            trade_count: tradeCount,
+            equity_curve: equityCurve,
+            rolling_sharpe_30d: rollingSharpe,
+            benchmark_returns: benchR,
+            portfolio_returns: allR,
+            risk_free_rate_used: EGX_RF,
+            minimum_trades_met: tradeCount >= 30,
+            data_quality_warning: warnings.join(' | '),
+        });
+    } catch (err) {
+        console.error('Full report error:', err);
+        res.status(500).json({ error: 'Failed to generate full report.' });
+    }
+});
+
+
+// ─── PUBLIC: Investor PDF export (HTML) ───────────────────────
+router.get('/export-summary', async (req, res) => {
+    try {
+        const days = Math.min(parseInt(req.query.days) || 90, 365);
+        const liveFilter = isPostgres ? `(is_live = TRUE OR is_live IS NULL)` : `(is_live = 1 OR is_live IS NULL)`;
+        const dateFilter = isPostgres
+            ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
+
+        let rows = [];
+        try {
+            rows = await dbAll(`
+                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d
+                FROM trade_recommendations
+                WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}
+                ORDER BY recommendation_date ASC
+            `, [days]);
+        } catch (e) { rows = []; }
+
+        const toNum = v => Number(v || 0);
+        const mean  = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        const stdev = arr => { if (arr.length < 2) return 0; const m = mean(arr); return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1)); };
+        const TRADING_DAYS = 247, EGX_RF = 0.2725;
+        const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
+        const allR    = rows.map(r => toNum(r.actual_next_day_return));
+        const benchR  = rows.map(r => toNum(r.benchmark_1d_return));
+        const calcSharpe = arr => { const m = mean(arr), s = stdev(arr); return s > 0 ? (m - dailyRf) / s * Math.sqrt(TRADING_DAYS) : 0; };
+        const calcSortino = arr => { const m = mean(arr), dn = arr.filter(v => v < 0); if (!dn.length) return 99.9; const ds = stdev(dn); return ds > 0 ? (m - dailyRf) / ds * Math.sqrt(TRADING_DAYS) : 99.9; };
+        const calcMdd = arr => { let cum = 0, pk = 0, mdd = 0; arr.forEach(r => { cum += r; if (cum > pk) pk = cum; const dd = pk > 0 ? (cum - pk) / pk : 0; if (dd < mdd) mdd = dd; }); return mdd; };
+        const calcCalmar = (arr, mdd) => { if (arr.length < 20 || !mdd) return 0; return (Math.pow(1 + mean(arr), TRADING_DAYS) - 1) / Math.abs(mdd); };
+        const calcIR = (pArr, bArr) => { const n = Math.min(pArr.length, bArr.length); if (n < 2) return 0; const ex = pArr.slice(0, n).map((v, i) => v - bArr[i]); const te = stdev(ex); return te > 0 ? mean(ex) / te * Math.sqrt(TRADING_DAYS) : 0; };
+
+        // Build SVG equity curve (max 200 points)
+        const step = Math.max(1, Math.floor(allR.length / 200));
+        const svgPoints = [];
+        let c = 100;
+        allR.forEach((r, i) => { c *= (1 + r / 100); if (i % step === 0) svgPoints.push(c); });
+        const svgW = 700, svgH = 160;
+        const minY = Math.min(...svgPoints) * 0.98, maxY = Math.max(...svgPoints) * 1.02;
+        const px = (i) => (i / (svgPoints.length - 1)) * svgW;
+        const py = (v) => svgH - ((v - minY) / (maxY - minY)) * svgH;
+        const pathD = svgPoints.map((v, i) => `${i === 0 ? 'M' : 'L'}${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(' ');
+        const svgEquity = `<svg viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:160px">
+            <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10b981" stop-opacity="0.3"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+            <path d="${pathD} L${svgW},${svgH} L0,${svgH} Z" fill="url(#g)"/>
+            <path d="${pathD}" fill="none" stroke="#10b981" stroke-width="2"/>
+        </svg>`;
+
+        const mdd = calcMdd(allR);
+        const sharpe = calcSharpe(allR), sortino = calcSortino(allR), calmar = calcCalmar(allR, mdd), ir = calcIR(allR, benchR);
+        const wins = allR.filter(v => v > 0), losses = allR.filter(v => v < 0);
+        const wr = allR.length ? (wins.length / allR.length * 100).toFixed(1) : 0;
+        const pf = losses.length ? (wins.reduce((a, b) => a + b, 0) / Math.abs(losses.reduce((a, b) => a + b, 0))).toFixed(2) : '—';
+        const totalRet = ((allR.reduce((a, b) => a + b, 0))).toFixed(2);
+        const benchTotal = (benchR.reduce((a, b) => a + b, 0)).toFixed(2);
+        const alpha = (Number(totalRet) - Number(benchTotal)).toFixed(2);
+        const genDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const periodStart = rows.length ? String(rows[0].recommendation_date).slice(0, 10) : '—';
+        const periodEnd   = rows.length ? String(rows[rows.length - 1].recommendation_date).slice(0, 10) : '—';
+
+        const fmtPct = (v, dec = 2) => `${v >= 0 ? '+' : ''}${Number(v).toFixed(dec)}%`;
+        const fmtNum = (v, dec = 2) => Number(v).toFixed(dec);
+        const warn = rows.length < 30 ? `<div style="background:#fef3c7;border:1px solid #f59e0b;padding:8px 14px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#92400e">⚠ Only ${rows.length} completed trades. Minimum 30 required for statistically reliable metrics.</div>` : '';
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Xmore2 Performance Report — ${genDate}</title>
+<style>
+  @page { size: A4; margin: 18mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; background: #fff; margin: 0; padding: 0; }
+  h1 { font-size: 20px; margin: 0 0 2px; color: #111; }
+  h2 { font-size: 13px; margin: 18px 0 8px; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; color: #374151; }
+  .header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 16px; }
+  .header-meta { text-align: right; font-size: 11px; color: #6b7280; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; }
+  .card-label { font-size: 10px; color: #6b7280; margin-bottom: 3px; }
+  .card-value { font-size: 18px; font-weight: 700; }
+  .green { color: #059669; } .red { color: #dc2626; } .amber { color: #d97706; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  th { background: #f9fafb; padding: 6px 10px; text-align: left; border-bottom: 1px solid #e5e7eb; font-weight: 600; }
+  td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; }
+  .highlight { font-weight: 700; color: #d97706; }
+  .footer { margin-top: 18px; font-size: 10px; color: #9ca3af; text-align: center; border-top: 1px solid #e5e7eb; padding-top: 8px; }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Xmore2 — AI-Powered EGX Trading</h1>
+    <div style="color:#6b7280;font-size:11px">Performance Report · ${periodStart} → ${periodEnd} · ${rows.length} resolved predictions</div>
+  </div>
+  <div class="header-meta">Generated: ${genDate}<br>Risk-free rate: CBE 27.25%</div>
+</div>
+${warn}
+<h2>Return Quality</h2>
+<div class="grid">
+  <div class="card"><div class="card-label">Sharpe Ratio</div><div class="card-value ${sharpe >= 1.5 ? 'green' : sharpe >= 0.8 ? 'amber' : 'red'}">${fmtNum(sharpe)}</div></div>
+  <div class="card"><div class="card-label">Sortino Ratio</div><div class="card-value ${sortino >= 2 ? 'green' : sortino >= 1 ? 'amber' : 'red'}">${fmtNum(sortino)}</div></div>
+  <div class="card"><div class="card-label">Calmar Ratio</div><div class="card-value ${calmar >= 2 ? 'green' : calmar >= 1 ? 'amber' : 'red'}">${fmtNum(calmar)}</div></div>
+  <div class="card"><div class="card-label">Information Ratio</div><div class="card-value ${ir >= 0.75 ? 'green' : ir >= 0.4 ? 'amber' : 'red'}">${fmtNum(ir)}</div></div>
+</div>
+<h2>Risk Profile</h2>
+<div class="grid">
+  <div class="card"><div class="card-label">Max Drawdown</div><div class="card-value ${mdd > -0.1 ? 'green' : mdd > -0.2 ? 'amber' : 'red'}">${(mdd * 100).toFixed(1)}%</div></div>
+  <div class="card"><div class="card-label">Win Rate</div><div class="card-value ${Number(wr) >= 55 ? 'green' : Number(wr) >= 45 ? 'amber' : 'red'}">${wr}%</div></div>
+  <div class="card"><div class="card-label">Profit Factor</div><div class="card-value ${Number(pf) >= 2 ? 'green' : Number(pf) >= 1 ? 'amber' : 'red'}">${pf}</div></div>
+  <div class="card"><div class="card-label">Total Alpha</div><div class="card-value ${Number(alpha) >= 0 ? 'green' : 'red'}">${fmtPct(alpha)}</div></div>
+</div>
+<h2>Equity Curve (Cumulative Portfolio Value)</h2>
+${svgEquity}
+<h2>Benchmark Comparison</h2>
+<table>
+  <thead><tr><th>Metric</th><th>Xmore2</th><th>EGX30 Benchmark</th></tr></thead>
+  <tbody>
+    <tr><td>Total Return</td><td class="${Number(totalRet) >= 0 ? 'highlight' : ''}">${fmtPct(totalRet)}</td><td>${fmtPct(benchTotal)}</td></tr>
+    <tr><td>Alpha vs Benchmark</td><td class="highlight">${fmtPct(alpha)}</td><td>—</td></tr>
+    <tr><td>Sharpe Ratio</td><td class="highlight">${fmtNum(sharpe)}</td><td>—</td></tr>
+    <tr><td>Profit Factor</td><td class="${Number(pf) >= 1 ? 'highlight' : ''}">${pf}</td><td>—</td></tr>
+    <tr><td>Max Drawdown</td><td class="${mdd > -0.1 ? 'highlight' : ''}">${(mdd * 100).toFixed(1)}%</td><td>—</td></tr>
+  </tbody>
+</table>
+<div class="footer">Generated by Xmore2 &nbsp;|&nbsp; Data source: Egyptian Exchange (EGX) &nbsp;|&nbsp; Risk-free rate: CBE 27.25% &nbsp;|&nbsp; All predictions are live, immutable, and time-stamped at generation.</div>
+</body>
+</html>`;
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(html);
+    } catch (err) {
+        console.error('Export summary error:', err);
+        res.status(500).send('<h1>Failed to generate export.</h1>');
     }
 });
 
