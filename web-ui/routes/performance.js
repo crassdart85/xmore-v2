@@ -58,7 +58,7 @@ router.get('/summary', async (req, res) => {
             ? `(is_live = TRUE OR is_live IS NULL)`
             : `(is_live = 1 OR is_live IS NULL)`;
         const dateFilter = isPostgres
-            ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            ? `recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
         let rows = [];
@@ -301,7 +301,7 @@ router.get('/debug-count', async (req, res) => {
         const r3 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()}`, []);
         const r4 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()} AND actual_next_day_return IS NOT NULL`, []);
         const r5 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE is_simulated = ${boolTrue()} AND is_live = ${boolTrue()}`, []);
-        const r6 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND (is_live = ${boolTrue()} OR is_live IS NULL) AND recommendation_date >= CURRENT_DATE - ${ph(1)}`, [365]);
+        const r6 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND (is_live = ${boolTrue()} OR is_live IS NULL) AND recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`, [365]);
         const r7 = await dbGet(`SELECT COUNT(*) AS c FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND (is_live = ${boolTrue()} OR is_live IS NULL) AND recommendation_date >= '2025-01-01'`, []);
         res.json({ with_return: r1, with_return_and_live: r2, simulated: r3, simulated_with_return: r4, simulated_and_live: r5, with_date_param: r6, with_hardcoded_date: r7 });
     } catch(e) { res.status(500).json({ error: e.message }); }
@@ -347,7 +347,7 @@ router.get('/by-stock', async (req, res) => {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
         const liveFilter = isPostgres ? '(tr.is_live = TRUE OR tr.is_live IS NULL)' : '(tr.is_live = 1 OR tr.is_live IS NULL)';
         const dateFilter = isPostgres
-            ? `tr.recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            ? `tr.recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`
             : `tr.recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
         const rows = await dbAll(`
@@ -389,7 +389,7 @@ router.get('/equity-curve', async (req, res) => {
         const days = Math.min(parseInt(req.query.days) || 180, 365);
         const liveFilter = isPostgres ? '(is_live = TRUE OR is_live IS NULL)' : '(is_live = 1 OR is_live IS NULL)';
         const dateFilter = isPostgres
-            ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            ? `recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
         const rows = await dbAll(`
@@ -553,7 +553,7 @@ router.get('/full-report', async (req, res) => {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
         const liveFilter = isPostgres ? `(is_live = TRUE OR is_live IS NULL)` : `(is_live = 1 OR is_live IS NULL)`;
         const dateFilter = isPostgres
-            ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            ? `recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
         let rows = [];
@@ -627,7 +627,7 @@ router.get('/export-summary', async (req, res) => {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
         const liveFilter = isPostgres ? `(is_live = TRUE OR is_live IS NULL)` : `(is_live = 1 OR is_live IS NULL)`;
         const dateFilter = isPostgres
-            ? `recommendation_date >= CURRENT_DATE - ${ph(1)}`
+            ? `recommendation_date >= CURRENT_DATE - (${ph(1)} * INTERVAL '1 day')`
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
         let rows = [];
