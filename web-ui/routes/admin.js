@@ -4,7 +4,13 @@ const path = require('path');
 const { spawn } = require('child_process');
 const multer = require('multer');
 const { PDFParse } = require('pdf-parse');
-const { createWorker } = require('tesseract.js');
+let _tesseract = null;
+function getTesseract() {
+    if (!_tesseract) {
+        try { _tesseract = require('tesseract.js'); } catch(_) { return null; }
+    }
+    return _tesseract;
+}
 const { requireAdminSecret } = require('../middleware/admin');
 const { embedReports } = require('../lib/embedReports');
 
@@ -212,8 +218,10 @@ async function extractPdf(filePath) {
 }
 
 async function extractImage(filePath) {
+    const tesseract = getTesseract();
+    if (!tesseract) throw new Error('tesseract.js not available');
     const lang = 'eng+ara';
-    const worker = await createWorker(lang);
+    const worker = await tesseract.createWorker(lang);
     try {
         const { data } = await worker.recognize(filePath);
         const extractedText = (data.text || '').trim();
