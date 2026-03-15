@@ -4,7 +4,7 @@ services:
     name: trading-dashboard
     env: node
     rootDir: web-ui
-    buildCommand: npm install && pip3 install -r requirements-web.txt --quiet
+    buildCommand: npm install
     startCommand: node init-db.js && node server.js
     envVars:
       - key: DATABASE_URL
