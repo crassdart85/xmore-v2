@@ -459,6 +459,14 @@ def create_tables():
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
 
+        # Add missing columns to agent_performance_daily (correct_30d/90d were absent from original schema)
+        agent_perf_columns = [
+            ("correct_30d", "INTEGER DEFAULT 0"),
+            ("correct_90d", "INTEGER DEFAULT 0"),
+        ]
+        for col_name, col_type in agent_perf_columns:
+            _safe_add_column(cursor, "agent_performance_daily", col_name, col_type)
+
         # Add benchmark columns to trade_recommendations (safe ALTER TABLE)
         benchmark_columns = [
             ("benchmark_1d_return", "REAL"),
