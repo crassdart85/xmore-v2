@@ -9,10 +9,10 @@ if (!DATABASE_URL) {
   process.exit(0);
 }
 
-// Set a global timeout - exit after 30 seconds no matter what
-const TIMEOUT_MS = 30000;
+// Set a global timeout - exit after 120 seconds no matter what
+const TIMEOUT_MS = 120000;
 const timeoutId = setTimeout(() => {
-  console.error('❌ Database initialization timed out after 30 seconds');
+  console.error('❌ Database initialization timed out after 120 seconds');
   process.exit(1);
 }, TIMEOUT_MS);
 timeoutId.unref(); // Don't keep process alive just for timeout

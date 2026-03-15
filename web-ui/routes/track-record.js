@@ -50,36 +50,84 @@ function round(expr) {
     return isPostgres ? `ROUND(${expr}::numeric, 4)` : `ROUND(${expr}, 4)`;
 }
 
-// ── KPI helper: accuracy + alpha + sharpe for a window ───────
+// ── KPI helper: accuracy + alpha + sharpe + beat + PF + max DD ─
 async function kpiForWindow(days) {
     try {
+        const live = liveFilter();
+        const dw   = dateWindow(days);
+
         const row = await dbGet(`
             SELECT
-                COUNT(*)                                      AS total,
-                SUM(CASE WHEN was_correct = ${boolTrue()} THEN 1 ELSE 0 END) AS correct,
-                ${round('AVG(alpha_1d)')}                    AS avg_alpha,
-                ${round('AVG(actual_next_day_return)')}      AS avg_return,
-                ${round('STDDEV_SAMP(actual_next_day_return)')} AS std_return
+                COUNT(*)                                                            AS total,
+                SUM(CASE WHEN was_correct = ${boolTrue()} THEN 1 ELSE 0 END)       AS correct,
+                ${round('AVG(COALESCE(alpha_1d, actual_next_day_return - benchmark_1d_return))')} AS avg_alpha,
+                ${round('AVG(actual_next_day_return)')}                             AS avg_return,
+                ${round('STDDEV_SAMP(actual_next_day_return)')}                     AS std_return,
+                ${round('STDDEV_SAMP(CASE WHEN actual_next_day_return < 0 THEN actual_next_day_return END)')} AS std_neg,
+                SUM(CASE WHEN COALESCE(alpha_1d, actual_next_day_return - benchmark_1d_return) > 0 THEN 1 ELSE 0 END) AS beat_count,
+                ${round('SUM(CASE WHEN actual_next_day_return > 0 THEN actual_next_day_return ELSE 0 END)')} AS gross_profit,
+                ${round('SUM(CASE WHEN actual_next_day_return < 0 THEN ABS(actual_next_day_return) ELSE 0 END)')} AS gross_loss
             FROM trade_recommendations
             WHERE was_correct IS NOT NULL
-            AND ${liveFilter()}
-            AND ${dateWindow(days)}
+            AND ${live}
+            AND ${dw}
         `);
         if (!row || !parseInt(row.total)) return null;
+
         const total   = parseInt(row.total);
         const correct = parseInt(row.correct) || 0;
         const alpha   = parseFloat(row.avg_alpha) || 0;
         const ret     = parseFloat(row.avg_return) || 0;
         const std     = parseFloat(row.std_return) || 0;
+        const stdNeg  = parseFloat(row.std_neg)    || 0;
+        const beatCnt = parseInt(row.beat_count)   || 0;
+        const grossP  = parseFloat(row.gross_profit) || 0;
+        const grossL  = parseFloat(row.gross_loss)   || 0;
+
         const cbeDailyRf = Math.pow(1.2725, 1 / 247) - 1;
-        const sharpe  = std > 0 ? ((ret / 100 - cbeDailyRf) / (std / 100)) * Math.sqrt(247) : 0;
+        const dailyRet   = ret / 100;
+        const dailyStd   = std / 100;
+        const dailyStdN  = stdNeg / 100;
+        const sharpe     = dailyStd  > 0 ? ((dailyRet - cbeDailyRf) / dailyStd)  * Math.sqrt(247) : 0;
+        const sortino    = dailyStdN > 0 ? ((dailyRet - cbeDailyRf) / dailyStdN) * Math.sqrt(247) : 0;
+        const profitFactor = grossL > 0 ? parseFloat((grossP / grossL).toFixed(4)) : (grossP > 0 ? 9.99 : null);
+        const beatPct    = total > 0 ? parseFloat(((beatCnt / total) * 100).toFixed(1)) : 0;
+
+        // Max drawdown via cumulative P&L (PostgreSQL only)
+        let maxDD = null;
+        if (isPostgres) {
+            try {
+                const ddRow = await dbGet(`
+                    WITH cumul AS (
+                        SELECT SUM(actual_next_day_return)
+                               OVER (ORDER BY recommendation_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum
+                        FROM trade_recommendations
+                        WHERE was_correct IS NOT NULL AND ${live} AND ${dw}
+                    ),
+                    peaks AS (
+                        SELECT cum, MAX(cum) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS peak
+                        FROM cumul
+                    )
+                    SELECT ${round('MIN(cum - peak)')} AS max_dd FROM peaks
+                `);
+                if (ddRow && ddRow.max_dd != null) maxDD = parseFloat(Math.abs(parseFloat(ddRow.max_dd)).toFixed(2));
+            } catch (_) {}
+        }
+
         return {
-            total_signals:         total,
-            directional_accuracy:  total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
-            alpha_vs_egx30:        parseFloat(alpha.toFixed(4)),
-            sharpe_ratio:          parseFloat(sharpe.toFixed(2)),
+            total_signals:        total,
+            directional_accuracy: total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
+            alpha_vs_egx30:       parseFloat(alpha.toFixed(4)),
+            sharpe_ratio:         parseFloat(sharpe.toFixed(2)),
+            sortino_ratio:        parseFloat(sortino.toFixed(2)),
+            beat_benchmark_pct:   beatPct,
+            profit_factor:        profitFactor,
+            max_drawdown:         maxDD,
         };
-    } catch (_) { return null; }
+    } catch (e) {
+        console.error('[track-record] kpiForWindow error:', e);
+        return null;
+    }
 }
 
 
