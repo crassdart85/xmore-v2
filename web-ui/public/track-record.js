@@ -41,13 +41,13 @@ const I18N = {
     transparencyTitle: 'AUDIT TRAIL & TRANSPARENCY COMMITMENT',
     t1Label: 'Pre-Market Timestamp', t1Text: 'Every prediction is generated and logged before EGX opens. Time of generation is recorded and cannot be altered.',
     t2Label: 'Immutable Signal Fields', t2Text: 'Core signal fields (direction, confidence, action) are write-once. Any modification attempt is logged in the audit table.',
-    t3Label: 'Live Data Only', t3Text: 'Performance metrics exclude any backtested or simulated predictions. Only real-time live signals count toward the statistics.',
+    t3Label: 'Transparent Data Policy', t3Text: 'Performance metrics include live pre-market signals (since March 2026) and clearly-labelled historical simulation signals. Simulated rows are tagged SIM in the prediction log. No future price data was used at any point.',
     t4Label: 'Market-Sourced Returns', t4Text: 'Actual returns are computed from EGX official closing prices, sourced from Mubasher data feeds and Yahoo Finance.',
     logTitle: 'FULL PREDICTION LOG',
     logDesc: 'Every live signal ever issued, with the actual next-day return and whether the directional call was correct. All entries are read-only — prediction fields are immutable after issuance.',
     filterAll: 'All Signals', filterUp: 'UP only', filterDown: 'DOWN only',
     colAgent: 'Agent', colSignals30: 'Signals 30D', colWin30: 'Win Rate 30D', colWin90: 'Win Rate 90D', colConf: 'Avg Confidence',
-    colSym: 'Symbol', colTrades: 'Signals', colWinRate: 'Win Rate', colAvgAlpha: 'Avg Alpha',
+    colSym: 'Symbol', colTrades: 'Signals', colWinRate: 'Win Rate', colAvgAlpha: 'Avg Alpha', colBestReturn: 'Best Return',
     colDate: 'Date', colSignal: 'Signal', colConfidence: 'Confidence', colConviction: 'Conviction',
     colActual1D: '1D Actual', colAlpha: 'Alpha', colHit: 'Hit?',
     hitYes: '✓ YES', hitNo: '✗ NO', hitPending: 'Pending',
@@ -106,13 +106,13 @@ const I18N = {
     transparencyTitle: 'مسار التدقيق والتزام الشفافية',
     t1Label: 'ختم زمني قبل السوق', t1Text: 'كل توقع يُولَّد ويُسجَّل قبل افتتاح البورصة المصرية. وقت التوليد مسجَّل ولا يمكن تعديله.',
     t2Label: 'حقول إشارة غير قابلة للتعديل', t2Text: 'حقول الإشارة الأساسية (الاتجاه، الثقة، الإجراء) تُكتب مرة واحدة. أي محاولة تعديل تُسجَّل في جدول التدقيق.',
-    t3Label: 'بيانات حية فقط', t3Text: 'مقاييس الأداء تستثني أي توقعات باك تيست أو محاكاة. فقط الإشارات الحية الفعلية تُحتسب في الإحصاءات.',
+    t3Label: 'سياسة بيانات شفافة', t3Text: 'تشمل مقاييس الأداء الإشارات الحية قبل السوق (منذ مارس 2026) وإشارات المحاكاة التاريخية المُصنَّفة بوضوح. إشارات المحاكاة مُوسَمة بـ SIM في سجل التوقعات. لم تُستخدم أي بيانات أسعار مستقبلية في أي مرحلة.',
     t4Label: 'عوائد من مصادر السوق', t4Text: 'العوائد الفعلية محسوبة من أسعار إغلاق البورصة المصرية الرسمية، المصدر Mubasher و Yahoo Finance.',
     logTitle: 'سجل التوقعات الكامل',
     logDesc: 'كل إشارة حية صدرت على الإطلاق، مع العائد الفعلي في اليوم التالي ومدى صحة الاتجاه المتوقع. جميع السجلات للقراءة فقط — حقول التوقع غير قابلة للتعديل بعد الإصدار.',
     filterAll: 'جميع الإشارات', filterUp: 'صاعد فقط', filterDown: 'هابط فقط',
     colAgent: 'العامل', colSignals30: 'إشارات 30 يوم', colWin30: 'نجاح 30 يوم', colWin90: 'نجاح 90 يوم', colConf: 'متوسط الثقة',
-    colSym: 'الرمز', colTrades: 'إشارات', colWinRate: 'معدل النجاح', colAvgAlpha: 'متوسط الألفا',
+    colSym: 'الرمز', colTrades: 'إشارات', colWinRate: 'معدل النجاح', colAvgAlpha: 'متوسط الألفا', colBestReturn: 'أفضل عائد',
     colDate: 'التاريخ', colSignal: 'الإشارة', colConfidence: 'الثقة', colConviction: 'الاقتناع',
     colActual1D: 'الفعلي 1 يوم', colAlpha: 'الألفا', colHit: 'نجح؟',
     hitYes: '✓ نعم', hitNo: '✗ لا', hitPending: 'قيد الانتظار',
@@ -254,7 +254,7 @@ async function loadSummary() {
       }
 
       // Use the selected window (or 90d as default for hero KPIs)
-      const winKey = activeDays <= 30 ? '30d' : activeDays <= 60 ? '60d' : '90d';
+      const winKey = activeDays <= 30 ? '30d' : activeDays <= 60 ? '60d' : activeDays <= 90 ? '90d' : activeDays <= 180 ? '180d' : '365d';
       const w = data.kpi_windows[winKey] || data.kpi_windows['90d'] || {};
       const winRate = w.directional_accuracy != null ? (w.directional_accuracy * 100).toFixed(1) : null;
       const alpha   = w.alpha_vs_egx30 ?? null;
@@ -263,12 +263,13 @@ async function loadSummary() {
       const beat = w.beat_benchmark_pct ?? null;
       const pf   = w.profit_factor ?? null;
 
+      const kpiCls = (v, pos, neu) => v == null ? 'neutral' : v >= pos ? 'positive' : v >= neu ? 'neutral' : 'negative';
       setKpi('kpiTotal', total, '', 'neutral');
-      setKpi('kpiWin',   winRate != null ? winRate + '%' : '—', '', winRate >= 55 ? 'positive' : winRate >= 45 ? 'neutral' : 'negative');
-      setKpi('kpiAlpha', alpha != null ? fmtPct(alpha, 3) : '—', '', alpha > 0 ? 'positive' : 'negative');
-      setKpi('kpiBeat',  beat != null ? beat + '%' : '—', '', beat >= 55 ? 'positive' : beat >= 45 ? 'neutral' : 'negative');
-      setKpi('kpiSharpe', sharpe != null ? fmt(sharpe, 2) : '—', '', sharpe >= 1 ? 'positive' : sharpe >= 0 ? 'neutral' : 'negative');
-      setKpi('kpiPF',    pf != null ? fmt(pf, 2) : '—', '', pf >= 1.5 ? 'positive' : pf >= 1 ? 'neutral' : 'negative');
+      setKpi('kpiWin',   winRate != null ? winRate + '%' : '—', '', kpiCls(winRate != null ? Number(winRate) : null, 55, 45));
+      setKpi('kpiAlpha', alpha  != null ? fmtPct(alpha, 3) : '—', '', alpha == null ? 'neutral' : alpha > 0 ? 'positive' : alpha === 0 ? 'neutral' : 'negative');
+      setKpi('kpiBeat',  beat   != null ? beat + '%' : '—', '', kpiCls(beat, 55, 45));
+      setKpi('kpiSharpe', sharpe != null ? fmt(sharpe, 2) : '—', '', kpiCls(sharpe, 1, 0));
+      setKpi('kpiPF',    pf     != null ? fmt(pf, 2) : '—', '', kpiCls(pf, 1.5, 1));
 
       // Hero dates
       const since = data.live_since;
@@ -283,6 +284,10 @@ async function loadSummary() {
 
       // Rolling windows from kpi_windows
       renderRolling(data.kpi_windows);
+
+      // Risk rows — use 90d window as the global reference (most data points)
+      const riskSrc = data.kpi_windows['90d'] || data.kpi_windows['60d'] || {};
+      renderRiskRows(riskSrc);
 
     } else {
       // Old shape fallback
@@ -336,7 +341,7 @@ async function renderRolling(rolling) {
 
   const labels = t('rollingLabels');
   const container = document.getElementById('trRollingCards');
-  const windows = [['30d','30D'],['60d','60D'],['90d','90D']];
+  const windows = [['30d','30D'],['60d','60D'],['90d','90D'],['180d','180D'],['365d','365D']];
 
   container.innerHTML = windows.map(([key, label]) => {
     const w = rolling_[key];
@@ -352,8 +357,8 @@ async function renderRolling(rolling) {
     const beat    = w.beat_benchmark_pct ?? null;
     const rows = [
       { label: labels.trades,        val: trades,   fmt: v => v },
-      { label: labels.win_rate,      val: winRate,  fmt: v => v != null ? v + '%' : '—',              cls: winRate >= 50 ? 'pos' : 'neg' },
-      { label: labels.beat_benchmark,val: beat,     fmt: v => v != null ? v + '%' : '—',              cls: beat >= 50 ? 'pos' : 'neg' },
+      { label: labels.win_rate,      val: winRate,  fmt: v => v != null ? v + '%' : '—',              cls: winRate == null ? '' : winRate >= 50 ? 'pos' : 'neg' },
+      { label: labels.beat_benchmark,val: beat,     fmt: v => v != null ? v + '%' : '—',              cls: beat == null ? '' : beat >= 50 ? 'pos' : 'neg' },
       { label: labels.alpha,         val: alpha,    fmt: v => v != null ? fmtPct(v, 3) : '—',         cls: colorClass(alpha) },
       { label: labels.sharpe_ratio,  val: sharpe,   fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(sharpe) },
       { label: labels.sortino_ratio, val: sortino,  fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(sortino) },
@@ -490,7 +495,7 @@ async function loadEquityCurve() {
 
     if (footer) {
       const totalAlpha = data.total_alpha;
-      const cls = totalAlpha > 0 ? 'tr-alpha-pos' : 'tr-alpha-neg';
+      const cls = totalAlpha > 0 ? 'tr-alpha-pos' : totalAlpha < 0 ? 'tr-alpha-neg' : '';
       footer.innerHTML = `
         <span class="tr-chart-stat">Xmore cumulative: <strong>${data.total_xmore > 0 ? '+' : ''}${Number(data.total_xmore).toFixed(2)}%</strong></span>
         <span class="tr-chart-stat">EGX30 benchmark: <strong>${data.total_egx30 > 0 ? '+' : ''}${Number(data.total_egx30).toFixed(2)}%</strong></span>
@@ -531,7 +536,7 @@ async function loadAgents() {
             <span class="${wr90>=55?'tr-alpha-pos':wr90<45?'tr-alpha-neg':''}">${fmt(wr90)}%</span>
           </div>
         </td>
-        <td>${a.avg_confidence_30d ? fmt(a.avg_confidence_30d) + '%' : '—'}</td>
+        <td>${a.avg_confidence_30d != null ? fmt(a.avg_confidence_30d) + '%' : '—'}</td>
       </tr>`;
     }).join('');
   } catch (e) {
@@ -551,19 +556,21 @@ async function loadStocks() {
       return;
     }
     tbody.innerHTML = stocks.slice(0, 12).map(s => {
-      const wr = Number(s.win_rate);
+      const wr    = Number(s.win_rate);
       const alpha = Number(s.alpha_avg ?? s.avg_alpha);
       const count = s.signal_count ?? s.total;
+      const best  = s.best_signal_return != null ? Number(s.best_signal_return) : null;
       return `<tr>
         <td style="font-weight:700">${s.symbol}</td>
-        <td>${count}</td>
+        <td style="color:#aaa">${count}</td>
         <td>
           <div class="tr-win-bar">
             <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr,100)}%"></div></div>
-            <span>${fmt(wr)}%</span>
+            <span class="${wr>=50?'tr-alpha-pos':wr<45?'tr-alpha-neg':''}">${fmt(wr)}%</span>
           </div>
         </td>
-        <td class="${alpha>0?'tr-alpha-pos':'tr-alpha-neg'}">${fmtPct(alpha, 3)}</td>
+        <td class="${alpha>0?'tr-alpha-pos':alpha<0?'tr-alpha-neg':''}">${fmtPct(alpha, 3)}</td>
+        <td class="${best!=null&&best>0?'tr-alpha-pos':''}">${best != null ? fmtPct(best, 2) : '—'}</td>
       </tr>`;
     }).join('');
   } catch (e) {
@@ -578,18 +585,19 @@ async function loadLog() {
   tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">${t('loading')}</td></tr>`;
 
   try {
-    const filter = document.getElementById('logFilter').value;
-    const url = `/api/track-record/predictions?page=${logPage}&limit=25`;
+    const filter  = document.getElementById('logFilter').value;
+    const outcome = document.getElementById('logOutcome')?.value || '';
+    let url = `/api/track-record/predictions?page=${logPage}&limit=25&days=${activeDays}`;
+    if (filter)  url += `&signal=${encodeURIComponent(filter)}`;
+    if (outcome) url += `&outcome=${encodeURIComponent(outcome)}`;
     const r = await fetch(url);
     const data = await r.json();
 
     logDataCache = data.predictions || [];
-    // New endpoint returns top-level pagination fields; old returned data.pagination
-    const pag = data.pagination || { page: data.page, pages: data.pages, total: data.total };
-    logTotalPages = pag.pages || data.pages || 1;
+    const pag = { page: data.page, pages: data.pages, total: data.total };
+    logTotalPages = pag.pages || 1;
 
-    let rows = logDataCache;
-    if (filter) rows = rows.filter(p => (p.signal || p.final_signal || p.action) === filter);
+    const rows = logDataCache;
 
     if (!rows.length) {
       tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">${t('noData')}</td></tr>`;

@@ -63,6 +63,7 @@ async function kpiForWindow(days) {
                 ${round('AVG(COALESCE(alpha_1d, actual_next_day_return - benchmark_1d_return))')} AS avg_alpha,
                 ${round('AVG(actual_next_day_return)')}                             AS avg_return,
                 ${round('STDDEV_SAMP(actual_next_day_return)')}                     AS std_return,
+                ${round('STDDEV_SAMP(actual_next_day_return * 1.0)')}               AS volatility_raw,
                 ${round('STDDEV_SAMP(CASE WHEN actual_next_day_return < 0 THEN actual_next_day_return END)')} AS std_neg,
                 SUM(CASE WHEN COALESCE(alpha_1d, actual_next_day_return - benchmark_1d_return) > 0 THEN 1 ELSE 0 END) AS beat_count,
                 ${round('SUM(CASE WHEN actual_next_day_return > 0 THEN actual_next_day_return ELSE 0 END)')} AS gross_profit,
@@ -78,8 +79,9 @@ async function kpiForWindow(days) {
         const correct = parseInt(row.correct) || 0;
         const alpha   = parseFloat(row.avg_alpha) || 0;
         const ret     = parseFloat(row.avg_return) || 0;
-        const std     = parseFloat(row.std_return) || 0;
-        const stdNeg  = parseFloat(row.std_neg)    || 0;
+        const std     = parseFloat(row.std_return)     || 0;
+        const volRaw  = parseFloat(row.volatility_raw) || 0;
+        const stdNeg  = parseFloat(row.std_neg)        || 0;
         const beatCnt = parseInt(row.beat_count)   || 0;
         const grossP  = parseFloat(row.gross_profit) || 0;
         const grossL  = parseFloat(row.gross_loss)   || 0;
@@ -114,15 +116,21 @@ async function kpiForWindow(days) {
             } catch (_) {}
         }
 
+        // Annualised volatility (std_dev of daily returns × √247) as decimal e.g. 0.142
+        const volatility = volRaw > 0 ? parseFloat(((volRaw / 100) * Math.sqrt(247)).toFixed(4)) : null;
+
         return {
             total_signals:        total,
             directional_accuracy: total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
             alpha_vs_egx30:       parseFloat(alpha.toFixed(4)),
+            avg_return_1d:        parseFloat(ret.toFixed(4)),
+            avg_alpha_1d:         parseFloat(alpha.toFixed(4)),
             sharpe_ratio:         parseFloat(sharpe.toFixed(2)),
             sortino_ratio:        parseFloat(sortino.toFixed(2)),
             beat_benchmark_pct:   beatPct,
             profit_factor:        profitFactor,
             max_drawdown:         maxDD,
+            volatility:           volatility,
         };
     } catch (e) {
         console.error('[track-record] kpiForWindow error:', e);
@@ -157,11 +165,13 @@ router.get('/summary', async (req, res) => {
             simCount = parseInt(sc?.cnt || 0);
         } catch (_) {}
 
-        // KPI windows
-        const [w30, w60, w90] = await Promise.all([
+        // KPI windows (run in parallel)
+        const [w30, w60, w90, w180, w365] = await Promise.all([
             kpiForWindow(30),
             kpiForWindow(60),
             kpiForWindow(90),
+            kpiForWindow(180),
+            kpiForWindow(365),
         ]);
 
         // Current regime from regime_log
@@ -192,9 +202,11 @@ router.get('/summary', async (req, res) => {
             current_regime:       currentRegime,
             risk_free_rate_applied: '27.25% (CBE)',
             kpi_windows: {
-                '30d': w30,
-                '60d': w60,
-                '90d': w90,
+                '30d':  w30,
+                '60d':  w60,
+                '90d':  w90,
+                '180d': w180,
+                '365d': w365,
             },
             data_transparency: {
                 total_signals_count:        liveCount,

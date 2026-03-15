@@ -218,10 +218,11 @@
               <th data-i18n="colTrades">Signals</th>
               <th data-i18n="colWinRate">Win Rate</th>
               <th data-i18n="colAvgAlpha">Avg Alpha</th>
+              <th data-i18n="colBestReturn">Best Return</th>
             </tr>
           </thead>
           <tbody id="stockTableBody">
-            <tr><td colspan="4" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+            <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loading…</td></tr>
           </tbody>
         </table>
       </div>
@@ -291,8 +292,8 @@
           <div class="tr-transparency-text" data-i18n="t2Text">Core signal fields (direction, confidence, action) are write-once. Any modification attempt is logged in the audit table.</div>
         </div>
         <div class="tr-transparency-item">
-          <div class="tr-transparency-label" data-i18n="t3Label">Live Data Only</div>
-          <div class="tr-transparency-text" data-i18n="t3Text">Performance metrics exclude any backtested or simulated predictions. Only real-time live signals count toward the statistics.</div>
+          <div class="tr-transparency-label" data-i18n="t3Label">Transparent Data Policy</div>
+          <div class="tr-transparency-text" data-i18n="t3Text">Performance metrics include live pre-market signals (since March 2026) and clearly-labelled historical simulation signals. Simulated rows are tagged SIM in the prediction log. No future price data was used at any point.</div>
         </div>
         <div class="tr-transparency-item">
           <div class="tr-transparency-label" data-i18n="t4Label">Market-Sourced Returns</div>
@@ -305,11 +306,7 @@
     <div class="tr-disclaimer">
       <strong data-i18n="disclaimerTitle">Important Disclaimer:</strong>
       <span data-i18n="disclaimerText">
-        All performance metrics are derived exclusively from live, pre-market predictions with immutable timestamps.
-        No backtested, simulated, or backfilled data is included in these statistics.
-        Past prediction accuracy does not guarantee future performance.
-        Xmore signals are for informational purposes and do not constitute investment advice.
-        Capital invested in equities is subject to market risk.
+        Performance metrics combine live pre-market predictions (since March 2026) and historical simulation signals generated using the same agent logic on past EGX price data. Simulated signals are clearly tagged SIM in the prediction log. No future price data was used at any point — all signals reflect only information available before that day's market open. Past performance does not guarantee future results. Xmore signals are for informational purposes and do not constitute investment advice.
       </span>
       <div id="trDateRange" style="margin-top:6px;font-size:10px;"></div>
     </div>
