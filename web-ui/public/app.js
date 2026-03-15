@@ -335,6 +335,9 @@ const TRANSLATIONS = {
         snapshotMaxDd30d: 'Max Drawdown (30D)',
         snapshotWinRate30d: 'Rolling Win Rate (30D)',
         snapshotTrades: 'Total Live Trades',
+        marketRegime: 'Market Regime',
+        signalMix30d: '30d signals',
+        viewFullAnalysis: 'Full Analysis →',
         consensusSignal: 'Consensus Signal',
         agreement: 'Agreement',
         recentAccuracySymbol: 'Recent Accuracy',
@@ -657,6 +660,9 @@ const TRANSLATIONS = {
         snapshotMaxDd30d: 'أقصى تراجع (30 يوم)',
         snapshotWinRate30d: 'نسبة الفوز المتحركة (30 يوم)',
         snapshotTrades: 'إجمالي الصفقات الحية',
+        marketRegime: 'نظام السوق',
+        signalMix30d: 'إشارات 30 يوم',
+        viewFullAnalysis: 'التحليل الكامل →',
         consensusSignal: 'إشارة الإجماع',
         agreement: 'نسبة الاتفاق',
         recentAccuracySymbol: 'الدقة الحديثة',
@@ -984,6 +990,7 @@ async function switchLanguage() {
     loadEvaluations();
     loadPrices();
     loadGlobalSnapshotBar();
+    loadRegimeBanner();
 }
 
 function applyLanguage() {
@@ -1512,6 +1519,60 @@ async function loadGlobalSnapshotBar() {
     }
 }
 
+async function loadRegimeBanner() {
+    try {
+        const res = await fetch('/api/track-record/regime-stats');
+        if (!res.ok) return;
+        const data = await res.json();
+        const el = document.getElementById('regimeBanner');
+        if (!el || !data || !data.regimes) return;
+
+        // Find current regime (most recent data)
+        const regimes = data.regimes;
+        if (!regimes.length) return;
+
+        // Pick dominant regime by most recent win rate
+        const best = regimes.sort((a, b) => (b.total_signals || 0) - (a.total_signals || 0))[0];
+        const currentRegime = best?.regime || 'Unknown';
+        const regimeClass = currentRegime === 'Calm' ? 'regime-calm'
+                          : currentRegime === 'Turbulent' ? 'regime-turbulent'
+                          : currentRegime === 'Crisis' ? 'regime-crisis'
+                          : 'regime-unknown';
+
+        // Signal distribution
+        let distHtml = '';
+        try {
+            const distRes = await fetch('/api/track-record/signal-distribution?days=30');
+            if (distRes.ok) {
+                const distData = await distRes.json();
+                const summary = distData?.summary || {};
+                const total = (summary.BUY || 0) + (summary.SELL || 0) + (summary.HOLD || 0);
+                if (total > 0) {
+                    const buyPct = Math.round((summary.BUY || 0) / total * 100);
+                    const sellPct = Math.round((summary.SELL || 0) / total * 100);
+                    distHtml = `
+                        <span class="regime-sep">|</span>
+                        <span class="regime-dist">
+                            <span class="regime-dist-buy">↑ ${buyPct}%</span>
+                            <span class="regime-dist-sell">↓ ${sellPct}%</span>
+                            <span class="regime-dist-label">${t('signalMix30d') || '30d signals'}</span>
+                        </span>
+                    `;
+                }
+            }
+        } catch (_) {}
+
+        el.innerHTML = `
+            <span class="regime-dot ${regimeClass}"></span>
+            <span class="regime-label">${t('marketRegime') || 'Market Regime'}:</span>
+            <span class="regime-value ${regimeClass}">${currentRegime}</span>
+            ${distHtml}
+            <a href="/track-record#regime" class="regime-link">${t('viewFullAnalysis') || 'Full Analysis →'}</a>
+        `;
+        el.style.display = 'flex';
+    } catch (_) {}
+}
+
 // ============================================
 // LOAD DATA ON PAGE LOAD
 // ============================================
@@ -1523,6 +1584,7 @@ window.addEventListener('load', async () => {
         initTabs();
         loadTradingViewTicker();
         loadGlobalSnapshotBar();
+        loadRegimeBanner();
 
         // Show skeletons before data loads (Upgrade 4)
         showSkeleton('predictions', 'predictions');

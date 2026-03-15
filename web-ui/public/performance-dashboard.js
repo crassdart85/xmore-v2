@@ -324,6 +324,7 @@ function buildTransparency(summary, history) {
             <button class="perf-action-btn" onclick="loadMorePredictions()">${pt('showMore')}</button>
         </div>
         <div class="integrity-progress progress-fill"><span style="width:${progress}%"></span><em>${g.total_predictions || 0}/100</em></div>
+        <a href="/track-record#methodology" class="perf-methodology-link">View walk-forward backtest methodology →</a>
     `);
 }
 

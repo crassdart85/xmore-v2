@@ -610,4 +610,173 @@ router.get('/predictions/export', async (req, res) => {
 });
 
 
+// ═══════════════════════════════════════════════════════════════
+// GET /api/track-record/signal-distribution?days=90
+// ═══════════════════════════════════════════════════════════════
+router.get('/signal-distribution', async (req, res) => {
+  const days = Math.min(parseInt(req.query.days) || 90, 365);
+  try {
+    // Overall counts
+    const counts = await dbAll(`
+      SELECT action,
+             COUNT(*) AS total,
+             SUM(CASE WHEN ok = ${boolFalse() === 'FALSE' ? 'TRUE' : '1'} THEN 1 ELSE 0 END) AS correct
+      FROM trade_recommendations
+      WHERE recommendation_date >= ${isPostgres
+        ? `NOW() - INTERVAL '${days} days'`
+        : `date('now', '-${days} days')`}
+        AND action IN ('BUY','SELL','HOLD')
+      GROUP BY action
+    `);
+    // Daily signal counts for the last 30 days (for trend line)
+    const daily = await dbAll(`
+      SELECT recommendation_date AS date,
+             SUM(CASE WHEN action='BUY'  THEN 1 ELSE 0 END) AS buy_count,
+             SUM(CASE WHEN action='SELL' THEN 1 ELSE 0 END) AS sell_count,
+             SUM(CASE WHEN action='HOLD' THEN 1 ELSE 0 END) AS hold_count,
+             COUNT(*) AS total_count
+      FROM trade_recommendations
+      WHERE recommendation_date >= ${isPostgres
+        ? `NOW() - INTERVAL '30 days'`
+        : `date('now', '-30 days')`}
+      GROUP BY recommendation_date
+      ORDER BY recommendation_date ASC
+    `);
+    const totals = { BUY: 0, SELL: 0, HOLD: 0 };
+    const wins   = { BUY: 0, SELL: 0, HOLD: 0 };
+    for (const r of counts) {
+      const k = r.action;
+      totals[k] = parseInt(r.total)   || 0;
+      wins[k]   = parseInt(r.correct) || 0;
+    }
+    res.json({ totals, wins, daily: daily.map(r => ({
+      date: r.date, buy: parseInt(r.buy_count)||0,
+      sell: parseInt(r.sell_count)||0, hold: parseInt(r.hold_count)||0,
+    }))});
+  } catch (err) {
+    if (isTableMissing(err)) return res.json({ totals:{BUY:0,SELL:0,HOLD:0}, wins:{BUY:0,SELL:0,HOLD:0}, daily:[] });
+    console.error('[track-record] /signal-distribution', err);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// GET /api/track-record/sector-accuracy?days=90
+// ═══════════════════════════════════════════════════════════════
+router.get('/sector-accuracy', async (req, res) => {
+  const days = Math.min(parseInt(req.query.days) || 90, 365);
+  try {
+    let rows;
+    if (isPostgres) {
+      rows = await dbAll(`
+        SELECT COALESCE(s.sector_en, 'Other') AS sector,
+               COUNT(*) AS signal_count,
+               SUM(CASE WHEN tr.actual_return_pct > 0 AND tr.action='BUY'  THEN 1
+                        WHEN tr.actual_return_pct < 0 AND tr.action='SELL' THEN 1
+                        ELSE 0 END) AS win_count,
+               ${round('AVG(tr.actual_return_pct)')} AS avg_return,
+               ${round('AVG(tr.alpha_vs_benchmark)')} AS avg_alpha
+        FROM trade_recommendations tr
+        LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol
+        WHERE tr.recommendation_date >= NOW() - INTERVAL '${days} days'
+          AND tr.action IN ('BUY','SELL')
+          AND tr.actual_return_pct IS NOT NULL
+        GROUP BY COALESCE(s.sector_en, 'Other')
+        HAVING COUNT(*) >= 3
+        ORDER BY avg_return DESC
+        LIMIT 15
+      `);
+    } else {
+      rows = await dbAll(`
+        SELECT COALESCE(s.sector_en, 'Other') AS sector,
+               COUNT(*) AS signal_count,
+               SUM(CASE WHEN tr.actual_return_pct > 0 AND tr.action='BUY'  THEN 1
+                        WHEN tr.actual_return_pct < 0 AND tr.action='SELL' THEN 1
+                        ELSE 0 END) AS win_count,
+               ROUND(AVG(tr.actual_return_pct),4) AS avg_return,
+               ROUND(AVG(tr.alpha_vs_benchmark),4) AS avg_alpha
+        FROM trade_recommendations tr
+        LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol
+        WHERE tr.recommendation_date >= date('now', '-${days} days')
+          AND tr.action IN ('BUY','SELL')
+          AND tr.actual_return_pct IS NOT NULL
+        GROUP BY COALESCE(s.sector_en, 'Other')
+        HAVING COUNT(*) >= 3
+        ORDER BY avg_return DESC
+        LIMIT 15
+      `);
+    }
+    res.json(rows.map(r => ({
+      sector:       r.sector,
+      signal_count: parseInt(r.signal_count) || 0,
+      win_count:    parseInt(r.win_count)    || 0,
+      win_rate:     r.signal_count > 0 ? parseFloat((r.win_count / r.signal_count).toFixed(4)) : 0,
+      avg_return:   parseFloat(r.avg_return) || 0,
+      avg_alpha:    parseFloat(r.avg_alpha)  || 0,
+    })));
+  } catch (err) {
+    if (isTableMissing(err)) return res.json([]);
+    console.error('[track-record] /sector-accuracy', err);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════
+// GET /api/track-record/regime-stats
+// ═══════════════════════════════════════════════════════════════
+router.get('/regime-stats', async (req, res) => {
+  try {
+    // Join trade_recommendations with regime_log on date
+    let rows;
+    if (isPostgres) {
+      rows = await dbAll(`
+        SELECT COALESCE(rl.regime, 'Unknown') AS regime,
+               COUNT(*) AS signal_count,
+               SUM(CASE WHEN tr.actual_return_pct > 0 AND tr.action='BUY'  THEN 1
+                        WHEN tr.actual_return_pct < 0 AND tr.action='SELL' THEN 1
+                        ELSE 0 END) AS win_count,
+               ${round('AVG(tr.actual_return_pct)')} AS avg_return,
+               ${round('AVG(tr.alpha_vs_benchmark)')} AS avg_alpha
+        FROM trade_recommendations tr
+        LEFT JOIN regime_log rl ON rl.date = tr.recommendation_date
+        WHERE tr.action IN ('BUY','SELL')
+          AND tr.actual_return_pct IS NOT NULL
+        GROUP BY COALESCE(rl.regime, 'Unknown')
+        ORDER BY signal_count DESC
+      `);
+    } else {
+      rows = await dbAll(`
+        SELECT COALESCE(rl.regime, 'Unknown') AS regime,
+               COUNT(*) AS signal_count,
+               SUM(CASE WHEN tr.actual_return_pct > 0 AND tr.action='BUY'  THEN 1
+                        WHEN tr.actual_return_pct < 0 AND tr.action='SELL' THEN 1
+                        ELSE 0 END) AS win_count,
+               ROUND(AVG(tr.actual_return_pct),4) AS avg_return,
+               ROUND(AVG(tr.alpha_vs_benchmark),4) AS avg_alpha
+        FROM trade_recommendations tr
+        LEFT JOIN regime_log rl ON rl.date = tr.recommendation_date
+        WHERE tr.action IN ('BUY','SELL')
+          AND tr.actual_return_pct IS NOT NULL
+        GROUP BY COALESCE(rl.regime, 'Unknown')
+        ORDER BY signal_count DESC
+      `);
+    }
+    res.json(rows.map(r => ({
+      regime:       r.regime,
+      signal_count: parseInt(r.signal_count) || 0,
+      win_count:    parseInt(r.win_count)    || 0,
+      win_rate:     r.signal_count > 0 ? parseFloat((r.win_count / r.signal_count).toFixed(4)) : 0,
+      avg_return:   parseFloat(r.avg_return) || 0,
+      avg_alpha:    parseFloat(r.avg_alpha)  || 0,
+    })));
+  } catch (err) {
+    if (isTableMissing(err)) return res.json([]);
+    console.error('[track-record] /regime-stats', err);
+    res.status(500).json({ error: 'Failed' });
+  }
+});
+
+
 module.exports = { router, attachDb };

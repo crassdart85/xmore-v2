@@ -68,6 +68,30 @@ const I18N = {
     backtestNote: 'Note: Walk-forward backtest results are separate from the live prediction log above. They measure the ML agent\'s historical edge on past data — not real capital deployed.',
     backtestEmpty: 'Backtest results will appear after the first Sunday run.',
     colAccuracy: 'Accuracy', colDirAcc: 'Directional Acc.', colSignalPnl: 'Signal P&L', colLastRun: 'Last Run',
+    signalFeedTitle: 'LIVE SIGNAL FEED',
+    signalFeedDesc: 'The 20 most recent signals, each with an immutable timestamp showing exactly when it was generated — before market open.',
+    distTitle: 'SIGNAL DISTRIBUTION — UP / DOWN / HOLD',
+    distDesc: 'How the system splits its calls. A healthy signal engine is not always bullish — it holds and shorts when the data warrants it.',
+    sectorTitle: 'ACCURACY BY SECTOR',
+    sectorDesc: 'Which EGX sectors does Xmore read best? Win rate and average return per sector over the selected period.',
+    regimeTitle: 'PERFORMANCE BY MARKET REGIME',
+    regimeDesc: "Xmore's HMM model classifies the market into Calm, Turbulent, and Crisis regimes. Signals are gated or downgraded in adverse regimes. This table shows accuracy per regime — proving the gate works.",
+    methodCompTitle: 'TWO WAYS TO MEASURE EDGE — WHAT THEY MEAN',
+    simpleBacktest: 'Simple Backtest',
+    simpleBacktestDesc: 'Trains a model on all available history, then tests it on the same data. Can look impressive but may just be memorising the past. Common in retail platforms.',
+    simpleVerdict: 'Risk: overfitting',
+    walkForward: 'Walk-Forward Validation',
+    walkForwardDesc: 'Trains on 90 days of data, tests on the next 20 days it has never seen. Rolls forward in 10-day steps. The model is always tested on truly unseen data — the institutional standard.',
+    wfVerdict: 'Out-of-sample. Institutional grade.',
+    colSector: 'Sector',
+    colWinRate2: 'Win Rate',
+    colAvgReturn: 'Avg Return',
+    colSignals2: 'Signals',
+    colRegime: 'Regime',
+    regimeCalm: 'Calm',
+    regimeTurb: 'Turbulent',
+    regimeCrisis: 'Crisis',
+    regimeUnknown: 'Unknown',
   },
   ar: {
     back: '← الرئيسية',
@@ -133,6 +157,30 @@ const I18N = {
     backtestNote: 'ملاحظة: نتائج الاختبار الخلفي منفصلة عن سجل التوقعات الحية أعلاه. تقيس الأفضلية التاريخية لعامل التعلم الآلي على بيانات الماضي — وليس رأس مال حقيقي مستثمر.',
     backtestEmpty: 'ستظهر نتائج الاختبار الخلفي بعد أول تشغيل يوم الأحد.',
     colAccuracy: 'الدقة', colDirAcc: 'الدقة الاتجاهية', colSignalPnl: 'ربح/خسارة الإشارة', colLastRun: 'آخر تشغيل',
+    signalFeedTitle: 'آخر الإشارات',
+    signalFeedDesc: 'آخر 20 إشارة مع الطابع الزمني الدقيق لوقت توليدها قبل افتتاح السوق.',
+    distTitle: 'توزيع الإشارات — صعود / هبوط / انتظار',
+    distDesc: 'كيف يوزع النظام توصياته. النظام السليم لا يكون دائماً متفائلاً.',
+    sectorTitle: 'الدقة حسب القطاع',
+    sectorDesc: 'أي قطاعات بورصة مصر يقرأها Xmore بشكل أفضل؟',
+    regimeTitle: 'الأداء حسب نظام السوق',
+    regimeDesc: 'يصنف نموذج HMM السوق إلى: هادئ، متقلب، وأزمة. الإشارات تُوقف أو تُخفَّض في الأنظمة السلبية.',
+    methodCompTitle: 'طريقتان لقياس الميزة',
+    simpleBacktest: 'اختبار بسيط',
+    simpleBacktestDesc: 'يدرب النموذج على كل التاريخ ثم يختبره على نفس البيانات. قد يبدو جيداً لكنه يحفظ الماضي فقط.',
+    simpleVerdict: 'خطر: تجهيز زائد',
+    walkForward: 'التحقق المتدحرج',
+    walkForwardDesc: 'يدرب على 90 يوم ويختبر على 20 يوم لم يرها من قبل. يتحرك للأمام بخطوات 10 أيام. المعيار المؤسسي.',
+    wfVerdict: 'خارج العينة. درجة مؤسسية.',
+    colSector: 'القطاع',
+    colWinRate2: 'نسبة الفوز',
+    colAvgReturn: 'متوسط العائد',
+    colSignals2: 'الإشارات',
+    colRegime: 'النظام',
+    regimeCalm: 'هادئ',
+    regimeTurb: 'متقلب',
+    regimeCrisis: 'أزمة',
+    regimeUnknown: 'غير معروف',
   }
 };
 
@@ -207,8 +255,17 @@ function loadAll() {
   loadAgents();
   loadStocks();
   loadBacktest();
+  loadSignalFeed();
+  loadDistribution();
+  loadSectorAccuracy();
+  loadRegimeStats();
   logPage = 1;
   loadLog();
+}
+
+function _activeDays() {
+  const active = document.querySelector('.tr-period-btn.active');
+  return parseInt(active?.dataset.days || 90);
 }
 
 // ── Helpers ────────────────────────────────────────────────────
@@ -762,6 +819,155 @@ async function loadBacktest() {
     container.innerHTML = `<div class="tr-loading">—</div>`;
     console.error('Backtest error:', e);
   }
+}
+
+// ── Signal Feed ────────────────────────────────────────────────
+async function loadSignalFeed() {
+  const el = document.getElementById('trSignalFeed');
+  if (!el) return;
+  try {
+    const data = await fetch(`/api/track-record/predictions?limit=20&page=1`).then(r => r.json());
+    const rows = data.predictions || data.rows || [];
+    if (!rows.length) { el.innerHTML = `<div class="tr-empty" data-i18n="noData">${t('noData')}</div>`; return; }
+    el.innerHTML = rows.map(r => {
+      const sig   = (r.action || r.signal || '').toUpperCase();
+      const cls   = sig === 'BUY' ? 'up' : sig === 'SELL' ? 'down' : 'hold';
+      const hit   = r.is_correct;
+      const conf  = r.confidence ? `${Math.round(r.confidence * 100)}%` : '—';
+      const dt    = r.created_at || r.prediction_date || '';
+      const time  = dt ? new Date(dt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
+      const date  = dt ? new Date(dt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
+      return `<div class="tr-feed-row">
+        <span class="tr-feed-signal tr-feed-signal--${cls}">${sig}</span>
+        <span class="tr-feed-sym">${r.symbol || ''}</span>
+        <span class="tr-feed-conf">${conf}</span>
+        <span class="tr-feed-time">${date} <strong>${time}</strong></span>
+        ${hit !== null && hit !== undefined
+          ? `<span class="tr-feed-hit tr-feed-hit--${hit ? 'win':'loss'}">${hit ? '✓' : '✗'}</span>`
+          : '<span class="tr-feed-hit tr-feed-hit--pending">…</span>'}
+      </div>`;
+    }).join('');
+  } catch (e) {
+    el.innerHTML = '';
+  }
+}
+
+// ── Signal Distribution Chart ──────────────────────────────
+async function loadDistribution() {
+  const wrap = document.getElementById('trDistWrap');
+  if (!wrap) return;
+  try {
+    const days = _activeDays();
+    const data = await fetch(`/api/track-record/signal-distribution?days=${days}`).then(r => r.json());
+    const { totals, wins } = data;
+    const total = (totals.BUY || 0) + (totals.SELL || 0) + (totals.HOLD || 0);
+    if (!total) { wrap.innerHTML = `<div class="tr-empty">${t('noData')}</div>`; return; }
+
+    // Stats cards
+    const statsEl = document.getElementById('trDistStats');
+    if (statsEl) {
+      statsEl.innerHTML = ['BUY','SELL','HOLD'].map(k => {
+        const cnt  = totals[k] || 0;
+        const pct  = total > 0 ? Math.round(cnt / total * 100) : 0;
+        const wPct = cnt > 0 ? Math.round((wins[k] || 0) / cnt * 100) : 0;
+        const cls  = k === 'BUY' ? 'up' : k === 'SELL' ? 'down' : 'hold';
+        return `<div class="tr-dist-stat">
+          <div class="tr-dist-stat-sig tr-dist-stat-sig--${cls}">${k}</div>
+          <div class="tr-dist-stat-pct">${pct}%</div>
+          <div class="tr-dist-stat-cnt">${cnt} signals</div>
+          ${k !== 'HOLD' ? `<div class="tr-dist-stat-win">${wPct}% accurate</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // Chart
+    const canvas = document.getElementById('distChart');
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (canvas._chartInst) canvas._chartInst.destroy();
+    canvas._chartInst = new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: ['BUY', 'SELL', 'HOLD'],
+        datasets: [{ data: [totals.BUY||0, totals.SELL||0, totals.HOLD||0],
+          backgroundColor: ['#00c853','#ff1744','#888'],
+          borderWidth: 0 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: '#ccc', padding: 16 }},
+                   tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/total*100)}%)` }}}
+      }
+    });
+  } catch (e) { console.warn('loadDistribution', e); }
+}
+
+// ── Sector Accuracy ────────────────────────────────────────
+async function loadSectorAccuracy() {
+  const el = document.getElementById('trSectorBars');
+  if (!el) return;
+  try {
+    const days = _activeDays();
+    const rows = await fetch(`/api/track-record/sector-accuracy?days=${days}`).then(r => r.json());
+    if (!rows.length) { el.innerHTML = `<div class="tr-empty">${t('noData')}</div>`; return; }
+    const maxWR = Math.max(...rows.map(r => r.win_rate), 0.01);
+    el.innerHTML = `<div class="tr-sector-grid">` + rows.map(r => {
+      const wrPct   = Math.round(r.win_rate * 100);
+      const barW    = Math.round(r.win_rate / maxWR * 100);
+      const retCls  = r.avg_return >= 0 ? 'pos' : 'neg';
+      const accCls  = wrPct >= 60 ? 'acc-green' : wrPct >= 50 ? 'acc-amber' : 'acc-red';
+      return `<div class="tr-sector-row">
+        <span class="tr-sector-name">${r.sector}</span>
+        <div class="tr-sector-bar-wrap">
+          <div class="tr-sector-bar ${accCls}" style="width:${barW}%"></div>
+        </div>
+        <span class="tr-sector-wr ${accCls}">${wrPct}%</span>
+        <span class="tr-sector-ret ${retCls}">${r.avg_return >= 0 ? '+' : ''}${(r.avg_return*100).toFixed(2)}%</span>
+        <span class="tr-sector-cnt">${r.signal_count}</span>
+      </div>`;
+    }).join('') + `</div>
+    <div class="tr-sector-legend">
+      <span class="acc-green">≥60% win</span>
+      <span class="acc-amber">50–60%</span>
+      <span class="acc-red">&lt;50%</span>
+      <span style="margin-left:12px;color:#888">· return = avg 1D pct</span>
+    </div>`;
+  } catch (e) { el.innerHTML = ''; console.warn('loadSectorAccuracy', e); }
+}
+
+// ── Regime Stats ───────────────────────────────────────────
+async function loadRegimeStats() {
+  const el = document.getElementById('trRegimeTable');
+  if (!el) return;
+  try {
+    const rows = await fetch('/api/track-record/regime-stats').then(r => r.json());
+    if (!rows.length) { el.innerHTML = `<div class="tr-empty">${t('noData')}</div>`; return; }
+    const REGIME_COLOR = { Calm: '#00c853', Turbulent: '#ffab00', Crisis: '#ff1744', Unknown: '#888' };
+    const REGIME_AR    = { Calm: 'هادئ', Turbulent: 'متقلب', Crisis: 'أزمة', Unknown: 'غير معروف' };
+    el.innerHTML = `<table class="tr-table">
+      <thead><tr>
+        <th>${t('colRegime')}</th>
+        <th>${t('colSignals2')}</th>
+        <th>${t('colWinRate2')}</th>
+        <th>${t('colAvgReturn')}</th>
+        <th>${t('kpiAlpha')}</th>
+      </tr></thead>
+      <tbody>${rows.map(r => {
+        const wrPct  = Math.round(r.win_rate * 100);
+        const accCls = wrPct >= 60 ? 'acc-green' : wrPct >= 50 ? 'acc-amber' : 'acc-red';
+        const retCls = r.avg_return >= 0 ? 'pos' : 'neg';
+        const dot    = REGIME_COLOR[r.regime] || '#888';
+        const label  = _LANG === 'ar' ? (REGIME_AR[r.regime] || r.regime) : r.regime;
+        return `<tr>
+          <td><span class="tr-regime-dot" style="background:${dot}"></span>${label}</td>
+          <td>${r.signal_count}</td>
+          <td class="${accCls}">${wrPct}%</td>
+          <td class="${retCls}">${r.avg_return >= 0 ? '+' : ''}${(r.avg_return*100).toFixed(2)}%</td>
+          <td class="${r.avg_alpha >= 0 ? 'pos' : 'neg'}">${r.avg_alpha >= 0 ? '+' : ''}${(r.avg_alpha*100).toFixed(2)}%</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    <p class="tr-regime-note">${t('regimeDesc')}</p>`;
+  } catch (e) { el.innerHTML = ''; console.warn('loadRegimeStats', e); }
 }
 
 // ── CSV Export ─────────────────────────────────────────────────

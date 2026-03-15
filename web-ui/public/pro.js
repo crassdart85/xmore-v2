@@ -9,7 +9,7 @@ const _PRO_I18N = {
     modalTitle: 'Sign in to Xmore', login: 'Login', signUp: 'Sign Up',
     email: 'Email', password: 'Password',
     tracked: 'TRACKED', upToday: 'UP', downToday: 'DOWN',
-    bestWinRate: 'BEST AGENT WIN RATE', lastData: 'LAST DATA',
+    bestWinRate: 'BEST AGENT WIN RATE', lastData: 'LAST DATA', marketRegime: 'Market Regime',
     egx30Title: 'EGX 30 — Intraday', egxBlueChips: 'EGX Blue Chips',
     topGainers: 'Top Gainers', topLosers: 'Top Losers',
     colSymbol: 'Symbol', colClose: 'Close', colChg: 'Chg%',
@@ -36,7 +36,7 @@ const _PRO_I18N = {
     modalTitle: 'تسجيل الدخول إلى Xmore', login: 'دخول', signUp: 'تسجيل',
     email: 'البريد الإلكتروني', password: 'كلمة المرور',
     tracked: 'متتبع', upToday: 'صاعد', downToday: 'هابط',
-    bestWinRate: 'أفضل معدل نجاح', lastData: 'آخر بيانات',
+    bestWinRate: 'أفضل معدل نجاح', lastData: 'آخر بيانات', marketRegime: 'نظام السوق',
     egx30Title: 'EGX 30 — خلال اليوم', egxBlueChips: 'أسهم EGX الكبرى',
     topGainers: 'أعلى الرابحين', topLosers: 'أعلى الخاسرين',
     colSymbol: 'الرمز', colClose: 'الإغلاق', colChg: 'التغير%',
@@ -343,6 +343,16 @@ function renderStats(prices, stats, perf) {
         winAgentEl.textContent = best.agent_name.replace('_Agent', '').replace('_', ' ');
     }
   }
+
+  // Regime pill — fetch asynchronously
+  fetch('/api/track-record/regime-stats').then(r => r.ok ? r.json() : null).then(data => {
+    const el = document.getElementById('statRegime');
+    if (!el || !data?.regimes?.length) return;
+    const top = data.regimes.sort((a, b) => (b.total_signals || 0) - (a.total_signals || 0))[0];
+    const regime = top?.regime || '—';
+    el.textContent = regime;
+    el.className = 'pro-stat-val regime-val ' + (regime === 'Calm' ? 'green' : regime === 'Crisis' ? 'red' : 'amber');
+  }).catch(() => {});
 }
 
 // ── renderMovers ──────────────────────────────────────────────────────────────

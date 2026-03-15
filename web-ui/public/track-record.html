@@ -91,6 +91,15 @@
       </div>
     </div>
 
+    <!-- Live Signal Feed -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="signalFeedTitle">LIVE SIGNAL FEED</div>
+      <p class="tr-section-desc" data-i18n="signalFeedDesc">The 20 most recent signals, each with an immutable timestamp showing exactly when it was generated — before market open.</p>
+      <div class="tr-signal-feed" id="trSignalFeed">
+        <div class="tr-loading" data-i18n="loading">Loading…</div>
+      </div>
+    </div>
+
     <!-- Rolling Windows -->
     <div class="tr-section">
       <div class="tr-section-title" data-i18n="rollingTitle">ROLLING PERFORMANCE WINDOWS</div>
@@ -100,6 +109,16 @@
       </p>
       <div class="tr-rolling-cards" id="trRollingCards">
         <div class="tr-loading" data-i18n="loading">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Signal Distribution -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="distTitle">SIGNAL DISTRIBUTION — UP / DOWN / HOLD</div>
+      <p class="tr-section-desc" data-i18n="distDesc">How the system splits its calls. A healthy signal engine is not always bullish — it holds and shorts when the data warrants it.</p>
+      <div class="tr-dist-wrap" id="trDistWrap">
+        <canvas id="distChart" height="220"></canvas>
+        <div class="tr-dist-stats" id="trDistStats"></div>
       </div>
     </div>
 
@@ -181,6 +200,42 @@
           <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loading…</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Sector Accuracy -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="sectorTitle">ACCURACY BY SECTOR</div>
+      <p class="tr-section-desc" data-i18n="sectorDesc">Which EGX sectors does Xmore read best? Win rate and average return per sector over the selected period.</p>
+      <div class="tr-sector-bars" id="trSectorBars">
+        <div class="tr-loading" data-i18n="loading">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Regime-Aware Performance -->
+    <div class="tr-section">
+      <div class="tr-section-title" data-i18n="regimeTitle">PERFORMANCE BY MARKET REGIME</div>
+      <p class="tr-section-desc" data-i18n="regimeDesc">Xmore's HMM model classifies the market into Calm, Turbulent, and Crisis regimes. Signals are gated or downgraded in adverse regimes. This table shows accuracy per regime — proving the gate works.</p>
+      <div id="trRegimeTable">
+        <div class="tr-loading" data-i18n="loading">Loading…</div>
+      </div>
+    </div>
+
+    <!-- Methodology Comparison -->
+    <div class="tr-section tr-section--method">
+      <div class="tr-section-title" data-i18n="methodCompTitle">TWO WAYS TO MEASURE EDGE — WHAT THEY MEAN</div>
+      <div class="tr-method-compare">
+        <div class="tr-method-card tr-method-card--simple">
+          <div class="tr-method-card-label" data-i18n="simpleBacktest">Simple Backtest</div>
+          <div class="tr-method-card-body" data-i18n="simpleBacktestDesc">Trains a model on all available history, then tests it on the same data. Can look impressive but may just be memorising the past. Common in retail platforms.</div>
+          <div class="tr-method-card-verdict tr-method-card-verdict--warn" data-i18n="simpleVerdict">Risk: overfitting</div>
+        </div>
+        <div class="tr-method-divider">vs</div>
+        <div class="tr-method-card tr-method-card--wf">
+          <div class="tr-method-card-label" data-i18n="walkForward">Walk-Forward Validation</div>
+          <div class="tr-method-card-body" data-i18n="walkForwardDesc">Trains on 90 days of data, tests on the next 20 days it has never seen. Rolls forward in 10-day steps. The model is always tested on truly unseen data — the institutional standard.</div>
+          <div class="tr-method-card-verdict tr-method-card-verdict--good" data-i18n="wfVerdict">Out-of-sample. Institutional grade.</div>
+        </div>
+      </div>
     </div>
 
     <!-- Walk-Forward Backtest Results -->
