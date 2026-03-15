@@ -62,7 +62,7 @@ const I18N = {
       { label: 'Avg 1D Return', key: 'avg_return_1d', desc: 'Mean return per signal, next-day basis.', negate: false },
       { label: 'Avg Alpha', key: 'avg_alpha_1d', desc: 'Mean excess return vs EGX30 per signal.', negate: false },
     ],
-    rollingLabels: { win_rate: 'Win Rate', alpha: 'Avg Alpha', sharpe_ratio: 'Sharpe', max_drawdown: 'Max DD', volatility: 'Volatility', profit_factor: 'Profit Factor', trades: 'Signals' },
+    rollingLabels: { win_rate: 'Win Rate', alpha: 'Avg Alpha', sharpe_ratio: 'Sharpe', sortino_ratio: 'Sortino', max_drawdown: 'Max DD', profit_factor: 'Profit Factor', beat_benchmark: 'Beat EGX30', trades: 'Signals' },
     backtestTitle: 'WALK-FORWARD BACKTEST — ML AGENT VALIDATION',
     backtestDesc: 'The ML RandomForest agent is independently validated using a walk-forward methodology: the model is trained on historical EGX data, then tested on the following unseen period — simulating real-world deployment without look-ahead bias. Results are recalculated every Sunday. This section shows out-of-sample accuracy, directional accuracy, and the hypothetical signal P&L for each stock the ML agent has evaluated.',
     backtestNote: 'Note: Walk-forward backtest results are separate from the live prediction log above. They measure the ML agent\'s historical edge on past data — not real capital deployed.',
@@ -127,7 +127,7 @@ const I18N = {
       { label: 'متوسط العائد 1 يوم', key: 'avg_return_1d', desc: 'متوسط العائد لكل إشارة على أساس يومي.', negate: false },
       { label: 'متوسط الألفا', key: 'avg_alpha_1d', desc: 'متوسط العائد الزائد مقارنة بـ EGX30 لكل إشارة.', negate: false },
     ],
-    rollingLabels: { win_rate: 'معدل النجاح', alpha: 'متوسط الألفا', sharpe_ratio: 'شارب', max_drawdown: 'أقصى تراجع', volatility: 'التقلب', profit_factor: 'معامل الربح', trades: 'إشارات' },
+    rollingLabels: { win_rate: 'معدل النجاح', alpha: 'متوسط الألفا', sharpe_ratio: 'شارب', sortino_ratio: 'سورتينو', max_drawdown: 'أقصى تراجع', profit_factor: 'معامل الربح', beat_benchmark: 'تفوّق EGX30', trades: 'إشارات' },
     backtestTitle: 'اختبار السير للأمام — التحقق من عامل التعلم الآلي',
     backtestDesc: 'يخضع عامل RandomForest للتعلم الآلي للتحقق المستقل باستخدام منهجية السير للأمام: يُدرَّب النموذج على بيانات البورصة المصرية التاريخية، ثم يُختبر على الفترة التالية غير المرئية — محاكاةً للنشر الفعلي دون انحياز للمستقبل. تُعاد حساب النتائج كل يوم أحد. يعرض هذا القسم دقة خارج العينة والدقة الاتجاهية وربح/خسارة الإشارة الافتراضية لكل سهم.',
     backtestNote: 'ملاحظة: نتائج الاختبار الخلفي منفصلة عن سجل التوقعات الحية أعلاه. تقيس الأفضلية التاريخية لعامل التعلم الآلي على بيانات الماضي — وليس رأس مال حقيقي مستثمر.',
@@ -260,12 +260,15 @@ async function loadSummary() {
       const alpha   = w.alpha_vs_egx30 ?? null;
       const sharpe  = w.sharpe_ratio ?? null;
 
+      const beat = w.beat_benchmark_pct ?? null;
+      const pf   = w.profit_factor ?? null;
+
       setKpi('kpiTotal', total, '', 'neutral');
       setKpi('kpiWin',   winRate != null ? winRate + '%' : '—', '', winRate >= 55 ? 'positive' : winRate >= 45 ? 'neutral' : 'negative');
       setKpi('kpiAlpha', alpha != null ? fmtPct(alpha, 3) : '—', '', alpha > 0 ? 'positive' : 'negative');
-      setKpi('kpiBeat',  '—', '', 'neutral');
+      setKpi('kpiBeat',  beat != null ? beat + '%' : '—', '', beat >= 55 ? 'positive' : beat >= 45 ? 'neutral' : 'negative');
       setKpi('kpiSharpe', sharpe != null ? fmt(sharpe, 2) : '—', '', sharpe >= 1 ? 'positive' : sharpe >= 0 ? 'neutral' : 'negative');
-      setKpi('kpiPF',    '—', '', 'neutral');
+      setKpi('kpiPF',    pf != null ? fmt(pf, 2) : '—', '', pf >= 1.5 ? 'positive' : pf >= 1 ? 'neutral' : 'negative');
 
       // Hero dates
       const since = data.live_since;
@@ -343,15 +346,19 @@ async function renderRolling(rolling) {
     const winRate = w.win_rate    ?? (w.directional_accuracy != null ? parseFloat((w.directional_accuracy * 100).toFixed(1)) : null);
     const alpha   = w.alpha       ?? w.alpha_vs_egx30 ?? null;
     const sharpe  = w.sharpe_ratio ?? null;
+    const sortino = w.sortino_ratio ?? null;
     const maxDD   = w.max_drawdown ?? null;
     const pf      = w.profit_factor ?? null;
+    const beat    = w.beat_benchmark_pct ?? null;
     const rows = [
-      { label: labels.trades,       val: trades,    fmt: v => v },
-      { label: labels.win_rate,     val: winRate,   fmt: v => v != null ? v + '%' : '—' },
-      { label: labels.alpha,        val: alpha,     fmt: v => v != null ? fmtPct(v, 3) : '—', cls: colorClass(alpha) },
-      { label: labels.sharpe_ratio, val: sharpe,    fmt: v => v != null ? fmt(v, 2) : '—',    cls: colorClass(sharpe) },
-      { label: labels.max_drawdown, val: maxDD,     fmt: v => v != null ? '-' + fmt(v, 2) + '%' : '—', cls: 'neg' },
-      { label: labels.profit_factor,val: pf,        fmt: v => v != null ? fmt(v, 2) : '—',    cls: colorClass(pf != null ? pf - 1 : null) },
+      { label: labels.trades,        val: trades,   fmt: v => v },
+      { label: labels.win_rate,      val: winRate,  fmt: v => v != null ? v + '%' : '—',              cls: winRate >= 50 ? 'pos' : 'neg' },
+      { label: labels.beat_benchmark,val: beat,     fmt: v => v != null ? v + '%' : '—',              cls: beat >= 50 ? 'pos' : 'neg' },
+      { label: labels.alpha,         val: alpha,    fmt: v => v != null ? fmtPct(v, 3) : '—',         cls: colorClass(alpha) },
+      { label: labels.sharpe_ratio,  val: sharpe,   fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(sharpe) },
+      { label: labels.sortino_ratio, val: sortino,  fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(sortino) },
+      { label: labels.max_drawdown,  val: maxDD,    fmt: v => v != null ? '-' + fmt(v, 2) + '%' : '—',cls: 'neg' },
+      { label: labels.profit_factor, val: pf,       fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(pf != null ? pf - 1 : null) },
     ];
     return `<div class="tr-rolling-card">
       <div class="tr-rolling-card-title">${label} — ${trades} signals</div>
