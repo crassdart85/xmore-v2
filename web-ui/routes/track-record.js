@@ -430,7 +430,7 @@ router.get('/predictions', async (req, res) => {
                 tr.alpha_1d                              AS alpha,
                 tr.was_correct,
                 tr.is_live,
-                cr.is_simulated,
+                tr.is_simulated,
                 cr.conviction
             FROM trade_recommendations tr
             ${isPostgres ? 'LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol' : ''}

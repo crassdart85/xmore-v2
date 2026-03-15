@@ -457,7 +457,16 @@ def create_tables():
                 UNIQUE(snapshot_date, agent_name)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
+        if DATABASE_URL:
+            cursor.execute("SAVEPOINT create_idx_agent_perf")
+            try:
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
+                cursor.execute("RELEASE SAVEPOINT create_idx_agent_perf")
+            except Exception as e:
+                cursor.execute("ROLLBACK TO SAVEPOINT create_idx_agent_perf")
+                logger.warning(f"idx_agent_perf_date index skipped (concurrent run / deadlock): {e}")
+        else:
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
 
         # Add missing columns to agent_performance_daily (correct_30d/90d were absent from original schema)
         agent_perf_columns = [
