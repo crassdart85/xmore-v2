@@ -65,7 +65,9 @@ router.get('/summary', async (req, res) => {
             : `recommendation_date >= date('now', '-' || ${ph(1)} || ' days')`;
 
         let rows = [], simCount = 0, earliestLive = null;
+        let metricsIncludeSimulated = false;
         try {
+            // Try live-only first (is_simulated = FALSE OR NULL)
             rows = await dbAll(`
                 SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
                 FROM trade_recommendations
@@ -75,18 +77,23 @@ router.get('/summary', async (req, res) => {
                 AND ${dateFilter}
                 ORDER BY recommendation_date ASC
             `, [days]);
-            // Count excluded simulated rows for data_transparency
-            try {
-                const simRow = await dbGet(`
-                    SELECT COUNT(*) AS cnt,
-                           MIN(CASE WHEN ${simFilter} THEN recommendation_date END) AS earliest
+            // If live-only returns nothing, fall back to all evaluated rows (including simulated)
+            if (!rows.length) {
+                metricsIncludeSimulated = true;
+                rows = await dbAll(`
+                    SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
                     FROM trade_recommendations
-                    WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}
+                    WHERE actual_next_day_return IS NOT NULL
+                    AND ${liveFilter}
+                    AND ${dateFilter}
+                    ORDER BY recommendation_date ASC
                 `, [days]);
-                simCount = rows.length; // live count is rows.length
+            }
+            // Count simulated rows for data_transparency
+            try {
                 const totalRow = await dbGet(`SELECT COUNT(*) AS cnt FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}`, [days]);
-                simCount = parseInt(totalRow?.cnt || 0) - rows.length;
-                earliestLive = simRow?.earliest || null;
+                simCount = parseInt(totalRow?.cnt || 0) - (metricsIncludeSimulated ? 0 : rows.length);
+                earliestLive = rows[0]?.recommendation_date || null;
             } catch (_) {}
         } catch (e) {
             if (isTableMissing(e)) return res.json({ available: false, message: 'No resolved predictions yet.' });
@@ -231,10 +238,13 @@ router.get('/summary', async (req, res) => {
 
         const institutional_metrics = {
             data_transparency: {
-                live_signals_count:         rows.length,
-                simulated_signals_excluded: simCount,
-                metrics_basis:              'live_only',
-                earliest_live_signal_date:  earliestLive,
+                signals_in_metrics:         rows.length,
+                simulated_signals_excluded: metricsIncludeSimulated ? 0 : simCount,
+                metrics_basis:              metricsIncludeSimulated ? 'live_and_simulated' : 'live_only',
+                earliest_signal_date:       earliestLive,
+                note: metricsIncludeSimulated
+                    ? 'No live-only evaluated signals found; metrics include historical simulation data.'
+                    : 'Metrics based on live pipeline predictions only.',
             },
             sharpe_ratio:             Number(calcSharpeEgx(allR).toFixed(2)),
             sortino_ratio:            Number(calcSortinoEgx(allR).toFixed(2)),
