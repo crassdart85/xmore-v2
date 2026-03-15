@@ -335,6 +335,7 @@ async function initializeDatabase() {
       ['buy_guide','REAL'], ['pivot','REAL'], ['r1','REAL'], ['r2','REAL'], ['s1','REAL'], ['s2','REAL'],
       ['benchmark_1d_return','REAL'], ['alpha_1d','REAL'], ['benchmark_5d_return','REAL'], ['alpha_5d','REAL'],
       ['patterns','TEXT'],
+      ['is_live','BOOLEAN DEFAULT FALSE'], ['is_simulated','BOOLEAN DEFAULT FALSE'],
     ]) {
       try { await pool.query(`ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS ${col[0]} ${col[1]}`); } catch(_) {}
     }
