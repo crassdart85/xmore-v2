@@ -192,8 +192,9 @@ All performance metrics are pre-computed by the Python pipeline and stored in Po
 | FR-PERF-4 | System shall compute rolling 30-day Sharpe sparkline |
 | FR-PERF-5 | Track record page shall be publicly accessible without authentication |
 | FR-PERF-6 | Track record shall display equity curve (cumulative return vs EGX30), KPI strip with rolling windows (30/60/90 days), per-agent methodology cards, walk-forward backtest results, top stocks by alpha, and a paginated prediction log |
-| FR-PERF-7 | Prediction log shall be exportable as CSV |
+| FR-PERF-7 | Prediction log shall be exportable as CSV via server-side `/api/track-record/predictions/export` endpoint |
 | FR-PERF-8 | Walk-forward backtest shall run weekly (every Sunday) for all tracked symbols and store results in `backtest_results` table |
+| FR-PERF-9 | A dedicated track record API router (`web-ui/routes/track-record.js`) shall serve 7 endpoints under `/api/track-record/*`, showing all live signals including historical simulation rows; simulated rows shall be labelled in the UI with a SIM badge |
 
 ### 5.8 Investor Scoring (FR-SCORE)
 

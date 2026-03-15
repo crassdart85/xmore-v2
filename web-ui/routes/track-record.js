@@ -1,7 +1,9 @@
 /**
  * Track Record API Routes
  * Public investor-facing endpoints. No authentication required.
- * All queries filter is_simulated = FALSE — live signals only.
+ * Shows all live signals (is_live = TRUE OR NULL), including historical simulation
+ * rows clearly tagged is_simulated = TRUE. The frontend labels simulated rows with
+ * an amber SIM badge. KPI metrics include all evaluated predictions.
  */
 
 const express = require('express');
@@ -34,20 +36,10 @@ function boolTrue()   { return isPostgres ? 'TRUE' : '1'; }
 function boolFalse()  { return isPostgres ? 'FALSE' : '0'; }
 
 // Filters applied to every data query on this page
-function simFilter()  {
-    return isPostgres
-        ? '(is_simulated = FALSE OR is_simulated IS NULL)'
-        : '(is_simulated = 0 OR is_simulated IS NULL)';
-}
 function liveFilter() {
     return isPostgres
         ? '(is_live = TRUE OR is_live IS NULL)'
         : '(is_live = 1 OR is_live IS NULL)';
-}
-function trSimFilter() { // table-prefixed for JOINs
-    return isPostgres
-        ? '(tr.is_simulated = FALSE OR tr.is_simulated IS NULL)'
-        : '(tr.is_simulated = 0 OR tr.is_simulated IS NULL)';
 }
 function dateWindow(days, col = 'recommendation_date') {
     return isPostgres
@@ -71,7 +63,6 @@ async function kpiForWindow(days) {
             FROM trade_recommendations
             WHERE was_correct IS NOT NULL
             AND ${liveFilter()}
-            AND ${simFilter()}
             AND ${dateWindow(days)}
         `);
         if (!row || !parseInt(row.total)) return null;
@@ -104,10 +95,10 @@ router.get('/summary', async (req, res) => {
                 MIN(recommendation_date) AS live_since,
                 MAX(recommendation_date) AS last_updated
             FROM trade_recommendations
-            WHERE ${liveFilter()} AND ${simFilter()}
+            WHERE ${liveFilter()}
         `);
 
-        // Simulated count (excluded)
+        // Simulated count (included, labelled SIM in UI)
         let simCount = 0;
         try {
             const sc = await dbGet(`
@@ -158,10 +149,11 @@ router.get('/summary', async (req, res) => {
                 '90d': w90,
             },
             data_transparency: {
-                live_signals_count:         liveCount,
-                simulated_signals_excluded: simCount,
-                metrics_basis:              'live_only',
-                earliest_live_signal_date:  counts?.live_since || null,
+                total_signals_count:        liveCount,
+                simulated_signals_included: simCount,
+                metrics_basis:              'live_and_simulated',
+                earliest_signal_date:       counts?.live_since || null,
+                note:                       'Simulated rows are clearly tagged SIM in the prediction log.',
             },
         });
     } catch (err) {
@@ -186,7 +178,6 @@ router.get('/equity-curve', async (req, res) => {
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
             AND ${liveFilter()}
-            AND ${simFilter()}
             AND ${dateWindow(days)}
             GROUP BY recommendation_date
             ORDER BY recommendation_date ASC
@@ -288,7 +279,6 @@ router.get('/top-stocks', async (req, res) => {
             FROM trade_recommendations tr
             ${isPostgres ? 'LEFT JOIN egx30_stocks s ON tr.symbol = s.symbol' : ''}
             WHERE tr.was_correct IS NOT NULL
-            AND ${trSimFilter()}
             AND ${isPostgres ? '(tr.is_live = TRUE OR tr.is_live IS NULL)' : '(tr.is_live = 1 OR tr.is_live IS NULL)'}
             AND ${dateWindow(days, 'tr.recommendation_date')}
             GROUP BY tr.symbol${isPostgres ? ', s.name_en, s.sector_en' : ''}
@@ -402,7 +392,6 @@ router.get('/predictions', async (req, res) => {
 
         const conds = [
             liveFilter().replace(/\b(is_live)\b/g, 'tr.is_live'),
-            trSimFilter(),
             dateWindow(days, 'tr.recommendation_date'),
         ];
         const params = [];
@@ -501,7 +490,6 @@ router.get('/predictions/export', async (req, res) => {
 
         const conds = [
             liveFilter().replace(/\b(is_live)\b/g, 'tr.is_live'),
-            trSimFilter(),
             dateWindow(days, 'tr.recommendation_date'),
         ];
         const params = [];

@@ -178,8 +178,11 @@ All surfaces: **bilingual EN/AR with full RTL layout**.
 - Per-agent methodology cards
 - Walk-forward backtest results table (sorted by directional accuracy)
 - Top stocks by alpha generated
-- Paginated prediction log with CSV export
+- Paginated prediction log with server-side CSV export
 - Risk metrics: Sharpe, Sortino, Calmar, beta, drawdown details
+- Transparency grid: live signal count, simulated signal count, data basis
+
+**Data transparency:** Historical simulation rows (is_simulated=TRUE) are shown with an amber **SIM** badge. Institutional metrics (`/api/performance-v2/summary`) filter to live-only. Track record page shows all to maximise the display dataset.
 
 Public URL — share directly with prospective investors: `/track-record`
 
