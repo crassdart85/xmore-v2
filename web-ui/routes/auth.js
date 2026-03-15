@@ -8,7 +8,7 @@
  */
 
 const express = require('express');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { generateToken, authMiddleware, COOKIE_OPTIONS } = require('../middleware/auth');
 
