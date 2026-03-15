@@ -332,16 +332,23 @@ Banking, Real Estate & Construction, Telecommunications, Food & Beverage,
 Chemicals & Petrochemicals, Steel & Industrial, Ports & Logistics,
 Healthcare, Fintech, Textiles, Energy, Cement, Tourism & Hospitality
 
-XMORE KNOWLEDGE SOURCES (FOR THIS ASSISTANT):
-- Live market data: latest prices, top gainers/losers, most active volume
-- Consensus signals + per-stock sentiment snapshots
-- Admin-uploaded market reports (RAG chunks)
-- ETF factsheets & prospectuses (RAG chunks)
-- News RAG chunks with recency weighting (news_rag_chunks)
-- Custom news sources + manual feeds (custom_source_articles)
-- Event intelligence + structured events (if embedded into rag_chunks)
-- Portfolio forecasts + actual performance (user-specific, when logged in)
-- FX history and alert signals (when tables exist)
+XMORE PLATFORM — METHODOLOGY & DATA SOURCES:
+- Multi-agent AI stack: ML (LightGBM per-symbol), RSI (adaptive periods), MA (adaptive periods), Sentiment (Gemini + recency decay), Volume, Risk agents
+- Consensus engine: 4-layer pipeline — Layer 1 (agent vote), Layer 2 (weighted average), Layer 3 (risk filter), Layer 4 (regime gate: Crisis blocks UP signals; Turbulent downgrades conviction)
+- Market regime detection: Gaussian HMM on EGX30 price history — states: Calm, Turbulent, Crisis
+- Walk-forward validation: 90-day train / 20-day test / 10-day step rolling windows across all 6 agents, validated weekly
+- Confidence gating: signals with max(probability) < 60% are converted to HOLD before publication
+- Live knowledge sources injected into this assistant:
+  * Latest prices, top gainers/losers, most active volume
+  * Consensus signals + per-stock sentiment snapshots
+  * Current market regime (Calm/Turbulent/Crisis) + 30-day signal distribution
+  * Walk-forward backtest accuracy summary (latest weekly run)
+  * Agent performance leaderboard (accuracy per agent)
+  * Admin-uploaded market reports (RAG chunks, vector search)
+  * ETF factsheets & prospectuses (RAG chunks)
+  * News RAG chunks with recency-weighted semantic search
+  * Custom news sources + manual feeds
+  * Portfolio forecasts + actual vs forecast performance (user-specific, when logged in)
 `.trim();
 
 // ── POST /api/rag/chat — General EGX research chat ──────────────────────────
@@ -583,6 +590,74 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 }).join(', ');
                 marketDataBlock += `\n  ETF Prices: ${etfLine}`;
             }
+
+            // 4e. Current market regime
+            try {
+                const regimeRow = await dbAll(
+                    `SELECT regime, date FROM regime_log ORDER BY date DESC LIMIT 5`,
+                    []
+                );
+                if (regimeRow.length > 0) {
+                    const current = regimeRow[0];
+                    const history = regimeRow.map(r => `${r.date}:${r.regime}`).join(', ');
+                    marketDataBlock += `\n  Market Regime: ${current.regime} (as of ${current.date}) — recent: ${history}`;
+                }
+            } catch (_e) { /* regime_log missing */ }
+
+            // 4f. 30-day signal distribution
+            try {
+                const cutoff = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+                const sigDist = await dbAll(
+                    `SELECT prediction, COUNT(*) AS cnt
+                     FROM trade_recommendations
+                     WHERE recommendation_date >= ${ph(1)}
+                     GROUP BY prediction`,
+                    [cutoff]
+                );
+                if (sigDist.length > 0) {
+                    const total = sigDist.reduce((s, r) => s + Number(r.cnt), 0);
+                    const parts = sigDist.map(r => `${r.prediction}: ${r.cnt} (${Math.round(Number(r.cnt)/total*100)}%)`).join(', ');
+                    marketDataBlock += `\n  30-day Signal Distribution: ${parts} — total ${total} signals`;
+                }
+            } catch (_e) { /* trade_recommendations missing */ }
+
+            // 4g. Walk-forward backtest summary (latest run)
+            try {
+                const btLog = await dbAll(
+                    `SELECT run_date, symbols_tested, windows_run, overall_accuracy, agent_summaries_json
+                     FROM backtest_run_log ORDER BY run_date DESC LIMIT 1`,
+                    []
+                );
+                if (btLog.length > 0) {
+                    const bt = btLog[0];
+                    let agentSummary = '';
+                    try {
+                        const agents = JSON.parse(bt.agent_summaries_json || '[]');
+                        agentSummary = agents.map(a => `${a.agent}: ${(a.accuracy*100).toFixed(1)}%`).join(', ');
+                    } catch (_) {}
+                    marketDataBlock += `\n  Walk-Forward Backtest (${bt.run_date}): ${bt.symbols_tested} stocks, ${bt.windows_run} windows — accuracy: ${(bt.overall_accuracy*100).toFixed(1)}%${agentSummary ? ` | by agent: ${agentSummary}` : ''}`;
+                }
+            } catch (_e) { /* backtest_run_log missing */ }
+
+            // 4h. Agent performance leaderboard
+            try {
+                const agentPerf = await dbAll(
+                    _isPostgres
+                    ? `SELECT DISTINCT ON (agent_name) agent_name, accuracy, total_evaluated, date
+                       FROM agent_performance_daily ORDER BY agent_name, date DESC`
+                    : `SELECT ap.agent_name, ap.accuracy, ap.total_evaluated, ap.date
+                       FROM agent_performance_daily ap
+                       INNER JOIN (SELECT agent_name, MAX(date) AS md FROM agent_performance_daily GROUP BY agent_name) l
+                         ON ap.agent_name = l.agent_name AND ap.date = l.md`,
+                    []
+                );
+                if (agentPerf.length > 0) {
+                    const sorted = [...agentPerf].sort((a, b) => (b.accuracy || 0) - (a.accuracy || 0));
+                    const perfLine = sorted.map(a => `${a.agent_name}: ${(parseFloat(a.accuracy||0)*100).toFixed(1)}%`).join(', ');
+                    marketDataBlock += `\n  Agent Accuracy (live): ${perfLine}`;
+                }
+            } catch (_e) { /* agent_performance_daily missing */ }
+
         } catch (_e) { /* silently skip if tables missing */ }
 
         // 5. Portfolio context for logged-in user
