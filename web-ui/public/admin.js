@@ -308,8 +308,8 @@ const srcInterval = document.getElementById('srcInterval');
 const TYPE_LABELS = {
     url: 'URL',
     rss: 'RSS',
-    telegram_public: 'Telegram Public',
-    telegram_bot: 'Telegram Bot',
+    telegram_public: 'Public Channel',
+    telegram_bot: 'Bot Channel',
     manual: 'Manual',
 };
 
@@ -370,7 +370,7 @@ async function saveSource() {
         return setSourceStatus('URL / channel is required for this source type.', true);
     }
     if (type === 'telegram_bot' && (!botToken || !chatId)) {
-        return setSourceStatus('Bot token and Chat ID are required for Telegram Bot sources.', true);
+        return setSourceStatus('Bot token and Chat ID are required for Bot Channel sources.', true);
     }
 
     setSourceStatus('Saving…');
@@ -446,7 +446,7 @@ function updateSourceFormFields() {
     srcUrlRow.style.display = (needsUrl || needsBot) ? '' : 'none';
     srcBotRow.style.display = needsBot ? '' : 'none';
     srcChatRow.style.display = needsBot ? '' : 'none';
-    srcUrl.placeholder = type === 'telegram_public' ? 't.me/channelname' : 'https://…';
+    srcUrl.placeholder = 'https://…';
 }
 
 function bindSourceForm() {
@@ -481,7 +481,7 @@ function setWaStatus(msg, isError = false) {
 
 async function submitWhatsApp() {
     const text = (waText.value || '').trim();
-    const sourceName = (waSourceName.value || 'Telegram').trim();
+    const sourceName = (waSourceName.value || 'Manual Feed').trim();
 
     if (!text && !waSelectedFile) {
         return setWaStatus('Please paste text or select a file.', true);
@@ -584,7 +584,7 @@ const TAB_DEFS = [
     { id: 'tab-reports',           label: 'Reports' },
     { id: 'tab-prices',            label: 'Prices' },
     { id: 'tab-sources',           label: 'News Sources' },
-    { id: 'tab-telegram',          label: 'Telegram Feed' },
+    { id: 'tab-telegram',          label: 'Manual Feed' },
     { id: 'tab-forecast-accuracy', label: 'Forecast Accuracy' },
     { id: 'tab-ask-reports',       label: 'Ask Reports' },
     { id: 'tab-settings',          label: 'Settings' },

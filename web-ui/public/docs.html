@@ -1001,14 +1001,14 @@
         <span class="docs-section-badge badge-live" data-i18n="s8-badge">ETF Tab</span>
       </div>
       <p class="docs-desc" data-i18n="s8-desc">
-        Tracks both <strong>Egyptian EGX-listed ETFs</strong> (via Mubasher) and <strong>Global ETFs</strong>
+        Tracks both <strong>Egyptian EGX-listed ETFs</strong> (EGX-listed) and <strong>Global ETFs</strong>
         (EGPT, EEMX, FM, FRDM via yfinance). Holdings, premium/discount, NAV, and fund volume.
       </p>
 
       <div class="feature-grid">
         <div class="feature-card">
           <h4 data-i18n="s8-c1-h">EGX Local ETFs</h4>
-          <p data-i18n="s8-c1-p">~13 funds from Mubasher. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.</p>
+          <p data-i18n="s8-c1-p">~13 EGX-listed funds. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.</p>
         </div>
         <div class="feature-card">
           <h4 data-i18n="s8-c2-h">Global ETFs</h4>
@@ -1327,8 +1327,8 @@ const i18n = {
     's7-c1-h': "EGX Market Overview", 's7-c1-p': "TradingView Advanced Chart (EGX30, 5-min area) + EGX blue-chip stock table with live consensus signals.", 's7-c2-h': "Top Gainers / Losers", 's7-c2-p': "8-row tables of the session's best and worst performers with signal badges and confidence.", 's7-c3-h': "Sector Performance", 's7-c3-p': "Horizontal bar chart of average % return per sector, colour-coded green/red.", 's7-c4-h': "FX Rates Strip", 's7-c4-p': "Live USD/EGP, USD/SAR, SAR/EGP in the header bar. Updates hourly.", 's7-c5-h': "Bilingual (EN/AR)", 's7-c5-p': "Full RTL Arabic support via <code>proToggleLang()</code>. All section labels and signals switch language.", 's7-c6-h': "Macro Brief", 's7-c6-p': "Gemini-powered grounded macro overview with web citations. Auto-loads on page open, refreshes hourly.",
     's7b-title': "Macro Brief", 's7b-badge': "Pro + Chat", 's7b-desc': "A Gemini 2.5 Flash grounded web search producing a structured Egyptian macro overview: EGX index level, USD/EGP rate, inflation, interest rate, key market movers, and 3 web source citations.",
     's7b-c1-h': "Grounded web search", 's7b-c1-p': "Uses Google Search grounding to pull real-time macro data — not just the training cutoff.", 's7b-c2-h': "Web source pills", 's7b-c2-p': "Clickable blue citation pills for each web source used in the response.", 's7b-c3-h': "Auto-refresh", 's7b-c3-p': "Macro Brief auto-loads on Pro page open and refreshes every 60 minutes via <code>setInterval</code>.", 's7b-c4-h': "Chat quick chip", 's7b-c4-p': '"Macro Brief" quick chip in the Market Assistant chat widget also triggers the macro endpoint.',
-    's8-title': "ETF Dashboard", 's8-badge': "ETF Tab", 's8-desc': "Tracks both <strong>Egyptian EGX-listed ETFs</strong> (via Mubasher) and <strong>Global ETFs</strong> (EGPT, EEMX, FM, FRDM via yfinance). Holdings, premium/discount, NAV, and fund volume.",
-    's8-c1-h': "EGX Local ETFs", 's8-c1-p': "~13 funds from Mubasher. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.", 's8-c2-h': "Global ETFs", 's8-c2-p': "NYSE/NASDAQ-listed Egypt-focused ETFs (EGPT, EEMX, etc.). Price table with daily change and volume.", 's8-c3-h': "Holdings Modal", 's8-c3-p': "Click any ETF card to see the top holdings with weight %, last updated date, and country exposure.", 's8-c4-h': "ETF RAG Documents", 's8-c4-p': "PDF factsheets uploaded in Admin are embedded via Gemini and searchable via the Market Assistant.",
+    's8-title': "ETF Dashboard", 's8-badge': "ETF Tab", 's8-desc': "Tracks both <strong>Egyptian EGX-listed ETFs</strong> (EGX-listed) and <strong>Global ETFs</strong> (EGPT, EEMX, FM, FRDM via yfinance). Holdings, premium/discount, NAV, and fund volume.",
+    's8-c1-h': "EGX Local ETFs", 's8-c1-p': "~13 EGX-listed funds. Price, NAV, premium/discount, fund volume. Card grid with holdings modal.", 's8-c2-h': "Global ETFs", 's8-c2-p': "NYSE/NASDAQ-listed Egypt-focused ETFs (EGPT, EEMX, etc.). Price table with daily change and volume.", 's8-c3-h': "Holdings Modal", 's8-c3-p': "Click any ETF card to see the top holdings with weight %, last updated date, and country exposure.", 's8-c4-h': "ETF RAG Documents", 's8-c4-p': "PDF factsheets uploaded in Admin are embedded via Gemini and searchable via the Market Assistant.",
     's9-title': "Market Assistant", 's9-badge': "Chat Widget", 's9-desc': "An AI chat widget powered by Gemini with full context injection: live prices, consensus signals, sentiment, ETF prices, and — when logged in — your personal forecast portfolio data.",
     's9-c1-h': "Live market context", 's9-c1-p': "Every message includes today's gainers/losers, volume leaders, sentiment, and consensus signals as background context.", 's9-c2-h': "Portfolio context", 's9-c2-p': "When signed in, the assistant knows your forecast portfolios and can answer questions about positions vs forecasts.", 's9-c3-h': "News-aware", 's9-c3-p': "Arabic-aware search extracts keywords from your question to find relevant recent headlines before answering.", 's9-c4-h': "Quick chips", 's9-c4-p': '"Macro Brief", "Top Movers", "Buy Signals" — one-tap prompts for common questions.',
     's11-title': "Time Machine", 's11-badge': "History Tab", 's11-desc': "Replay any past trading session. Select a historical date to see what the AI agents predicted that day, alongside actual price outcomes — useful for backtesting your own strategy.",

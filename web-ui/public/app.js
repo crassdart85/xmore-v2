@@ -2933,7 +2933,7 @@ function _etfBuildCard(i, group) {
         const underlying = i.underlying_index || '—';
         const issuer = i.issuer || '—';
         const navVal  = _fmtNum(i.nav_value);
-        const ret3m   = _fmtPct(i.pct_change);   // stored as 3-month return from Mubasher
+        const ret3m   = _fmtPct(i.pct_change);   // stored as 3-month return from EGX data
         const ret3mCls = _pctClass(i.pct_change);
         return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
             <div class="etf-card-header">

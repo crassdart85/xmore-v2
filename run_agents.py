@@ -396,6 +396,13 @@ def execute():
         risk_cfg = getattr(config, 'RISK_CONFIG', None)
 
         with get_connection() as conn:
+            # Pull latest Telegram posts into news table before agents read sentiment
+            try:
+                from engines.telegram_reader import run_telegram_pipeline
+                run_telegram_pipeline(conn, hours_back=25)
+            except Exception as _tg_err:
+                print(f"[TELEGRAM] Skipped: {_tg_err}")
+
             # Load accuracy-adjusted weights once for the entire run
             dynamic_weights = _load_dynamic_weights(conn)
             base_weights = getattr(config, 'AGENT_WEIGHTS', {})

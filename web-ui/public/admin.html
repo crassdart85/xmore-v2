@@ -54,7 +54,7 @@
                 <button class="admin-tab-btn" data-tab="tab-reports" role="tab">Reports</button>
                 <button class="admin-tab-btn" data-tab="tab-prices" role="tab">Prices</button>
                 <button class="admin-tab-btn" data-tab="tab-sources" role="tab">News Sources</button>
-                <button class="admin-tab-btn" data-tab="tab-telegram" role="tab">Telegram Feed</button>
+                
                 <button class="admin-tab-btn" data-tab="tab-forecast-accuracy" role="tab">Forecast Accuracy</button>
                 <button class="admin-tab-btn" data-tab="tab-ask-reports" role="tab">Ask Reports</button>
                 <button class="admin-tab-btn" data-tab="tab-settings" role="tab">Settings</button>
@@ -169,15 +169,13 @@
                     <ul class="admin-info-list">
                         <li><strong>RSS Feed</strong> — most news sites provide an RSS URL (e.g. <em>https://example.com/feed</em>). This is the most reliable source type.</li>
                         <li><strong>Single URL</strong> — fetches one specific article page. Use for one-off items.</li>
-                        <li><strong>Telegram Public Channel</strong> — enter the channel handle (e.g. <em>t.me/channelname</em>). Only public channels work here.</li>
-                        <li><strong>Telegram Bot</strong> — for private channels via a bot. Requires a bot token and chat ID.</li>
                         <li>Use <strong>Pause</strong> to stop fetching without deleting the source or its articles.</li>
                         <li>Use <strong>Fetch Now</strong> to pull new items immediately instead of waiting for the schedule.</li>
                     </ul>
                 </div>
                 <button class="admin-info-dismiss" aria-label="Dismiss" data-dismiss="tab-sources">&#10005;</button>
             </div>
-            <p class="admin-muted">Add URLs, RSS feeds, or Telegram channels to feed into the sentiment pipeline.</p>
+            <p class="admin-muted">Add URLs and RSS feeds to feed into the sentiment pipeline.</p>
 
             <!-- Add source form -->
             <div id="addSourcePanel" style="display:none; margin-bottom:16px;">
@@ -187,14 +185,12 @@
                         <select id="srcType">
                             <option value="rss">RSS Feed</option>
                             <option value="url">Single URL (article)</option>
-                            <option value="telegram_public">Telegram Public Channel</option>
-                            <option value="telegram_bot">Telegram Bot</option>
                             <option value="manual">Manual (no auto-fetch)</option>
                         </select>
                     </div>
                     <div class="admin-form-row">
                         <label for="srcName">Label</label>
-                        <input id="srcName" type="text" placeholder="e.g. EGX Telegram Channel">
+                        <input id="srcName" type="text" placeholder="e.g. EGX News Feed">
                     </div>
                     <div class="admin-form-row" id="srcUrlRow">
                         <label for="srcUrl">URL / Channel</label>
@@ -306,17 +302,17 @@
         </section>
 
         <!-- ================================================ -->
-        <!-- TELEGRAM MANUAL FEED                             -->
+        <!-- MANUAL NEWS FEED                                 -->
         <!-- ================================================ -->
         <section class="section admin-tab-panel" id="tab-telegram" role="tabpanel">
-            <h2>Telegram Manual Feed</h2>
+            <h2>Manual News Feed</h2>
             <div class="admin-info-banner" data-hint="tab-telegram">
                 <span class="admin-info-icon">&#9432;</span>
                 <div class="admin-info-body">
-                    <strong>What is this?</strong> A manual ingestion lane for content from private Telegram groups or any source that can't be auto-fetched.
+                    <strong>What is this?</strong> A manual ingestion lane for content from any source that can't be auto-fetched.
                     <ul class="admin-info-list">
                         <li>Paste forwarded message text directly into the text box, or upload a screenshot / PDF.</li>
-                        <li>Set a <strong>Source Label</strong> to group these articles together in the sentiment dashboard (e.g. "Telegram — EGX Insiders").</li>
+                        <li>Set a <strong>Source Label</strong> to group these articles together in the sentiment dashboard (e.g. "EGX News — Manual").</li>
                         <li>Arabic and English are both supported — language is detected automatically.</li>
                         <li>Submitted content goes through the same sentiment pipeline as auto-fetched articles.</li>
                         <li>You can submit text and a file at the same time — both will be processed.</li>
@@ -324,12 +320,12 @@
                 </div>
                 <button class="admin-info-dismiss" aria-label="Dismiss" data-dismiss="tab-telegram">&#10005;</button>
             </div>
-            <p class="admin-muted">Paste messages from private Telegram groups or upload screenshots and PDFs (Arabic or English). The text is processed through the sentiment pipeline automatically.</p>
+            <p class="admin-muted">Paste content or upload screenshots and PDFs (Arabic or English). The text is processed through the sentiment pipeline automatically.</p>
 
             <div class="admin-source-form">
                 <div class="admin-form-row">
                     <label for="waSourceName">Source Label</label>
-                    <input id="waSourceName" type="text" value="Telegram" placeholder="e.g. Telegram — EGX Group">
+                    <input id="waSourceName" type="text" value="Manual Feed" placeholder="e.g. EGX News — Manual">
                 </div>
                 <div class="admin-form-row">
                     <label for="waText">Paste text</label>

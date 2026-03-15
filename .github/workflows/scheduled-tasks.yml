@@ -63,6 +63,8 @@ env:
   FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
   NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+  TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+  TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
 
 jobs:
   # ──────────────────────────────────────────────
