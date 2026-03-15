@@ -404,22 +404,19 @@ def update_agent_accuracy_snapshot():
         for agent_row in agents:
             agent_name = agent_row["agent_name"]
 
-            # 30-day window
+            # 30-day window — join on prediction_date (the day the rec was made), not target_date
             stats_30 = _query(cursor, """
                 SELECT
                     COUNT(*) AS total,
-                    COUNT(*) FILTER (WHERE sub.was_correct = TRUE) AS correct,
+                    COUNT(*) FILTER (WHERE tr.was_correct = TRUE) AS correct,
                     ROUND(AVG(p.confidence)::numeric, 1) AS avg_conf
                 FROM predictions p
                 JOIN trade_recommendations tr
-                    ON tr.symbol = p.symbol AND tr.recommendation_date = p.target_date
-                CROSS JOIN LATERAL (
-                    SELECT tr.was_correct
-                ) sub
+                    ON tr.symbol = p.symbol AND tr.recommendation_date = p.prediction_date
                 WHERE p.agent_name = %s
-                AND p.target_date >= CURRENT_DATE - 30
+                AND p.prediction_date >= CURRENT_DATE - 30
                 AND tr.was_correct IS NOT NULL
-                AND tr.is_live = TRUE
+                AND (tr.is_live = TRUE OR tr.is_live IS NULL)
             """, [agent_name])
 
             # 90-day window
@@ -429,11 +426,11 @@ def update_agent_accuracy_snapshot():
                     COUNT(*) FILTER (WHERE tr.was_correct = TRUE) AS correct
                 FROM predictions p
                 JOIN trade_recommendations tr
-                    ON tr.symbol = p.symbol AND tr.recommendation_date = p.target_date
+                    ON tr.symbol = p.symbol AND tr.recommendation_date = p.prediction_date
                 WHERE p.agent_name = %s
-                AND p.target_date >= CURRENT_DATE - 90
+                AND p.prediction_date >= CURRENT_DATE - 90
                 AND tr.was_correct IS NOT NULL
-                AND tr.is_live = TRUE
+                AND (tr.is_live = TRUE OR tr.is_live IS NULL)
             """, [agent_name])
 
             s30 = stats_30[0] if stats_30 else {"total": 0, "correct": 0, "avg_conf": 0}
