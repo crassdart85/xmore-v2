@@ -91,13 +91,19 @@ def run_evaluation(pipeline_run_id: str = None):
 
         # 4. Update per-agent accuracy snapshots (PostgreSQL only)
         if DATABASE_URL:
-            update_agent_accuracy_snapshot()
-            print("[Evaluate] Agent accuracy snapshot updated")
+            try:
+                update_agent_accuracy_snapshot()
+                print("[Evaluate] Agent accuracy snapshot updated")
+            except Exception as e:
+                print(f"[Evaluate] Agent snapshot skipped (concurrent run / deadlock): {e}")
 
         # 5. Refresh materialized performance views (PostgreSQL only)
         if DATABASE_URL:
-            refresh_performance_views()
-            print("[Evaluate] Performance views refreshed")
+            try:
+                refresh_performance_views()
+                print("[Evaluate] Performance views refreshed")
+            except Exception as e:
+                print(f"[Evaluate] Performance views skipped: {e}")
 
         print("[Evaluate] Evaluation complete.")
     except Exception as e:
