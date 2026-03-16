@@ -94,9 +94,9 @@ async function loadFxRates() {
     if (!data || data.error) throw new Error(data.error || 'no data');
 
     const fxItems = [
-      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  ? '—' },
-      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  ? '—' },
-      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  ? '—' },
+      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  || '—' },
+      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  || '—' },
+      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  || '—' },
     ];
     const goldItems = data.GOLD_24K_EGP_G ? [
       { label: '🥇 24K/g',   val: data.GOLD_24K_EGP_G?.toFixed(0) + ' EGP' },

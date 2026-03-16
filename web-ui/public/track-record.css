@@ -854,8 +854,19 @@ html, body { overflow-x: hidden; max-width: 100%; }
   gap: 24px;
   align-items: center;
 }
+.tr-dist-chart-box {
+  width: 220px;
+  height: 220px;
+  position: relative;
+  flex-shrink: 0;
+}
+.tr-dist-chart-box canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 @media (max-width: 600px) {
   .tr-dist-wrap { grid-template-columns: 1fr; }
+  .tr-dist-chart-box { width: 180px; height: 180px; margin: 0 auto; }
 }
 .tr-dist-stats {
   display: flex;
