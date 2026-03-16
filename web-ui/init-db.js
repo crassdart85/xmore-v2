@@ -9,10 +9,10 @@ if (!DATABASE_URL) {
   process.exit(0);
 }
 
-// Set a global timeout - exit after 120 seconds no matter what
-const TIMEOUT_MS = 120000;
+// Set a global timeout - exit after 300 seconds no matter what
+const TIMEOUT_MS = 300000;
 const timeoutId = setTimeout(() => {
-  console.error('❌ Database initialization timed out after 120 seconds');
+  console.error('❌ Database initialization timed out after 300 seconds');
   process.exit(1);
 }, TIMEOUT_MS);
 timeoutId.unref(); // Don't keep process alive just for timeout
@@ -51,11 +51,15 @@ async function initializeDatabase() {
     await pool.query('SELECT 1');
     console.log('✅ Connected to PostgreSQL');
 
-    // Set a 5-second lock timeout for every DDL statement in this session.
-    // If a concurrent GH Actions job holds an AccessExclusiveLock we fail
-    // fast (warning) instead of blocking for 120 s and crashing the deploy.
+    // lock_timeout: fail fast if we can't acquire a DDL lock within 5s
+    // (covers concurrent GH Actions jobs holding AccessExclusiveLock).
+    // statement_timeout: also cap the index BUILD time at 30s per statement
+    // (lock_timeout only covers the wait, not the scan/build phase).
+    // Both settings are session-level; with max:1 pool they apply to every
+    // subsequent pool.query() call on this same connection.
     await pool.query("SET lock_timeout = '5s'");
-    console.log('⏱  lock_timeout = 5s');
+    await pool.query("SET statement_timeout = '30s'");
+    console.log('⏱  lock_timeout=5s  statement_timeout=30s');
 
     // Create tables
     console.log('📋 Creating tables...');
@@ -896,7 +900,8 @@ async function initializeDatabase() {
 
     console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals) ready');
 
-    // Seed ALL EGX stocks (~190)
+    // Seed ALL EGX stocks (~190) — disable statement_timeout for this large INSERT
+    await pool.query("SET statement_timeout = 0");
     console.log('🌱 Seeding EGX stocks...');
     await pool.query(`
       INSERT INTO egx30_stocks (symbol, name_en, name_ar, sector_en, sector_ar) VALUES
@@ -1121,6 +1126,9 @@ async function initializeDatabase() {
         updated_at = CURRENT_TIMESTAMP
     `);
     console.log('✅ EGX stocks seeded');
+
+    // Re-enable statement_timeout for index creation (30s per index)
+    await pool.query("SET statement_timeout = '30s'");
 
     // Create indexes
     console.log('📊 Creating indexes...');
