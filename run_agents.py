@@ -631,6 +631,16 @@ def execute():
             traceback.print_exc()
 
         print(f"\n{'='*50}")
+        print("📡 Generating ETF Signals...")
+        try:
+            from engines.agent_etf_signal import run_etf_signals
+            with get_connection() as _etf_conn:
+                n_etf = run_etf_signals(_etf_conn)
+            print(f"[ETF] Generated {n_etf} ETF signals")
+        except Exception as _etf_err:
+            print(f"[ETF] Skipped: {_etf_err}")
+
+        print(f"\n{'='*50}")
         print(f"✅ Pipeline complete! Processed {len(config.ALL_STOCKS)} stocks.")
         print(f"{'='*50}")
 

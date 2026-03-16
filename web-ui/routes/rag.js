@@ -591,6 +591,69 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 marketDataBlock += `\n  ETF Prices: ${etfLine}`;
             }
 
+            // 4d-ii. ETF NAV, premium/discount, AUM, and signals
+            try {
+                const iid = isPostgres ? 'instrument_id' : 'id';
+                const navRows = await dbAll(
+                    isPostgres
+                    ? `SELECT DISTINCT ON (i.symbol) i.symbol, n.nav_unit, p.close_price,
+                         ROUND(((p.close_price - n.nav_unit) / NULLIF(n.nav_unit,0) * 100)::numeric, 2) AS prem_pct
+                       FROM instrument i
+                       JOIN etf_nav n ON n.instrument_id = i.instrument_id
+                       JOIN etf_price_daily p ON p.instrument_id = i.instrument_id
+                       WHERE i.is_active = TRUE AND i.region = 'LOCAL_EGX'
+                       ORDER BY i.symbol, n.nav_date DESC`
+                    : `SELECT i.symbol, n.nav_unit, p.close_price,
+                         ROUND((p.close_price - n.nav_unit) / NULLIF(n.nav_unit,0) * 100, 2) AS prem_pct
+                       FROM instrument i
+                       JOIN etf_nav n ON n.instrument_id = i.id
+                         AND n.nav_date = (SELECT MAX(nav_date) FROM etf_nav WHERE instrument_id = i.id)
+                       JOIN etf_price_daily p ON p.instrument_id = i.id
+                         AND p.trade_date = (SELECT MAX(trade_date) FROM etf_price_daily WHERE instrument_id = i.id)
+                       WHERE i.is_active = 1 AND i.region = 'LOCAL_EGX'`,
+                    []
+                );
+                if (navRows.length > 0) {
+                    const navLine = navRows.map(r => {
+                        const prem = r.prem_pct != null ? ` prem/disc:${r.prem_pct >= 0 ? '+' : ''}${r.prem_pct}%` : '';
+                        return `${r.symbol} NAV:${r.nav_unit}${prem}`;
+                    }).join(', ');
+                    marketDataBlock += `\n  ETF NAV & Premium/Discount: ${navLine}`;
+                }
+                const aumRows = await dbAll(
+                    isPostgres
+                    ? `SELECT DISTINCT ON (fv.instrument_id) i.symbol, fv.aum, fv.asof_date
+                       FROM etf_fund_volume fv JOIN instrument i ON i.instrument_id = fv.instrument_id
+                       WHERE fv.aum IS NOT NULL ORDER BY fv.instrument_id, fv.asof_date DESC`
+                    : `SELECT i.symbol, fv.aum, fv.asof_date
+                       FROM etf_fund_volume fv JOIN instrument i ON i.id = fv.instrument_id
+                       WHERE fv.aum IS NOT NULL
+                         AND fv.asof_date = (SELECT MAX(asof_date) FROM etf_fund_volume WHERE instrument_id = fv.instrument_id)`,
+                    []
+                );
+                if (aumRows.length > 0) {
+                    const sorted = [...aumRows].sort((a, b) => (b.aum || 0) - (a.aum || 0)).slice(0, 5);
+                    marketDataBlock += `\n  ETF Fund Size (AUM): ${sorted.map(r => `${r.symbol}: ${(r.aum/1e6).toFixed(1)}M EGP`).join(', ')}`;
+                }
+                const etfSigRows = await dbAll(
+                    isPostgres
+                    ? `SELECT DISTINCT ON (s.instrument_id) s.symbol, s.signal, s.confidence, s.signal_date
+                       FROM etf_signals s ORDER BY s.instrument_id, s.signal_date DESC`
+                    : `SELECT s.symbol, s.signal, s.confidence, s.signal_date
+                       FROM etf_signals s
+                       WHERE s.signal_date = (SELECT MAX(signal_date) FROM etf_signals s2 WHERE s2.instrument_id = s.instrument_id)`,
+                    []
+                );
+                if (etfSigRows.length > 0) {
+                    const buy  = etfSigRows.filter(s => s.signal === 'UP').map(s => `${s.symbol}(${(parseFloat(s.confidence||0)*100).toFixed(0)}%)`).join(', ');
+                    const sell = etfSigRows.filter(s => s.signal === 'DOWN').map(s => `${s.symbol}(${(parseFloat(s.confidence||0)*100).toFixed(0)}%)`).join(', ');
+                    let line = '';
+                    if (buy)  line += `Bullish ETFs: ${buy}`;
+                    if (sell) line += `${line ? ' | ' : ''}Bearish ETFs: ${sell}`;
+                    if (line) marketDataBlock += `\n  ETF Signals (${etfSigRows[0].signal_date}): ${line}`;
+                }
+            } catch (_etfErr) { /* NAV/AUM/signals tables optional */ }
+
             // 4e. Current market regime
             try {
                 const regimeRow = await dbAll(

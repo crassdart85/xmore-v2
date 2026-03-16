@@ -779,4 +779,37 @@ router.get('/regime-stats', async (req, res) => {
 });
 
 
+// ── GET /api/track-record/etf-signals ────────────────────────────────────────
+router.get('/etf-signals', async (req, res) => {
+  try {
+    const iid = isPostgres ? 'instrument_id' : 'id';
+    const latest = await dbAll(
+      `SELECT s.symbol, s.signal, s.confidence, s.signal_date,
+              s.ma_signal, s.rsi_signal, s.nav_signal, s.momentum_signal,
+              s.rsi_value, s.nav_premium_pct, s.close_price,
+              i.name, i.type, i.region
+       FROM etf_signals s
+       JOIN instrument i ON i.${iid} = s.instrument_id
+       WHERE s.signal_date = (
+           SELECT MAX(s2.signal_date) FROM etf_signals s2
+           WHERE s2.instrument_id = s.instrument_id
+       )
+       ORDER BY s.confidence DESC`,
+      []
+    );
+    const cutoff30 = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+    const dist = await dbAll(
+      `SELECT signal, COUNT(*) AS cnt FROM etf_signals
+       WHERE signal_date >= ${isPostgres ? '$1' : '?'}
+       GROUP BY signal`,
+      [cutoff30]
+    );
+    res.json({ latest, dist });
+  } catch (err) {
+    if (isTableMissing(err)) return res.json({ latest: [], dist: [] });
+    console.error('[track-record] /etf-signals error:', err);
+    res.status(500).json({ error: 'Failed to load ETF signals.' });
+  }
+});
+
 module.exports = { router, attachDb };

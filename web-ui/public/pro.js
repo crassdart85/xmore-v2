@@ -30,6 +30,7 @@ const _PRO_I18N = {
     backtestTitle: 'Walk-Forward Backtest Results', backtestNote: 'Updated weekly · ML agent only',
     colScore: 'Score', btSymbol: 'Symbol', btAcc: 'Accuracy', btDir: 'Directional', btPnl: 'Signal P&L', btRows: 'Rows',
     loading: 'Loading…',
+    etfSignalsTitle: 'ETF & ETP Signals',
   },
   ar: {
     back: '← الرئيسية', signIn: 'دخول', signOut: 'خروج',
@@ -57,6 +58,7 @@ const _PRO_I18N = {
     backtestTitle: 'نتائج الاختبار الزمني', backtestNote: 'تحديث أسبوعي · نموذج ML فقط',
     colScore: 'نقاط', btSymbol: 'الرمز', btAcc: 'الدقة', btDir: 'الاتجاه', btPnl: 'ر/خ الإشارة', btRows: 'الصفوف',
     loading: 'جارٍ التحميل…',
+    etfSignalsTitle: 'إشارات الصناديق',
   },
 };
 
@@ -297,7 +299,8 @@ Promise.all([
   fetch('/api/consensus').then(r => r.json()).catch(() => []),
   fetch('/api/stats').then(r => r.json()).catch(() => ({})),
   fetch('/api/performance').then(r => r.json()).catch(() => []),
-]).then(([prices, stocksData, consensus, stats, perf]) => {
+  fetch('/api/etf/signals').then(r => r.json()).catch(() => []),
+]).then(([prices, stocksData, consensus, stats, perf, etfSignals]) => {
   const stocks = Array.isArray(stocksData) ? stocksData : (stocksData.stocks || []);
   const pricesArr = Array.isArray(prices) ? prices : [];
   const consensusArr = Array.isArray(consensus) ? consensus : [];
@@ -315,6 +318,7 @@ Promise.all([
   renderStats(pricesArr, stats, perfArr);
   renderMovers(pricesArr, stocks, consensusArr);
   renderSectors(pricesArr, stocks);
+  renderEtfSignals(Array.isArray(etfSignals) ? etfSignals : (etfSignals.latest || []));
 });
 
 // ── renderStats ───────────────────────────────────────────────────────────────
@@ -455,6 +459,38 @@ function renderSectors(prices, stocks) {
       <span class="pro-sector-val ${valCls}">${fmtChg(s.avg)}</span>
     </div>`;
   }).join('');
+}
+
+// ── ETF Signals ───────────────────────────────────────────────────────────────
+function renderEtfSignals(signals) {
+  const el = document.getElementById('proEtfSignals');
+  if (!el) return;
+  if (!signals || signals.length === 0) {
+    el.innerHTML = '<p class="pro-empty">No ETF signals yet — signals generate daily.</p>';
+    return;
+  }
+  const rows = signals.map(s => {
+    const cls   = s.signal === 'UP' ? 'sig-up' : s.signal === 'DOWN' ? 'sig-down' : 'sig-hold';
+    const arrow = s.signal === 'UP' ? '↑' : s.signal === 'DOWN' ? '↓' : '—';
+    const conf  = s.confidence ? (parseFloat(s.confidence) * 100).toFixed(0) + '%' : '—';
+    const prem  = s.nav_premium_pct != null
+      ? `<span class="pro-etf-prem ${parseFloat(s.nav_premium_pct) < 0 ? 'disc' : 'prem'}">${parseFloat(s.nav_premium_pct) >= 0 ? '+' : ''}${parseFloat(s.nav_premium_pct).toFixed(1)}%</span>`
+      : '';
+    const rsi   = s.rsi_value != null ? `RSI ${parseFloat(s.rsi_value).toFixed(0)}` : '';
+    return `<div class="pro-etf-card">
+      <div class="pro-etf-top">
+        <span class="pro-etf-sym">${s.symbol || ''}</span>
+        <span class="pro-etf-signal ${cls}">${arrow} ${s.signal}</span>
+      </div>
+      <div class="pro-etf-name">${s.name || s.type || ''}</div>
+      <div class="pro-etf-meta">
+        <span class="pro-etf-conf">Conf: ${conf}</span>
+        ${rsi ? `<span class="pro-etf-rsi">${rsi}</span>` : ''}
+        ${prem}
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML = rows;
 }
 
 // ── Macro brief ───────────────────────────────────────────────────────────────

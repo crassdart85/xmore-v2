@@ -92,6 +92,9 @@ const I18N = {
     regimeTurb: 'Turbulent',
     regimeCrisis: 'Crisis',
     regimeUnknown: 'Unknown',
+    trEtfTitle: 'ETF & ETP Signals',
+    trEtfSub: 'Technical signals for EGX-listed funds based on MA, RSI, and NAV premium/discount.',
+    trEtfEmpty: 'ETF signals generate daily. Check back after the next pipeline run.',
   },
   ar: {
     back: '← الرئيسية',
@@ -181,6 +184,9 @@ const I18N = {
     regimeTurb: 'متقلب',
     regimeCrisis: 'أزمة',
     regimeUnknown: 'غير معروف',
+    trEtfTitle: 'إشارات الصناديق والمتتبعين',
+    trEtfSub: 'إشارات فنية للصناديق المقيدة في البورصة المصرية بناءً على المتوسطات والقوة النسبية والعلاوة على القيمة الصافية.',
+    trEtfEmpty: 'تُولَّد إشارات الصناديق يومياً. تفقد بعد تشغيل الخط التالي.',
   }
 };
 
@@ -259,6 +265,7 @@ function loadAll() {
   loadDistribution();
   loadSectorAccuracy();
   loadRegimeStats();
+  loadEtfSignals();
   logPage = 1;
   loadLog();
 }
@@ -968,6 +975,52 @@ async function loadRegimeStats() {
     </table>
     <p class="tr-regime-note">${t('regimeDesc')}</p>`;
   } catch (e) { el.innerHTML = ''; console.warn('loadRegimeStats', e); }
+}
+
+// ── ETF Signals ────────────────────────────────────────────────
+async function loadEtfSignals() {
+  const el = document.getElementById('trEtfSignals');
+  if (!el) return;
+  try {
+    const res  = await fetch('/api/track-record/etf-signals');
+    const data = await res.json();
+    const rows = data.latest || [];
+    if (!rows.length) {
+      el.innerHTML = `<p class="tr-empty">${t('trEtfEmpty')}</p>`;
+      return;
+    }
+    el.innerHTML = rows.map(s => {
+      const cls   = s.signal === 'UP' ? 'acc-green' : s.signal === 'DOWN' ? 'acc-red' : '';
+      const arrow = s.signal === 'UP' ? '↑' : s.signal === 'DOWN' ? '↓' : '—';
+      const conf  = s.confidence ? (parseFloat(s.confidence)*100).toFixed(0)+'%' : '—';
+      const prem  = s.nav_premium_pct != null
+        ? `<span class="${parseFloat(s.nav_premium_pct)<0?'pos':'neg'}">${parseFloat(s.nav_premium_pct)>=0?'+':''}${parseFloat(s.nav_premium_pct).toFixed(1)}% NAV</span>`
+        : '';
+      const rsi   = s.rsi_value != null ? `RSI:${parseFloat(s.rsi_value).toFixed(0)}` : '';
+      return `<div class="tr-etf-card">
+        <div class="tr-etf-head">
+          <span class="tr-etf-sym">${s.symbol}</span>
+          <span class="tr-etf-sig ${cls}">${arrow} ${s.signal}</span>
+          <span class="tr-etf-conf">${conf}</span>
+        </div>
+        <div class="tr-etf-name">${s.name || ''}</div>
+        <div class="tr-etf-meta">
+          ${s.type ? `<span class="tr-etf-type">${s.type}</span>` : ''}
+          ${s.region ? `<span class="tr-etf-region">${s.region}</span>` : ''}
+          ${rsi ? `<span>${rsi}</span>` : ''}
+          ${prem}
+        </div>
+        <div class="tr-etf-subs">
+          <span>MA: ${s.ma_signal||'—'}</span>
+          <span>RSI: ${s.rsi_signal||'—'}</span>
+          <span>NAV: ${s.nav_signal||'—'}</span>
+          <span>Mom: ${s.momentum_signal||'—'}</span>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (_) {
+    el.innerHTML = `<p class="tr-empty">${t('trEtfEmpty')}</p>`;
+  }
 }
 
 // ── CSV Export ─────────────────────────────────────────────────

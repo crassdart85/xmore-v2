@@ -839,3 +839,28 @@ body {
   .pro-fx-pair { font-size: 8px; }
   .pro-fx-sep { display: none; }
 }
+
+/* ── ETF Signals Panel ─────────────────────────────────────────────────────── */
+.pro-etf-section { margin-top: 24px; }
+.pro-etf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.pro-etf-card {
+    background: var(--card-bg, #1e1e2e);
+    border: 1px solid var(--border, #2d2d3d);
+    border-radius: 10px;
+    padding: 14px;
+}
+.pro-etf-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.pro-etf-sym  { font-weight: 700; }
+.pro-etf-signal { font-weight: 600; font-size: 0.85rem; }
+.pro-etf-signal.sig-up   { color: #22c55e; }
+.pro-etf-signal.sig-down { color: #ef4444; }
+.pro-etf-signal.sig-hold { color: #6b7280; }
+.pro-etf-name { font-size: 0.78rem; color: #9ca3af; margin-bottom: 6px; }
+.pro-etf-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.75rem; color: #6b7280; }
+.pro-etf-prem.disc { color: #22c55e; font-weight: 600; }
+.pro-etf-prem.prem { color: #f59e0b; font-weight: 600; }

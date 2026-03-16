@@ -337,6 +337,34 @@ router.get('/documents', async (req, res) => {
     } catch (err) { handleMissing(err, res); }
 });
 
+// ── GET /api/etf/signals — ETF technical signals ─────────────────────────────
+
+router.get('/signals', async (req, res) => {
+    try {
+        const iid = instrIdCol();
+        const sql = `SELECT s.instrument_id, s.symbol, s.signal_date, s.signal,
+                    s.confidence, s.ma_signal, s.rsi_signal, s.nav_signal,
+                    s.momentum_signal, s.rsi_value, s.nav_premium_pct,
+                    s.close_price, s.notes,
+                    i.name, i.type, i.region, i.exchange, i.currency
+             FROM etf_signals s
+             JOIN instrument i ON i.${iid} = s.instrument_id
+             WHERE s.signal_date = (
+                 SELECT MAX(signal_date) FROM etf_signals s2
+                 WHERE s2.instrument_id = s.instrument_id
+             )
+             ORDER BY s.confidence DESC, s.symbol ASC`;
+        const rows = await dbAll(sql, []);
+        res.json(rows);
+    } catch (err) {
+        if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) {
+            return res.json([]);
+        }
+        console.error('[etf] /signals error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── exports ───────────────────────────────────────────────────────────────────
 
 module.exports = { router, attachDb };

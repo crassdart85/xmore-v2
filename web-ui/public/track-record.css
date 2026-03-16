@@ -893,3 +893,58 @@ html, body { overflow-x: hidden; max-width: 100%; }
 .acc-red   { color: #ff1744 !important; }
 .pos { color: #00c853; }
 .neg { color: #ff1744; }
+
+/* ── ETF Signals Section ───────────────────────────────────────────────────── */
+.tr-etf-section { margin-top: 32px; }
+.tr-etf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.tr-etf-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.tr-etf-head { display: flex; align-items: center; gap: 8px; }
+.tr-etf-sym  { font-weight: 700; font-size: 0.95rem; }
+.tr-etf-sig  { font-weight: 600; font-size: 0.85rem; }
+.tr-etf-sig.acc-green { color: #22c55e; }
+.tr-etf-sig.acc-red   { color: #ef4444; }
+.tr-etf-conf { margin-left: auto; font-size: 0.78rem; color: var(--text-muted); }
+.tr-etf-name { font-size: 0.78rem; color: var(--text-secondary); }
+.tr-etf-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.72rem; color: var(--text-muted); }
+.tr-etf-type, .tr-etf-region { background: var(--container-bg); border-radius: 4px; padding: 1px 6px; }
+.tr-etf-subs { display: flex; gap: 10px; flex-wrap: wrap; font-size: 0.71rem; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 6px; margin-top: 2px; }
+/* Pro page ETF */
+.pro-etf-section { margin-top: 24px; }
+.pro-etf-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.pro-etf-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+}
+.pro-etf-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.pro-etf-sym { font-weight: 700; }
+.pro-etf-signal { font-weight: 600; font-size: 0.85rem; }
+.pro-etf-signal.sig-up   { color: #22c55e; }
+.pro-etf-signal.sig-down { color: #ef4444; }
+.pro-etf-signal.sig-hold { color: var(--text-muted); }
+.pro-etf-name { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; }
+.pro-etf-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 0.75rem; }
+.pro-etf-conf { color: var(--text-muted); }
+.pro-etf-rsi  { color: var(--text-muted); }
+.pro-etf-prem { font-weight: 600; }
+.pro-etf-prem.disc { color: #22c55e; }
+.pro-etf-prem.prem { color: #f59e0b; }
