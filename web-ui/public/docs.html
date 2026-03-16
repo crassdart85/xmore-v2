@@ -1124,6 +1124,10 @@
           <h4 data-i18n="s12-c4-h">Position Simulator</h4>
           <p data-i18n="s12-c4-p">Open a virtual trade directly from today's BUY signals. Enter an entry price, track live P&amp;L as the session progresses, and close with one tap. Stats strip shows win rate and avg return.</p>
         </div>
+        <div class="feature-card">
+          <h4 data-i18n="s12-c5-h">Sign-In Auth</h4>
+          <p data-i18n="s12-c5-p">Session Sheet is authenticated. Sign in via the header Sign In button or the inline prompt shown when unauthenticated. JWT is stored in an HTTP-only cookie — same credentials as the main dashboard.</p>
+        </div>
       </div>
     </section>
 
@@ -1163,6 +1167,14 @@
           <h4 data-i18n="s13-c6-h">Bilingual</h4>
           <p data-i18n="s13-c6-p">Full EN/AR toggle with RTL layout. All section titles, metric labels, and methodology descriptions switch language.</p>
         </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c7-h">Regime Stats</h4>
+          <p data-i18n="s13-c7-p">Breakdown of signal accuracy by market regime (Calm / Turbulent / Crisis) — classified daily by a Gaussian HMM on EGX30 returns. Populated after each nightly pipeline run.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s13-c8-h">Signal Tracker</h4>
+          <p data-i18n="s13-c8-p">Click ◎ Track on any signal in the prediction log to pin it to a persistent sidebar panel. Tracked signals are saved in localStorage and persist across sessions.</p>
+        </div>
       </div>
 
       <div class="tip-box">
@@ -1198,6 +1210,14 @@
         <div class="feature-card">
           <h4 data-i18n="s14-c4-h">Trailing Stop</h4>
           <p data-i18n="s14-c4-p">Activates after 20 EGX trading days at 6% below the highest price since entry. The stop only ratchets up — never down. Hard exit at 45 trading days regardless of price.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s14-c5-h">Conviction Gate</h4>
+          <p data-i18n="s14-c5-p">BUY signals with Xmore Score &lt; 40 (LOW conviction) are silently dropped before storage. Only MODERATE (≥40), HIGH (≥60), and VERY HIGH (≥75) BUYs enter the database — directly raising win rate and Sharpe.</p>
+        </div>
+        <div class="feature-card">
+          <h4 data-i18n="s14-c6-h">HMM Regime Persistence</h4>
+          <p data-i18n="s14-c6-p">Each daily pipeline run fits a Gaussian Hidden Markov Model on EGX30 proxy returns and persists the result to the regime_log table. Provides a daily audit trail of market regime transitions used for regime-conditional analytics.</p>
         </div>
       </div>
 
@@ -1342,6 +1362,7 @@ const i18n = {
     's12-c2-h': "ATR &amp; Trend", 's12-c2-p': "14-day Average True Range gives the expected daily move in EGP. Trend bias (bullish / neutral / bearish) is derived from price position relative to a 20-day MA.",
     's12-c3-h': "Candlestick Patterns", 's12-c3-p': "Automatic detection of 8 patterns on the last 3 candles: Doji, Hammer, Shooting Star, Bullish/Bearish Engulfing, Morning Star, Evening Star. Shown as coloured badges.",
     's12-c4-h': "Position Simulator", 's12-c4-p': "Open a virtual trade directly from today's BUY signals. Enter an entry price, track live P&amp;L as the session progresses, and close with one tap. Stats strip shows win rate and avg return.",
+    's12-c5-h': "Sign-In Auth", 's12-c5-p': "Session Sheet requires authentication. Sign in via the header Sign In button or the inline prompt shown to unauthenticated visitors. Same credentials as the main dashboard — JWT stored in an HTTP-only cookie.",
     's13-title': "Track Record", 's13-badge': "Public", 's13-desc': `A public investor-facing performance page at <a href="/track-record" style="color:var(--accent)">/track-record</a> — no login required. Shows verified signal history, equity curve, risk metrics, and per-agent methodology cards. Designed for investor due-diligence.`,
     's13-c1-h': "KPI Strip", 's13-c1-p': "Hero metrics: total signals, directional accuracy, avg alpha per signal, win rate — with 30/60/90-day rolling windows selectable.",
     's13-c2-h': "Equity Curve", 's13-c2-p': "Chart.js line chart of cumulative portfolio returns vs EGX30 benchmark. Live predictions since March 2026 + 60-day historical simulation (clearly tagged SIM).",
@@ -1349,12 +1370,16 @@ const i18n = {
     's13-c4-h': "Walk-Forward Backtest", 's13-c4-p': "Weekly walk-forward backtest results per stock — directional accuracy, signal P&amp;L %, ranked by best performers. Re-runs every Sunday.",
     's13-c5-h': "Prediction Log", 's13-c5-p': "Paginated table of every signal with date, symbol, predicted direction, actual outcome, and alpha. CSV export button for download.",
     's13-c6-h': "Bilingual", 's13-c6-p': "Full EN/AR toggle with RTL layout. All section titles, metric labels, and methodology descriptions switch language.",
+    's13-c7-h': "Regime Stats", 's13-c7-p': "Signal accuracy broken down by market regime (Calm / Turbulent / Crisis) — classified each day via Gaussian HMM on EGX30 returns. Populated automatically after each nightly pipeline run.",
+    's13-c8-h': "Signal Tracker", 's13-c8-p': "Click ◎ Track on any prediction log row to pin it to a persistent sidebar panel. Saved in localStorage — persists across sessions and page refreshes.",
     's13-tip-label': "Transparency note", 's13-tip-body': "Simulated signals (pre-March 2026) are generated using the same agent logic on historical EGX price data. They are clearly tagged <strong>SIM</strong> in the prediction log — no future price data is used at any point.",
     's14-title': "Execution Realism Layer", 's14-badge': "Signal Gate", 's14-desc': "Every BUY signal passes through a friction-aware gate before it is stored. The gate models real EGX transaction costs, liquidity-based slippage, market regime, and trailing stop management — blocking signals whose edge doesn't cover their real cost.",
     's14-c1-h': "EGX Transaction Costs", 's14-c1-p': "Full round-trip cost: brokerage (0.15%) + stamp duty (0.15%) + FRA fee + EGX exchange fee + Misr clearing ≈ 0.70% per trade. A signal must offer ≥ 3× this cost to be approved.",
     's14-c2-h': "Liquidity-Tiered Slippage", 's14-c2-p': "High-ADV stocks (>5M EGP/day): 10 bps slippage. Mid-ADV (>1M EGP): 25 bps. Low-ADV: 60 bps. BUY fill prices are adjusted up, SELL prices adjusted down.",
     's14-c3-h': "Market Regime Filter", 's14-c3-p': "EGX30 vs its 20-day MA determines regime: BULL (≥+2%), NEUTRAL (0–2%), BEAR (<0%). New long positions are blocked in BEAR regime to prevent buying into corrections.",
     's14-c4-h': "Trailing Stop", 's14-c4-p': "Activates after 20 EGX trading days at 6% below the highest price since entry. The stop only ratchets up — never down. Hard exit at 45 trading days regardless of price.",
+    's14-c5-h': "Conviction Gate", 's14-c5-p': "BUY signals with Xmore Score < 40 (LOW conviction) are dropped before storage. Only MODERATE (≥40), HIGH (≥60), and VERY HIGH (≥75) BUYs enter the database — directly improving win rate and Sharpe ratio.",
+    's14-c6-h': "HMM Regime Persistence", 's14-c6-p': "A Gaussian Hidden Markov Model fits on EGX30 proxy returns each nightly run. The resulting regime (Calm/Turbulent/Crisis) and confidence are written to regime_log — creating a daily audit trail for regime-conditional analytics.",
     's15-title': "Investor Scoring", 's15-badge': "New", 's15-desc': "A composite score (0–1) built from 4 weighted components is translated into 6 investor-facing formats simultaneously. Switch modes in the Consensus tab to see today's signals in the format that suits your audience.",
     's15-c1-h': "Composite Formula", 's15-c1-p': "Consensus × 0.40 + Execution quality × 0.25 + Market regime × 0.20 + Momentum × 0.15. Missing components default to neutral (0.5) — no data gaps penalise the score.",
     's15-c2-h': "6 Output Modes", 's15-c2-p': "Score (0–100), Letter grade (A+→F), Stars (1–5 at 0.5 resolution), Signal tier (S/A/B/C/D), Conviction (HIGH/MEDIUM/LOW), and Xmore native (0.00–1.00).",
@@ -1406,6 +1431,7 @@ const i18n = {
     's12-c2-h': "ATR والاتجاه", 's12-c2-p': "متوسط المدى الحقيقي لـ 14 يوماً يعطي الحركة اليومية المتوقعة بالجنيه المصري. يُستخلص اتجاه الحركة من موضع السعر بالنسبة للمتوسط المتحرك لـ 20 يوماً.",
     's12-c3-h': "أنماط الشمعدانات", 's12-c3-p': "كشف تلقائي لـ 8 أنماط على آخر 3 شمعدانات: Doji، المطرقة، نجمة الرماية، الابتلاع الصاعد/الهابط، نجمة الصباح، نجمة المساء. تُعرض كشارات ملونة.",
     's12-c4-h': "محاكي الصفقات", 's12-c4-p': "افتح صفقة افتراضية مباشرة من إشارات الشراء اليوم. أدخل سعر الدخول وتتبع الربح والخسارة الحية طوال الجلسة، وأغلق بنقرة واحدة.",
+    's12-c5-h': "تسجيل الدخول", 's12-c5-p': "تتطلب صفحة جلسة التداول تسجيل الدخول. سجّل دخولك عبر زر تسجيل الدخول في الرأس أو الرسالة المضمّنة للزوار غير المسجلين. نفس بيانات اعتماد لوحة التحكم الرئيسية.",
     's13-title': "سجل الأداء", 's13-badge': "عام", 's13-desc': `صفحة أداء عامة للمستثمرين على <a href="/track-record" style="color:var(--accent)">/track-record</a> — لا يلزم تسجيل الدخول. تعرض سجل الإشارات الموثق ومنحنى حقوق الملكية ومقاييس المخاطر وبطاقات منهجية كل وكيل.`,
     's13-c1-h': "شريط المؤشرات الرئيسية", 's13-c1-p': "مقاييس رئيسية: إجمالي الإشارات، الدقة الاتجاهية، متوسط الألفا لكل إشارة، معدل الفوز — مع نوافذ متداولة 30/60/90 يوماً قابلة للاختيار.",
     's13-c2-h': "منحنى حقوق الملكية", 's13-c2-p': "مخطط Chart.js للعوائد التراكمية للمحفظة مقابل مؤشر EGX30. توقعات مباشرة منذ مارس 2026 + محاكاة تاريخية لـ 60 يوماً (مُعلَّمة بوضوح SIM).",
@@ -1413,12 +1439,16 @@ const i18n = {
     's13-c4-h': "الاختبار الخلفي المتقدم", 's13-c4-p': "نتائج الاختبار الخلفي المتقدم الأسبوعية لكل سهم — الدقة الاتجاهية ونسبة ربح الإشارة، مرتبة حسب الأفضل أداءً. يُعاد تشغيله كل أحد.",
     's13-c5-h': "سجل التوقعات", 's13-c5-p': "جدول مُقسَّم لكل إشارة مع التاريخ والرمز والاتجاه المتوقع والنتيجة الفعلية والألفا. زر تصدير CSV للتنزيل.",
     's13-c6-h': "ثنائي اللغة", 's13-c6-p': "تبديل كامل EN/AR مع تخطيط RTL. تتغير جميع عناوين الأقسام ومسميات المقاييس وأوصاف المنهجية.",
+    's13-c7-h': "إحصاءات النظام", 's13-c7-p': "توزيع دقة الإشارات حسب نظام السوق (هادئ / متقلب / أزمة) — يُصنَّف يومياً بنموذج Gaussian HMM على عوائد EGX30. يُعبأ تلقائياً بعد كل تشغيل ليلي.",
+    's13-c8-h': "متتبع الإشارات", 's13-c8-p': "انقر ◎ تتبع على أي إشارة في السجل لتثبيتها في لوحة جانبية دائمة. يُحفظ في localStorage ويبقى عبر الجلسات.",
     's13-tip-label': "ملاحظة الشفافية", 's13-tip-body': "الإشارات المحاكاة (قبل مارس 2026) مولَّدة بنفس منطق الوكلاء على بيانات أسعار EGX التاريخية. مُعلَّمة بوضوح <strong>SIM</strong> في سجل التوقعات — لا تُستخدَم بيانات أسعار مستقبلية في أي نقطة.",
     's14-title': "طبقة واقعية التنفيذ", 's14-badge': "بوابة الإشارات", 's14-desc': "تمر كل إشارة شراء عبر بوابة واعية بتكاليف الاحتكاك قبل تخزينها. تُنمذج البوابة تكاليف معاملات EGX الحقيقية والانزلاق القائم على السيولة ونظام السوق وإدارة وقف الخسارة المتحرك.",
     's14-c1-h': "تكاليف معاملات EGX", 's14-c1-p': "تكلفة الرحلة الكاملة: العمولة (0.15%) + رسوم الطابع (0.15%) + رسوم هيئة الرقابة المالية + رسوم البورصة + المقاصة ≈ 0.70% للصفقة. يجب أن تقدم الإشارة ≥ 3× هذه التكلفة للموافقة.",
     's14-c2-h': "انزلاق مُدرَّج حسب السيولة", 's14-c2-p': "الأسهم عالية التداول (>5 مليون جنيه/يوم): انزلاق 10 نقطة أساس. متوسطة التداول (>1 مليون): 25 نقطة أساس. منخفضة التداول: 60 نقطة أساس.",
     's14-c3-h': "فلتر نظام السوق", 's14-c3-p': "يحدد مؤشر EGX30 مقابل متوسطه المتحرك لـ 20 يوماً النظام: صاعد (≥+2%)، محايد (0–2%)، هابط (<0%). تُحظر المراكز الطويلة الجديدة في النظام الهابط.",
     's14-c4-h': "وقف الخسارة المتحرك", 's14-c4-p': "يُفعَّل بعد 20 يوم تداول بالبورصة المصرية عند 6% تحت أعلى سعر منذ الدخول. يتحرك الوقف للأعلى فقط — لا يتراجع أبداً. خروج إجباري عند 45 يوم تداول.",
+    's14-c5-h': "بوابة الاقتناع", 's14-c5-p': "إشارات الشراء ذات درجة إكسمور أقل من 40 (اقتناع منخفض) تُسقَط قبل التخزين. فقط الاقتناع المتوسط (≥40) والعالي (≥60) وعالي جداً (≥75) يدخل قاعدة البيانات — مما يرفع معدل الفوز ونسبة شارب مباشرة.",
+    's14-c6-h': "استمرارية نظام HMM", 's14-c6-p': "يُطبَّق نموذج Gaussian Hidden Markov على عوائد EGX30 الوكيلة في كل تشغيل ليلي. يُكتب النظام الناتج (هادئ/متقلب/أزمة) ومستوى الثقة في جدول regime_log — مما ينشئ سجلاً يومياً لتغيرات النظام.",
     's15-title': "تقييم المستثمر", 's15-badge': "جديد", 's15-desc': "درجة مركبة (0–1) مبنية من 4 مكونات موزونة تُترجَم إلى 6 تنسيقات تواجه المستثمر في آنٍ واحد. بدّل الأوضاع في تبويب الإجماع لعرض إشارات اليوم بالتنسيق المناسب لجمهورك.",
     's15-c1-h': "صيغة الدرجة المركبة", 's15-c1-p': "إجماع × 0.40 + جودة التنفيذ × 0.25 + نظام السوق × 0.20 + الزخم × 0.15. المكونات المفقودة تأخذ القيمة المحايدة (0.5) — لا تُعاقَب الفجوات في البيانات.",
     's15-c2-h': "6 أوضاع مخرجات", 's15-c2-p': "درجة (0–100)، تقدير حرفي (A+←F)، نجوم (1–5 بدقة نصف نجمة)، مستوى الإشارة (S/A/B/C/D)، الاقتناع (عالي/متوسط/منخفض)، وإكسمور الأصلي (0.00–1.00).",
