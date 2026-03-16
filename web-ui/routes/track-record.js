@@ -393,7 +393,7 @@ router.get('/backtest', async (req, res) => {
         const limit = Math.min(parseInt(req.query.limit) || 20, 100);
         const rows = await dbAll(`
             SELECT symbol, run_date, accuracy, directional_accuracy,
-                   signal_pnl_pct, total_signals_tested
+                   signal_pnl_pct, n_rows AS total_signals_tested
             FROM backtest_results
             ORDER BY directional_accuracy DESC, run_date DESC
             LIMIT ${ph(1)}

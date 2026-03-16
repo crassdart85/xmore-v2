@@ -251,6 +251,65 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_backtest_symbol ON backtest_results(symbol, run_date DESC)');
     console.log('✅ backtest_results table ready');
 
+    // Table: Agent Performance Daily (populated by evaluate_performance.py)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS agent_performance_daily (
+        id SERIAL PRIMARY KEY,
+        snapshot_date DATE NOT NULL,
+        agent_name TEXT NOT NULL,
+        predictions_30d INTEGER,
+        correct_30d INTEGER,
+        win_rate_30d REAL,
+        avg_confidence_30d REAL,
+        predictions_90d INTEGER,
+        correct_90d INTEGER,
+        win_rate_90d REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(snapshot_date, agent_name)
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_apd_snapshot ON agent_performance_daily(snapshot_date DESC)');
+    console.log('✅ agent_performance_daily table ready');
+
+    // Table: Regime Log (populated by regime_filter.py)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS regime_log (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL UNIQUE,
+        regime TEXT NOT NULL,
+        hmm_state INTEGER,
+        volatility REAL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_regime_log_date ON regime_log(date DESC)');
+    console.log('✅ regime_log table ready');
+
+    // Table: ETF Signals (populated by agent_etf_signal.py)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS etf_signals (
+        id BIGSERIAL PRIMARY KEY,
+        instrument_id BIGINT NOT NULL,
+        symbol TEXT NOT NULL,
+        signal_date DATE NOT NULL DEFAULT CURRENT_DATE,
+        signal TEXT NOT NULL DEFAULT 'HOLD',
+        confidence NUMERIC(5,3) DEFAULT 0,
+        ma_signal TEXT,
+        rsi_signal TEXT,
+        nav_signal TEXT,
+        momentum_signal TEXT,
+        rsi_value NUMERIC(6,2),
+        nav_premium_pct NUMERIC(7,3),
+        close_price NUMERIC(14,4),
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE(instrument_id, signal_date)
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_etf_signals_date ON etf_signals(signal_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_etf_signals_symbol ON etf_signals(symbol)');
+    console.log('✅ etf_signals table ready');
+
     // ============================================
     // AUTH & WATCHLIST TABLES
     // ============================================
@@ -363,6 +422,7 @@ async function initializeDatabase() {
       ['benchmark_1d_return','REAL'], ['alpha_1d','REAL'], ['benchmark_5d_return','REAL'], ['alpha_5d','REAL'],
       ['patterns','TEXT'],
       ['is_live','BOOLEAN DEFAULT FALSE'], ['is_simulated','BOOLEAN DEFAULT FALSE'],
+      ['resolved_at','TIMESTAMP'], ['buyhold_1d_return','REAL'], ['model_version','TEXT'],
     ]) {
       try { await pool.query(`ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS ${col[0]} ${col[1]}`); } catch(_) {}
     }

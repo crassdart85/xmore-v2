@@ -391,7 +391,7 @@ function fillMoversTable(tableId, rows, csMap) {
   if (!tbody) return;
 
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:#555;padding:12px 14px;">No data</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="color:#999;padding:12px 14px;">No data</td></tr>';
     return;
   }
 
