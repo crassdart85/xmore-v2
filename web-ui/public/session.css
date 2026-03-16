@@ -47,14 +47,16 @@ body {
 .s-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-wrap: nowrap;
   padding: 10px 20px;
   background: var(--s-bg);
   border-bottom: 1px solid var(--s-border);
   position: sticky;
   top: 0;
   z-index: 10;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .s-back {
@@ -82,10 +84,7 @@ body {
 }
 
 .s-session-label {
-  font-size: 12px;
-  color: var(--s-muted);
-  font-family: 'Courier New', monospace;
-  margin-left: auto;
+  display: none;
 }
 .s-session-date {
   color: var(--s-gold);

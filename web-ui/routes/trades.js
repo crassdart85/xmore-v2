@@ -462,7 +462,7 @@ router.patch('/positions/:id', authMiddleware, async (req, res) => {
 // Also returns index-level pivot data for EGX30 / EGX70.
 router.get('/session-sheet', authMiddleware, async (req, res) => {
     try {
-        const userId = req.user.userId;
+        const userId = req.userId;
 
         // Resolve latest date for this user
         const latestRes = await queryAll(

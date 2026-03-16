@@ -71,20 +71,20 @@
       </table>
     </div>
 
-  </div>
-
-  <!-- Virtual Portfolio Simulator -->
-  <div class="s-section-title" id="sSimTitle"><span>VIRTUAL PORTFOLIO SIMULATOR</span></div>
-  <div class="s-sim-panel" id="sSimPanel">
-    <div class="s-sim-form">
-      <label for="simSymbol" class="sr-only">Select stock symbol</label>
-      <select id="simSymbol" class="s-sim-input" aria-label="Select stock symbol"></select>
-      <label for="simEntryPrice" class="sr-only">Entry price</label>
-      <input type="number" id="simEntryPrice" class="s-sim-input" placeholder="Entry price" step="0.01" min="0.01" aria-label="Entry price">
-      <button class="s-sim-btn s-sim-open" onclick="simOpenPosition()">+ Open Position</button>
+    <!-- Virtual Portfolio Simulator -->
+    <div class="s-section-title" id="sSimTitle"><span>VIRTUAL PORTFOLIO SIMULATOR</span></div>
+    <div class="s-sim-panel" id="sSimPanel">
+      <div class="s-sim-form">
+        <label for="simSymbol" class="sr-only">Select stock symbol</label>
+        <select id="simSymbol" class="s-sim-input" aria-label="Select stock symbol"></select>
+        <label for="simEntryPrice" class="sr-only">Entry price</label>
+        <input type="number" id="simEntryPrice" class="s-sim-input" placeholder="Entry price" step="0.01" min="0.01" aria-label="Entry price">
+        <button class="s-sim-btn s-sim-open" onclick="simOpenPosition()">+ Open Position</button>
+      </div>
+      <div id="simOpenList" class="s-sim-list"></div>
+      <div id="simStats" class="s-sim-stats"></div>
     </div>
-    <div id="simOpenList" class="s-sim-list"></div>
-    <div id="simStats" class="s-sim-stats"></div>
+
   </div>
 
   <!-- Footer -->
