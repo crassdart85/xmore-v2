@@ -546,3 +546,9 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - Result:
   - Admin page can now load first, allowing secret entry in UI.
   - Admin APIs remain protected and still require valid ADMIN_SECRET.
+
+
+## Track Record UX Refresh (Mar 16, 2026)
+- web-ui/public/track-record.css: mobile cleanup at <=640px, tighter spacing, responsive header controls, feed wrapping, sector rows stacked, tracker panel becomes bottom sheet
+- web-ui/public/track-record.html: agent + top-stocks tables flagged for mobile card layout
+- web-ui/public/track-record.js: table cells emit localized data-label values; log table labels localized; language toggle re-renders log to update labels

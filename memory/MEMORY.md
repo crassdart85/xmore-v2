@@ -65,6 +65,11 @@
 - CDN: CountUp.js 2.8.0, Notyf 3.x, Lightweight Charts 4.1.1 — all with `typeof X !== 'undefined'` graceful fallback
 - Global utils in app.js: `escapeHtml()`, `animateValue()`, `showToast()`, `showSkeleton()`, `clearSkeleton()`, `renderEmptyState()`
 
+## Track Record UX Refresh (Mar 16, 2026)
+- web-ui/public/track-record.css: mobile cleanup at <=640px, responsive header controls, feed wrapping, sector rows stacked, tracker panel becomes bottom sheet
+- web-ui/public/track-record.html: agent + top-stocks tables flagged for mobile card layout
+- web-ui/public/track-record.js: localized data-labels for mobile cards (including log table) and language toggle refresh
+
 ## CI/CD Pipeline (current — 7 jobs)
 - **`intraday-price-update`**: `'0 7,8,9,10,11,12 * * 0-4'` (Sun–Thu, EGX hours) — `collect_data.py --prices-only`
 - **`intraday-news-update`**: `'0 7,9,11 * * 0-4'` (3× trading day) — news + RSS + news RAG ingestion

@@ -223,6 +223,7 @@ function trToggleLang() {
   applyI18n();
   renderRolling();
   renderRiskRows();
+  loadLog();
 }
 
 function applyI18n() {
@@ -604,6 +605,13 @@ async function loadAgents() {
     const data = await xfetch('/api/track-record/agents');
     if (!data) return;
     const tbody = document.getElementById('agentTableBody');
+    const labels = {
+      agent: t('colAgent'),
+      signals30: t('colSignals30'),
+      win30: t('colWin30'),
+      win90: t('colWin90'),
+      conf: t('colConf')
+    };
     if (!data.agents || !data.agents.length) {
       tbody.innerHTML = `<tr><td colspan="5" class="tr-loading">${t('noData')}</td></tr>`;
       return;
@@ -612,21 +620,21 @@ async function loadAgents() {
       const wr30 = Number(a.win_rate_30d);
       const wr90 = Number(a.win_rate_90d);
       return `<tr>
-        <td style="font-weight:600;color:#aaa">${a.agent}</td>
-        <td>${a.predictions_30d}</td>
-        <td>
+        <td data-label="${labels.agent}" style="font-weight:600;color:#aaa">${a.agent}</td>
+        <td data-label="${labels.signals30}">${a.predictions_30d}</td>
+        <td data-label="${labels.win30}">
           <div class="tr-win-bar">
             <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr30,100)}%"></div></div>
             <span class="${wr30>=55?'tr-alpha-pos':wr30<45?'tr-alpha-neg':''}">${fmt(wr30)}%</span>
           </div>
         </td>
-        <td>
+        <td data-label="${labels.win90}">
           <div class="tr-win-bar">
             <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr90,100)}%"></div></div>
             <span class="${wr90>=55?'tr-alpha-pos':wr90<45?'tr-alpha-neg':''}">${fmt(wr90)}%</span>
           </div>
         </td>
-        <td>${a.avg_confidence_30d != null ? fmt(a.avg_confidence_30d) + '%' : '—'}</td>
+        <td data-label="${labels.conf}">${a.avg_confidence_30d != null ? fmt(a.avg_confidence_30d) + '%' : '—'}</td>
       </tr>`;
     }).join('');
   } catch (e) {
@@ -641,6 +649,13 @@ async function loadStocks() {
     if (!data) return;
     const tbody = document.getElementById('stockTableBody');
     const stocks = data.top_by_alpha || data.stocks || [];
+    const labels = {
+      sym: t('colSym'),
+      trades: t('colTrades'),
+      win: t('colWinRate'),
+      avgAlpha: t('colAvgAlpha'),
+      best: t('colBestReturn')
+    };
     if (!stocks.length) {
       tbody.innerHTML = `<tr><td colspan="4" class="tr-loading">${t('noData')}</td></tr>`;
       return;
@@ -651,16 +666,16 @@ async function loadStocks() {
       const count = s.signal_count ?? s.total;
       const best  = s.best_signal_return != null ? Number(s.best_signal_return) : null;
       return `<tr>
-        <td style="font-weight:700">${s.symbol}</td>
-        <td style="color:#aaa">${count}</td>
-        <td>
+        <td data-label="${labels.sym}" style="font-weight:700">${s.symbol}</td>
+        <td data-label="${labels.trades}" style="color:#aaa">${count}</td>
+        <td data-label="${labels.win}">
           <div class="tr-win-bar">
             <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(wr,100)}%"></div></div>
             <span class="${wr>=50?'tr-alpha-pos':wr<45?'tr-alpha-neg':''}">${fmt(wr)}%</span>
           </div>
         </td>
-        <td class="${alpha>0?'tr-alpha-pos':alpha<0?'tr-alpha-neg':''}">${fmtPct(alpha, 3)}</td>
-        <td class="${best!=null&&best>0?'tr-alpha-pos':''}">${best != null ? fmtPct(best, 2) : '—'}</td>
+        <td data-label="${labels.avgAlpha}" class="${alpha>0?'tr-alpha-pos':alpha<0?'tr-alpha-neg':''}">${fmtPct(alpha, 3)}</td>
+        <td data-label="${labels.best}" class="${best!=null&&best>0?'tr-alpha-pos':''}">${best != null ? fmtPct(best, 2) : '—'}</td>
       </tr>`;
     }).join('');
   } catch (e) {
@@ -688,6 +703,17 @@ async function loadLog() {
     logTotalPages = pag.pages || 1;
 
     const rows = logDataCache;
+    const labels = {
+      date: t('colDate'),
+      sym: t('colSym'),
+      signal: t('colSignal'),
+      conf: t('colConfidence'),
+      conviction: t('colConviction'),
+      actual: t('colActual1D'),
+      alpha: t('colAlpha'),
+      hit: t('colHit'),
+      track: t('track')
+    };
 
     if (!rows.length) {
       tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">${t('noData')}</td></tr>`;
@@ -715,15 +741,15 @@ async function loadLog() {
         ? `<span class="tr-sim-tag">SIM</span>` : '';
       const rowDate = p.date || p.prediction_date || p.recommendation_date;
       return `<tr>
-        <td data-label="Date">${fmtDate(rowDate)}${simTag}</td>
-        <td data-label="Symbol"><strong>${p.symbol}</strong><br><span style="color:#666;font-size:10px">${name !== p.symbol ? name : ''}</span></td>
-        <td data-label="Signal" class="${sigCls}">${signal}</td>
-        <td data-label="Confidence">${conf != null ? fmt(conf) + '%' : '—'}</td>
-        <td data-label="Conviction">${p.conviction || '—'}</td>
-        <td data-label="1D Return" class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(ret1d) && ret1d != null ? fmtPct(ret1d, 2) : '—'}</td>
-        <td data-label="Alpha" class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ?? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
-        <td data-label="Hit">${hitHtml}</td>
-        <td data-label="Track"><button class="track-btn" data-signal-id="${rowDate}-${p.symbol}" data-symbol="${p.symbol}" data-action="${signal}" data-entry="${p.entry_price || ''}" data-date="${rowDate}" onclick="toggleTrack(this)"><span>${t('track')}</span></button></td>
+        <td data-label="${labels.date}">${fmtDate(rowDate)}${simTag}</td>
+        <td data-label="${labels.sym}"><strong>${p.symbol}</strong><br><span style="color:#666;font-size:10px">${name !== p.symbol ? name : ''}</span></td>
+        <td data-label="${labels.signal}" class="${sigCls}">${signal}</td>
+        <td data-label="${labels.conf}">${conf != null ? fmt(conf) + '%' : '—'}</td>
+        <td data-label="${labels.conviction}">${p.conviction || '—'}</td>
+        <td data-label="${labels.actual}" class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(ret1d) && ret1d != null ? fmtPct(ret1d, 2) : '—'}</td>
+        <td data-label="${labels.alpha}" class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ?? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
+        <td data-label="${labels.hit}">${hitHtml}</td>
+        <td data-label="${labels.track}"><button class="track-btn" data-signal-id="${rowDate}-${p.symbol}" data-symbol="${p.symbol}" data-action="${signal}" data-entry="${p.entry_price || ''}" data-date="${rowDate}" onclick="toggleTrack(this)"><span>${t('track')}</span></button></td>
       </tr>`;
     }).join('');
 
@@ -912,7 +938,7 @@ async function loadBacktest() {
         </div>
       </div>
       <div class="tr-table-wrap">
-        <table class="tr-table tr-table--backtest">
+        <table class="tr-table tr-table--backtest tr-table--cards">
           <thead>
             <tr>
               <th>${t('colSym')}</th>
@@ -927,17 +953,24 @@ async function loadBacktest() {
               const acc  = Number(row.accuracy);
               const dir  = Number(row.directional_accuracy);
               const pnl  = Number(row.signal_pnl_pct);
+              const labels = {
+                sym: t('colSym'),
+                acc: t('colAccuracy'),
+                dir: t('colDirAcc'),
+                pnl: t('colSignalPnl'),
+                run: t('colLastRun')
+              };
               return `<tr>
-                <td style="font-weight:700">${row.symbol}</td>
-                <td class="${acc >= 55 ? 'tr-alpha-pos' : acc < 45 ? 'tr-alpha-neg' : ''}">${fmt(acc)}%</td>
-                <td>
+                <td data-label="${labels.sym}" style="font-weight:700">${row.symbol}</td>
+                <td data-label="${labels.acc}" class="${acc >= 55 ? 'tr-alpha-pos' : acc < 45 ? 'tr-alpha-neg' : ''}">${fmt(acc)}%</td>
+                <td data-label="${labels.dir}">
                   <div class="tr-win-bar">
                     <div class="tr-win-bar-track"><div class="tr-win-bar-fill" style="width:${Math.min(dir, 100)}%"></div></div>
                     <span class="${dir >= 55 ? 'tr-alpha-pos' : dir < 45 ? 'tr-alpha-neg' : ''}">${fmt(dir)}%</span>
                   </div>
                 </td>
-                <td class="${pnl > 0 ? 'tr-alpha-pos' : pnl < 0 ? 'tr-alpha-neg' : ''}">${fmtPct(pnl, 2)}</td>
-                <td style="color:#555;font-size:11px">${fmtDate(row.run_date)}</td>
+                <td data-label="${labels.pnl}" class="${pnl > 0 ? 'tr-alpha-pos' : pnl < 0 ? 'tr-alpha-neg' : ''}">${fmtPct(pnl, 2)}</td>
+                <td data-label="${labels.run}" style="color:#555;font-size:11px">${fmtDate(row.run_date)}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -1072,13 +1105,20 @@ async function loadRegimeStats() {
     if (!rows.length) { el.innerHTML = `<div class="tr-empty">${t('noData')}</div>`; return; }
     const REGIME_COLOR = { Calm: '#00c853', Turbulent: '#ffab00', Crisis: '#ff1744', Unknown: '#888' };
     const REGIME_AR    = { Calm: 'هادئ', Turbulent: 'متقلب', Crisis: 'أزمة', Unknown: 'غير معروف' };
-    el.innerHTML = `<table class="tr-table">
+    const labels = {
+      regime: t('colRegime'),
+      signals: t('colSignals2'),
+      win: t('colWinRate2'),
+      avgRet: t('colAvgReturn'),
+      alpha: t('kpiAlpha')
+    };
+    el.innerHTML = `<table class="tr-table tr-table--cards">
       <thead><tr>
-        <th>${t('colRegime')}</th>
-        <th>${t('colSignals2')}</th>
-        <th>${t('colWinRate2')}</th>
-        <th>${t('colAvgReturn')}</th>
-        <th>${t('kpiAlpha')}</th>
+        <th>${labels.regime}</th>
+        <th>${labels.signals}</th>
+        <th>${labels.win}</th>
+        <th>${labels.avgRet}</th>
+        <th>${labels.alpha}</th>
       </tr></thead>
       <tbody>${rows.map(r => {
         const wrPct  = Math.round(r.win_rate * 100);
@@ -1087,11 +1127,11 @@ async function loadRegimeStats() {
         const dot    = REGIME_COLOR[r.regime] || '#888';
         const label  = _LANG === 'ar' ? (REGIME_AR[r.regime] || r.regime) : r.regime;
         return `<tr>
-          <td><span class="tr-regime-dot" style="background:${dot}"></span>${label}</td>
-          <td>${r.signal_count}</td>
-          <td class="${accCls}">${wrPct}%</td>
-          <td class="${retCls}">${r.avg_return >= 0 ? '+' : ''}${(r.avg_return*100).toFixed(2)}%</td>
-          <td class="${r.avg_alpha >= 0 ? 'pos' : 'neg'}">${r.avg_alpha >= 0 ? '+' : ''}${(r.avg_alpha*100).toFixed(2)}%</td>
+          <td data-label="${labels.regime}"><span class="tr-regime-dot" style="background:${dot}"></span>${label}</td>
+          <td data-label="${labels.signals}">${r.signal_count}</td>
+          <td data-label="${labels.win}" class="${accCls}">${wrPct}%</td>
+          <td data-label="${labels.avgRet}" class="${retCls}">${r.avg_return >= 0 ? '+' : ''}${(r.avg_return*100).toFixed(2)}%</td>
+          <td data-label="${labels.alpha}" class="${r.avg_alpha >= 0 ? 'pos' : 'neg'}">${r.avg_alpha >= 0 ? '+' : ''}${(r.avg_alpha*100).toFixed(2)}%</td>
         </tr>`;
       }).join('')}</tbody>
     </table>

@@ -705,27 +705,109 @@ html, body { overflow-x: hidden; max-width: 100%; }
   .tr-header-controls { flex-wrap: wrap; gap: 6px; }
 }
 @media (max-width: 640px) {
+  .tr-header {
+    padding: 8px 12px;
+    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .tr-back { order: -1; }
+  .tr-header-brand {
+    min-width: 0;
+    overflow: hidden;
+    justify-content: space-between;
+  }
+  .tr-logo { font-size: 12px; letter-spacing: 2px; }
+  .tr-logo-tag { font-size: 7px; padding: 2px 5px; }
+  .tr-live-badge { display: none; }
+  .tr-header-controls {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .tr-period-group { grid-column: 1 / -1; }
+  .tr-period-btn { padding: 6px 8px; font-size: 10px; flex: 1; }
+  .tr-lang-btn, .header-tracker-btn { width: 100%; justify-content: center; }
+  .tr-export-btn { font-size: 10px; padding: 5px 8px; }
+
+  .tr-container { padding: 12px; gap: 12px; }
+  .tr-hero { padding: 16px; gap: 16px; }
+  .tr-hero-title { font-size: 15px; }
+  .tr-hero-body { font-size: 12px; }
+  .tr-hero-stat-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    min-width: 0;
+  }
+  .tr-hero-stat { padding: 12px 14px; }
+
+  .tr-section { padding: 16px; }
+  .tr-section-title { font-size: 9px; letter-spacing: 1.4px; }
+  .tr-section-desc { font-size: 11px; margin-bottom: 12px; }
+
   .tr-kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .tr-kpi-card { padding: 12px 14px; }
   .tr-kpi-value { font-size: 20px; }
+
+  .tr-rolling-cards { flex-direction: column; }
   .tr-agent-cards { grid-template-columns: 1fr 1fr; }
   .tr-transparency-grid { grid-template-columns: 1fr; }
-  .tr-header    { padding: 8px 12px; gap: 8px; }
-  .tr-header-brand { min-width: 0; overflow: hidden; }
-  .tr-logo      { font-size: 12px; }
-  .tr-live-badge { display: none; }
-  .tr-container { padding: 12px; gap: 12px; }
-  .tr-hero      { padding: 16px; }
-  .tr-hero-title { font-size: 15px; }
-  .tr-section   { padding: 16px; }
-  .tr-period-btn { padding: 4px 8px; font-size: 10px; }
-  .tr-export-btn { font-size: 10px; padding: 5px 8px; }
-  .tr-lang-btn  { font-size: 11px; padding: 5px 10px; }
+
+  .tr-chart-wrap { height: 220px; }
+  .tr-chart-footer { gap: 12px; }
+
   /* Tables: allow horizontal scroll, min width so columns don't squash */
   .tr-table { min-width: 480px; }
   .tr-table--log { min-width: 560px; }
   .tr-table--backtest { min-width: 380px; }
-  /* Rolling cards stack */
-  .tr-rolling-cards { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .tr-feed-row {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .tr-feed-sym { min-width: 0; }
+  .tr-feed-time { margin-left: 0; }
+  .tr-feed-hit { margin-left: auto; }
+  .signal-count-banner { margin: -6px 0 16px; font-size: 11px; }
+}
+
+@media (max-width: 640px) {
+  .tr-sector-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+  .tr-sector-name,
+  .tr-sector-bar-wrap {
+    flex: 1 1 100%;
+  }
+  .tr-sector-wr,
+  .tr-sector-ret,
+  .tr-sector-cnt {
+    flex: 1 1 30%;
+    text-align: left;
+  }
+}
+
+@media (max-width: 640px) {
+  .tracker-panel {
+    width: 100%;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    transform: translateY(0);
+    border-radius: 12px 12px 0 0;
+    border-right: 1px solid rgba(212,168,83,0.3);
+  }
+  .tracker-panel.collapsed {
+    transform: translateY(calc(100% - 46px));
+  }
+  .tracker-header { padding: 10px 14px; }
+  .tracker-body { max-height: 50vh; }
 }
 
 /* ─── Live Signal Feed ───────────────────────────────────── */
@@ -1219,6 +1301,42 @@ html, body { overflow-x: hidden; max-width: 100%; }
     letter-spacing: 0.05em;
     flex-shrink: 0;
     margin-right: 8px;
+  }
+}
+
+/* Mobile cards for other tables */
+@media (max-width: 767px) {
+  .tr-table--cards thead { display: none; }
+  .tr-table--cards tr {
+    display: block;
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--tr-surface);
+  }
+  .tr-table--cards td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border: none !important;
+    gap: 8px;
+  }
+  .tr-table--cards td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .tr-table--cards .tr-win-bar {
+    margin-left: auto;
+  }
+  .tr-table--cards .tr-win-bar-track {
+    width: 60px;
   }
 }
 

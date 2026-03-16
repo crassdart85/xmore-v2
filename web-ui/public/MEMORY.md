@@ -24,6 +24,11 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `routes/performance.js` - **NEW** Investor-grade performance API routes (`/api/performance-v2/*`)
 - `migrations/007_performance_benchmark.sql` - **NEW** Performance schema migration
 
+## Track Record UX (Mar 16, 2026)
+- track-record.css: mobile layout cleanup at <=640px; tracker panel becomes bottom sheet
+- track-record.html: agent + top-stocks tables set for mobile card layout
+- track-record.js: localized data-labels for log + table cards; language toggle refreshes log
+
 ## Environment Variables (Secrets)
 - `DATABASE_URL` - PostgreSQL connection string (Render)
 - `NEWS_API_KEY` - News API for news collection
