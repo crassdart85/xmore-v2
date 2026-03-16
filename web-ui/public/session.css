@@ -432,3 +432,94 @@ html[dir="rtl"] .s-footer-note { text-align: right; }
     flex-shrink: 0;
   }
 }
+
+/* ─── Auth (header + modal) ─────────────────────────────────────────────── */
+.s-auth-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.s-auth-user {
+  font-size: 11px;
+  color: var(--s-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s-auth-btn {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 6px 14px;
+  min-height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--s-border);
+  background: none;
+  color: var(--s-text);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.s-auth-btn:hover { opacity: 0.75; }
+.s-auth-btn--primary {
+  background: var(--s-accent);
+  border-color: var(--s-accent);
+  color: #fff;
+}
+.s-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.s-modal {
+  background: #1a1a1a;
+  border: 1px solid var(--s-border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  width: 360px;
+  max-width: 92vw;
+  position: relative;
+}
+.s-modal-close {
+  position: absolute; top: 12px; right: 14px;
+  background: none; border: none; color: var(--s-muted);
+  font-size: 20px; cursor: pointer; line-height: 1;
+}
+.s-modal-close:hover { color: var(--s-text); }
+.s-modal-title {
+  font-size: 15px; font-weight: 700;
+  letter-spacing: 0.05em; margin-bottom: 20px;
+  color: var(--s-accent);
+}
+.s-modal-form { display: flex; flex-direction: column; gap: 10px; }
+.s-modal-label { font-size: 11px; color: var(--s-muted); letter-spacing: 0.05em; }
+.s-modal-input {
+  background: #0d0d0d;
+  border: 1px solid var(--s-border);
+  border-radius: 6px;
+  color: var(--s-text);
+  font-size: 13px;
+  padding: 8px 10px;
+}
+.s-modal-input:focus { outline: 2px solid var(--s-accent); border-color: transparent; }
+.s-modal-error {
+  font-size: 12px; color: #ff4444;
+  background: rgba(255,68,68,0.08);
+  border-radius: 4px; padding: 6px 10px;
+}
+.s-modal-submit {
+  margin-top: 6px;
+  background: var(--s-accent);
+  border: none; border-radius: 6px;
+  color: #fff; font-size: 13px; font-weight: 700;
+  padding: 10px; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.s-modal-submit:hover { opacity: 0.85; }
+.s-modal-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+[dir="rtl"] .s-auth-area { margin-left: 0; margin-right: auto; }
+[dir="rtl"] .s-modal-close { right: auto; left: 14px; }

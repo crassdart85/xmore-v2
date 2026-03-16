@@ -23,8 +23,29 @@
       <a class="x-link active" href="/session" aria-current="page">Session</a>
       <a class="x-link" href="/docs">Docs</a>
     </nav>
+    <div class="s-auth-area">
+      <span class="s-auth-user" id="sAuthUser" style="display:none"></span>
+      <button class="s-auth-btn" id="sLogoutBtn" style="display:none" onclick="sHandleLogout()">Sign Out</button>
+      <button class="s-auth-btn s-auth-btn--primary" id="sLoginBtn" onclick="sShowModal()">Sign In</button>
+    </div>
     <button class="s-lang-btn" id="sLangBtn" onclick="toggleLang()">عر</button>
   </header>
+
+  <!-- Auth Modal -->
+  <div class="s-modal-overlay" id="sAuthModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="sModalTitle" onclick="if(event.target===this)sHideModal()">
+    <div class="s-modal">
+      <button class="s-modal-close" onclick="sHideModal()" aria-label="Close dialog">&times;</button>
+      <div class="s-modal-title" id="sModalTitle">Sign in to Xmore</div>
+      <form class="s-modal-form" id="sAuthForm" onsubmit="sHandleSubmit(event)">
+        <label class="s-modal-label">Email</label>
+        <input class="s-modal-input" type="email" id="sAuthEmail" required autocomplete="email" placeholder="you@example.com">
+        <label class="s-modal-label">Password</label>
+        <input class="s-modal-input" type="password" id="sAuthPassword" required minlength="8" autocomplete="current-password" placeholder="••••••••">
+        <div class="s-modal-error" id="sAuthError" style="display:none"></div>
+        <button class="s-modal-submit" id="sAuthSubmit" type="submit">Login</button>
+      </form>
+    </div>
+  </div>
 
   <div class="s-container">
 
@@ -339,10 +360,11 @@ async function loadSession() {
     const res = await fetch('/api/trades/session-sheet', { credentials: 'include' });
     if (!res.ok) {
       if (res.status === 401) {
+        const msg = `<span>${t('noLogin')}</span> <button class="s-auth-btn s-auth-btn--primary" style="margin-left:12px" onclick="sShowModal()">Sign In</button>`;
         document.getElementById('sTableBody').innerHTML =
-          `<tr><td colspan="17" class="s-empty">${t('noLogin')}</td></tr>`;
+          `<tr><td colspan="17" class="s-empty" style="padding:24px">${msg}</td></tr>`;
         document.getElementById('sIndexWrap').innerHTML =
-          `<div class="s-empty">${t('noLogin')}</div>`;
+          `<div class="s-empty" style="padding:24px">${msg}</div>`;
         return;
       }
       throw new Error(`HTTP ${res.status}`);
@@ -452,12 +474,95 @@ function populateSimSymbols(data) {
   sel.innerHTML = data.map(r => `<option value="${r.symbol}">${r.symbol.replace('.CA', '')}</option>`).join('');
 }
 
+/* ─── Auth ────────────────────────────────────────────────────────────────── */
+let _sModalPrevFocus = null;
+
+function sShowModal() {
+  _sModalPrevFocus = document.activeElement;
+  const modal = document.getElementById('sAuthModal');
+  modal.style.display = 'flex';
+  document.getElementById('sAuthError').style.display = 'none';
+  document.getElementById('sAuthEmail').value = '';
+  document.getElementById('sAuthPassword').value = '';
+  setTimeout(() => document.getElementById('sAuthEmail').focus(), 50);
+}
+
+function sHideModal() {
+  document.getElementById('sAuthModal').style.display = 'none';
+  if (_sModalPrevFocus && _sModalPrevFocus.focus) _sModalPrevFocus.focus();
+  _sModalPrevFocus = null;
+}
+
+async function sHandleSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('sAuthSubmit');
+  const errEl = document.getElementById('sAuthError');
+  btn.disabled = true;
+  btn.textContent = '…';
+  errEl.style.display = 'none';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:    document.getElementById('sAuthEmail').value,
+        password: document.getElementById('sAuthPassword').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    sHideModal();
+    sUpdateAuthUI(data.user || { email: document.getElementById('sAuthEmail').value });
+    loadSession();
+    loadSimulator();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Login';
+  }
+}
+
+async function sHandleLogout() {
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+  sUpdateAuthUI(null);
+  loadSession();
+}
+
+function sUpdateAuthUI(user) {
+  const loginBtn  = document.getElementById('sLoginBtn');
+  const logoutBtn = document.getElementById('sLogoutBtn');
+  const userEl    = document.getElementById('sAuthUser');
+  if (user) {
+    loginBtn.style.display  = 'none';
+    logoutBtn.style.display = '';
+    userEl.style.display    = '';
+    userEl.textContent = user.display_name || user.email || '';
+  } else {
+    loginBtn.style.display  = '';
+    logoutBtn.style.display = 'none';
+    userEl.style.display    = 'none';
+  }
+}
+
+async function sCheckAuth() {
+  try {
+    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    if (res.ok) {
+      const data = await res.json();
+      sUpdateAuthUI(data.user || data);
+    }
+  } catch (_) {}
+}
+
 /* ─── Init ────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   document.documentElement.lang = lang;
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
   document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
   applyLang();
+  sCheckAuth();
   loadSession();
   loadSimulator();
 });
