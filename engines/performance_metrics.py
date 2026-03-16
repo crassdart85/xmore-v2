@@ -13,7 +13,7 @@ Supports:
 
 import math
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from database import get_connection
 
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -750,7 +750,7 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
 
     return {
         "period_days":          days,
-        "generated_at":         datetime.utcnow().isoformat() + "Z",
+        "generated_at":         datetime.now(timezone.utc).isoformat() + "Z",
         "trade_count":          trade_count,
         "sharpe_ratio":         round(sr, 4),
         "sortino_ratio":        round(so, 4),

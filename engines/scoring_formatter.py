@@ -31,7 +31,7 @@ Scoring modes:
 
 from __future__ import annotations
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 
@@ -211,7 +211,7 @@ class ScoringFormatter:
 
         return {
             "symbol":            symbol,
-            "signal_date":       rec.get("recommendation_date") or datetime.utcnow().date().isoformat(),
+            "signal_date":       rec.get("recommendation_date") or datetime.now(timezone.utc).date().isoformat(),
             "action":            rec.get("action", "HOLD"),
             "composite_score":   round(composite, 4),
             "scoring_mode":      target_mode,
@@ -222,7 +222,7 @@ class ScoringFormatter:
             "momentum_score":    round(components.get("momentum_score", 0), 4),
             "meets_threshold":   self.meets_threshold(composite),
             "all_formats":       all_scores,
-            "created_at":        datetime.utcnow().isoformat(),
+            "created_at":        datetime.now(timezone.utc).isoformat(),
         }
 
 

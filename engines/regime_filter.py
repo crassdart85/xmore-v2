@@ -6,7 +6,7 @@ so it works without hmmlearn and runs in seconds during the signal pipeline.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     import yfinance as yf
@@ -60,7 +60,7 @@ class RegimeFilter:
     # ── Regime detection ─────────────────────────────────────────────────────
 
     def get_current_regime(self, force_refresh: bool = False) -> dict:
-        today = datetime.utcnow().date().isoformat()
+        today = datetime.now(timezone.utc).date().isoformat()
 
         if not force_refresh and self._cache["date"] == today and self._cache["regime"]:
             return {
@@ -83,7 +83,7 @@ class RegimeFilter:
                 "ma20":                None,
                 "distance_from_ma_pct": 0.0,
                 "new_longs_allowed":   False,
-                "timestamp":           datetime.utcnow().isoformat(),
+                "timestamp":           datetime.now(timezone.utc).isoformat(),
             }
             return result
 
@@ -104,7 +104,7 @@ class RegimeFilter:
             "ma20":                round(ma20, 2),
             "distance_from_ma_pct": round(distance * 100, 2),
             "new_longs_allowed":   regime == "BULL",
-            "timestamp":           datetime.utcnow().isoformat(),
+            "timestamp":           datetime.now(timezone.utc).isoformat(),
         }
 
         self._cache.update({
