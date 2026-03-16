@@ -13,7 +13,7 @@
     <a href="/" class="tr-back" data-i18n="back">← Dashboard</a>
     <div class="tr-header-brand">
       <span class="tr-logo">XMORE <span class="tr-logo-tag" data-i18n="logoTag">TRACK RECORD</span></span>
-      <span class="tr-live-badge" data-i18n="liveBadge">LIVE + HISTORICAL SIMULATION</span>
+      <span class="tr-live-badge">Live pre-market signals since March 2026</span>
     </div>
     <div class="tr-header-controls">
       <div class="tr-period-group">
@@ -22,8 +22,11 @@
         <button class="tr-period-btn" data-days="180">180D</button>
         <button class="tr-period-btn" data-days="365" data-i18n-val="all">ALL</button>
       </div>
-      <button class="tr-lang-btn" id="trLangBtn" onclick="trToggleLang()">عر</button>
-      <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">Export CSV</button>
+      <button class="tr-lang-btn" id="trLangBtn" onclick="trToggleLang()">🇪🇬 عربي</button>
+      <button class="header-tracker-btn" id="openTrackerBtn" onclick="document.getElementById('trackerPanel').classList.remove('collapsed')">
+        <span>◉ TRACKER</span>
+        <span class="tracker-badge" id="trackerCountHeader">0</span>
+      </button>
     </div>
   </header>
 
@@ -91,9 +94,14 @@
       </div>
     </div>
 
+    <!-- Signal Count Banner -->
+    <div class="signal-count-banner">
+      <span id="liveSignalCount">—</span> live signals evaluated · Updated daily at 6:00 AM Cairo time
+    </div>
+
     <!-- Live Signal Feed -->
     <div class="tr-section">
-      <div class="tr-section-title" data-i18n="signalFeedTitle">LIVE SIGNAL FEED</div>
+      <div class="tr-section-title"><span class="live-dot"></span><span data-i18n="signalFeedTitle">LIVE SIGNAL FEED</span></div>
       <p class="tr-section-desc" data-i18n="signalFeedDesc">The 20 most recent signals, each with an immutable timestamp showing exactly when it was generated — before market open.</p>
       <div class="tr-signal-feed" id="trSignalFeed">
         <div class="tr-loading" data-i18n="loading">Loading…</div>
@@ -305,6 +313,7 @@
           </p>
         </div>
         <div class="tr-log-filters">
+          <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">⬇ Export CSV</button>
           <select class="tr-select" id="logFilter" onchange="logPage=1;loadLog()">
             <option value="" data-i18n="filterAll">All Signals</option>
             <option value="UP" data-i18n="filterUp">UP only</option>
@@ -375,6 +384,20 @@
       <div id="trDateRange" style="margin-top:6px;font-size:10px;"></div>
     </div>
 
+  </div>
+
+  <!-- Tracker Panel -->
+  <div class="tracker-panel collapsed" id="trackerPanel">
+    <div class="tracker-header" onclick="document.getElementById('trackerPanel').classList.toggle('collapsed')">
+      <span class="tracker-title">MY TRACKER</span>
+      <span class="tracker-count" id="trackerCount">0</span>
+      <button class="tracker-toggle">›</button>
+    </div>
+    <div class="tracker-body" id="trackerBody"></div>
+    <div class="tracker-footer">
+      <span id="trackerPnlSummary"></span>
+      <button id="trackerClear">Clear All</button>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>

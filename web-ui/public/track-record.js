@@ -1,3 +1,23 @@
+// ── Cold-start retry wrapper (Render free tier sleeps after 15 min) ─────────
+async function xfetch(url, retries = 2) {
+  for (let i = 0; i <= retries; i++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && data.status === 'warming') {
+        await new Promise(r => setTimeout(r, 9000));
+        continue;
+      }
+      return data;
+    } catch (e) {
+      if (i === retries) return null;
+      await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  return null;
+}
+
 /* ─── Xmore Track Record — Investor Page ───────────────────── */
 
 // ── i18n ──────────────────────────────────────────────────────
@@ -95,6 +115,7 @@ const I18N = {
     trEtfTitle: 'ETF & ETP Signals',
     trEtfSub: 'Technical signals for EGX-listed funds based on MA, RSI, and NAV premium/discount.',
     trEtfEmpty: 'ETF signals generate daily. Check back after the next pipeline run.',
+    track: '◎ Track',
   },
   ar: {
     back: '← الرئيسية',
@@ -187,6 +208,7 @@ const I18N = {
     trEtfTitle: 'إشارات الصناديق والمتتبعين',
     trEtfSub: 'إشارات فنية للصناديق المقيدة في البورصة المصرية بناءً على المتوسطات والقوة النسبية والعلاوة على القيمة الصافية.',
     trEtfEmpty: 'تُولَّد إشارات الصناديق يومياً. تفقد بعد تشغيل الخط التالي.',
+    track: '◎ تتبع',
   }
 };
 
@@ -197,7 +219,7 @@ function trToggleLang() {
   const html = document.getElementById('trHtml');
   html.setAttribute('lang', _LANG);
   html.setAttribute('dir', _LANG === 'ar' ? 'rtl' : 'ltr');
-  document.getElementById('trLangBtn').textContent = _LANG === 'en' ? 'عر' : 'EN';
+  document.getElementById('trLangBtn').textContent = _LANG === 'en' ? '🇪🇬 عربي' : 'EN';
   applyI18n();
   renderRolling();
   renderRiskRows();
@@ -253,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   loadAll();
+  initTracker();
 });
 
 function loadAll() {
@@ -300,9 +323,12 @@ function colorClass(v, invert = false) {
 // ── Summary ────────────────────────────────────────────────────
 async function loadSummary() {
   try {
-    const r = await fetch(`/api/track-record/summary?days=${activeDays}`);
-    const data = await r.json();
+    const data = await xfetch(`/api/track-record/summary?days=${activeDays}`);
+    if (!data) return;
     summaryCache = data;
+    // Update signal count banner
+    const bannerEl = document.getElementById('liveSignalCount');
+    if (bannerEl && data.total_live_signals) bannerEl.textContent = data.total_live_signals.toLocaleString();
 
     // Support both new /api/track-record/summary shape and old /api/performance-v2/summary shape
     const isNewShape = !!data.kpi_windows;
@@ -474,8 +500,8 @@ function renderRiskRows(global_) {
 // ── Equity Curve ───────────────────────────────────────────────
 async function loadEquityCurve() {
   try {
-    const r = await fetch(`/api/track-record/equity-curve?days=${activeDays}`);
-    const data = await r.json();
+    const data = await xfetch(`/api/track-record/equity-curve?days=${activeDays}`);
+    if (!data) return;
 
     const empty = document.getElementById('equityEmpty');
     const footer = document.getElementById('equityFooter');
@@ -575,8 +601,8 @@ async function loadEquityCurve() {
 // ── Agents ─────────────────────────────────────────────────────
 async function loadAgents() {
   try {
-    const r = await fetch('/api/track-record/agents');
-    const data = await r.json();
+    const data = await xfetch('/api/track-record/agents');
+    if (!data) return;
     const tbody = document.getElementById('agentTableBody');
     if (!data.agents || !data.agents.length) {
       tbody.innerHTML = `<tr><td colspan="5" class="tr-loading">${t('noData')}</td></tr>`;
@@ -611,8 +637,8 @@ async function loadAgents() {
 // ── Stocks ─────────────────────────────────────────────────────
 async function loadStocks() {
   try {
-    const r = await fetch(`/api/track-record/top-stocks?days=${activeDays}`);
-    const data = await r.json();
+    const data = await xfetch(`/api/track-record/top-stocks?days=${activeDays}`);
+    if (!data) return;
     const tbody = document.getElementById('stockTableBody');
     const stocks = data.top_by_alpha || data.stocks || [];
     if (!stocks.length) {
@@ -654,8 +680,8 @@ async function loadLog() {
     let url = `/api/track-record/predictions?page=${logPage}&limit=25&days=${activeDays}`;
     if (filter)  url += `&signal=${encodeURIComponent(filter)}`;
     if (outcome) url += `&outcome=${encodeURIComponent(outcome)}`;
-    const r = await fetch(url);
-    const data = await r.json();
+    const data = await xfetch(url);
+    if (!data) { tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">—</td></tr>`; return; }
 
     logDataCache = data.predictions || [];
     const pag = { page: data.page, pages: data.pages, total: data.total };
@@ -689,14 +715,15 @@ async function loadLog() {
         ? `<span class="tr-sim-tag">SIM</span>` : '';
       const rowDate = p.date || p.prediction_date || p.recommendation_date;
       return `<tr>
-        <td>${fmtDate(rowDate)}${simTag}</td>
-        <td><strong>${p.symbol}</strong><br><span style="color:#666;font-size:10px">${name !== p.symbol ? name : ''}</span></td>
-        <td class="${sigCls}">${signal}</td>
-        <td>${conf != null ? fmt(conf) + '%' : '—'}</td>
-        <td>${p.conviction || '—'}</td>
-        <td class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(ret1d) && ret1d != null ? fmtPct(ret1d, 2) : '—'}</td>
-        <td class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ?? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
-        <td>${hitHtml}</td>
+        <td data-label="Date">${fmtDate(rowDate)}${simTag}</td>
+        <td data-label="Symbol"><strong>${p.symbol}</strong><br><span style="color:#666;font-size:10px">${name !== p.symbol ? name : ''}</span></td>
+        <td data-label="Signal" class="${sigCls}">${signal}</td>
+        <td data-label="Confidence">${conf != null ? fmt(conf) + '%' : '—'}</td>
+        <td data-label="Conviction">${p.conviction || '—'}</td>
+        <td data-label="1D Return" class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(ret1d) && ret1d != null ? fmtPct(ret1d, 2) : '—'}</td>
+        <td data-label="Alpha" class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ?? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
+        <td data-label="Hit">${hitHtml}</td>
+        <td data-label="Track"><button class="track-btn" data-signal-id="${rowDate}-${p.symbol}" data-symbol="${p.symbol}" data-action="${signal}" data-entry="${p.entry_price || ''}" data-date="${rowDate}" onclick="toggleTrack(this)"><span>${t('track')}</span></button></td>
       </tr>`;
     }).join('');
 
@@ -706,6 +733,101 @@ async function loadLog() {
     tbody.innerHTML = `<tr><td colspan="8" class="tr-loading">Error loading log.</td></tr>`;
     console.error('Log error:', e);
   }
+}
+
+// ── Tracker Feature ─────────────────────────────────────────────
+const TRACKER_KEY = 'xmore_tracked_signals';
+
+function getTracked() {
+  try { return JSON.parse(localStorage.getItem(TRACKER_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveTracked(items) {
+  localStorage.setItem(TRACKER_KEY, JSON.stringify(items));
+}
+
+function toggleTrack(btn) {
+  const { signalId, symbol, action, entry, date } = btn.dataset;
+  const id = signalId || `${date}-${symbol}`;
+  let tracked = getTracked();
+  const idx = tracked.findIndex(t => t.signalId === id);
+
+  if (idx === -1) {
+    tracked.push({ signalId: id, symbol, action, entryPrice: parseFloat(entry) || null, trackedAt: new Date().toISOString(), signalDate: date, currentPnl: null });
+    btn.classList.add('tracked');
+    btn.querySelector('span').textContent = '◉';
+    showMicroToast(`${symbol} added to tracker`);
+  } else {
+    tracked.splice(idx, 1);
+    btn.classList.remove('tracked');
+    btn.querySelector('span').textContent = '◎';
+    showMicroToast(`${symbol} removed`);
+  }
+  saveTracked(tracked);
+  renderTrackerPanel();
+  updateTrackerBadge();
+}
+
+function renderTrackerPanel() {
+  const tracked = getTracked();
+  const body    = document.getElementById('trackerBody');
+  const pnlSum  = document.getElementById('trackerPnlSummary');
+  if (!body) return;
+
+  if (!tracked.length) {
+    body.innerHTML = `<div style="padding:24px 16px;text-align:center;color:rgba(255,255,255,0.3);font-size:12px">Click ◎ on any signal to track it</div>`;
+    if (pnlSum) pnlSum.textContent = '';
+    return;
+  }
+
+  let totalPnl = 0, resolved = 0;
+  body.innerHTML = tracked.map(tk => {
+    const pnlCls  = tk.currentPnl > 0 ? 'positive' : tk.currentPnl < 0 ? 'negative' : 'pending';
+    const pnlTxt  = tk.currentPnl != null ? `${tk.currentPnl > 0 ? '+' : ''}${(tk.currentPnl).toFixed(2)}%` : '—';
+    if (tk.currentPnl != null) { totalPnl += tk.currentPnl; resolved++; }
+    return `<div class="tracker-item">
+      <div>
+        <div class="tracker-symbol">${tk.symbol}</div>
+        <div class="tracker-meta">${tk.action || ''} · ${tk.signalDate || ''}</div>
+      </div>
+      <div class="tracker-pnl ${pnlCls}">${pnlTxt}</div>
+    </div>`;
+  }).join('');
+
+  if (resolved > 0 && pnlSum) {
+    const avg = (totalPnl / resolved).toFixed(2);
+    const c   = totalPnl >= 0 ? '#4ade80' : '#f87171';
+    pnlSum.innerHTML = `Avg: <span style="color:${c};font-weight:700">${totalPnl>=0?'+':''}${avg}%</span>`;
+  }
+}
+
+function updateTrackerBadge() {
+  const count = getTracked().length;
+  const el1   = document.getElementById('trackerCount');
+  const el2   = document.getElementById('trackerCountHeader');
+  if (el1) { el1.textContent = count; }
+  if (el2) { el2.textContent = count; el2.dataset.count = count; }
+}
+
+function showMicroToast(msg) {
+  const t2 = document.createElement('div');
+  t2.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(212,168,83,0.95);color:#0D1B3E;padding:8px 20px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:0.06em;z-index:9999;animation:fadeUp 0.3s ease';
+  t2.textContent = msg;
+  document.body.appendChild(t2);
+  setTimeout(() => t2.remove(), 2200);
+}
+
+function initTracker() {
+  const clearBtn = document.getElementById('trackerClear');
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    localStorage.removeItem(TRACKER_KEY);
+    renderTrackerPanel();
+    updateTrackerBadge();
+    document.querySelectorAll('.track-btn.tracked').forEach(b => { b.classList.remove('tracked'); const s = b.querySelector('span'); if(s) s.textContent='◎'; });
+  });
+  renderTrackerPanel();
+  updateTrackerBadge();
 }
 
 function renderPagination(pag) {
@@ -747,8 +869,8 @@ async function loadBacktest() {
   container.innerHTML = `<div class="tr-loading">${t('loading')}</div>`;
 
   try {
-    const r = await fetch('/api/track-record/backtest');
-    const data = await r.json();
+    const data = await xfetch('/api/track-record/backtest');
+    if (!data) { container.innerHTML = `<div class="tr-loading">${t('backtestEmpty')}</div>`; return; }
 
     // New endpoint wraps results; old returned a bare array
     const results = Array.isArray(data) ? data : (data.results || []);
@@ -837,11 +959,11 @@ async function loadSignalFeed() {
     const rows = data.predictions || data.rows || [];
     if (!rows.length) { el.innerHTML = `<div class="tr-empty" data-i18n="noData">${t('noData')}</div>`; return; }
     el.innerHTML = rows.map(r => {
-      const sig   = (r.action || r.signal || '').toUpperCase();
+      const sig   = (r.signal || r.action || '').toUpperCase();
       const cls   = sig === 'BUY' ? 'up' : sig === 'SELL' ? 'down' : 'hold';
-      const hit   = r.is_correct;
-      const conf  = r.confidence ? `${Math.round(r.confidence * 100)}%` : '—';
-      const dt    = r.created_at || r.prediction_date || '';
+      const hit   = r.outcome === 'WIN' ? true : r.outcome === 'LOSS' ? false : null;
+      const conf  = r.confidence != null ? `${Math.round(r.confidence)}%` : '—';
+      const dt    = r.date || '';
       const time  = dt ? new Date(dt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '';
       const date  = dt ? new Date(dt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '';
       return `<div class="tr-feed-row">
