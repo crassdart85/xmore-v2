@@ -44,6 +44,29 @@ translate_to_english = """Translate the following text to English while preservi
 translate_to_arabic = """Translate the following text to Arabic while preserving its original meaning and context. 
     Ensure that the translation is accurate and maintains the tone of the original text."""
 
+batch_sentiment = """You are analyzing EGX (Egypt Stock Exchange) news articles for stock market sentiment.
+
+EGX listed companies (use ONLY these for matching):
+{company_list}
+
+Analyze the following {n} articles. For each article, identify any EGX companies mentioned and their sentiment.
+
+ARTICLES:
+{articles_block}
+
+Return a JSON array with exactly {n} entries, one per article (index 0 to {n_minus_1}):
+[
+  {{"idx": 0, "matches": [{{"symbol": "COMI.CA", "company": "Commercial International Bank", "sentiment": "positive", "score": 7}}]}},
+  {{"idx": 1, "matches": []}},
+  ...
+]
+Rules:
+- Only include companies from the provided EGX company list above
+- score: integer from -10 (most negative) to +10 (most positive), 0 = neutral
+- sentiment: "positive" if score > 0, "negative" if score < 0, "neutral" if score == 0
+- Empty matches array if no EGX company is mentioned in that article
+- Return valid JSON only, no markdown fences, no explanation"""
+
 get_gemma_response = """Extract the following information from the news article:
     - Identify and list all the companies mentioned in the article.
     - Check Which of them are publicly listed companies and its symbolwithin this list {company_list}.

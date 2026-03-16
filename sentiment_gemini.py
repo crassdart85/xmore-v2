@@ -20,6 +20,8 @@ import time
 from datetime import datetime, timedelta
 
 import finnhub
+from google import genai
+from google.genai import types as genai_types
 import config
 from database import create_tables, get_connection, log_system_run
 from egx_symbols import EGX_SYMBOL_DATABASE
@@ -405,87 +407,104 @@ def _fetch_recent_articles(days_back: int = 2) -> list:
 
 # ── Gemini scoring ────────────────────────────────────────────────────────────
 
+def _parse_batch_result(batch_result, batch_articles, symbol_scores):
+    """Parse Gemini batch response and accumulate scores into symbol_scores dict."""
+    if not isinstance(batch_result, list):
+        return
+    for entry in batch_result:
+        if not isinstance(entry, dict):
+            continue
+        idx = entry.get("idx")
+        if idx is None or not isinstance(idx, int) or idx >= len(batch_articles):
+            continue
+        article = batch_articles[idx]
+        days_ago = article.get("_days_ago", 0.0)
+        symbol_hint = article.get("_symbol_hint")
+        for match in (entry.get("matches") or []):
+            if not isinstance(match, dict):
+                continue
+            company = match.get("company", "")
+            stock_symbol = str(match.get("symbol", match.get("stock_symbol", ""))).upper()
+            raw_score = match.get("score")
+            if raw_score is None:
+                sentiment_text = str(match.get("sentiment", "neutral")).lower()
+                raw_score = 7.0 if sentiment_text == "positive" else (-7.0 if sentiment_text == "negative" else 0.0)
+            symbol = symbol_hint
+            if not symbol:
+                clean_ticker = stock_symbol.replace(".CA", "")
+                if clean_ticker in EGX_SYMBOL_DATABASE:
+                    symbol = EGX_SYMBOL_DATABASE[clean_ticker].yahoo
+            if not symbol:
+                symbol = _match_company_to_symbol(company)
+            if symbol and raw_score is not None:
+                try:
+                    score = max(-1.0, min(1.0, float(raw_score) / 10.0))
+                    symbol_scores.setdefault(symbol, []).append((score, days_ago))
+                except (ValueError, TypeError):
+                    pass
+
+
 def _score_articles_with_gemini(articles: list) -> dict:
     """
-    Send each article to Gemini, collect per-symbol scores.
+    Send articles to Gemini in batches, collect per-symbol scores.
 
-    Returns dict: { 'COMI.CA': [0.7, 0.3], 'TMGH.CA': [-0.4], ... }
-    Scores are already normalised to -1..+1 (Gemini's -10..+10 divided by 10).
+    Batches of BATCH_SIZE articles per API call → ~20x faster than 1 article/call.
+    Returns dict: { 'COMI.CA': [(0.7, 0.0), (0.3, 1.0)], ... }
     """
     if not GOOGLE_API_KEY:
         logger.error("GOOGLE_API_KEY not set — cannot run Gemini scoring")
         return {}
 
-    gemma = CallGemma(api_key=GOOGLE_API_KEY, model="gemini-2.5-flash")
-    symbol_scores: dict = {}   # symbol → list of (score, days_ago) tuples
+    BATCH_SIZE = 30
+    client = genai.Client(api_key=GOOGLE_API_KEY)
+    symbol_scores: dict = {}
 
-    # Inject the EGX company list into the prompt
-    system_prompt = prompts.get_gemma_response.replace(
-        "{company_list}", _COMPANY_LIST_JSON
-    )
+    batches = [articles[i:i + BATCH_SIZE] for i in range(0, len(articles), BATCH_SIZE)]
+    logger.info(f"Scoring {len(articles)} articles in {len(batches)} batch(es) of {BATCH_SIZE}")
 
-    for i, article in enumerate(articles):
-        article_text = f"{article['headline']}\n\n{article['text']}"[:4000]
+    for batch_num, batch in enumerate(batches):
+        # Build articles block for prompt
+        articles_block = "\n\n".join(
+            f"[{i}]\nHEADLINE: {a.get('headline', '')}\nCONTENT: {a.get('text', '')[:1500]}"
+            for i, a in enumerate(batch)
+        )
+        n = len(batch)
+        prompt = (
+            prompts.batch_sentiment
+            .replace("{company_list}", _COMPANY_LIST_JSON)
+            .replace("{n}", str(n))
+            .replace("{n_minus_1}", str(n - 1))
+            .replace("{articles_block}", articles_block)
+        )
 
-        # If a symbol hint exists (Finnhub fallback), use a simpler scoring prompt
-        symbol_hint = article.get("_symbol_hint")
+        parsed = None
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt,
+                    config=genai_types.GenerateContentConfig(temperature=0.05),
+                )
+                raw = response.text or ""
+                # Strip markdown fences if present
+                if "```json" in raw.lower():
+                    raw = raw.split("```json", 1)[1].split("```")[0]
+                elif "```" in raw:
+                    raw = raw.split("```", 1)[1].split("```")[0]
+                parsed = json.loads(raw.strip())
+                break
+            except Exception as e:
+                logger.warning(f"Batch {batch_num+1} attempt {attempt+1} failed: {e}")
+                time.sleep(5)
 
-        try:
-            result = gemma.get_gemma_response(
-                sys_prompt=system_prompt,
-                news_article=article_text,
-                temperature=0.05,
-            )
-
-            if isinstance(result, dict):
-                result = [result]
-            if not isinstance(result, list):
-                # If Gemini returned nothing useful but we have a hint, use score=0
-                if symbol_hint:
-                    symbol_scores.setdefault(symbol_hint, []).append(0.0)
-                continue
-
-            days_ago = article.get("_days_ago", 0.0)
-
-            for item in result:
-                if not isinstance(item, dict):
-                    continue
-
-                company = item.get("company", "")
-                stock_symbol = str(item.get("stock_symbol", "")).upper()
-
-                # get_gemma_response returns 'sentiment' text; get_recommendation returns numeric 'score'
-                raw_score = item.get("score", None)
-                if raw_score is None:
-                    sentiment_text = str(item.get("sentiment", "neutral")).lower()
-                    raw_score = 7.0 if sentiment_text == "positive" else (-7.0 if sentiment_text == "negative" else 0.0)
-
-                # Resolve to Yahoo symbol — prefer hint, then Gemini's symbol, then name match
-                symbol = symbol_hint
-                if not symbol:
-                    clean_ticker = stock_symbol.replace(".CA", "")
-                    if clean_ticker in EGX_SYMBOL_DATABASE:
-                        symbol = EGX_SYMBOL_DATABASE[clean_ticker].yahoo
-                if not symbol:
-                    symbol = _match_company_to_symbol(company)
-
-                if symbol and raw_score is not None:
-                    try:
-                        # Normalise -10..+10 → -1..+1, clamp to range
-                        score = max(-1.0, min(1.0, float(raw_score) / 10.0))
-                        # Store (score, days_ago) for recency-weighted aggregation
-                        symbol_scores.setdefault(symbol, []).append((score, days_ago))
-                    except (ValueError, TypeError):
-                        pass
-
-        except Exception as e:
-            logger.warning(f"Gemini error on article {i}: {e}")
-
-        # Free tier: 15 req/min. Pause after every 14 calls to avoid hitting the limit.
-        if (i + 1) % 14 == 0:
-            logger.info(f"Rate-limit pause after {i + 1} articles...")
-            time.sleep(65)
+        if parsed:
+            _parse_batch_result(parsed, batch, symbol_scores)
+            logger.info(f"Batch {batch_num+1}/{len(batches)} done — {len(symbol_scores)} symbols so far")
         else:
+            logger.warning(f"Batch {batch_num+1} failed after 3 attempts — skipping")
+
+        # Respect free-tier rate limit (15 req/min): 4s between batches
+        if batch_num < len(batches) - 1:
             time.sleep(4)
 
     return symbol_scores
