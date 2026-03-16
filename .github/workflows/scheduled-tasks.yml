@@ -65,6 +65,7 @@ env:
   GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
   TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
   TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+  MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
 
 jobs:
   # ──────────────────────────────────────────────

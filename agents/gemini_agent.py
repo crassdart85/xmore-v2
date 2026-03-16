@@ -343,7 +343,13 @@ Rules:
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
-                    _adapt_sql("SELECT headline, source, date FROM news WHERE symbol = ? ORDER BY date DESC LIMIT 5"),
+                    _adapt_sql(
+                        "SELECT headline, source, date, urgency_score FROM news WHERE symbol = ? "
+                        "ORDER BY CASE source "
+                        "WHEN 'egx_official' THEN 1 WHEN 'marketaux' THEN 2 "
+                        "WHEN 'mubasher' THEN 3 WHEN 'argaam' THEN 4 ELSE 5 END, "
+                        "urgency_score DESC NULLS LAST, date DESC LIMIT 10"
+                    ),
                     (symbol,)
                 )
                 for row in cursor.fetchall():

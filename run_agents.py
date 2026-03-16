@@ -403,6 +403,18 @@ def execute():
             except Exception as _tg_err:
                 print(f"[TELEGRAM] Skipped: {_tg_err}")
 
+            # ── Intelligence pipeline (news + fundamentals + insider) ──────
+            try:
+                from agents.intelligence.run_intelligence import run_intelligence_pipeline
+                intel = run_intelligence_pipeline(conn)
+                MATERIAL_TICKERS = intel.get("material_tickers", [])
+                print(f"[INTEL] {intel.get('stored', 0)} new articles | "
+                      f"{len(MATERIAL_TICKERS)} material tickers")
+            except Exception as _intel_err:
+                MATERIAL_TICKERS = []
+                print(f"[INTEL] Skipped: {_intel_err}")
+            # ──────────────────────────────────────────────────────────────
+
             # Load accuracy-adjusted weights once for the entire run
             dynamic_weights = _load_dynamic_weights(conn)
             base_weights = getattr(config, 'AGENT_WEIGHTS', {})
@@ -1448,6 +1460,14 @@ def generate_daily_trade_recommendations(trading_date):
 
             # ── Execution realism gate ─────────────────────────────────────
             user_recs = apply_execution_realism(user_recs, conn)
+            # Material event bonus
+            for rec in user_recs:
+                if rec.get("symbol") in MATERIAL_TICKERS:
+                    rec["composite_score"] = min(1.0, (rec.get("composite_score") or 0.5) * 1.15)
+                    flags = rec.get("flags", [])
+                    if "⚡MATERIAL_EVENT" not in flags:
+                        flags.append("⚡MATERIAL_EVENT")
+                    rec["flags"] = flags
             # ──────────────────────────────────────────────────────────────
 
             # ── Universal Investor Scoring ─────────────────────────────────
