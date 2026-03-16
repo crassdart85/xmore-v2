@@ -3,19 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="base.css">
   <title>Xmore — Track Record</title>
   <link rel="stylesheet" href="track-record.css">
 </head>
 <body>
 
   <!-- Header -->
-  <header class="tr-header">
-    <a href="/" class="tr-back" data-i18n="back">← Dashboard</a>
+  <header class="tr-header x-topbar x-topbar--dark">
+    <a href="/" class="tr-back x-back" data-i18n="back">← Dashboard</a>
     <div class="tr-header-brand">
-      <span class="tr-logo">XMORE <span class="tr-logo-tag" data-i18n="logoTag">TRACK RECORD</span></span>
+      <span class="tr-logo x-brand">XMORE <span class="tr-logo-tag" data-i18n="logoTag">TRACK RECORD</span></span>
       <span class="tr-live-badge">Live pre-market signals since March 2026</span>
     </div>
-    <div class="tr-header-controls">
+    <nav class="x-nav-links" aria-label="Primary">
+      <a class="x-link" href="/">Home</a>
+      <a class="x-link active" href="/track-record" aria-current="page">Track Record</a>
+      <a class="x-link" href="/pro">Pro</a>
+      <a class="x-link" href="/session">Session</a>
+      <a class="x-link" href="/docs">Docs</a>
+    </nav>
+    <div class="tr-header-controls x-actions">
       <div class="tr-period-group">
         <button class="tr-period-btn active" data-days="30">30D</button>
         <button class="tr-period-btn" data-days="90">90D</button>

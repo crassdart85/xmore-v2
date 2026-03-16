@@ -3,16 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="base.css">
   <title>Xmore Pro — Market Overview</title>
   <link rel="stylesheet" href="pro.css">
 </head>
 <body>
 
   <!-- Header -->
-  <header class="pro-header">
-    <a href="/" class="pro-back" data-i18n="back">← Dashboard</a>
-    <span class="pro-logo">XMORE <span class="pro-logo-tag">PRO</span></span>
+  <header class="pro-header x-topbar x-topbar--dark">
+    <a href="/" class="pro-back x-back" data-i18n="back">← Dashboard</a>
+    <span class="pro-logo x-brand">XMORE <span class="pro-logo-tag">PRO</span></span>
     <span class="pro-market-label">EGX</span>
+    <nav class="x-nav-links" aria-label="Primary">
+      <a class="x-link" href="/">Home</a>
+      <a class="x-link" href="/track-record">Track Record</a>
+      <a class="x-link active" href="/pro" aria-current="page">Pro</a>
+      <a class="x-link" href="/session">Session</a>
+      <a class="x-link" href="/docs">Docs</a>
+    </nav>
     <!-- Live FX rates strip -->
     <div class="pro-fx-strip" id="proFxStrip">
       <span class="pro-fx-loading">FX…</span>

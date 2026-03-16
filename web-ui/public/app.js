@@ -20,7 +20,7 @@ const API_URL = '/api';
 
 // Shared HTML escaping utility
 function escapeHtml(value) {
-    return String(value ?? '')
+    return String(value ? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -448,6 +448,18 @@ const TRANSLATIONS = {
 
         // Comparison
         compModalTitle: 'Stock Comparison',
+        compMetric: 'Metric',
+        compSignal: 'Signal',
+        compScore: 'Xmore Score',
+        compConviction: 'Conviction',
+        compConfidence: 'Confidence',
+        compAgentsAgree: 'Agents Agree',
+        compBullScore: 'Bull Score',
+        compBearScore: 'Bear Score',
+        compPrice: 'Price (EGP)',
+        compDayChange: 'Day Change',
+        compVolume: 'Volume',
+        compBrief: 'AI Brief',
 
         // Portfolio totals
         ptlCostLabel: 'Invested (EGP)',
@@ -457,6 +469,12 @@ const TRANSLATIONS = {
 
         // Multi-horizon
         multiHorizonTitle: 'Signal Accuracy by Horizon',
+        mhSymbol: 'Symbol',
+        mhHorizon: 'Horizon',
+        mhPreds: 'Predictions',
+        mhCorrect: 'Correct',
+        mhAccuracy: 'Accuracy',
+        mhAvgChange: 'Avg Change',
 
         // Time Machine
         tabTimeMachine: 'Time Machine',
@@ -500,6 +518,25 @@ const TRANSLATIONS = {
         tmErrorGeneric: 'Simulation failed. Please try again.',
         tmTryDifferent: 'Try a different date range or amount.',
         tmNoDataHint: 'Could not complete the simulation. Try a different date range.',
+        // ETF cards
+        etfEgyptExposure: 'Egypt Exposure',
+        etfName: 'Name',
+        etfExchange: 'Exchange',
+        etfPrice: 'Price',
+        etfChange: 'Change',
+        etfNav: 'NAV',
+        etfPremDisc: 'Prem/Disc',
+        etfHoldings: 'Holdings',
+        etfIssuer: 'Issuer',
+        etfRet3m: '3M Return',
+        etfUnderlying: 'Underlying',
+        etfLiquidity: 'Liquidity',
+        etfNoData: 'No data yet',
+        etfNoDataSub: 'Data is collected automatically after market close',
+        etfNoResults: 'No results for',
+        etfLoadError: 'Could not load fund data.',
+        etfHoldingsTitle: 'Holdings',
+        etfNoHoldings: 'No holdings data available.',
         // Future tab
         tmSubPastLabel: '⏮ Past',
         tmSubFutureLabel: '⏭ Future',
@@ -770,6 +807,18 @@ const TRANSLATIONS = {
 
         // Comparison
         compModalTitle: 'مقارنة الأسهم',
+        compMetric: 'المعيار',
+        compSignal: 'الإشارة',
+        compScore: 'درجة Xmore',
+        compConviction: 'القناعة',
+        compConfidence: 'الثقة',
+        compAgentsAgree: 'توافق الوكلاء',
+        compBullScore: 'نقاط الصعود',
+        compBearScore: 'نقاط الهبوط',
+        compPrice: 'السعر (جنيه)',
+        compDayChange: 'تغير اليوم',
+        compVolume: 'الحجم',
+        compBrief: 'ملخص ذكي',
 
         // Portfolio totals
         ptlCostLabel: 'المستثمر (جنيه)',
@@ -779,6 +828,12 @@ const TRANSLATIONS = {
 
         // Multi-horizon
         multiHorizonTitle: 'دقة الإشارات حسب الأفق الزمني',
+        mhSymbol: 'الرمز',
+        mhHorizon: 'الأفق',
+        mhPreds: 'التنبؤات',
+        mhCorrect: 'الصحيح',
+        mhAccuracy: 'الدقة',
+        mhAvgChange: 'متوسط التغير',
 
         // Time Machine
         tabTimeMachine: 'آلة الزمن',
@@ -822,6 +877,25 @@ const TRANSLATIONS = {
         tmErrorGeneric: 'فشلت المحاكاة. يرجى المحاولة مرة أخرى.',
         tmTryDifferent: 'جرّب نطاق تاريخ أو مبلغ مختلف.',
         tmNoDataHint: 'تعذّر إكمال المحاكاة. جرّب نطاق تاريخ مختلف.',
+        // ETF cards
+        etfEgyptExposure: 'تعرّض لمصر',
+        etfName: 'الاسم',
+        etfExchange: 'البورصة',
+        etfPrice: 'السعر',
+        etfChange: 'التغير',
+        etfNav: 'القيمة الصافية',
+        etfPremDisc: 'علاوة/خصم',
+        etfHoldings: 'المكونات',
+        etfIssuer: 'الجهة المصدرة',
+        etfRet3m: 'عائد 3 أشهر',
+        etfUnderlying: 'الأصل الأساسي',
+        etfLiquidity: 'السيولة',
+        etfNoData: 'لا توجد بيانات بعد',
+        etfNoDataSub: 'يتم جمع البيانات تلقائياً بعد إغلاق السوق',
+        etfNoResults: 'لا توجد نتائج لـ',
+        etfLoadError: 'تعذر تحميل بيانات الصناديق.',
+        etfHoldingsTitle: 'المكونات',
+        etfNoHoldings: 'لا توجد بيانات مكونات.',
         // Future tab
         tmSubPastLabel: '⏮ الماضي',
         tmSubFutureLabel: '⏭ المستقبل',
@@ -1461,7 +1535,7 @@ function parsePredictionMetadata(metaRaw) {
         sentiment: sentiment || 'N/A',
         volume: volume || 'N/A',
         momentum,
-        reasoning: `Trend ${meta.trend_score ?? meta.trend_pct ?? 'N/A'} | Sentiment ${sentiment || 'N/A'} | Volume ${volume || 'N/A'} | Momentum ${momentum}`
+        reasoning: `Trend ${meta.trend_score ? meta.trend_pct ? 'N/A'} | Sentiment ${sentiment || 'N/A'} | Volume ${volume || 'N/A'} | Momentum ${momentum}`
     };
 }
 
@@ -1481,10 +1555,10 @@ async function loadGlobalSnapshotBar() {
         const r30 = data.rolling?.['30d'] || {};
         const trades = g.total_predictions || 0;
         const progressPct = Math.min(100, Math.round((trades / 100) * 100));
-        const sharpe = (r30.sharpe_ratio ?? g.sharpe_ratio ?? 0);
-        const maxDd = (r30.max_drawdown ?? g.max_drawdown ?? 0);
-        const alpha30 = (r30.alpha ?? 0);
-        const win30 = (r30.win_rate ?? 0);
+        const sharpe = (r30.sharpe_ratio ? g.sharpe_ratio ? 0);
+        const maxDd = (r30.max_drawdown ? g.max_drawdown ? 0);
+        const alpha30 = (r30.alpha ? 0);
+        const win30 = (r30.win_rate ? 0);
 
         const card = (id, label, cls, tooltip) => `
             <div class="global-snapshot-card ${cls}" title="${tooltip}">
@@ -1788,7 +1862,16 @@ function renderPredictionTable(grouped, symbols, tableId) {
 
     if (tableId === 'predictionsTable') populateSectorDropdown(symbols);
 
-    let html = `<table id="${tableId}" class="predictions-v2-table"><thead><tr><th>${t('stock')}</th><th>${t('consensusSignal')}</th><th>${t('agreement')}</th><th>${t('conviction')}</th><th>${t('recentAccuracySymbol')}</th><th>${t('expandDetails')}</th></tr></thead><tbody>`;
+    const labels = {
+        stock: t('stock'),
+        signal: t('consensusSignal'),
+        agreement: t('agreement'),
+        conviction: t('conviction'),
+        accuracy: t('recentAccuracySymbol'),
+        details: t('expandDetails')
+    };
+
+    let html = `<table id="${tableId}" class="predictions-v2-table table-cards"><thead><tr><th>${labels.stock}</th><th>${labels.signal}</th><th>${labels.agreement}</th><th>${labels.conviction}</th><th>${labels.accuracy}</th><th>${labels.details}</th></tr></thead><tbody>`;
 
     symbols.forEach(symbol => {
         const predictions = grouped[symbol];
@@ -1824,12 +1907,12 @@ function renderPredictionTable(grouped, symbols, tableId) {
 
         html += `
             <tr data-search="${searchText}" data-signal="${consensusKey}" data-conviction="${convictionLabel}" data-sector="${sector}" data-conf="${Math.round(convictionValue)}" class="group-start pred-stock-row">
-                <td class="stock-cell"><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
-                <td><span class="signal-${consensusKey}">${t(consensusKey)}</span></td>
-                <td>${agreeCount}/${predictions.length} (${agreementPct}%)</td>
-                <td>${convictionValue.toFixed(1)}%</td>
-                <td>${recentAcc == null ? 'N/A' : `${Number(recentAcc).toFixed(1)}%`}</td>
-                <td><button class="perf-action-btn secondary" onclick="togglePredictionDetails('${detailsId}')">${t('expandDetails')}</button></td>
+                <td data-label="${labels.stock}" class="stock-cell"><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                <td data-label="${labels.signal}"><span class="signal-${consensusKey}">${t(consensusKey)}</span></td>
+                <td data-label="${labels.agreement}">${agreeCount}/${predictions.length} (${agreementPct}%)</td>
+                <td data-label="${labels.conviction}">${convictionValue.toFixed(1)}%</td>
+                <td data-label="${labels.accuracy}">${recentAcc == null ? 'N/A' : `${Number(recentAcc).toFixed(1)}%`}</td>
+                <td data-label="${labels.details}"><button class="perf-action-btn secondary" onclick="togglePredictionDetails('${detailsId}')">${t('expandDetails')}</button></td>
             </tr>
             <tr data-search="${searchText}" class="group-row hidden-row pred-detail-row" id="${detailsId}">
                 <td colspan="6">
@@ -1950,7 +2033,13 @@ async function loadPerformance() {
             return;
         }
 
-        let html = `<table><thead><tr><th>${t('agent')}</th><th>${t('totalPreds')}</th><th>${t('correct')}</th><th>${t('accuracy')}</th></tr></thead><tbody>`;
+        const labels = {
+            agent: t('agent'),
+            total: t('totalPreds'),
+            correct: t('correct'),
+            accuracy: t('accuracy')
+        };
+        let html = `<table class="table-cards"><thead><tr><th>${labels.agent}</th><th>${labels.total}</th><th>${labels.correct}</th><th>${labels.accuracy}</th></tr></thead><tbody>`;
 
         data.forEach(agent => {
             const agentDisplayName = getAgentDisplayName(agent.agent_name);
@@ -1958,10 +2047,10 @@ async function loadPerformance() {
             const accuracyClass = agent.accuracy >= 60 ? 'high' : agent.accuracy >= 40 ? 'medium' : 'low';
             html += `
                 <tr>
-                    <td><strong class="agent-name" title="${agentDescription}">${agentDisplayName}</strong></td>
-                    <td>${agent.total_predictions}</td>
-                    <td>${agent.correct_predictions}</td>
-                    <td>
+                    <td data-label="${labels.agent}"><strong class="agent-name" title="${agentDescription}">${agentDisplayName}</strong></td>
+                    <td data-label="${labels.total}">${agent.total_predictions}</td>
+                    <td data-label="${labels.correct}">${agent.correct_predictions}</td>
+                    <td data-label="${labels.accuracy}">
                         <div class="accuracy-bar">
                             <div class="accuracy-fill accuracy-${accuracyClass}" style="width: ${agent.accuracy}%">
                                 ${agent.accuracy}%
@@ -1994,7 +2083,7 @@ async function loadPerformanceDetailed() {
         // Update overall accuracy in stats bar (avoids duplicate API call)
         const acc = data?.overall?.directional_accuracy;
         if (data?.overall?.total_predictions > 0) {
-            animateValue('overallAccuracy', acc ?? 0, { decimalPlaces: 1, suffix: '%' });
+            animateValue('overallAccuracy', acc ? 0, { decimalPlaces: 1, suffix: '%' });
         }
 
         // Render overall stats
@@ -2074,21 +2163,27 @@ function renderPerStockTable(perStock) {
         return;
     }
 
-    let html = `<table><thead><tr><th>${t('stock')}</th><th>${t('accuracy')}</th><th>${t('avgReturn')}</th><th>${t('totalPreds')}</th></tr></thead><tbody>`;
+    const labels = {
+        stock: t('stock'),
+        accuracy: t('accuracy'),
+        avgReturn: t('avgReturn'),
+        total: t('totalPreds')
+    };
+    let html = `<table class="table-cards"><thead><tr><th>${labels.stock}</th><th>${labels.accuracy}</th><th>${labels.avgReturn}</th><th>${labels.total}</th></tr></thead><tbody>`;
 
     entries.forEach(([symbol, stats]) => {
         const companyName = getCompanyName(symbol);
         const accuracyClass = stats.accuracy >= 60 ? 'high' : stats.accuracy >= 40 ? 'medium' : 'low';
         html += `
             <tr>
-                <td><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
-                <td>
+                <td data-label="${labels.stock}"><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                <td data-label="${labels.accuracy}">
                     <div class="accuracy-bar">
                         <div class="accuracy-fill accuracy-${accuracyClass}" style="width: ${stats.accuracy}%">${stats.accuracy}%</div>
                     </div>
                 </td>
-                <td class="${stats.avg_return >= 0 ? 'positive-change' : 'negative-change'}">${(stats.avg_return * 100).toFixed(2)}%</td>
-                <td>${stats.predictions}</td>
+                <td data-label="${labels.avgReturn}" class="${stats.avg_return >= 0 ? 'positive-change' : 'negative-change'}">${(stats.avg_return * 100).toFixed(2)}%</td>
+                <td data-label="${labels.total}">${stats.predictions}</td>
             </tr>
         `;
     });
@@ -2243,7 +2338,7 @@ async function loadEvaluations() {
                         <div class="result-stock-company">${companyName}</div>
                     </div>
                     <div class="result-stock-table-wrap">
-                        <table class="result-stock-table">
+                        <table class="result-stock-table table-cards">
                             <thead>
                                 <tr>
                                     <th>${t('agent')}</th>
@@ -2266,14 +2361,22 @@ async function loadEvaluations() {
                 const resultClass = item.was_correct ? 'result-correct' : 'result-wrong';
                 const resultIcon = item.was_correct ? '&#10003;' : '&#10007;';
 
+                const labels = {
+                    agent: t('agent'),
+                    signal: t('signal'),
+                    outcome: t('actualOutcome'),
+                    change: t('priceChange'),
+                    result: t('result'),
+                    date: t('targetDate')
+                };
                 html += `
                     <tr>
-                        <td>${agentDisplayName}</td>
-                        <td><span class="signal-${item.prediction.toLowerCase()}">${predictionText}</span></td>
-                        <td><span class="signal-${item.actual_outcome.toLowerCase()}">${actualText}</span></td>
-                        <td class="${changeClass}">${changePercent}%</td>
-                        <td><span class="${resultClass}">${resultIcon}</span></td>
-                        <td>${formatDate(item.target_date)}</td>
+                        <td data-label="${labels.agent}">${agentDisplayName}</td>
+                        <td data-label="${labels.signal}"><span class="signal-${item.prediction.toLowerCase()}">${predictionText}</span></td>
+                        <td data-label="${labels.outcome}"><span class="signal-${item.actual_outcome.toLowerCase()}">${actualText}</span></td>
+                        <td data-label="${labels.change}" class="${changeClass}">${changePercent}%</td>
+                        <td data-label="${labels.result}"><span class="${resultClass}">${resultIcon}</span></td>
+                        <td data-label="${labels.date}">${formatDate(item.target_date)}</td>
                     </tr>
                 `;
             });
@@ -2327,16 +2430,22 @@ async function loadPrices() {
             }
         }
 
-        let html = `<div class="scrollable-container"><table><thead><tr><th>${t('stock')}</th><th class="prices-date-col">${t('date')}</th><th>${t('closePrice')}</th><th>${t('volume')}</th></tr></thead><tbody>`;
+        const labels = {
+            stock: t('stock'),
+            date: t('date'),
+            close: t('closePrice'),
+            volume: t('volume')
+        };
+        let html = `<div class="scrollable-container"><table class="table-cards"><thead><tr><th>${labels.stock}</th><th class="prices-date-col">${labels.date}</th><th>${labels.close}</th><th>${labels.volume}</th></tr></thead><tbody>`;
 
         filteredData.forEach(stock => {
             const companyName = getCompanyName(stock.symbol);
             html += `
                 <tr>
-                    <td class="stock-cell"><strong>${stock.symbol}</strong><br><small class="company-name">${companyName}</small></td>
-                    <td class="prices-date-col">${formatDate(stock.date)}</td>
-                    <td class="price-cell">${parseFloat(stock.close).toFixed(2)}</td>
-                    <td class="volume-cell">${parseInt(stock.volume).toLocaleString()}</td>
+                    <td data-label="${labels.stock}" class="stock-cell"><strong>${stock.symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                    <td data-label="${labels.date}" class="prices-date-col">${formatDate(stock.date)}</td>
+                    <td data-label="${labels.close}" class="price-cell">${parseFloat(stock.close).toFixed(2)}</td>
+                    <td data-label="${labels.volume}" class="volume-cell">${parseInt(stock.volume).toLocaleString()}</td>
                 </tr>
             `;
         });
@@ -2471,16 +2580,24 @@ function buildScoringPanelHTML(data) {
         return modeSelect + `<p class="scoring-no-data">${t('scoringNoData')}</p>`;
     }
 
+    const labels = {
+        stock: t('stock'),
+        score: (SCORING_MODE_LABELS[currentLang] || SCORING_MODE_LABELS.en)[_currentScoringMode],
+        composite: t('scoringComposite'),
+        components: t('scoringComponents'),
+        threshold: t('scoringMeetsThreshold')
+    };
+
     const rows = signals.map(sig => {
         const sc   = sig.scores || {};
         const val  = sc[_currentScoringMode] !== undefined ? sc[_currentScoringMode] : '—';
         const disp = _currentScoringMode === 'stars' ? '★'.repeat(Math.round(val)) + ' ' + val : val;
         const comp = sig.components || {};
         return `<tr class="scoring-row${sig.meets_threshold ? ' scoring-above-threshold' : ''}">
-            <td class="scoring-symbol">${sig.symbol}</td>
-            <td class="scoring-score">${disp}</td>
-            <td class="scoring-composite">${(sig.composite_score * 100).toFixed(0)}</td>
-            <td class="scoring-bar-cell">
+            <td data-label="${labels.stock}" class="scoring-symbol">${sig.symbol}</td>
+            <td data-label="${labels.score}" class="scoring-score">${disp}</td>
+            <td data-label="${labels.composite}" class="scoring-composite">${(sig.composite_score * 100).toFixed(0)}</td>
+            <td data-label="${labels.components}" class="scoring-bar-cell">
                 <div class="scoring-mini-bar">
                     <span class="scoring-bar-seg scoring-bar-consensus" style="width:${(comp.consensus||0)*100}%"></span>
                     <span class="scoring-bar-seg scoring-bar-execution" style="width:${(comp.execution||0)*100}%"></span>
@@ -2488,18 +2605,18 @@ function buildScoringPanelHTML(data) {
                     <span class="scoring-bar-seg scoring-bar-momentum"  style="width:${(comp.momentum||0)*100}%"></span>
                 </div>
             </td>
-            <td class="scoring-threshold">${sig.meets_threshold ? '✓' : ''}</td>
+            <td data-label="${labels.threshold}" class="scoring-threshold">${sig.meets_threshold ? '✓' : ''}</td>
         </tr>`;
     }).join('');
 
     return `${modeSelect}
-    <table class="scoring-table">
+    <table class="scoring-table table-cards">
         <thead><tr>
-            <th>${t('stock')}</th>
-            <th>${(SCORING_MODE_LABELS[currentLang] || SCORING_MODE_LABELS.en)[_currentScoringMode]}</th>
-            <th>${t('scoringComposite')}</th>
-            <th>${t('scoringComponents')}</th>
-            <th>${t('scoringMeetsThreshold')}</th>
+            <th>${labels.stock}</th>
+            <th>${labels.score}</th>
+            <th>${labels.composite}</th>
+            <th>${labels.components}</th>
+            <th>${labels.threshold}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
     </table>`;
@@ -2817,7 +2934,7 @@ async function showWhySignal(symbol, signal) {
             srcs.innerHTML = '<div class="why-sources-title">Sources</div>' +
                 data.sources.map(s => {
                     const meta    = s.source_meta || {};
-                    const label   = meta.filename || meta.headline || `Chunk ${s.chunk_index ?? ''}`;
+                    const label   = meta.filename || meta.headline || `Chunk ${s.chunk_index ? ''}`;
                     const subline = meta.date ? ` · ${meta.date}` : '';
                     const pct     = s.similarity != null ? ` (${(s.similarity * 100).toFixed(0)}% match)` : '';
                     return `<div class="why-source-item"><span class="why-source-type">${s.source_type || ''}</span> ${label}${subline}${pct}</div>`;
@@ -2943,7 +3060,7 @@ async function loadEtfTab() {
 
     } catch (err) {
         const el = document.getElementById('etfMainLoading');
-        if (el) el.textContent = 'Could not load fund data.';
+        if (el) el.textContent = t('etfLoadError');
     }
 }
 
@@ -2955,7 +3072,7 @@ function _etfRenderGroup(key, instruments) {
     if (!instruments.length) {
         panel.innerHTML = `<div class="etf-empty-state">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.35"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg>
-            <p>No data yet</p><span>Data is collected automatically after market close</span></div>`;
+            <p>${t('etfNoData')}</p><span>${t('etfNoDataSub')}</span></div>`;
         return;
     }
 
@@ -2973,7 +3090,7 @@ function _etfBuildCard(i, group) {
 
     if (group === 'global-etfs') {
         const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
-        return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+        return `<div class="etf-card" onclick="showEtf${t('etfHoldings')}('${i.symbol}')">
             <div class="etf-card-header">
                 <div class="etf-card-symbol-row">
                     <span class="etf-symbol">${i.symbol}</span>
@@ -2982,12 +3099,12 @@ function _etfBuildCard(i, group) {
                 <span class="etf-exchange">${i.exchange || ''}</span>
             </div>
             <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
-            <div class="etf-card-row"><span class="etf-label">Egypt Exposure</span><span class="etf-value">${egyptPct}</span></div>
-            <div class="etf-card-row"><span class="etf-label">Price</span><span class="etf-value">${price}</span></div>
-            <div class="etf-card-row"><span class="etf-label">Change</span><span class="etf-value ${pctCls}">${pct}</span></div>
-            <div class="etf-card-row"><span class="etf-label">NAV</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
-            <div class="etf-card-row"><span class="etf-label">Prem/Disc</span><span class="etf-value ${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</span></div>
-            <div class="etf-card-actions"><button class="etf-action-btn" onclick="event.stopPropagation();showEtfHoldings('${i.symbol}')">Holdings</button></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfEgyptExposure')}</span><span class="etf-value">${egyptPct}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfPrice')}</span><span class="etf-value">${price}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfChange')}</span><span class="etf-value ${pctCls}">${pct}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfNav')}</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfPremDisc')}</span><span class="etf-value ${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</span></div>
+            <div class="etf-card-actions"><button class="etf-action-btn" onclick="event.stopPropagation();showEtf${t('etfHoldings')}('${i.symbol}')">${t('etfHoldings')}</button></div>
         </div>`;
     }
 
@@ -2997,7 +3114,7 @@ function _etfBuildCard(i, group) {
         const navVal  = _fmtNum(i.nav_value);
         const ret3m   = _fmtPct(i.pct_change);   // stored as 3-month return from EGX data
         const ret3mCls = _pctClass(i.pct_change);
-        return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+        return `<div class="etf-card" onclick="showEtf${t('etfHoldings')}('${i.symbol}')">
             <div class="etf-card-header">
                 <div class="etf-card-symbol-row">
                     <span class="etf-symbol">${i.symbol}</span>
@@ -3005,16 +3122,16 @@ function _etfBuildCard(i, group) {
                 </div>
             </div>
             <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
-            <div class="etf-card-issuer">Issuer: ${issuer}</div>
-            <div class="etf-card-row"><span class="etf-label">NAV</span><span class="etf-value">${navVal}</span></div>
-            <div class="etf-card-row"><span class="etf-label">3M Return</span><span class="etf-value ${ret3mCls}">${ret3m}</span></div>
-            <div class="etf-card-row"><span class="etf-label">Underlying</span><span class="etf-value">${underlying}</span></div>
-            <div class="etf-card-row"><span class="etf-label">Liquidity</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
+            <div class="etf-card-issuer">${t('etfIssuer')}: ${issuer}</div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfNav')}</span><span class="etf-value">${navVal}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfRet3m')}</span><span class="etf-value ${ret3mCls}">${ret3m}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfUnderlying')}</span><span class="etf-value">${underlying}</span></div>
+            <div class="etf-card-row"><span class="etf-label">${t('etfLiquidity')}</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
         </div>`;
     }
 
     // Default: ETF card
-    return `<div class="etf-card" onclick="showEtfHoldings('${i.symbol}')">
+    return `<div class="etf-card" onclick="showEtf${t('etfHoldings')}('${i.symbol}')">
         <div class="etf-card-header">
             <div class="etf-card-symbol-row">
                 <span class="etf-symbol">${i.symbol}</span>
@@ -3023,65 +3140,67 @@ function _etfBuildCard(i, group) {
             <span class="etf-exchange">${i.exchange || ''}</span>
         </div>
         <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
-        <div class="etf-card-row"><span class="etf-label">Price</span><span class="etf-value">${price}</span></div>
-        <div class="etf-card-row"><span class="etf-label">Change</span><span class="etf-value ${pctCls}">${pct}</span></div>
-        <div class="etf-card-row"><span class="etf-label">NAV</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
-        <div class="etf-card-row"><span class="etf-label">Prem/Disc</span><span class="etf-value ${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</span></div>
-        <div class="etf-card-row"><span class="etf-label">Liquidity</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
-        <div class="etf-card-actions"><button class="etf-action-btn" onclick="event.stopPropagation();showEtfHoldings('${i.symbol}')">Holdings</button></div>
+        <div class="etf-card-row"><span class="etf-label">${t('etfPrice')}</span><span class="etf-value">${price}</span></div>
+        <div class="etf-card-row"><span class="etf-label">${t('etfChange')}</span><span class="etf-value ${pctCls}">${pct}</span></div>
+        <div class="etf-card-row"><span class="etf-label">${t('etfNav')}</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
+        <div class="etf-card-row"><span class="etf-label">${t('etfPremDisc')}</span><span class="etf-value ${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</span></div>
+        <div class="etf-card-row"><span class="etf-label">${t('etfLiquidity')}</span><span class="etf-value">${_liquidityLabel(i.value_traded)}</span></div>
+        <div class="etf-card-actions"><button class="etf-action-btn" onclick="event.stopPropagation();showEtf${t('etfHoldings')}('${i.symbol}')">${t('etfHoldings')}</button></div>
     </div>`;
 }
 
 function _etfBuildTable(instruments, group) {
     let headers, rowFn;
+    const cell = (label, html, cls) =>
+        `<td data-label="${label}"${cls ? ` class="${cls}"` : ''}>${html}</td>`;
     if (group === 'global-etfs') {
-        headers = ['Symbol','Name','Exchange','Egypt %','Price','Change %','NAV','Prem/Disc'];
+        headers = [t('mhSymbol'), t('etfName'), t('etfExchange'), t('etfEgyptExposure'), t('etfPrice'), t('etfChange'), t('etfNav'), t('etfPremDisc')];
         rowFn = i => {
             const pct = _fmtPct(i.pct_change);
             const pctCls = _pctClass(i.pct_change);
             const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
             return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
-                <td><strong>${i.symbol}</strong></td>
-                <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${i.name||''}">${i.name||'—'}</td>
-                <td class="cell-muted">${i.exchange||'—'}</td>
-                <td>${egyptPct}</td>
-                <td>${_fmtNum(i.close_price||i.last_price)}</td>
-                <td class="${pctCls}">${pct}</td>
-                <td>${_fmtNum(i.nav_value)}</td>
-                <td class="${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</td>
+                ${cell(headers[0], `<strong>${i.symbol}</strong>`)}
+                ${cell(headers[1], `<span style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
+                ${cell(headers[2], i.exchange||'—', 'cell-muted')}
+                ${cell(headers[3], egyptPct)}
+                ${cell(headers[4], _fmtNum(i.close_price||i.last_price))}
+                ${cell(headers[5], pct, pctCls)}
+                ${cell(headers[6], _fmtNum(i.nav_value))}
+                ${cell(headers[7], _pdLabel(i.premium_discount), _pdClass(i.premium_discount))}
             </tr>`;
         };
     } else if (group === 'etps') {
-        headers = ['Symbol','Name','Issuer','Underlying','Price','Change %','Liquidity'];
+        headers = [t('mhSymbol'), t('etfName'), t('etfIssuer'), t('etfUnderlying'), t('etfPrice'), t('etfChange'), t('etfLiquidity')];
         rowFn = i => {
             const pctCls = _pctClass(i.pct_change);
             return `<tr>
-                <td><strong>${i.symbol}</strong> ${_typeBadge(i.type)}</td>
-                <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${i.name||''}">${i.name||'—'}</td>
-                <td class="cell-muted">${i.issuer||'—'}</td>
-                <td class="cell-muted">${i.underlying_index||'—'}</td>
-                <td>${_fmtNum(i.close_price||i.last_price)}</td>
-                <td class="${pctCls}">${_fmtPct(i.pct_change)}</td>
-                <td>${_liquidityLabel(i.value_traded)}</td>
+                ${cell(headers[0], `<strong>${i.symbol}</strong> ${_typeBadge(i.type)}`)}
+                ${cell(headers[1], `<span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
+                ${cell(headers[2], i.issuer||'—', 'cell-muted')}
+                ${cell(headers[3], i.underlying_index||'—', 'cell-muted')}
+                ${cell(headers[4], _fmtNum(i.close_price||i.last_price))}
+                ${cell(headers[5], _fmtPct(i.pct_change), pctCls)}
+                ${cell(headers[6], _liquidityLabel(i.value_traded))}
             </tr>`;
         };
     } else {
-        headers = ['Symbol','Name','Exchange','Price','Change %','NAV','Prem/Disc','Liquidity'];
+        headers = [t('mhSymbol'), t('etfName'), t('etfExchange'), t('etfPrice'), t('etfChange'), t('etfNav'), t('etfPremDisc'), t('etfLiquidity')];
         rowFn = i => {
             const pctCls = _pctClass(i.pct_change);
             return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
-                <td><strong>${i.symbol}</strong></td>
-                <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${i.name||''}">${i.name||'—'}</td>
-                <td class="cell-muted">${i.exchange||'—'}</td>
-                <td>${_fmtNum(i.close_price||i.last_price)}</td>
-                <td class="${pctCls}">${_fmtPct(i.pct_change)}</td>
-                <td>${_fmtNum(i.nav_value)}</td>
-                <td class="${_pdClass(i.premium_discount)}">${_pdLabel(i.premium_discount)}</td>
-                <td>${_liquidityLabel(i.value_traded)}</td>
+                ${cell(headers[0], `<strong>${i.symbol}</strong>`)}
+                ${cell(headers[1], `<span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
+                ${cell(headers[2], i.exchange||'—', 'cell-muted')}
+                ${cell(headers[3], _fmtNum(i.close_price||i.last_price))}
+                ${cell(headers[4], _fmtPct(i.pct_change), pctCls)}
+                ${cell(headers[5], _fmtNum(i.nav_value))}
+                ${cell(headers[6], _pdLabel(i.premium_discount), _pdClass(i.premium_discount))}
+                ${cell(headers[7], _liquidityLabel(i.value_traded))}
             </tr>`;
         };
     }
-    return `<table class="etf-data-table">
+    return `<table class="etf-data-table table-cards">
         <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
         <tbody>${instruments.map(rowFn).join('')}</tbody>
     </table>`;
@@ -3130,7 +3249,7 @@ function _etfApplyFilter() {
     const tableEl = document.getElementById('etfTable-' + key);
 
     if (!instruments.length) {
-        if (gridEl) gridEl.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:20px 0;">${q ? 'No results for "' + q + '"' : 'No data yet'}</div>`;
+        if (gridEl) gridEl.innerHTML = `<div style="color:var(--text-muted);font-size:13px;padding:20px 0;">${q ? t('etfNoResults') + ' \"' + q + '\"' : t('etfNoData')}</div>`;
         if (tableEl) tableEl.innerHTML = '';
         return;
     }
@@ -3149,7 +3268,7 @@ async function showEtfHoldings(symbol) {
     if (!modal) return;
 
     modal.style.display = 'flex';
-    if (title)   title.textContent = `${symbol} — Holdings`;
+    if (title)   title.textContent = `${symbol} — ${t('etfHoldingsTitle')}`;
     if (loading) loading.style.display = 'block';
     if (content) content.style.display = 'none';
 
@@ -3158,21 +3277,29 @@ async function showEtfHoldings(symbol) {
         if (loading) loading.style.display = 'none';
         if (!data || !data.snapshot) {
             if (content) { content.style.display = 'block'; }
-            if (meta) meta.textContent = 'No holdings data available.';
+            if (meta) meta.textContent = t('etfNoHoldings');
             if (lines) lines.innerHTML = '';
             return;
         }
         const snap = data.snapshot;
         if (meta) meta.textContent = `As of ${snap.snapshot_date} · Source: ${snap.source} · ${snap.currency || ''} · Total weight: ${snap.total_weight != null ? parseFloat(snap.total_weight).toFixed(1) + '%' : '—'}`;
         if (lines) {
+            const labels = {
+                line: 'Line',
+                holding: 'Holding',
+                isin: 'ISIN',
+                country: 'Country',
+                sector: 'Sector',
+                weight: 'Weight %'
+            };
             lines.innerHTML = (data.lines || []).map(l => `
                 <tr>
-                    <td>${l.line_no}</td>
-                    <td>${l.holding_name || l.holding_symbol || '—'}</td>
-                    <td style="font-size:11px;color:var(--text-muted);">${l.holding_isin || ''}</td>
-                    <td>${l.country || '—'}</td>
-                    <td>${l.sector || '—'}</td>
-                    <td><strong>${l.weight_pct != null ? parseFloat(l.weight_pct).toFixed(2) + '%' : '—'}</strong></td>
+                    <td data-label="${labels.line}">${l.line_no}</td>
+                    <td data-label="${labels.holding}">${l.holding_name || l.holding_symbol || '—'}</td>
+                    <td data-label="${labels.isin}" style="font-size:11px;color:var(--text-muted);">${l.holding_isin || ''}</td>
+                    <td data-label="${labels.country}">${l.country || '—'}</td>
+                    <td data-label="${labels.sector}">${l.sector || '—'}</td>
+                    <td data-label="${labels.weight}"><strong>${l.weight_pct != null ? parseFloat(l.weight_pct).toFixed(2) + '%' : '—'}</strong></td>
                 </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No holding lines.</td></tr>';
         }
         if (content) content.style.display = 'block';
@@ -3325,28 +3452,35 @@ async function runComparison() {
             return `<span class="signal-badge ${cls}">${sig}</span>`;
         };
 
+        const metricLabel = t('compMetric');
+        const rowCell = (label, values) =>
+            `<tr><td data-label="${metricLabel}">${label}</td>` +
+            values.map((v, i) => `<td data-label="${rows[i].sym}">${v}</td>`).join('') +
+            `</tr>`;
+
         resultsEl.innerHTML = `
         <div class="table-responsive">
-        <table class="data-table comp-table">
+        <table class="data-table comp-table table-cards">
             <thead><tr>
-                <th>Metric</th>
+                <th>${metricLabel}</th>
                 ${rows.map(r => `<th>${r.sym}</th>`).join('')}
             </tr></thead>
             <tbody>
-            <tr><td>Signal</td>${rows.map(r => `<td>${signalBadge(r.c.final_signal)}</td>`).join('')}</tr>
-            <tr><td>Xmore Score</td>${rows.map(r => `<td>${r.c.xmore_score != null ? Math.round(r.c.xmore_score) : '—'}</td>`).join('')}</tr>
-            <tr><td>Conviction</td>${rows.map(r => `<td>${r.c.conviction || '—'}</td>`).join('')}</tr>
-            <tr><td>Confidence</td>${rows.map(r => `<td>${r.c.confidence != null ? r.c.confidence + '%' : '—'}</td>`).join('')}</tr>
-            <tr><td>Agents Agree</td>${rows.map(r => `<td>${r.c.agents_agreeing != null ? r.c.agents_agreeing + '/' + r.c.agents_total : '—'}</td>`).join('')}</tr>
-            <tr><td>Bull Score</td>${rows.map(r => `<td style="color:var(--bullish)">${r.c.bull_score != null ? r.c.bull_score : '—'}</td>`).join('')}</tr>
-            <tr><td>Bear Score</td>${rows.map(r => `<td style="color:var(--bearish)">${r.c.bear_score != null ? r.c.bear_score : '—'}</td>`).join('')}</tr>
-            <tr><td>Price (EGP)</td>${rows.map(r => `<td>${r.p.close != null ? parseFloat(r.p.close).toFixed(2) : '—'}</td>`).join('')}</tr>
-            <tr><td>Day Change</td>${rows.map(r => `<td style="color:${r.chg > 0 ? 'var(--bullish)' : r.chg < 0 ? 'var(--bearish)' : 'inherit'}">${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : '—'}</td>`).join('')}</tr>
-            <tr><td>Volume</td>${rows.map(r => `<td>${r.p.volume != null ? Number(r.p.volume).toLocaleString() : '—'}</td>`).join('')}</tr>
-            <tr><td>AI Brief</td>${rows.map(r => `<td><button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">Brief ↗</button></td>`).join('')}</tr>
+            ${rowCell(t('compSignal'), rows.map(r => signalBadge(r.c.final_signal)))}
+            ${rowCell(t('compScore'), rows.map(r => r.c.xmore_score != null ? Math.round(r.c.xmore_score) : '—'))}
+            ${rowCell(t('compConviction'), rows.map(r => r.c.conviction || '—'))}
+            ${rowCell(t('compConfidence'), rows.map(r => r.c.confidence != null ? r.c.confidence + '%' : '—'))}
+            ${rowCell(t('compAgentsAgree'), rows.map(r => r.c.agents_agreeing != null ? r.c.agents_agreeing + '/' + r.c.agents_total : '—'))}
+            ${rowCell(t('compBullScore'), rows.map(r => `<span style="color:var(--bullish)">${r.c.bull_score != null ? r.c.bull_score : '—'}</span>`))}
+            ${rowCell(t('compBearScore'), rows.map(r => `<span style="color:var(--bearish)">${r.c.bear_score != null ? r.c.bear_score : '—'}</span>`))}
+            ${rowCell(t('compPrice'), rows.map(r => r.p.close != null ? parseFloat(r.p.close).toFixed(2) : '—'))}
+            ${rowCell(t('compDayChange'), rows.map(r => `<span style="color:${r.chg > 0 ? 'var(--bullish)' : r.chg < 0 ? 'var(--bearish)' : 'inherit'}">${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : '—'}</span>`))}
+            ${rowCell(t('compVolume'), rows.map(r => r.p.volume != null ? Number(r.p.volume).toLocaleString() : '—'))}
+            ${rowCell(t('compBrief'), rows.map(r => `<button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">${t('compBrief')} →</button>`))}
             </tbody>
         </table>
-        </div>`;
+        </div>
+        `;
     } catch (err) {
         resultsEl.innerHTML = `<p style="color:var(--bearish)">${err.message}</p>`;
     }
@@ -3491,18 +3625,26 @@ async function loadSignalAccuracy(horizon) {
             el.innerHTML = `<p style="color:var(--text-muted)">No D+${horizon} data yet — runs after 10+ trading days of consensus signals.</p>`;
             return;
         }
+        const labels = {
+            symbol: t('mhSymbol'),
+            horizon: t('mhHorizon'),
+            preds: t('mhPreds'),
+            correct: t('mhCorrect'),
+            accuracy: t('mhAccuracy'),
+            avgChange: t('mhAvgChange')
+        };
         el.innerHTML = `
         <div class="table-responsive">
-        <table class="data-table">
-            <thead><tr><th>Symbol</th><th>Horizon</th><th>Predictions</th><th>Correct</th><th>Accuracy</th><th>Avg Change</th></tr></thead>
+        <table class="data-table table-cards">
+            <thead><tr><th>${labels.symbol}</th><th>${labels.horizon}</th><th>${labels.preds}</th><th>${labels.correct}</th><th>${labels.accuracy}</th><th>${labels.avgChange}</th></tr></thead>
             <tbody>${data.map(r => `
             <tr>
-                <td><strong>${r.symbol}</strong></td>
-                <td>D+${r.horizon_days}</td>
-                <td>${r.total}</td>
-                <td>${r.correct}</td>
-                <td style="color:${parseFloat(r.accuracy_pct) >= 60 ? 'var(--bullish)' : 'var(--bearish)'};font-weight:700">${parseFloat(r.accuracy_pct).toFixed(1)}%</td>
-                <td style="color:${parseFloat(r.avg_change_pct) >= 0 ? 'var(--bullish)' : 'var(--bearish)'}">${parseFloat(r.avg_change_pct) >= 0 ? '+' : ''}${parseFloat(r.avg_change_pct).toFixed(2)}%</td>
+                <td data-label="${labels.symbol}"><strong>${r.symbol}</strong></td>
+                <td data-label="${labels.horizon}">D+${r.horizon_days}</td>
+                <td data-label="${labels.preds}">${r.total}</td>
+                <td data-label="${labels.correct}">${r.correct}</td>
+                <td data-label="${labels.accuracy}" style="color:${parseFloat(r.accuracy_pct) >= 60 ? 'var(--bullish)' : 'var(--bearish)'};font-weight:700">${parseFloat(r.accuracy_pct).toFixed(1)}%</td>
+                <td data-label="${labels.avgChange}" style="color:${parseFloat(r.avg_change_pct) >= 0 ? 'var(--bullish)' : 'var(--bearish)'}">${parseFloat(r.avg_change_pct) >= 0 ? '+' : ''}${parseFloat(r.avg_change_pct).toFixed(2)}%</td>
             </tr>`).join('')}
             </tbody>
         </table>

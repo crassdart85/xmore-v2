@@ -650,7 +650,7 @@
 
     // ─── Escape helper (local fallback) ──────────────────────
     function escHtml(v) {
-        return typeof escapeHtml === 'function' ? escapeHtml(v) : String(v ?? '');
+        return typeof escapeHtml === 'function' ? escapeHtml(v) : String(v ? '');
     }
 
     // ─── Initialise Future form bindings ─────────────────────
@@ -1221,8 +1221,8 @@
 
         // Sort by expected return descending; failed runs go to bottom
         const sorted = [...results].sort((a, b) => {
-            const ra = a.ok !== false ? (a.expected_return_pct ?? -999) : -9999;
-            const rb = b.ok !== false ? (b.expected_return_pct ?? -999) : -9999;
+            const ra = a.ok !== false ? (a.expected_return_pct ? -999) : -9999;
+            const rb = b.ok !== false ? (b.expected_return_pct ? -999) : -9999;
             return rb - ra;
         });
 
@@ -1248,7 +1248,7 @@
                 <td class="fc-multi-rank">${i + 1}</td>
                 <td class="fc-multi-sym">${escHtml(sym)}</td>
                 <td class="fc-multi-ret ${retCls(ret)}">${fmtPct(ret)}</td>
-                <td class="fc-multi-prob">${d.probability_positive ?? '—'}%</td>
+                <td class="fc-multi-prob">${d.probability_positive ? '—'}%</td>
                 <td class="fc-multi-val">${fmtEGP(d.worst_case_value)}</td>
                 <td class="fc-multi-val">${fmtEGP(d.median_value)}</td>
                 <td class="fc-multi-val fc-multi-best">${fmtEGP(d.best_case_value)}</td>

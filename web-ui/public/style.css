@@ -86,6 +86,7 @@ body {
     min-height: 100vh;
     padding: 0;
     transition: background 0.3s ease;
+    font-size: 14px;
 }
 
 .container {
@@ -118,16 +119,17 @@ header {
     position: relative;
     text-align: left;
     margin: 0 -32px 28px -32px;
-    background: #000000;
+    background: var(--x-bg-dark, #000000);
     padding: 0 32px;
     height: 56px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: var(--x-space-4, 16px);
     border-radius: 0;
     color: white;
     box-shadow: none;
     border-bottom: 3px solid var(--accent);
+    border-top: 1px solid var(--x-border-dark, #2a2a2a);
 }
 
 h1 {
@@ -136,9 +138,10 @@ h1 {
     font-weight: 800;
     margin: 0;
     text-shadow: none;
-    letter-spacing: 4px;
+    letter-spacing: 2px;
     text-transform: uppercase;
     flex-shrink: 0;
+    font-family: var(--x-font-sans, 'Helvetica Neue', Helvetica, Arial, sans-serif);
 }
 
 .subtitle {
@@ -1261,7 +1264,7 @@ footer {
     margin-inline-start: auto;
     height: 56px;
     display: flex;
-    gap: 6px;
+    gap: var(--x-space-2, 8px);
     align-items: center;
     flex-wrap: nowrap;
 }
@@ -1271,7 +1274,7 @@ footer {
     color: rgba(255, 255, 255, 0.75);
     border: 1px solid rgba(255, 255, 255, 0.3);
     padding: 5px 12px;
-    border-radius: 2px;
+    border-radius: var(--x-radius-sm, 6px);
     font-size: 0.78em;
     font-weight: 600;
     letter-spacing: 0.5px;
@@ -1290,7 +1293,7 @@ footer {
     font-weight: 700;
     padding: 5px 10px;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
+    border-radius: var(--x-radius-sm, 6px);
     color: rgba(255, 255, 255, 0.75);
     text-decoration: none;
     background: transparent;
@@ -5712,3 +5715,37 @@ button:active, .btn:active, .tab-btn:active {
 .regime-link:hover { text-decoration: underline; }
 /* Pro page regime val */
 .regime-val.amber { color: #f59e0b !important; }
+
+/* Mobile cards for dense dashboard tables */
+@media (max-width: 900px) {
+    .table-cards thead { display: none; }
+    .table-cards tr {
+        display: block;
+        border: 1px solid var(--border-color);
+        margin-bottom: 10px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: var(--table-bg);
+    }
+    .table-cards td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+        border: none !important;
+        gap: 8px;
+    }
+    .table-cards td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 10px;
+        text-transform: none;
+        letter-spacing: 0.01em;
+        flex-shrink: 0;
+    }
+    .pred-detail-row td {
+        display: block;
+        padding-top: 8px;
+    }
+}

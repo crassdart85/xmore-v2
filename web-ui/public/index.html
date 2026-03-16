@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="base.css">
     <title>Xmore — AI Stock Prediction Dashboard</title>
     <meta name="description"
         content="Xmore is an AI-powered stock prediction system for the Egyptian Exchange (EGX) and US markets. Live performance tracking, multi-agent consensus signals.">
@@ -20,10 +21,10 @@
         <!-- TradingView Ticker Tape (EGX30 index) -->
         <div id="tv-ticker-tape" class="tv-ticker-container"></div>
 
-        <header>
-            <h1>Xmore</h1>
+        <header class="x-topbar x-topbar--dark">
+            <h1 class="x-brand">Xmore</h1>
             <p class="subtitle">AI Stock Prediction Dashboard</p>
-            <div class="header-buttons">
+            <div class="header-buttons x-actions">
                 <!-- User auth area -->
                 <div id="userInfoBar" class="user-info-bar" style="display:none;">
                     <span id="userEmail" class="user-email"></span>
@@ -34,6 +35,7 @@
                 </div>
                 <a href="/docs" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Docs</a>
                 <a href="/track-record" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Track Record ↗</a>
+                <a href="/session" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Session ?</a>
                 <a href="/pro" class="pro-link-btn">PRO ↗</a>
                 <button id="themeBtn" class="theme-btn" title="Toggle dark mode">
                     <span class="icon-sun">☀️</span>
@@ -980,7 +982,7 @@
                 <div id="etfModalLoading" style="text-align:center;padding:40px;color:var(--text-muted);">Loading holdings…</div>
                 <div id="etfModalContent" style="display:none;">
                     <div id="etfModalMeta" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
-                    <table class="etf-holdings-table">
+                    <table class="etf-holdings-table table-cards">
                         <thead>
                             <tr><th>#</th><th>Holding</th><th>ISIN</th><th>Country</th><th>Sector</th><th>Weight %</th></tr>
                         </thead>

@@ -178,9 +178,9 @@ async function loadPerformanceDashboard() {
         // Animate proof-of-edge metrics (Upgrade 1)
         const r30 = summary.rolling?.['30d'] || {};
         const g = summary.global || {};
-        const alpha = r30.alpha ?? 0;
-        const sharpe = r30.sharpe_ratio ?? g.sharpe_ratio ?? 0;
-        const maxDd = r30.max_drawdown ?? g.max_drawdown ?? 0;
+        const alpha = r30.alpha ? 0;
+        const sharpe = r30.sharpe_ratio ? g.sharpe_ratio ? 0;
+        const maxDd = r30.max_drawdown ? g.max_drawdown ? 0;
         if (typeof animateValue === 'function') {
             animateValue('perfEdgeAlpha', alpha, { decimalPlaces: 2, suffix: '%', prefix: alpha > 0 ? '+' : '' });
             animateValue('perfEdgeSharpe', sharpe, { decimalPlaces: 2 });
@@ -204,9 +204,9 @@ function metricCard(label, value, cls = '', tip = '', id = '') {
 function buildHealth(summary) {
     const g = summary.global || {};
     const r30 = summary.rolling?.['30d'] || {};
-    const sharpe = r30.sharpe_ratio ?? g.sharpe_ratio ?? 0;
-    const alpha = r30.alpha ?? g.avg_alpha_1d ?? 0;
-    const dd = r30.max_drawdown ?? g.max_drawdown ?? 0;
+    const sharpe = r30.sharpe_ratio ? g.sharpe_ratio ? 0;
+    const alpha = r30.alpha ? g.avg_alpha_1d ? 0;
+    const dd = r30.max_drawdown ? g.max_drawdown ? 0;
     let state = 'degraded';
     if (sharpe > 1 && alpha > 0 && dd <= 8) state = 'stable';
     else if (sharpe > 0.6 && alpha >= 0 && dd <= 12) state = 'watch';
@@ -223,9 +223,9 @@ function buildHealth(summary) {
 function buildProofOfEdge(summary, equity) {
     const g = summary.global || {};
     const r30 = summary.rolling?.['30d'] || {};
-    const alpha = r30.alpha ?? 0;
-    const sharpe = r30.sharpe_ratio ?? g.sharpe_ratio ?? 0;
-    const maxDd = r30.max_drawdown ?? g.max_drawdown ?? 0;
+    const alpha = r30.alpha ? 0;
+    const sharpe = r30.sharpe_ratio ? g.sharpe_ratio ? 0;
+    const maxDd = r30.max_drawdown ? g.max_drawdown ? 0;
 
     return createSection(`
         <h3>${pt('proof')}</h3>
@@ -362,15 +362,15 @@ function buildInstitutionalMetrics(summary, fullReport) {
             <div class="inst-value ${colorClass}">${value}</div>
          </div>`;
 
-    const sharpe  = im.sharpe_ratio ?? '—';
-    const sortino = im.sortino_ratio ?? '—';
-    const calmar  = im.calmar_ratio ?? '—';
-    const ir      = im.information_ratio ?? '—';
-    const mdd     = im.max_drawdown_pct ?? '—';
+    const sharpe  = im.sharpe_ratio ? '—';
+    const sortino = im.sortino_ratio ? '—';
+    const calmar  = im.calmar_ratio ? '—';
+    const ir      = im.information_ratio ? '—';
+    const mdd     = im.max_drawdown_pct ? '—';
     const recDays = im.recovery_duration_days;
     const recStr  = im.max_drawdown_recovered === false ? pt('notRecovered') : recDays != null ? `${recDays} ${pt('days')}` : '—';
-    const beta    = im.beta_vs_benchmark ?? '—';
-    const downCap = im.down_capture_ratio ?? 0;
+    const beta    = im.beta_vs_benchmark ? '—';
+    const downCap = im.down_capture_ratio ? 0;
     const downStr = downCap !== '—' ? `${(Number(downCap) * 100).toFixed(0)}%` : '—';
 
     // Rolling Sharpe sparkline

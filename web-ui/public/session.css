@@ -20,7 +20,7 @@ body {
   color: var(--s-text);
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   min-height: 100vh;
 }
 
@@ -29,6 +29,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
   padding: 10px 20px;
   background: var(--s-bg);
   border-bottom: 1px solid var(--s-border);
@@ -348,4 +349,33 @@ html[dir="rtl"] .s-session-label { margin-left: 0; margin-right: auto; }
 @media (max-width: 900px) {
   .s-table th, .s-table td { padding: 6px 8px; font-size: 11px; }
   .s-container { padding: 12px; }
+}
+
+@media (max-width: 900px) {
+  .s-table thead { display: none; }
+  .s-table tr {
+    display: block;
+    border: 1px solid var(--s-border);
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--s-surface);
+  }
+  .s-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border: none !important;
+    gap: 8px;
+  }
+  .s-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--s-muted);
+    font-size: 10px;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    flex-shrink: 0;
+  }
 }

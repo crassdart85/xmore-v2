@@ -1,0 +1,114 @@
+/* Shared UI tokens + reusable topbar */
+:root {
+  --x-font-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --x-font-mono: "Courier New", monospace;
+  --x-radius-sm: 6px;
+  --x-radius-md: 10px;
+  --x-space-1: 4px;
+  --x-space-2: 8px;
+  --x-space-3: 12px;
+  --x-space-4: 16px;
+  --x-space-5: 20px;
+  --x-accent: #e8003c;
+  --x-bg-dark: #0a0a0a;
+  --x-bg-light: #ffffff;
+  --x-text-dark: #101010;
+  --x-text-light: #f0f0f0;
+  --x-border-light: #d8d8d8;
+  --x-border-dark: #2a2a2a;
+}
+
+.x-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--x-space-3);
+  padding: 10px 20px;
+  background: var(--x-topbar-bg, transparent);
+  border-bottom: 1px solid var(--x-topbar-border, transparent);
+}
+
+.x-topbar--dark {
+  --x-topbar-bg: var(--x-bg-dark);
+  --x-topbar-border: var(--x-border-dark);
+  color: var(--x-text-light);
+}
+
+.x-topbar--light {
+  --x-topbar-bg: var(--x-bg-light);
+  --x-topbar-border: var(--x-border-light);
+  color: var(--x-text-dark);
+}
+
+.x-back {
+  text-decoration: none;
+  color: inherit;
+  opacity: 0.7;
+  font-weight: 600;
+}
+.x-back:hover { opacity: 1; }
+
+.x-brand {
+  font-family: var(--x-font-sans);
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.x-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--x-space-2);
+  flex-wrap: wrap;
+}
+
+.x-nav-links {
+  display: flex;
+  align-items: center;
+  gap: var(--x-space-2);
+  flex-wrap: wrap;
+}
+
+.x-link {
+  text-decoration: none;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--x-radius-sm);
+  border: 1px solid var(--x-topbar-border, #333);
+  color: inherit;
+  opacity: 0.7;
+  font-weight: 700;
+}
+.x-link:hover { opacity: 1; }
+.x-link.active,
+.x-link[aria-current="page"] {
+  opacity: 1;
+  color: var(--x-accent);
+  border-color: var(--x-accent);
+}
+
+.x-pill {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--x-topbar-border, #ddd);
+}
+
+@media (max-width: 640px) {
+  .x-topbar { padding: 8px 12px; flex-wrap: wrap; }
+  .x-actions { width: 100%; justify-content: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

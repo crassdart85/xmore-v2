@@ -11,7 +11,7 @@ const auditHealth = document.getElementById('auditHealth');
 const agentHealth = document.getElementById('agentHealth');
 
 function escapeHtml(value) {
-    return String(value ?? '')
+    return String(value ? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -172,8 +172,8 @@ function renderSystemHealth(data) {
     agentHealth.innerHTML = agent ? `
         <p><strong>Date:</strong> ${escapeHtml(agent.snapshot_date || '-')}</p>
         <p><strong>Agent:</strong> ${escapeHtml(agent.agent_name || '-')}</p>
-        <p><strong>30D:</strong> ${escapeHtml(String(agent.win_rate_30d ?? '-'))}% (${escapeHtml(String(agent.predictions_30d ?? 0))} preds)</p>
-        <p><strong>90D:</strong> ${escapeHtml(String(agent.win_rate_90d ?? '-'))}% (${escapeHtml(String(agent.predictions_90d ?? 0))} preds)</p>
+        <p><strong>30D:</strong> ${escapeHtml(String(agent.win_rate_30d ? '-'))}% (${escapeHtml(String(agent.predictions_30d ? 0))} preds)</p>
+        <p><strong>90D:</strong> ${escapeHtml(String(agent.win_rate_90d ? '-'))}% (${escapeHtml(String(agent.predictions_90d ? 0))} preds)</p>
     ` : '<p class="no-data">No agent daily data available.</p>';
 }
 
@@ -855,8 +855,8 @@ async function loadForecastAccuracy() {
         const data = await fetchJson(`${API_BASE}/forecast-accuracy`);
 
         // Summary
-        setVal('faStatTotal',     data.summary?.total_forecasts    ?? '—');
-        setVal('faStatEvaluated', data.summary?.total_evaluated    ?? '—');
+        setVal('faStatTotal',     data.summary?.total_forecasts    ? '—');
+        setVal('faStatEvaluated', data.summary?.total_evaluated    ? '—');
         const avgErr = data.summary?.avg_error_pct;
         setVal('faStatAvgError',  avgErr != null ? avgErr.toFixed(2) + '%' : '—');
         const hitRate = data.summary?.within_10pct_rate;

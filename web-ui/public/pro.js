@@ -1,7 +1,7 @@
 /* ─── Xmore Pro — Market Overview ────────────────────────────────────────── */
 
 // ── Bilingual i18n ────────────────────────────────────────────────────────────
-let _PRO_LANG = 'en';
+let _PRO_LANG = localStorage.getItem('lang') || 'en';
 
 const _PRO_I18N = {
   en: {
@@ -78,8 +78,11 @@ function proApplyLang() {
 
 function proToggleLang() {
   _PRO_LANG = _PRO_LANG === 'en' ? 'ar' : 'en';
+  localStorage.setItem('lang', _PRO_LANG);
   proApplyLang();
 }
+
+proApplyLang();
 
 // ── FX rates ──────────────────────────────────────────────────────────────────
 async function loadFxRates() {
@@ -91,9 +94,9 @@ async function loadFxRates() {
     if (!data || data.error) throw new Error(data.error || 'no data');
 
     const fxItems = [
-      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  ?? '—' },
-      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  ?? '—' },
-      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  ?? '—' },
+      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  ? '—' },
+      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  ? '—' },
+      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  ? '—' },
     ];
     const goldItems = data.GOLD_24K_EGP_G ? [
       { label: '🥇 24K/g',   val: data.GOLD_24K_EGP_G?.toFixed(0) + ' EGP' },

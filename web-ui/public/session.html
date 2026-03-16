@@ -3,18 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="base.css">
   <title>Xmore — Session Sheet</title>
   <link rel="stylesheet" href="session.css">
 </head>
 <body>
 
   <!-- Header -->
-  <header class="s-header">
-    <a href="/" class="s-back" id="sBack">← Dashboard</a>
-    <span class="s-logo">XMORE <span class="s-logo-tag">SESSION</span></span>
+  <header class="s-header x-topbar x-topbar--dark">
+    <a href="/" class="s-back x-back" id="sBack">← Dashboard</a>
+    <span class="s-logo x-brand">XMORE <span class="s-logo-tag">SESSION</span></span>
     <span class="s-session-label" id="sSessionLabel">
       Session <span class="s-session-date" id="sSessionDate">—</span>
     </span>
+    <nav class="x-nav-links" aria-label="Primary">
+      <a class="x-link" href="/">Home</a>
+      <a class="x-link" href="/track-record">Track Record</a>
+      <a class="x-link" href="/pro">Pro</a>
+      <a class="x-link active" href="/session" aria-current="page">Session</a>
+      <a class="x-link" href="/docs">Docs</a>
+    </nav>
     <button class="s-lang-btn" id="sLangBtn" onclick="toggleLang()">عر</button>
   </header>
 
@@ -135,13 +143,13 @@ const T = {
   }
 };
 
-let lang = localStorage.getItem('s_lang') || 'en';
+let lang = localStorage.getItem('lang') || 'en';
 
 function t(key) { return (T[lang] || T.en)[key] || key; }
 
 function toggleLang() {
   lang = lang === 'en' ? 'ar' : 'en';
-  localStorage.setItem('s_lang', lang);
+  localStorage.setItem('lang', lang);
   document.documentElement.lang = lang;
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
   document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
@@ -213,6 +221,25 @@ function renderHead() {
 function renderTable(data) {
   renderHead();
   const tbody = document.getElementById('sTableBody');
+  const labels = {
+    q: t('colQ'),
+    code: t('colCode'),
+    name: t('colName'),
+    trend: t('colTrend'),
+    rec: t('colRecType'),
+    buy: t('colBuy'),
+    sl: t('colSL'),
+    tgt: t('colTarget'),
+    profit: t('colProfit'),
+    risk: t('colRisk'),
+    rr: t('colRR'),
+    s2: t('colS2'),
+    s1: t('colS1'),
+    pivot: t('colPivot'),
+    r1: t('colR1'),
+    r2: t('colR2'),
+    patterns: t('colPatterns'),
+  };
 
   if (!data || data.length === 0) {
     tbody.innerHTML = `<tr><td colspan="17" class="s-empty">${t('empty')}</td></tr>`;
@@ -237,23 +264,23 @@ function renderTable(data) {
     const sym = row.symbol.replace('.CA', '');
 
     return `<tr>
-      <td class="s-row-num">${i + 1}</td>
-      <td class="s-code">${sym}</td>
-      <td class="s-name">${nameLabel(row)}</td>
-      <td class="${tc}">${trendLabel(row)}</td>
-      <td class="${recCls}">${recTypeLabel(row)}</td>
-      <td class="s-num-buy">${fmt(row.buy_guide, 3)}</td>
-      <td class="s-num-sl">${fmt(row.stop_loss_price, 3)}</td>
-      <td class="s-num-tgt">${fmt(row.target_price, 3)}</td>
-      <td>${fmtPct(row.target_pct)}</td>
-      <td>${fmtPct(row.stop_loss_pct)}</td>
-      <td class="s-num">${fmt(row.risk_reward_ratio, 2)}</td>
-      <td class="s-pivot-val">${fmt(row.s2, 3)}</td>
-      <td class="s-pivot-val">${fmt(row.s1, 3)}</td>
-      <td class="s-pivot-val">${fmt(row.pivot, 3)}</td>
-      <td class="s-pivot-val">${fmt(row.r1, 3)}</td>
-      <td class="s-pivot-val">${fmt(row.r2, 3)}</td>
-      <td class="s-patterns">${renderPatterns(row.patterns)}</td>
+      <td data-label="${labels.q}" class="s-row-num">${i + 1}</td>
+      <td data-label="${labels.code}" class="s-code">${sym}</td>
+      <td data-label="${labels.name}" class="s-name">${nameLabel(row)}</td>
+      <td data-label="${labels.trend}" class="${tc}">${trendLabel(row)}</td>
+      <td data-label="${labels.rec}" class="${recCls}">${recTypeLabel(row)}</td>
+      <td data-label="${labels.buy}" class="s-num-buy">${fmt(row.buy_guide, 3)}</td>
+      <td data-label="${labels.sl}" class="s-num-sl">${fmt(row.stop_loss_price, 3)}</td>
+      <td data-label="${labels.tgt}" class="s-num-tgt">${fmt(row.target_price, 3)}</td>
+      <td data-label="${labels.profit}">${fmtPct(row.target_pct)}</td>
+      <td data-label="${labels.risk}">${fmtPct(row.stop_loss_pct)}</td>
+      <td data-label="${labels.rr}" class="s-num">${fmt(row.risk_reward_ratio, 2)}</td>
+      <td data-label="${labels.s2}" class="s-pivot-val">${fmt(row.s2, 3)}</td>
+      <td data-label="${labels.s1}" class="s-pivot-val">${fmt(row.s1, 3)}</td>
+      <td data-label="${labels.pivot}" class="s-pivot-val">${fmt(row.pivot, 3)}</td>
+      <td data-label="${labels.r1}" class="s-pivot-val">${fmt(row.r1, 3)}</td>
+      <td data-label="${labels.r2}" class="s-pivot-val">${fmt(row.r2, 3)}</td>
+      <td data-label="${labels.patterns}" class="s-patterns">${renderPatterns(row.patterns)}</td>
     </tr>`;
   }).join('');
 

@@ -19,7 +19,7 @@ body {
   background: var(--tr-bg);
   color: var(--tr-text);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Arabic', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   min-height: 100vh;
 }
 
@@ -1297,8 +1297,8 @@ html, body { overflow-x: hidden; max-width: 100%; }
     font-weight: 600;
     color: rgba(255,255,255,0.4);
     font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: none;
+    letter-spacing: 0.01em;
     flex-shrink: 0;
     margin-right: 8px;
   }
@@ -1328,8 +1328,8 @@ html, body { overflow-x: hidden; max-width: 100%; }
     font-weight: 600;
     color: rgba(255,255,255,0.4);
     font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    text-transform: none;
+    letter-spacing: 0.01em;
     flex-shrink: 0;
   }
   .tr-table--cards .tr-win-bar {
