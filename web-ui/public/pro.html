@@ -26,7 +26,7 @@
       <span class="pro-fx-loading">FX…</span>
     </div>
     <!-- Language toggle -->
-    <button class="pro-lang-btn" id="proLangBtn" onclick="proToggleLang()">عر</button>
+    <button class="pro-lang-btn" id="proLangBtn" onclick="proToggleLang()" aria-label="Switch language">عر</button>
     <span class="pro-date" id="proDate"></span>
     <!-- Auth area -->
     <div class="pro-auth-area">
@@ -37,10 +37,10 @@
   </header>
 
   <!-- Login Modal -->
-  <div class="pro-modal-overlay" id="proAuthModal" style="display:none" onclick="if(event.target===this)hideProModal()">
+  <div class="pro-modal-overlay" id="proAuthModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="proModalTitle" onclick="if(event.target===this)hideProModal()">
     <div class="pro-modal">
-      <button class="pro-modal-close" onclick="hideProModal()">&times;</button>
-      <div class="pro-modal-title" data-i18n="modalTitle">Sign in to Xmore</div>
+      <button class="pro-modal-close" onclick="hideProModal()" aria-label="Close dialog">&times;</button>
+      <div class="pro-modal-title" id="proModalTitle" data-i18n="modalTitle">Sign in to Xmore</div>
       <div class="pro-modal-tabs">
         <button class="pro-modal-tab active" id="proTabLogin" onclick="proSwitchTab('login')" data-i18n="login">Login</button>
         <button class="pro-modal-tab" id="proTabSignup" onclick="proSwitchTab('signup')" data-i18n="signUp">Sign Up</button>
@@ -113,7 +113,7 @@
             <th data-i18n="colChg">Chg%</th>
             <th data-i18n="colSignal">Signal</th>
             <th data-i18n="colConf">Conf</th>
-            <th data-i18n="colScore">Score</th>
+            <th data-i18n="colScore" title="Xmore Score (0–100): Bull×0.30 + Agreement×0.25 + Confidence×0.20 + Bear×0.25. ≥75=Very High, ≥60=High, ≥40=Moderate">Score ⓘ</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -129,7 +129,7 @@
             <th data-i18n="colChg">Chg%</th>
             <th data-i18n="colSignal">Signal</th>
             <th data-i18n="colConf">Conf</th>
-            <th data-i18n="colScore">Score</th>
+            <th data-i18n="colScore" title="Xmore Score (0–100): Bull×0.30 + Agreement×0.25 + Confidence×0.20 + Bear×0.25. ≥75=Very High, ≥60=High, ≥40=Moderate">Score ⓘ</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -141,7 +141,7 @@
   <div class="pro-sector-panel">
     <div class="pro-panel-title" data-i18n="sectorPerf">Sector Performance</div>
     <div class="pro-sector-grid" id="sectorGrid">
-      <div style="color:#555;font-size:12px;padding:8px 0;">Loading…</div>
+      <div class="pro-loading" data-i18n="loading">Loading…</div>
     </div>
   </div>
 
@@ -253,7 +253,7 @@
       <span class="pro-panel-note" data-i18n="backtestNote">Updated weekly · ML agent only</span>
     </div>
     <div class="pro-backtest-body" id="backtestBody">
-      <div style="color:#555;font-size:12px;padding:8px 0;" data-i18n="loading">Loading…</div>
+      <div class="pro-loading" data-i18n="loading">Loading…</div>
     </div>
   </div>
 
@@ -267,6 +267,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <script src="xmore-toast.js"></script>
   <script src="pro.js"></script>
 </body>
 </html>

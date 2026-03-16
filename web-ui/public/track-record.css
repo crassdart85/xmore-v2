@@ -6,7 +6,7 @@
   --tr-surface2: #1a1a1a;
   --tr-border:   #2a2a2a;
   --tr-text:     #e0e0e0;
-  --tr-muted:    #555;
+  --tr-muted:    #999;
   --tr-green:    #00c853;
   --tr-red:      #ff1744;
   --tr-amber:    #ffab00;
@@ -841,11 +841,11 @@ html, body { overflow-x: hidden; max-width: 100%; }
 .tr-feed-signal--hold { background: rgba(136,136,136,.15); color: #aaa; }
 .tr-feed-sym  { font-weight: 600; min-width: 70px; }
 .tr-feed-conf { color: #aaa; min-width: 42px; font-size: 12px; }
-.tr-feed-time { margin-left: auto; color: #666; font-size: 11px; }
+.tr-feed-time { margin-left: auto; color: #999; font-size: 11px; }
 .tr-feed-hit  { font-size: 14px; font-weight: 700; min-width: 20px; text-align: center; }
 .tr-feed-hit--win     { color: #00c853; }
 .tr-feed-hit--loss    { color: #ff1744; }
-.tr-feed-hit--pending { color: #666; }
+.tr-feed-hit--pending { color: #999; }
 
 /* ─── Signal Distribution ───────────────────────────────── */
 .tr-dist-wrap {
@@ -880,7 +880,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 .tr-dist-stat-sig--down { color: #ff1744; }
 .tr-dist-stat-sig--hold { color: #888; }
 .tr-dist-stat-pct  { font-size: 26px; font-weight: 700; line-height: 1; }
-.tr-dist-stat-cnt  { font-size: 11px; color: #666; margin-top: 2px; }
+.tr-dist-stat-cnt  { font-size: 11px; color: #999; margin-top: 2px; }
 .tr-dist-stat-win  { font-size: 11px; color: #aaa; margin-top: 4px; }
 
 /* ─── Sector Accuracy ────────────────────────────────────── */
@@ -900,7 +900,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 .tr-sector-bar.acc-red   { background: #ff1744; }
 .tr-sector-wr  { font-weight: 700; font-size: 12px; text-align: right; }
 .tr-sector-ret { font-size: 12px; text-align: right; }
-.tr-sector-cnt { color: #555; font-size: 11px; text-align: right; }
+.tr-sector-cnt { color: #999; font-size: 11px; text-align: right; }
 .tr-sector-legend { margin-top: 12px; font-size: 11px; display: flex; gap: 12px; flex-wrap: wrap; }
 .tr-sector-legend span { padding: 2px 8px; border-radius: 3px; }
 .tr-sector-legend .acc-green { background: rgba(0,200,83,.15); color: #00c853; }
@@ -915,7 +915,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
   margin-right: 7px;
   vertical-align: middle;
 }
-.tr-regime-note { font-size: 11px; color: #555; margin-top: 12px; }
+.tr-regime-note { font-size: 11px; color: #999; margin-top: 12px; }
 
 /* ─── Methodology Compare ────────────────────────────────── */
 .tr-section--method { border-top: 2px solid #2a2a2a; }
@@ -940,7 +940,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
   padding: 0 16px;
   font-size: 18px;
   font-weight: 700;
-  color: #444;
+  color: #888;
   background: #111;
   min-width: 40px;
 }

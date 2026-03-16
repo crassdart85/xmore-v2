@@ -723,19 +723,37 @@ async function initPortfolios() {
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
 let _proAuthMode = 'login';
+let _proModalPrevFocus = null;
+
+function _proFocusTrap(e) {
+  const modal = document.getElementById('proAuthModal');
+  if (!modal || modal.style.display === 'none') return;
+  const focusable = Array.from(modal.querySelectorAll(
+    'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  ));
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
 
 function showProModal() {
+  _proModalPrevFocus = document.activeElement;
   _proAuthMode = 'login';
   proSwitchTab('login');
   document.getElementById('proAuthEmail').value = '';
   document.getElementById('proAuthPassword').value = '';
   document.getElementById('proAuthError').style.display = 'none';
   document.getElementById('proAuthModal').style.display = 'flex';
-  document.getElementById('proAuthEmail').focus();
+  document.addEventListener('keydown', _proFocusTrap);
+  setTimeout(() => document.getElementById('proAuthEmail').focus(), 50);
 }
 
 function hideProModal() {
   document.getElementById('proAuthModal').style.display = 'none';
+  document.removeEventListener('keydown', _proFocusTrap);
+  if (_proModalPrevFocus && _proModalPrevFocus.focus) _proModalPrevFocus.focus();
+  _proModalPrevFocus = null;
 }
 
 function proSwitchTab(mode) {

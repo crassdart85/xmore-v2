@@ -5,7 +5,7 @@
   --pro-surface: #141414;
   --pro-border:  #2a2a2a;
   --pro-text:    #e0e0e0;
-  --pro-muted:   #555;
+  --pro-muted:   #999;
   --pro-green:   #00c853;
   --pro-red:     #ff1744;
   --pro-amber:   #ffab00;
@@ -89,7 +89,7 @@ body {
 .pro-fx-pair {
   font-size: 9px;
   letter-spacing: 1px;
-  color: #444;
+  color: #888;
   text-transform: uppercase;
 }
 
@@ -99,14 +99,14 @@ body {
 }
 
 .pro-fx-sep {
-  color: #333;
+  color: #555;
   font-size: 16px;
   line-height: 1;
 }
 
 .pro-fx-loading {
   font-size: 10px;
-  color: #333;
+  color: #888;
 }
 
 .pro-lang-btn {
@@ -114,7 +114,8 @@ body {
   border: 1px solid var(--pro-border);
   color: var(--pro-muted);
   font-size: 11px;
-  padding: 3px 8px;
+  padding: 6px 12px;
+  min-height: 36px;
   border-radius: 3px;
   cursor: pointer;
   letter-spacing: 0.5px;
@@ -554,12 +555,14 @@ body {
   border: 1px solid var(--pro-border);
   color: var(--pro-muted);
   font-size: 11px;
-  padding: 3px 10px;
+  padding: 6px 12px;
+  min-height: 36px;
   border-radius: 3px;
   cursor: pointer;
   letter-spacing: 0.5px;
   transition: border-color 0.15s, color 0.15s;
 }
+.pro-auth-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .pro-auth-btn:hover { border-color: var(--pro-text); color: var(--pro-text); }
 .pro-auth-btn--primary {
   border-color: var(--pro-accent);

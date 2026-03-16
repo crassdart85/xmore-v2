@@ -612,8 +612,10 @@ function applyTabVisibility(hiddenSet) {
 
 function switchTab(tabId) {
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tab === tabId);
-        btn.setAttribute('aria-selected', btn.dataset.tab === tabId ? 'true' : 'false');
+        const isActive = btn.dataset.tab === tabId;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        if (isActive) btn.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
     });
     document.querySelectorAll('.admin-tab-panel').forEach(panel => {
         panel.classList.toggle('active', panel.id === tabId);
