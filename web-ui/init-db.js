@@ -17,39 +17,45 @@ const timeoutId = setTimeout(() => {
 }, TIMEOUT_MS);
 timeoutId.unref(); // Don't keep process alive just for timeout
 
+// max:1 forces all pool.query() calls to reuse the same connection,
+// so a single SET lock_timeout applies to every subsequent statement.
 const pool = new Pool({
   connectionString: DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  connectionTimeoutMillis: 10000,  // 10 second connection timeout
-  idleTimeoutMillis: 10000
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 1,
 });
 
 /**
- * Execute a CREATE INDEX statement safely.
- * Sets a 5-second lock_timeout so we never block indefinitely when a
- * concurrent GH Actions job holds an AccessExclusiveLock on the same table.
+ * Execute a CREATE INDEX (or ALTER TABLE) statement safely.
+ * Because max:1 keeps a single connection, the global lock_timeout set
+ * in initializeDatabase() covers every call here as well.
  * Errors are logged as warnings; they never abort the whole init.
  */
 async function safeCreateIndex(db, sql) {
   try {
-    await db.query('SET lock_timeout = \'5s\'');
     await db.query(sql);
   } catch (e) {
-    console.warn(`⚠️  Index skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
-  } finally {
-    try { await db.query('SET lock_timeout = 0'); } catch (_) {}
+    console.warn(`⚠️  DDL skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
   }
 }
 
 async function initializeDatabase() {
   console.log('🔧 Initializing PostgreSQL database...');
-  console.log('📍 Connecting to:', DATABASE_URL.replace(/:[^:@]+@/, ':****@')); // Log URL without password
+  console.log('📍 Connecting to:', DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
 
   try {
     // Test connection
     console.log('⏳ Testing database connection...');
     await pool.query('SELECT 1');
     console.log('✅ Connected to PostgreSQL');
+
+    // Set a 5-second lock timeout for every DDL statement in this session.
+    // If a concurrent GH Actions job holds an AccessExclusiveLock we fail
+    // fast (warning) instead of blocking for 120 s and crashing the deploy.
+    await pool.query("SET lock_timeout = '5s'");
+    console.log('⏱  lock_timeout = 5s');
 
     // Create tables
     console.log('📋 Creating tables...');
@@ -812,9 +818,9 @@ async function initializeDatabase() {
 
     console.log('✅ ETF / instrument tables ready');
 
-    // New columns (safe — IF NOT EXISTS syntax)
-    await pool.query('ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1');
-    await pool.query('ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5');
+    // New columns (safe — IF NOT EXISTS syntax; errors caught so lock_timeout doesn't abort init)
+    try { await pool.query('ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1'); } catch(_) {}
+    try { await pool.query('ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5'); } catch(_) {}
 
     // Table: Price Alerts
     await pool.query(`
