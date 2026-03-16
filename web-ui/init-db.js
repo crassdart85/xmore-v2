@@ -24,6 +24,23 @@ const pool = new Pool({
   idleTimeoutMillis: 10000
 });
 
+/**
+ * Execute a CREATE INDEX statement safely.
+ * Sets a 5-second lock_timeout so we never block indefinitely when a
+ * concurrent GH Actions job holds an AccessExclusiveLock on the same table.
+ * Errors are logged as warnings; they never abort the whole init.
+ */
+async function safeCreateIndex(db, sql) {
+  try {
+    await db.query('SET lock_timeout = \'5s\'');
+    await db.query(sql);
+  } catch (e) {
+    console.warn(`⚠️  Index skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
+  } finally {
+    try { await db.query('SET lock_timeout = 0'); } catch (_) {}
+  }
+}
+
 async function initializeDatabase() {
   console.log('🔧 Initializing PostgreSQL database...');
   console.log('📍 Connecting to:', DATABASE_URL.replace(/:[^:@]+@/, ':****@')); // Log URL without password
@@ -86,7 +103,7 @@ async function initializeDatabase() {
         UNIQUE(symbol, date)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_sentiment_symbol_date ON sentiment_scores(symbol, date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_sentiment_symbol_date ON sentiment_scores(symbol, date)');
 
     // Table 3: Predictions
     await pool.query(`
@@ -221,7 +238,7 @@ async function initializeDatabase() {
         UNIQUE(symbol, run_date)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_backtest_symbol ON backtest_results(symbol, run_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_backtest_symbol ON backtest_results(symbol, run_date DESC)');
     console.log('✅ backtest_results table ready');
 
     // ============================================
@@ -289,8 +306,8 @@ async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    await pool.query("CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_open_position ON user_positions(user_id, symbol) WHERE status = 'OPEN'");
-    await pool.query("CREATE INDEX IF NOT EXISTS idx_positions_user ON user_positions(user_id)");
+    await safeCreateIndex(pool, "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_open_position ON user_positions(user_id, symbol) WHERE status = 'OPEN'");
+    await safeCreateIndex(pool, "CREATE INDEX IF NOT EXISTS idx_positions_user ON user_positions(user_id)");
 
     // Table 13: Trade Recommendations
     console.log('📊 Creating trade_recommendations table...');
@@ -327,7 +344,7 @@ async function initializeDatabase() {
         UNIQUE(user_id, symbol, recommendation_date)
       )
     `);
-    await pool.query("CREATE INDEX IF NOT EXISTS idx_trade_rec_user_date ON trade_recommendations(user_id, recommendation_date DESC)");
+    await safeCreateIndex(pool, "CREATE INDEX IF NOT EXISTS idx_trade_rec_user_date ON trade_recommendations(user_id, recommendation_date DESC)");
 
     // Session-sheet columns on trade_recommendations (safe)
     for (const col of [
@@ -354,7 +371,7 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    await pool.query("CREATE INDEX IF NOT EXISTS idx_briefings_date ON daily_briefings(briefing_date DESC)");
+    await safeCreateIndex(pool, "CREATE INDEX IF NOT EXISTS idx_briefings_date ON daily_briefings(briefing_date DESC)");
 
     // Table: Market Intelligence reports (Admin dashboard)
     await pool.query(`
@@ -369,7 +386,7 @@ async function initializeDatabase() {
         CONSTRAINT chk_market_reports_language CHECK (language IN ('EN', 'AR'))
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_market_reports_upload_date ON market_reports(upload_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_market_reports_upload_date ON market_reports(upload_date DESC)');
 
     // Table: Custom News Sources (Admin-managed URLs, RSS, Telegram, WhatsApp)
     await pool.query(`
@@ -409,7 +426,7 @@ async function initializeDatabase() {
         UNIQUE(source_id, external_id)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_custom_articles_source ON custom_source_articles(source_id, fetched_at DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_custom_articles_source ON custom_source_articles(source_id, fetched_at DESC)');
 
     // Table: Forecast Portfolios (user-defined stock lists for recurring Monte Carlo forecasts)
     await pool.query(`
@@ -426,7 +443,7 @@ async function initializeDatabase() {
         UNIQUE(user_id, name)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_fp_user ON forecast_portfolios(user_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_fp_user ON forecast_portfolios(user_id)');
 
     // Table: Portfolio Forecast Results (one row per stock per run)
     await pool.query(`
@@ -452,8 +469,8 @@ async function initializeDatabase() {
         UNIQUE(portfolio_id, symbol, run_date, horizon_days, scenario)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfr_portfolio ON portfolio_forecast_results(portfolio_id, run_date DESC)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfr_target ON portfolio_forecast_results(target_date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pfr_portfolio ON portfolio_forecast_results(portfolio_id, run_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pfr_target ON portfolio_forecast_results(target_date)');
 
     // Table: Portfolio Forecast Evaluations (actual vs forecasted, auto-filled by evaluate.py)
     await pool.query(`
@@ -474,8 +491,8 @@ async function initializeDatabase() {
         UNIQUE(forecast_result_id)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)');
 
     // Table: Portfolio Daily Actuals (actual price recorded each day for in-progress forecasts)
     await pool.query(`
@@ -489,7 +506,7 @@ async function initializeDatabase() {
         UNIQUE(portfolio_id, symbol, date)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)');
 
     // pgvector extension — enables fast vector similarity search
     // Graceful: skips silently if extension is unavailable on this PostgreSQL instance
@@ -514,13 +531,13 @@ async function initializeDatabase() {
         UNIQUE(source_type, source_id, chunk_index)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)');
 
     // Add source_meta + pgvector column to existing installs
     try { await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS source_meta TEXT'); } catch(_) {}
     try {
       await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS embedding_vec vector(768)');
-      await pool.query('CREATE INDEX IF NOT EXISTS idx_rag_chunks_vec ON rag_chunks USING ivfflat (embedding_vec vector_cosine_ops) WITH (lists = 100)');
+      await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_vec ON rag_chunks USING ivfflat (embedding_vec vector_cosine_ops) WITH (lists = 100)');
       console.log('✅ pgvector column + index on rag_chunks ready');
     } catch(_) {
       console.log('⚠️  pgvector column not added — extension may be unavailable');
@@ -540,8 +557,8 @@ async function initializeDatabase() {
         UNIQUE(symbol, prediction_date)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)');
 
     // Table 23: News RAG Chunks (live news feed integration — embedded articles with metadata)
     await pool.query(`
@@ -564,10 +581,10 @@ async function initializeDatabase() {
         embedding        TEXT
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_published ON news_rag_chunks(published_at DESC)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_market    ON news_rag_chunks(market_tag)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_event     ON news_rag_chunks(event_type)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_rag_url       ON news_rag_chunks(article_url)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_rag_published ON news_rag_chunks(published_at DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_rag_market    ON news_rag_chunks(market_tag)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_rag_event     ON news_rag_chunks(event_type)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_rag_url       ON news_rag_chunks(article_url)');
 
     // Table 24: Drift Adjustment Log (immutable audit trail for simulation drift recalibration)
     await pool.query(`
@@ -588,9 +605,9 @@ async function initializeDatabase() {
         audit_hash          TEXT NOT NULL
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_drift_log_ticker     ON drift_adjustment_log(asset_ticker)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_drift_log_applied_at ON drift_adjustment_log(applied_at DESC)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_drift_log_expires_at ON drift_adjustment_log(expires_at)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_drift_log_ticker     ON drift_adjustment_log(asset_ticker)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_drift_log_applied_at ON drift_adjustment_log(applied_at DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_drift_log_expires_at ON drift_adjustment_log(expires_at)');
 
     // ── ETF / Instrument tables ────────────────────────────────────────────────
 
@@ -626,7 +643,7 @@ async function initializeDatabase() {
         UNIQUE(exchange, symbol)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_instrument_symbol ON instrument(symbol)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_instrument_symbol ON instrument(symbol)');
 
     // Table: instrument aliases
     await pool.query(`
@@ -746,7 +763,7 @@ async function initializeDatabase() {
         PRIMARY KEY(snapshot_id, line_no)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_holding_line_symbol ON etf_holding_line(holding_symbol)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_holding_line_symbol ON etf_holding_line(holding_symbol)');
 
     // Table: ETF country exposure
     await pool.query(`
@@ -812,8 +829,8 @@ async function initializeDatabase() {
         created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_alerts_user   ON price_alerts(user_id)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(active)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_alerts_user   ON price_alerts(user_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(active)');
 
     // Table: FX Rates History (one row per day)
     await pool.query(`
@@ -829,7 +846,7 @@ async function initializeDatabase() {
         created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_fx_history_date ON fx_rates_history(date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_fx_history_date ON fx_rates_history(date DESC)');
 
     // Table: Signal evaluations at multiple horizons (D+5, D+10, D+20)
     await pool.query(`
@@ -845,8 +862,8 @@ async function initializeDatabase() {
         UNIQUE(symbol, prediction_date, horizon_days)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_sse_symbol  ON stock_signal_evals(symbol, prediction_date DESC)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_sse_symbol  ON stock_signal_evals(symbol, prediction_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)');
 
     // scored_signals — Universal Investor Scoring
     await pool.query(`
@@ -868,8 +885,8 @@ async function initializeDatabase() {
         UNIQUE(symbol, signal_date)
       )
     `);
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_scored_date   ON scored_signals(signal_date DESC)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_scored_symbol ON scored_signals(symbol)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_scored_date   ON scored_signals(signal_date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_scored_symbol ON scored_signals(symbol)');
 
     console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals) ready');
 
@@ -1101,14 +1118,14 @@ async function initializeDatabase() {
 
     // Create indexes
     console.log('📊 Creating indexes...');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, prediction_date)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_predictions_date ON predictions(prediction_date)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_consensus_symbol ON consensus_results(symbol, prediction_date)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_consensus_date ON consensus_results(prediction_date)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(email_lower)');
-    await pool.query('CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlist(user_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, prediction_date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_predictions_date ON predictions(prediction_date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_consensus_symbol ON consensus_results(symbol, prediction_date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_consensus_date ON consensus_results(prediction_date)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(email_lower)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlist(user_id)');
 
     // Migration: reclassify EGX commodity funds from 'ETF' → 'COMMODITY_ETP'
     // issuer column was set to cls_en ('COMMODITY') by etf_egx_mubasher.py
