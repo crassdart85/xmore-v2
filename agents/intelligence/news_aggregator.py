@@ -136,36 +136,43 @@ def aggregate_and_store(conn, items: list) -> dict:
 
         headline = item.get("headline", "")[:500]
 
+        sql = (
+            f"INSERT INTO news "
+            f"(symbol, date, headline, source, url, "
+            f"content_hash, sentiment_score, urgency_score, "
+            f"announcement_type, is_material, "
+            f"company_en, company_ar, language, raw_json, ticker) "
+            f"VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})"
+            + (" ON CONFLICT (content_hash) DO NOTHING" if DATABASE_URL else
+               " ON CONFLICT (symbol, headline, date) DO NOTHING")
+        )
+        params = (
+            ticker or "",
+            pub_date,
+            headline,
+            item.get("source", ""),
+            item.get("url", ""),
+            item["content_hash"],
+            item["sentiment_score"],
+            item["urgency_score"],
+            item.get("announcement_type"),
+            item.get("is_material", False),
+            item.get("company_en"),
+            item.get("company_ar"),
+            item.get("language", "en"),
+            json.dumps({k: v for k, v in item.items() if k not in ("company_ar", "company_en", "content_hash")}),
+            ticker or "",
+        )
+        if DATABASE_URL:
+            cursor.execute("SAVEPOINT intel_insert")
         try:
-            cursor.execute(
-                f"INSERT INTO news "
-                f"(symbol, date, headline, source, url, "
-                f"content_hash, sentiment_score, urgency_score, "
-                f"announcement_type, is_material, "
-                f"company_en, company_ar, language, raw_json, ticker) "
-                f"VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})"
-                + (" ON CONFLICT (content_hash) DO NOTHING" if DATABASE_URL else
-                   " ON CONFLICT (symbol, headline, date) DO NOTHING"),
-                (
-                    ticker or "",
-                    pub_date,
-                    headline,
-                    item.get("source", ""),
-                    item.get("url", ""),
-                    item["content_hash"],
-                    item["sentiment_score"],
-                    item["urgency_score"],
-                    item.get("announcement_type"),
-                    item.get("is_material", False),
-                    item.get("company_en"),
-                    item.get("company_ar"),
-                    item.get("language", "en"),
-                    json.dumps({k: v for k, v in item.items() if k not in ("company_ar", "company_en", "content_hash")}),
-                    ticker or "",
-                )
-            )
+            cursor.execute(sql, params)
+            if DATABASE_URL:
+                cursor.execute("RELEASE SAVEPOINT intel_insert")
             new += 1
         except Exception as e:
+            if DATABASE_URL:
+                cursor.execute("ROLLBACK TO SAVEPOINT intel_insert")
             err_str = str(e)
             if "unique" in err_str.lower() or "duplicate" in err_str.lower():
                 dups += 1
