@@ -20,7 +20,7 @@ const API_URL = '/api';
 
 // Shared HTML escaping utility
 function escapeHtml(value) {
-    return String(value ? '')
+    return String(value || '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -1535,7 +1535,7 @@ function parsePredictionMetadata(metaRaw) {
         sentiment: sentiment || 'N/A',
         volume: volume || 'N/A',
         momentum,
-        reasoning: `Trend ${meta.trend_score ? meta.trend_pct ? 'N/A'} | Sentiment ${sentiment || 'N/A'} | Volume ${volume || 'N/A'} | Momentum ${momentum}`
+        reasoning: `Trend ${meta.trend_score || meta.trend_pct || 'N/A'} | Sentiment ${sentiment || 'N/A'} | Volume ${volume || 'N/A'} | Momentum ${momentum}`
     };
 }
 
@@ -1555,10 +1555,10 @@ async function loadGlobalSnapshotBar() {
         const r30 = data.rolling?.['30d'] || {};
         const trades = g.total_predictions || 0;
         const progressPct = Math.min(100, Math.round((trades / 100) * 100));
-        const sharpe = (r30.sharpe_ratio ? g.sharpe_ratio ? 0);
-        const maxDd = (r30.max_drawdown ? g.max_drawdown ? 0);
-        const alpha30 = (r30.alpha ? 0);
-        const win30 = (r30.win_rate ? 0);
+        const sharpe = r30.sharpe_ratio || g.sharpe_ratio || 0;
+        const maxDd = r30.max_drawdown || g.max_drawdown || 0;
+        const alpha30 = r30.alpha || 0;
+        const win30 = r30.win_rate || 0;
 
         const card = (id, label, cls, tooltip) => `
             <div class="global-snapshot-card ${cls}" title="${tooltip}">
@@ -2083,7 +2083,7 @@ async function loadPerformanceDetailed() {
         // Update overall accuracy in stats bar (avoids duplicate API call)
         const acc = data?.overall?.directional_accuracy;
         if (data?.overall?.total_predictions > 0) {
-            animateValue('overallAccuracy', acc ? 0, { decimalPlaces: 1, suffix: '%' });
+            animateValue('overallAccuracy', acc || 0, { decimalPlaces: 1, suffix: '%' });
         }
 
         // Render overall stats
@@ -2580,7 +2580,7 @@ function buildScoringPanelHTML(data) {
         return modeSelect + `<p class="scoring-no-data">${t('scoringNoData')}</p>`;
     }
 
-    const labels = {
+    const colLabels = {
         stock: t('stock'),
         score: (SCORING_MODE_LABELS[currentLang] || SCORING_MODE_LABELS.en)[_currentScoringMode],
         composite: t('scoringComposite'),
@@ -2594,10 +2594,10 @@ function buildScoringPanelHTML(data) {
         const disp = _currentScoringMode === 'stars' ? '★'.repeat(Math.round(val)) + ' ' + val : val;
         const comp = sig.components || {};
         return `<tr class="scoring-row${sig.meets_threshold ? ' scoring-above-threshold' : ''}">
-            <td data-label="${labels.stock}" class="scoring-symbol">${sig.symbol}</td>
-            <td data-label="${labels.score}" class="scoring-score">${disp}</td>
-            <td data-label="${labels.composite}" class="scoring-composite">${(sig.composite_score * 100).toFixed(0)}</td>
-            <td data-label="${labels.components}" class="scoring-bar-cell">
+            <td data-label="${colLabels.stock}" class="scoring-symbol">${sig.symbol}</td>
+            <td data-label="${colLabels.score}" class="scoring-score">${disp}</td>
+            <td data-label="${colLabels.composite}" class="scoring-composite">${(sig.composite_score * 100).toFixed(0)}</td>
+            <td data-label="${colLabels.components}" class="scoring-bar-cell">
                 <div class="scoring-mini-bar">
                     <span class="scoring-bar-seg scoring-bar-consensus" style="width:${(comp.consensus||0)*100}%"></span>
                     <span class="scoring-bar-seg scoring-bar-execution" style="width:${(comp.execution||0)*100}%"></span>
@@ -2605,7 +2605,7 @@ function buildScoringPanelHTML(data) {
                     <span class="scoring-bar-seg scoring-bar-momentum"  style="width:${(comp.momentum||0)*100}%"></span>
                 </div>
             </td>
-            <td data-label="${labels.threshold}" class="scoring-threshold">${sig.meets_threshold ? '✓' : ''}</td>
+            <td data-label="${colLabels.threshold}" class="scoring-threshold">${sig.meets_threshold ? '✓' : ''}</td>
         </tr>`;
     }).join('');
 
@@ -2934,7 +2934,7 @@ async function showWhySignal(symbol, signal) {
             srcs.innerHTML = '<div class="why-sources-title">Sources</div>' +
                 data.sources.map(s => {
                     const meta    = s.source_meta || {};
-                    const label   = meta.filename || meta.headline || `Chunk ${s.chunk_index ? ''}`;
+                    const label   = meta.filename || meta.headline || `Chunk ${s.chunk_index || ''}`;
                     const subline = meta.date ? ` · ${meta.date}` : '';
                     const pct     = s.similarity != null ? ` (${(s.similarity * 100).toFixed(0)}% match)` : '';
                     return `<div class="why-source-item"><span class="why-source-type">${s.source_type || ''}</span> ${label}${subline}${pct}</div>`;
