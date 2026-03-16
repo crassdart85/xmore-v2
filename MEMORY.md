@@ -552,3 +552,14 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - web-ui/public/track-record.css: mobile cleanup at <=640px, tighter spacing, responsive header controls, feed wrapping, sector rows stacked, tracker panel becomes bottom sheet
 - web-ui/public/track-record.html: agent + top-stocks tables flagged for mobile card layout
 - web-ui/public/track-record.js: table cells emit localized data-label values; log table labels localized; language toggle re-renders log to update labels
+
+
+## UI/UX Unification & Mobile Readability (Mar 16, 2026)
+- Added shared UI tokens + reusable topbar in `web-ui/public/base.css` and applied across public pages.
+- Unified language persistence using `localStorage('lang')` on Track Record, Pro, and Session.
+- Fixed mojibake/encoding in public HTML/JS (UTF-8 normalized).
+- Standardized navigation links across pages (Home, Track Record, Pro, Session, Docs).
+- Added mobile card layout for dense tables on dashboard, track record, session, comparisons, and ETF tables.
+- Localized card/table labels for comparisons, multi-horizon accuracy, and ETF cards/tables.
+- Increased base font size to 14px on main dashboard/Track Record/Pro/Session; reduced micro-label all-caps.
+- Added global reduced-motion handling in `base.css`.

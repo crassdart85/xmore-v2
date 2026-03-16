@@ -29,6 +29,14 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - track-record.html: agent + top-stocks tables set for mobile card layout
 - track-record.js: localized data-labels for log + table cards; language toggle refreshes log
 
+## UI/UX Unification (Mar 16, 2026)
+- Added shared tokens/topbar in `base.css`; applied across public pages.
+- Unified language persistence (`localStorage('lang')`).
+- UTF-8 normalization to fix encoding artifacts.
+- Added nav links and Session link in main header.
+- Mobile card layouts for dense tables, including comparisons and ETFs.
+- Localized comparison/ETF labels and standardized base font size to 14px.
+
 ## Environment Variables (Secrets)
 - `DATABASE_URL` - PostgreSQL connection string (Render)
 - `NEWS_API_KEY` - News API for news collection

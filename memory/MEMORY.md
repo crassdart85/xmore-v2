@@ -70,6 +70,16 @@
 - web-ui/public/track-record.html: agent + top-stocks tables flagged for mobile card layout
 - web-ui/public/track-record.js: localized data-labels for mobile cards (including log table) and language toggle refresh
 
+## UI/UX Unification & Mobile Readability (Mar 16, 2026)
+- Shared UI token layer + topbar (`web-ui/public/base.css`) applied across public pages.
+- Language persistence unified on `localStorage('lang')` for Track Record, Pro, Session.
+- Public HTML/JS normalized to UTF-8 to fix encoding artifacts.
+- Consistent nav links across pages; added Session link in main dashboard header.
+- Mobile card layouts for dense tables (dashboard tabs, track record, session, comparisons, ETF tables).
+- Localized labels for comparison/multi-horizon and ETF cards/tables.
+- Base font sizes standardized to 14px on major dashboards; reduced all-caps labels.
+- Reduced-motion preferences handled globally.
+
 ## CI/CD Pipeline (current — 7 jobs)
 - **`intraday-price-update`**: `'0 7,8,9,10,11,12 * * 0-4'` (Sun–Thu, EGX hours) — `collect_data.py --prices-only`
 - **`intraday-news-update`**: `'0 7,9,11 * * 0-4'` (3× trading day) — news + RSS + news RAG ingestion
