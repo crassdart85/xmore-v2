@@ -54,6 +54,25 @@ def _safe_add_column(cursor, table, column, col_type):
         except Exception:
             pass
 
+
+def _safe_create_index(cursor, sql):
+    """Execute a CREATE INDEX statement safely, handling PG deadlock/concurrency.
+
+    Multiple GH Actions jobs run create_tables() concurrently and can deadlock
+    on AccessExclusiveLock. SAVEPOINTs let us roll back just the failed statement
+    so the rest of create_tables() continues normally.
+    """
+    if DATABASE_URL:
+        cursor.execute("SAVEPOINT create_idx")
+        try:
+            cursor.execute(sql)
+            cursor.execute("RELEASE SAVEPOINT create_idx")
+        except Exception as e:
+            cursor.execute("ROLLBACK TO SAVEPOINT create_idx")
+            logger.warning(f"Index skipped (concurrent run / deadlock): {e}")
+    else:
+        cursor.execute(sql)
+
 @contextmanager
 def get_connection():
     """
@@ -336,16 +355,10 @@ def create_tables():
             )
         """)
         # Partial index for unique OPEN position
-        if DATABASE_URL:
-            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_open_position ON user_positions(user_id, symbol) WHERE status = 'OPEN'")
-        else:
-            # SQLite doesn't strictly support WHERE in unique index in older versions easily via standard SQL, 
-            # but we can enforce logic in app or use a trigger. For now, we'll skip the partial index in SQLite or just rely on app logic.
-            # Actually SQLite supports partial indexes since 3.8.0.
-            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_open_position ON user_positions(user_id, symbol) WHERE status = 'OPEN'")
+        _safe_create_index(cursor, "CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_open_position ON user_positions(user_id, symbol) WHERE status = 'OPEN'")
 
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_positions_user ON user_positions(user_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_positions_status ON user_positions(status)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_positions_user ON user_positions(user_id)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_positions_status ON user_positions(status)")
 
         # Table 13: Trade Recommendations
         cursor.execute(f"""
@@ -388,8 +401,8 @@ def create_tables():
                 UNIQUE(user_id, symbol, recommendation_date)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_trade_rec_user_date ON trade_recommendations(user_id, recommendation_date DESC)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_trade_rec_date ON trade_recommendations(recommendation_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_trade_rec_user_date ON trade_recommendations(user_id, recommendation_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_trade_rec_date ON trade_recommendations(recommendation_date DESC)")
 
         # Table 14: Daily Briefings (one global row per date)
         cursor.execute(f"""
@@ -405,7 +418,7 @@ def create_tables():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_briefings_date ON daily_briefings(briefing_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_briefings_date ON daily_briefings(briefing_date DESC)")
 
         # Table 11: Sentiment Scores (Aggregated)
         cursor.execute(f"""
@@ -423,7 +436,7 @@ def create_tables():
                 UNIQUE(symbol, date)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sentiment_symbol_date ON sentiment_scores(symbol, date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_sentiment_symbol_date ON sentiment_scores(symbol, date)")
 
         # Table 15: Prediction Audit Log (track changes for transparency)
         cursor.execute(f"""
@@ -437,7 +450,7 @@ def create_tables():
                 changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_changed_at ON prediction_audit_log(changed_at DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_audit_changed_at ON prediction_audit_log(changed_at DESC)")
 
         # Table 16: Agent Performance Daily (per-agent accuracy snapshots)
         cursor.execute(f"""
@@ -457,16 +470,7 @@ def create_tables():
                 UNIQUE(snapshot_date, agent_name)
             )
         """)
-        if DATABASE_URL:
-            cursor.execute("SAVEPOINT create_idx_agent_perf")
-            try:
-                cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
-                cursor.execute("RELEASE SAVEPOINT create_idx_agent_perf")
-            except Exception as e:
-                cursor.execute("ROLLBACK TO SAVEPOINT create_idx_agent_perf")
-                logger.warning(f"idx_agent_perf_date index skipped (concurrent run / deadlock): {e}")
-        else:
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_agent_perf_date ON agent_performance_daily(snapshot_date DESC)")
 
         # Add missing columns to agent_performance_daily (correct_30d/90d were absent from original schema)
         agent_perf_columns = [
@@ -529,8 +533,8 @@ def create_tables():
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_alerts_user ON price_alerts(user_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(active)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_alerts_user ON price_alerts(user_id)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_alerts_active ON price_alerts(active)")
 
         # Table 37: FX Rates History (one row per day)
         cursor.execute(f"""
@@ -546,7 +550,7 @@ def create_tables():
                 created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_fx_history_date ON fx_rates_history(date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_fx_history_date ON fx_rates_history(date DESC)")
 
         # Table 38: Stock Signal Evaluations at multiple horizons (D+5, D+10, D+20)
         cursor.execute(f"""
@@ -562,8 +566,8 @@ def create_tables():
                 UNIQUE(symbol, prediction_date, horizon_days)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sse_symbol ON stock_signal_evals(symbol, prediction_date DESC)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_sse_symbol ON stock_signal_evals(symbol, prediction_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)")
 
         # Seed EGX 30 stocks (upsert: ignore if already exists)
         egx30_stocks = [
@@ -627,7 +631,7 @@ def create_tables():
                 UNIQUE(user_id, name)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_fp_user ON forecast_portfolios(user_id)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_fp_user ON forecast_portfolios(user_id)")
 
         # Table 18: Portfolio Forecast Results (one row per stock per run)
         cursor.execute(f"""
@@ -653,8 +657,8 @@ def create_tables():
                 UNIQUE(portfolio_id, symbol, run_date, horizon_days, scenario)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfr_portfolio ON portfolio_forecast_results(portfolio_id, run_date DESC)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfr_target ON portfolio_forecast_results(target_date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pfr_portfolio ON portfolio_forecast_results(portfolio_id, run_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pfr_target ON portfolio_forecast_results(target_date)")
 
         # Table 19: Portfolio Forecast Evaluations (actual vs forecasted, auto-filled by evaluate.py)
         cursor.execute(f"""
@@ -675,8 +679,8 @@ def create_tables():
                 UNIQUE(forecast_result_id)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pfe_portfolio ON portfolio_forecast_evaluations(portfolio_id)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pfe_symbol ON portfolio_forecast_evaluations(symbol)")
 
         # Table 20: Portfolio Daily Actuals (actual price recorded each day for in-progress forecasts)
         cursor.execute(f"""
@@ -690,7 +694,7 @@ def create_tables():
                 UNIQUE(portfolio_id, symbol, date)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)")
 
         # Table 21: Market Reports (PDF/image knowledge base, uploaded via Admin)
         cursor.execute(f"""
@@ -704,7 +708,7 @@ def create_tables():
                 created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_market_reports_upload_date ON market_reports(upload_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_market_reports_upload_date ON market_reports(upload_date DESC)")
 
         # Table 22: RAG Chunks (embedded text from market_reports, news, event_intel)
         cursor.execute(f"""
@@ -720,7 +724,7 @@ def create_tables():
                 UNIQUE(source_type, source_id, chunk_index)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)")
         # Add source_meta to existing installs that predate this column
         _safe_add_column(cursor, 'rag_chunks', 'source_meta', 'TEXT')
 
@@ -738,8 +742,8 @@ def create_tables():
                 UNIQUE(symbol, prediction_date)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)")
 
         # ── ETF / Instrument tables (Tables 24–35) ──────────────────────────────
 
@@ -764,7 +768,7 @@ def create_tables():
                 UNIQUE(exchange, symbol)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_instrument_symbol ON instrument(symbol)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_instrument_symbol ON instrument(symbol)")
 
         # Table 25: Instrument aliases (AR/EN name variants, ticker variants)
         cursor.execute(f"""
@@ -884,7 +888,7 @@ def create_tables():
                 PRIMARY KEY (snapshot_id, line_no)
             )
         """)
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_holding_line_symbol ON etf_holding_line(holding_symbol)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_holding_line_symbol ON etf_holding_line(holding_symbol)")
 
         # Table 33: ETF country exposure (for global ETFs: Egypt weight, etc.)
         cursor.execute(f"""
@@ -953,14 +957,14 @@ def create_tables():
         """)
 
         # Create indexes for common queries
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, prediction_date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_date ON predictions(prediction_date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_consensus_symbol ON consensus_results(symbol, prediction_date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_consensus_date ON consensus_results(prediction_date)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(email_lower)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlist(user_id)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, prediction_date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_predictions_date ON predictions(prediction_date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_consensus_symbol ON consensus_results(symbol, prediction_date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_consensus_date ON consensus_results(prediction_date)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(email_lower)")
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlist(user_id)")
 
         logger.info("✅ Database tables created successfully")
 
