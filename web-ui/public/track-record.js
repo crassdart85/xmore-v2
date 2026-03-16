@@ -212,7 +212,7 @@ const I18N = {
   }
 };
 
-function t(key) { return I18N[_LANG][key] ? I18N['en'][key] ? key; }
+function t(key) { return I18N[_LANG][key] || I18N['en'][key] || key; }
 
 function trToggleLang() {
   _LANG = _LANG === 'en' ? 'ar' : 'en';
@@ -354,11 +354,11 @@ async function loadSummary() {
       const winKey = activeDays <= 30 ? '30d' : activeDays <= 60 ? '60d' : activeDays <= 90 ? '90d' : activeDays <= 180 ? '180d' : '365d';
       const w = data.kpi_windows[winKey] || data.kpi_windows['90d'] || {};
       const winRate = w.directional_accuracy != null ? (w.directional_accuracy * 100).toFixed(1) : null;
-      const alpha   = w.alpha_vs_egx30 ? null;
-      const sharpe  = w.sharpe_ratio ? null;
+      const alpha   = w.alpha_vs_egx30 ?? null;
+      const sharpe  = w.sharpe_ratio ?? null;
 
-      const beat = w.beat_benchmark_pct ? null;
-      const pf   = w.profit_factor ? null;
+      const beat = w.beat_benchmark_pct ?? null;
+      const pf   = w.profit_factor ?? null;
 
       const kpiCls = (v, pos, neu) => v == null ? 'neutral' : v >= pos ? 'positive' : v >= neu ? 'neutral' : 'negative';
       setKpi('kpiTotal', total, '', 'neutral');
@@ -444,14 +444,14 @@ async function renderRolling(rolling) {
     const w = rolling_[key];
     if (!w) return '';
     // Normalise: new shape uses directional_accuracy+alpha_vs_egx30; old uses win_rate+alpha+trades
-    const trades  = w.trades      ? w.total_signals ? 0;
-    const winRate = w.win_rate    ? (w.directional_accuracy != null ? parseFloat((w.directional_accuracy * 100).toFixed(1)) : null);
-    const alpha   = w.alpha       ? w.alpha_vs_egx30 ? null;
-    const sharpe  = w.sharpe_ratio ? null;
-    const sortino = w.sortino_ratio ? null;
-    const maxDD   = w.max_drawdown ? null;
-    const pf      = w.profit_factor ? null;
-    const beat    = w.beat_benchmark_pct ? null;
+    const trades  = w.trades      ?? w.total_signals ?? 0;
+    const winRate = w.win_rate    ?? (w.directional_accuracy != null ? parseFloat((w.directional_accuracy * 100).toFixed(1)) : null);
+    const alpha   = w.alpha       ?? w.alpha_vs_egx30 ?? null;
+    const sharpe  = w.sharpe_ratio ?? null;
+    const sortino = w.sortino_ratio ?? null;
+    const maxDD   = w.max_drawdown ?? null;
+    const pf      = w.profit_factor ?? null;
+    const beat    = w.beat_benchmark_pct ?? null;
     const rows = [
       { label: labels.trades,        val: trades,   fmt: v => v },
       { label: labels.win_rate,      val: winRate,  fmt: v => v != null ? v + '%' : '—',              cls: winRate == null ? '' : winRate >= 50 ? 'pos' : 'neg' },
@@ -668,8 +668,8 @@ async function loadStocks() {
     }
     tbody.innerHTML = stocks.slice(0, 12).map(s => {
       const wr    = Number(s.win_rate);
-      const alpha = Number(s.alpha_avg ? s.avg_alpha);
-      const count = s.signal_count ? s.total;
+      const alpha = Number(s.alpha_avg ?? s.avg_alpha);
+      const count = s.signal_count ?? s.total;
       const best  = s.best_signal_return != null ? Number(s.best_signal_return) : null;
       return `<tr>
         <td data-label="${labels.sym}" style="font-weight:700">${s.symbol}</td>
@@ -731,8 +731,8 @@ async function loadLog() {
       // Support both old field names and new normalized names
       const signal = p.signal || p.final_signal || p.action || '—';
       const sigCls = signal === 'UP' || signal === 'BUY' ? 'tr-signal-up' : signal === 'DOWN' || signal === 'SELL' ? 'tr-signal-down' : '';
-      const alpha  = Number(p.alpha ? p.alpha_1d);
-      const ret1d  = Number(p.actual_return ? p.actual_next_day_return);
+      const alpha  = Number(p.alpha ?? p.alpha_1d);
+      const ret1d  = Number(p.actual_return ?? p.actual_next_day_return);
       const outcome = p.outcome;
       const correct  = p.was_correct;
       let hitHtml = `<span class="tr-hit-pending">${t('hitPending')}</span>`;
@@ -742,7 +742,7 @@ async function loadLog() {
         hitHtml = `<span class="tr-hit-no">${t('hitNo')}</span>`;
       }
       const name = p.name || p.name_en || p.symbol;
-      const conf = p.confidence ? p.consensus_confidence;
+      const conf = p.confidence ?? p.consensus_confidence;
       const simTag = (p.is_simulated === true || p.is_simulated === 1 || p.is_simulated === 't')
         ? `<span class="tr-sim-tag">SIM</span>` : '';
       const rowDate = p.date || p.prediction_date || p.recommendation_date;
@@ -753,7 +753,7 @@ async function loadLog() {
         <td data-label="${labels.conf}">${conf != null ? fmt(conf) + '%' : '—'}</td>
         <td data-label="${labels.conviction}">${p.conviction || '—'}</td>
         <td data-label="${labels.actual}" class="${ret1d > 0 ? 'tr-alpha-pos' : ret1d < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(ret1d) && ret1d != null ? fmtPct(ret1d, 2) : '—'}</td>
-        <td data-label="${labels.alpha}" class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
+        <td data-label="${labels.alpha}" class="${alpha > 0 ? 'tr-alpha-pos' : alpha < 0 ? 'tr-alpha-neg' : ''}">${!isNaN(alpha) && (p.alpha ?? p.alpha_1d) != null ? fmtPct(alpha, 3) : '—'}</td>
         <td data-label="${labels.hit}">${hitHtml}</td>
         <td data-label="${labels.track}"><button class="track-btn" data-signal-id="${rowDate}-${p.symbol}" data-symbol="${p.symbol}" data-action="${signal}" data-entry="${p.entry_price || ''}" data-date="${rowDate}" onclick="toggleTrack(this)"><span>${t('track')}</span></button></td>
       </tr>`;
