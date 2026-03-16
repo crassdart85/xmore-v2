@@ -480,6 +480,19 @@ def create_tables():
         for col_name, col_type in agent_perf_columns:
             _safe_add_column(cursor, "agent_performance_daily", col_name, col_type)
 
+        # Market regime log (written by run_agents.py after HMM detection)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS regime_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date DATE NOT NULL UNIQUE,
+                regime TEXT NOT NULL,
+                hmm_state INTEGER,
+                volatility REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_regime_log_date ON regime_log(date DESC)")
+
         # Add benchmark columns to trade_recommendations (safe ALTER TABLE)
         benchmark_columns = [
             ("benchmark_1d_return", "REAL"),

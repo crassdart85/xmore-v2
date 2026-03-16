@@ -431,6 +431,29 @@ def execute():
                 print(f"Market Regime: {lbl} ({conf:.1%} confidence) "
                       f"[regime {market_regime.get('current_regime')}/"
                       f"{market_regime.get('n_regimes', '?')-1}]")
+                # Persist regime to regime_log for track-record page
+                try:
+                    _cursor = conn.cursor()
+                    ph = "%s" if os.getenv("DATABASE_URL") else "?"
+                    _cursor.execute(f"""
+                        INSERT INTO regime_log (date, regime, hmm_state, volatility)
+                        VALUES ({ph}, {ph}, {ph}, {ph})
+                        ON CONFLICT (date) DO UPDATE SET
+                            regime = EXCLUDED.regime,
+                            hmm_state = EXCLUDED.hmm_state,
+                            volatility = EXCLUDED.volatility
+                    """ if os.getenv("DATABASE_URL") else f"""
+                        INSERT OR REPLACE INTO regime_log (date, regime, hmm_state, volatility)
+                        VALUES ({ph}, {ph}, {ph}, {ph})
+                    """, (
+                        trading_date,
+                        lbl,
+                        market_regime.get('current_regime'),
+                        market_regime.get('volatility'),
+                    ))
+                    conn.commit()
+                except Exception as _rl_err:
+                    logger.debug(f"regime_log write skipped: {_rl_err}")
             else:
                 print("Market Regime: detection unavailable (hmmlearn not installed or insufficient data)")
 
@@ -1475,15 +1498,22 @@ def generate_daily_trade_recommendations(trading_date):
             # ──────────────────────────────────────────────────────────────
 
             # Store & Update Positions
+            # LOW conviction BUYs are skipped — only MODERATE/HIGH/VERY_HIGH enter DB
+            _LOW_CONV_BUY_SKIPPED = 0
             for rec in user_recs:
+                if rec["action"] == "BUY" and rec.get("conviction", "LOW") == "LOW":
+                    _LOW_CONV_BUY_SKIPPED += 1
+                    continue
                 store_trade_recommendation(user_id, rec, trading_date)
-                
+
                 if rec["action"] == "BUY":
                     open_new_position(user_id, rec, trading_date)
                     open_count += 1
                 elif rec["action"] == "SELL":
                     close_position(user_id, rec, trading_date)
                     open_count -= 1
+            if _LOW_CONV_BUY_SKIPPED:
+                print(f"  ⛔ Skipped {_LOW_CONV_BUY_SKIPPED} LOW conviction BUY signal(s)")
             
             # Summary log
             buys = len([r for r in user_recs if r["action"] == "BUY"])
