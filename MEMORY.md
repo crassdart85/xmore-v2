@@ -563,3 +563,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - Localized card/table labels for comparisons, multi-horizon accuracy, and ETF cards/tables.
 - Increased base font size to 14px on main dashboard/Track Record/Pro/Session; reduced micro-label all-caps.
 - Added global reduced-motion handling in `base.css`.
+
+
+## Track Record Copy Tweak (Mar 16, 2026)
+- `web-ui/public/track-record.html`: header badge shortened to ?Live pre-market signals?.

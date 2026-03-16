@@ -37,6 +37,9 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - Mobile card layouts for dense tables, including comparisons and ETFs.
 - Localized comparison/ETF labels and standardized base font size to 14px.
 
+## Track Record Copy (Mar 16, 2026)
+- `track-record.html`: header badge shortened to ?Live pre-market signals?.
+
 ## Environment Variables (Secrets)
 - `DATABASE_URL` - PostgreSQL connection string (Render)
 - `NEWS_API_KEY` - News API for news collection

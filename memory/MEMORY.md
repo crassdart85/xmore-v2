@@ -80,6 +80,9 @@
 - Base font sizes standardized to 14px on major dashboards; reduced all-caps labels.
 - Reduced-motion preferences handled globally.
 
+## Track Record Copy Tweak (Mar 16, 2026)
+- `web-ui/public/track-record.html`: header badge shortened to ?Live pre-market signals?.
+
 ## CI/CD Pipeline (current — 7 jobs)
 - **`intraday-price-update`**: `'0 7,8,9,10,11,12 * * 0-4'` (Sun–Thu, EGX hours) — `collect_data.py --prices-only`
 - **`intraday-news-update`**: `'0 7,9,11 * * 0-4'` (3× trading day) — news + RSS + news RAG ingestion
