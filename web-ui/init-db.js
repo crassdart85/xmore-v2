@@ -872,7 +872,7 @@ async function initializeDatabase() {
       CREATE TABLE IF NOT EXISTS rag_embedding_job (
         job_id        BIGSERIAL PRIMARY KEY,
         doc_id        BIGINT NOT NULL REFERENCES rag_document(doc_id) ON DELETE CASCADE,
-        embed_model   TEXT NOT NULL DEFAULT 'text-embedding-004',
+        embed_model   TEXT NOT NULL DEFAULT 'text-embedding-005',
         status        TEXT NOT NULL DEFAULT 'PENDING',
         started_at    TIMESTAMPTZ,
         finished_at   TIMESTAMPTZ,

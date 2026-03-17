@@ -211,7 +211,7 @@ class EventClassifier:
             from google import genai
             client = genai.Client(api_key=self._api_key)
             result = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=prompt,
             )
             text = result.text.strip()

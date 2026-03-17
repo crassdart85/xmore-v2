@@ -28,15 +28,22 @@ def fetch_mubasher_news(hours_back: int = 25) -> list:
     articles = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
 
+    # Circuit-breaker: if 3 consecutive timeouts, stop scraping for that lang
+    _consecutive_timeouts = {"en": 0, "ar": 0}
+    _TIMEOUT_LIMIT = 3
+
     for ca_ticker, yahoo_ticker, name_ar, name_en, sector, slug in EGX_TOP50:
         for lang, base_url in [
             ("en", f"https://english.mubasher.info/markets/EGX/stocks/{slug}/news"),
             ("ar", f"https://mubasher.info/markets/EGX/stocks/{slug}/news/ar"),
         ]:
+            if _consecutive_timeouts[lang] >= _TIMEOUT_LIMIT:
+                continue  # skip remaining tickers for this lang
             try:
-                resp = requests.get(base_url, headers=HEADERS, timeout=12)
+                resp = requests.get(base_url, headers=HEADERS, timeout=5)
+                _consecutive_timeouts[lang] = 0  # reset on success
                 if resp.status_code != 200:
-                    time.sleep(2.0)
+                    time.sleep(0.5)
                     continue
                 soup = BeautifulSoup(resp.text, "lxml")
 
@@ -94,11 +101,14 @@ def fetch_mubasher_news(hours_back: int = 25) -> list:
                     })
 
             except requests.exceptions.Timeout:
-                logger.warning(f"[INTEL:MUBASHER] {ca_ticker}/{lang}: timeout")
+                _consecutive_timeouts[lang] += 1
+                logger.warning(f"[INTEL:MUBASHER] {ca_ticker}/{lang}: timeout ({_consecutive_timeouts[lang]}/{_TIMEOUT_LIMIT})")
+                if _consecutive_timeouts[lang] >= _TIMEOUT_LIMIT:
+                    logger.warning(f"[INTEL:MUBASHER] circuit breaker tripped for lang={lang}, skipping remaining tickers")
             except Exception as e:
                 logger.error(f"[INTEL:MUBASHER] {ca_ticker}/{lang}: {e}")
 
-            time.sleep(2.0)
+            time.sleep(0.5)
 
     logger.info(f"[INTEL:MUBASHER] {len(articles)} articles scraped")
     return articles

@@ -4,7 +4,7 @@ engines/etf_rag_embedding_worker.py — Process PENDING rag_embedding_job rows.
 For each pending job:
   1. Load PDF from storage_uri (pdfplumber)
   2. Chunk text (500 chars, 50 overlap)
-  3. Embed each chunk via Gemini text-embedding-004
+  3. Embed each chunk via Gemini text-embedding-005
   4. Upsert into rag_chunks (source_type='etf_document')
   5. Update rag_embedding_job → SUCCESS or FAILED
 
@@ -44,13 +44,13 @@ def _chunk_text(text: str) -> list:
 
 
 def _gemini_embed(text: str) -> list | None:
-    """Call Gemini text-embedding-004 API. Returns float list or None."""
+    """Call Gemini text-embedding-005 API. Returns float list or None."""
     if not GOOGLE_API_KEY:
         logger.warning('[etf_rag_embedding_worker] GOOGLE_API_KEY not set')
         return None
     url = (
         f'https://generativelanguage.googleapis.com/v1beta/models/'
-        f'text-embedding-004:embedContent?key={GOOGLE_API_KEY}'
+        f'text-embedding-005:embedContent?key={GOOGLE_API_KEY}'
     )
     body = {'content': {'parts': [{'text': text}]}}
     try:

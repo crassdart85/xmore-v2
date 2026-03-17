@@ -1,5 +1,5 @@
 """
-news/pipeline/embedder.py — Embedding wrapper using Google Gemini text-embedding-004.
+news/pipeline/embedder.py — Embedding wrapper using Google Gemini text-embedding-005.
 
 Reuses the same model as the existing rag/embedder.py (768-dim vectors),
 keeping the entire Xmore RAG layer on a single embedding model so cosine
@@ -22,14 +22,14 @@ from news.models import ProcessedChunk
 
 logger = logging.getLogger(__name__)
 
-EMBED_MODEL = "text-embedding-004"
+EMBED_MODEL = "text-embedding-005"
 RATE_LIMIT_SLEEP = 0.12   # ~8 req/s — under the free-tier 10/s limit
 MAX_CHARS = 2048           # Gemini embedding input cap (in practice >2048 is truncated)
 
 
 class ChunkEmbedder:
     """
-    Embeds ProcessedChunk.content using Gemini text-embedding-004.
+    Embeds ProcessedChunk.content using Gemini text-embedding-005.
     Sets chunk.embedding in place and returns the modified list.
     """
 

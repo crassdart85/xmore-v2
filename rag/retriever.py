@@ -74,13 +74,13 @@ def get_top_chunks(
 
 
 def embed_query(text: str) -> list[float]:
-    """Embed a query string using Gemini text-embedding-004."""
+    """Embed a query string using Gemini text-embedding-005."""
     api_key = os.getenv('GOOGLE_API_KEY', '')
     if not api_key:
         raise RuntimeError('GOOGLE_API_KEY not set')
     from google import genai
     client = genai.Client(api_key=api_key)
-    result = client.models.embed_content(model='text-embedding-004', contents=text)
+    result = client.models.embed_content(model='text-embedding-005', contents=text)
     return result.embeddings[0].values
 
 

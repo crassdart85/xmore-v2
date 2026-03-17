@@ -184,7 +184,7 @@ function geminiRequest(path, body) {
 
 async function embedText(text) {
     const result = await geminiRequest(
-        '/v1beta/models/text-embedding-004:embedContent',
+        '/v1beta/models/text-embedding-005:embedContent',
         { content: { parts: [{ text }] } }
     );
     if (!result.embedding || !result.embedding.values) {
