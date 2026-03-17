@@ -154,6 +154,28 @@ router.get('/summary', async (req, res) => {
             WHERE ${liveFilter()}
         `);
 
+        // Fresher "last updated" — use latest across prices + consensus (updated daily even when
+        // no new user-specific trade recs are generated)
+        let lastUpdated = counts?.last_updated || null;
+        try {
+            const fresh = await dbGet(`
+                SELECT GREATEST(
+                    COALESCE((SELECT MAX(date) FROM prices), '1970-01-01'::date),
+                    COALESCE((SELECT MAX(prediction_date) FROM consensus_results), '1970-01-01'::date),
+                    COALESCE('${lastUpdated || '1970-01-01'}'::date, '1970-01-01'::date)
+                ) AS freshest
+            `);
+            if (fresh?.freshest) lastUpdated = fresh.freshest;
+        } catch (_) {
+            // SQLite fallback
+            try {
+                const p = await dbGet(`SELECT MAX(date) AS d FROM prices`);
+                const c = await dbGet(`SELECT MAX(prediction_date) AS d FROM consensus_results`);
+                const candidates = [lastUpdated, p?.d, c?.d].filter(Boolean).sort();
+                if (candidates.length) lastUpdated = candidates[candidates.length - 1];
+            } catch (_2) {}
+        }
+
         // Simulated count (included, labelled SIM in UI)
         let simCount = 0;
         try {
@@ -196,7 +218,7 @@ router.get('/summary', async (req, res) => {
             platform:             'Xmore2',
             description:          'AI Stock Intelligence for the Egyptian Exchange',
             live_since:           counts?.live_since || null,
-            last_updated:         counts?.last_updated || null,
+            last_updated:         lastUpdated || null,
             total_live_signals:   liveCount,
             symbols_covered:      symbolsCovered,
             current_regime:       currentRegime,

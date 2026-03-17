@@ -20,7 +20,8 @@ MODEL_VERSION = "v1.0"  # Increment on agent/pipeline changes
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 # EGX30 index symbols to try (in order of preference)
-EGX30_SYMBOLS = ['EGX30', '^CASE', 'CASE.CA', 'EGX30.CA']
+EGX30_SYMBOLS = ['EGX30', '^CASE', 'CASE.CA', 'EGX30.CA',
+                  'COMI.CA', 'ETEL.CA', 'HRHO.CA']   # liquid EGX30 proxies
 
 
 # ─── SQL HELPERS ───────────────────────────────────────────────
