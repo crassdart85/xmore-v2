@@ -22,7 +22,7 @@ from news.models import ProcessedChunk
 
 logger = logging.getLogger(__name__)
 
-EMBED_MODEL = "text-embedding-005"
+EMBED_MODEL = "text-embedding-004"
 RATE_LIMIT_SLEEP = 0.12   # ~8 req/s — under the free-tier 10/s limit
 MAX_CHARS = 2048           # Gemini embedding input cap (in practice >2048 is truncated)
 

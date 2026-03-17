@@ -39,7 +39,7 @@ function geminiEmbed(text, apiKey) {
         const bodyStr = JSON.stringify({ content: { parts: [{ text }] } });
         const options = {
             hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/text-embedding-005:embedContent?key=${apiKey}`,
+            path: `/v1beta/models/text-embedding-004:embedContent?key=${apiKey}`,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

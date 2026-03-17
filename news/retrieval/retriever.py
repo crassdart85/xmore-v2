@@ -54,7 +54,7 @@ def _embed_query(text: str) -> List[float]:
         raise RuntimeError("GOOGLE_API_KEY not set")
     from google import genai
     client = genai.Client(api_key=api_key)
-    result = client.models.embed_content(model="text-embedding-005", contents=text)
+    result = client.models.embed_content(model="text-embedding-004", contents=text)
     return result.embeddings[0].values
 
 

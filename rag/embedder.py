@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 CHUNK_SIZE     = 500    # characters per chunk
 CHUNK_OVERLAP  = 50     # overlap between adjacent chunks
-EMBED_MODEL    = 'text-embedding-005'
+EMBED_MODEL    = 'text-embedding-004'
 RATE_LIMIT_SLEEP = 0.13  # ~7.5 req/s — under free-tier 10/s
 
 ALL_SOURCES = ('market_report', 'news_article', 'event_intel')

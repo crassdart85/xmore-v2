@@ -9,10 +9,10 @@ if (!DATABASE_URL) {
   process.exit(0);
 }
 
-// Set a global timeout - exit after 300 seconds no matter what
-const TIMEOUT_MS = 300000;
+// Set a global timeout - exit after 600 seconds no matter what
+const TIMEOUT_MS = 600000;
 const timeoutId = setTimeout(() => {
-  console.error('❌ Database initialization timed out after 300 seconds');
+  console.error('❌ Database initialization timed out after 600 seconds');
   process.exit(1);
 }, TIMEOUT_MS);
 timeoutId.unref(); // Don't keep process alive just for timeout
@@ -53,13 +53,15 @@ async function initializeDatabase() {
 
     // lock_timeout: fail fast if we can't acquire a DDL lock within 5s
     // (covers concurrent GH Actions jobs holding AccessExclusiveLock).
-    // statement_timeout: also cap the index BUILD time at 30s per statement
-    // (lock_timeout only covers the wait, not the scan/build phase).
+    // statement_timeout=0: index BUILD time is intentionally unlimited —
+    // lock_timeout already protects against lock hangs. Capping build time
+    // caused all 47 index creations to timeout at 30s each, consuming the
+    // entire 300s global window before the server could start.
     // Both settings are session-level; with max:1 pool they apply to every
     // subsequent pool.query() call on this same connection.
     await pool.query("SET lock_timeout = '5s'");
-    await pool.query("SET statement_timeout = '30s'");
-    console.log('⏱  lock_timeout=5s  statement_timeout=30s');
+    await pool.query("SET statement_timeout = '0'");
+    console.log('⏱  lock_timeout=5s  statement_timeout=0 (unlimited)');
 
     // Create tables
     console.log('📋 Creating tables...');

@@ -220,7 +220,7 @@ Rules:
     def _embed_text(self, text: str):
         """Embed text via Gemini text-embedding-005. Returns float list or None."""
         try:
-            result = self._client.models.embed_content(model='text-embedding-005', contents=text)
+            result = self._client.models.embed_content(model='text-embedding-004', contents=text)
             return result.embeddings[0].values
         except Exception as e:
             logger.debug(f"Embed failed: {e}")

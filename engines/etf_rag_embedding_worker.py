@@ -50,7 +50,7 @@ def _gemini_embed(text: str) -> list | None:
         return None
     url = (
         f'https://generativelanguage.googleapis.com/v1beta/models/'
-        f'text-embedding-005:embedContent?key={GOOGLE_API_KEY}'
+        f'text-embedding-004:embedContent?key={GOOGLE_API_KEY}'
     )
     body = {'content': {'parts': [{'text': text}]}}
     try:
