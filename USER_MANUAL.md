@@ -492,6 +492,89 @@ Latest market data for all tracked stocks.
 | **Volume** | Trading volume (formatted with commas) |
 | **Date** | Date of the price data |
 
+---
+
+## 12. Mobile & Responsive Design
+
+The Xmore dashboard is fully responsive and optimized for all device sizes, from mobile phones (640px) to desktop displays.
+
+### 12.1 Mobile Devices (640px and below)
+
+On small screens, the UI intelligently adapts to prevent overlapping elements and maintain readability:
+
+#### Header
+- Navigation links are hidden to save space (only PRO, Language, and Theme buttons visible)
+- Logo font size reduces from 24px to 18px
+- Buttons are properly stacked with adequate spacing (36px minimum height for touch targets)
+- No horizontal overflow or content cramping
+
+#### Content Layout
+- Stats grid converts to 2-column layout instead of 4-column
+- Charts and tables enable horizontal scroll with sticky headers
+- Card padding is optimized: 10px instead of 16px
+- Font sizes scale appropriately (labels 0.75em, values 1.6em)
+
+#### Tables & Data
+- Minimum widths (380-560px) allow horizontal scroll without breaking layout
+- Reduced padding (8px per cell) maintains readability
+- Columns don't resize or collapse unexpectedly
+
+#### Navigation Tabs
+- Horizontal scroll with touch-friendly scrolling
+- Smaller gap spacing (4px) to fit more tabs on screen
+- Tab font size: 0.75em for compact display
+
+#### Buttons & Touch Targets
+- All buttons maintain 36px minimum height for easy mobile tapping
+- Consistent padding: 8px × 12px
+- No overlapping or cramped spacing
+
+#### Text Rendering
+- All text uses `word-break: break-word` to prevent overflow
+- Proper line-height (1.2-1.4) for readability
+- Long text gracefully wraps instead of being clipped
+
+### 12.2 Tablet Devices (768px)
+
+- Stats grid: 2-column layout
+- Reduced padding (12px) maintains spacious feel
+- Full navigation visible
+- Charts and tables remain readable without zoom
+
+### 12.3 Desktop (1024px+)
+
+- Full 4-column stats grid
+- All navigation and secondary links visible
+- Optimal spacing and font sizes
+- Best visual performance
+
+### 12.4 Dark Mode & Mobile
+
+Dark mode works seamlessly on all device sizes:
+- Proper contrast ratios maintained on small screens
+- No additional styling issues or visual glitches
+- Toggle via the moon/sun icon in the header
+
+### 12.5 RTL (Arabic) & Mobile
+
+Arabic language support is fully mobile-optimized:
+- Text alignment automatically switches to right-aligned on RTL mode
+- Tables and lists display correctly with proper text direction
+- Touch targets and buttons remain properly positioned
+
+### 12.6 Performance on Mobile
+
+- No page bloat or excessive rendering
+- Smooth scrolling using GPU acceleration (`-webkit-overflow-scrolling: touch`)
+- Reduced animations to prevent jank on lower-end devices
+- Proper viewport meta tag ensures correct scaling
+
+---
+
+## 13. Account & Settings
+
+(Previous section content continues...)
+
 Sorted alphabetically by symbol.
 
 ---

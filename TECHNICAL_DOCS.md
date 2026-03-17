@@ -155,3 +155,27 @@ The entire workflow is orchestrated by `run_pipeline.py`.
 5. **SQLite Row Conversion**: Fixed Row object to dict conversion using `dict(zip(...))`  
 6. **Code Quality**: Fixed naming convention (DCf_TABLE_SQL → DCF_TABLE_SQL), removed unreachable return statements
 7. **Track Record API**: Updated `web-ui/routes/track-record.js` to calculate accurate "Last Updated" timestamp using multiple table sources
+
+### Mobile CSS Optimizations (March 2026)
+**Comprehensive responsive design improvements for mobile devices (640px and below):**
+
+- **Header/Navigation**: Completely restructured layout to prevent overlapping; secondary nav links now hidden on mobile; buttons properly stack with adequate spacing
+- **Spacing & Sizing**: 
+  - Header padding reduced to 8-10px for mobile
+  - Button heights: 36px minimum (touch-friendly)
+  - Gap spacing: 6-8px for compact mobile layout
+- **Stats Grid & Cards**: Changed from 4-column to 2-column on mobile; proper padding (10-12px) per card
+- **Navigation Tabs**: Horizontal scroll enabled with `-webkit-overflow-scrolling: touch`; better spacing (4px gaps); font size 0.75em for compact display
+- **Tables & Data**: 
+  - Proper min-widths (380-560px) enable horizontal scroll without breaking layout
+  - Reduced padding (8px) per cell
+  - Sticky headers with proper z-index
+- **Text Handling**: Added `word-break: break-word` + `overflow-wrap: break-word` to all text elements; proper line-height (1.2-1.4) for readability
+- **Modals & Overlays**: Sized properly for mobile (96vw, 90vh max); no content overflow
+- **Files Updated**: 
+  - `web-ui/public/style.css` — Added 350+ lines of comprehensive mobile CSS
+  - `web-ui/public/track-record.css` — Enhanced track-record page mobile styling
+  - `web-ui/public/base.css` — Improved header/topbar mobile layout
+  - `web-ui/public/performance-dashboard.css` — Better performance metrics on mobile
+
+**Result**: No more overlapping elements, consistent spacing, readable font sizes, and touch-friendly interface across all pages and viewports.
