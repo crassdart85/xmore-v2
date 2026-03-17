@@ -10,7 +10,7 @@ name: Trading System Automation
 #  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
 #  14:00              Sun–Thu  egx-daily-snapshot             (backup EGX data export, 16:00 Cairo)
 #  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
-#  :00                Hourly   catchup-evaluation             (resolve expired predictions → track-record data)
+#  06,12,18:00        3×/day   catchup-evaluation             (resolve expired predictions → track-record data)
 #  13:30              Sun–Thu  etf-egx-all (EGX ETF post-close: tape+nav+holdings+fv+pd)
 #  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
 #  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
@@ -92,9 +92,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Initialize database schema
-        run: python -c "from database import create_tables; create_tables()"
-
       - name: Collect intraday prices
         run: python collect_data.py --prices-only
 
@@ -123,6 +120,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
 
       - name: Collect news and RSS feeds
@@ -163,6 +162,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
 
       # Collect final close prices
@@ -254,6 +255,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
 
       # Step 1: Full price + news collection
@@ -296,7 +299,7 @@ jobs:
   catchup-evaluation:
     if: github.event.schedule == '0 6,12,18 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
@@ -364,6 +367,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       # Mubasher first — reliable server-side rendered page, fast
       - name: Scrape EGX funds from Mubasher (statistics page)
@@ -404,6 +409,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Fetch global ETF prices (EOD)
         run: python -m engines.etf_global_prices
@@ -426,6 +433,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Fetch global ETF prices (backstop/backfill)
         run: python -m engines.etf_global_prices --backfill
@@ -448,6 +457,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Refresh global ETF universe from ETFDB
         run: python -m engines.etf_global_universe
@@ -470,6 +481,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Refresh global ETF holdings from Yahoo Finance
         continue-on-error: true
@@ -493,6 +506,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Download and ingest ETF PDFs
         continue-on-error: true
@@ -516,6 +531,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Process pending ETF document embeddings
         run: python -m engines.etf_rag_embedding_worker
@@ -538,6 +555,8 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Initialize database schema
+        timeout-minutes: 2
+        continue-on-error: true
         run: python -c "from database import create_tables; create_tables()"
       - name: Run walk-forward backtest and save results
         run: python engines/backtest.py --all --save
