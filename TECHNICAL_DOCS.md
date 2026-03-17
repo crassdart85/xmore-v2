@@ -134,3 +134,24 @@ The entire workflow is orchestrated by `run_pipeline.py`.
 2.  **Hyperparameter Tuning**: Use GridSearch to optimize Random Forest parameters.
 3.  **More Data Sources**: Integrate macro-economic indicators (fed rates, inflation) or alternative data (social media).
 4.  **Automated Trading**: Connect to a brokerage API (e.g., Alpaca) for paper trading.
+
+---
+
+## 📋 Recent Updates (March 2026)
+
+### DCF Valuation Engine (New Feature)
+- **Added**: Standalone Discounted Cash Flow (DCF) valuation module (`agents/dcf/`)
+- **Frequency**: Runs once per week (Sundays) via `run_agents.py`
+- **Inputs**: Historical financial statements, market data, Egypt-calibrated WACC
+- **Outputs**: Fair value estimates (bull/base/bear scenarios + composite), stored in `dcf_valuations` table
+- **Integration**: DCF signals feed into the multi-agent consensus engine, boosting weight on deep value or punishing on overvaluation
+- **Modules**: dcf_config, data_collector, fcf_projector, wacc_calculator, dcf_engine, scenario_runner, dcf_store, run_dcf, dcf_agent
+
+### Bug Fixes & Code Quality Improvements
+1. **Database Schema Fix**: Removed invalid `DATE()` expressions from UNIQUE constraints (SQLite/PostgreSQL incompatibility)
+2. **Weighted Average Normalization**: Fixed scenario_runner to renormalize composite weights when scenarios fail to compute
+3. **Config Parameter Missing**: Added missing `config` parameter in fcf_projector bank FCF projection
+4. **Redundant Logic**: Removed pointless if-else in upside_pct calculation
+5. **SQLite Row Conversion**: Fixed Row object to dict conversion using `dict(zip(...))`  
+6. **Code Quality**: Fixed naming convention (DCf_TABLE_SQL → DCF_TABLE_SQL), removed unreachable return statements
+7. **Track Record API**: Updated `web-ui/routes/track-record.js` to calculate accurate "Last Updated" timestamp using multiple table sources

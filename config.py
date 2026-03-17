@@ -169,11 +169,12 @@ RISK_CONFIG = {
 # Gemini_LLM_Agent included when GOOGLE_API_KEY is set; consensus engine
 # normalises weights at runtime so it's safe to always list it here.
 AGENT_WEIGHTS = {
-    "ML_RandomForest":     0.28,
+    "ML_RandomForest":     0.25,
     "MA_Crossover_Agent":  0.20,
-    "RSI_Agent":           0.17,
-    "Volume_Spike_Agent":  0.15,
-    "Gemini_LLM_Agent":    0.20,
+    "RSI_Agent":          0.17,
+    "Volume_Spike_Agent": 0.13,
+    "Gemini_LLM_Agent":   0.15,
+    "DCF_Valuation_Agent": 0.10,
 }
 
 # ============================================

@@ -20,6 +20,15 @@ import sys
 import traceback
 import logging
 
+# DCF valuation (weekly)
+try:
+    from agents.dcf.run_dcf import run_dcf_pipeline
+    from agents.dcf.dcf_store import get_latest_composite_dcf
+except Exception as e:
+    run_dcf_pipeline = None
+    get_latest_composite_dcf = None
+    print(f"⚠️  DCF module unavailable: {e}")
+
 logger = logging.getLogger(__name__)
 
 # Import agents
@@ -379,7 +388,17 @@ def execute():
         vol_agent = VolumeAgent()
         ml_agent = MLAgent()
 
+        # DCF valuation signal (weekly, from dcf_valuations table)
+        try:
+            from agents.dcf.dcf_agent import DCFValuationAgent
+            dcf_agent = DCFValuationAgent()
+        except Exception:
+            dcf_agent = None
+
         agents = [rsi_agent, ma_agent, vol_agent, ml_agent]
+        if dcf_agent is not None:
+            agents.append(dcf_agent)
+
         gemini_agent = _gemini_agent  # module-level instance (None if unavailable)
         print(f"✅ Created {len(agents)} technical agents" +
               (" + Gemini LLM Agent" if gemini_agent and gemini_agent._enabled else ""))
@@ -413,6 +432,18 @@ def execute():
             except Exception as _intel_err:
                 MATERIAL_TICKERS = []
                 print(f"[INTEL] Skipped: {_intel_err}")
+            # ──────────────────────────────────────────────────────────────
+
+            # ── Weekly DCF valuation pipeline (Supplementary signal) ───────
+            if run_dcf_pipeline:
+                try:
+                    dcf_results = run_dcf_pipeline(conn)
+                    if dcf_results.get("skipped"):
+                        print("[DCF] Skipped (not Sunday)")
+                    else:
+                        print(f"[DCF] Completed: {dcf_results.get('succeeded', 0)} succeeded, {dcf_results.get('failed', 0)} failed")
+                except Exception as _dcf_err:
+                    print(f"[DCF] Skipped / failed: {_dcf_err}")
             # ──────────────────────────────────────────────────────────────
 
             # Load accuracy-adjusted weights once for the entire run
