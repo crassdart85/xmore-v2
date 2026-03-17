@@ -27,6 +27,10 @@ try:
 except ImportError:
     LGBM_AVAILABLE = False
     from sklearn.ensemble import RandomForestClassifier
+    logger.warning(
+        "LightGBM not installed; falling back to RandomForestClassifier. "
+        "Install lightgbm for best performance (faster training and better accuracy)."
+    )
 
 from sklearn.model_selection import TimeSeriesSplit
 
