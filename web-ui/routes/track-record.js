@@ -145,18 +145,21 @@ async function kpiForWindow(days) {
 router.get('/summary', async (req, res) => {
     try {
         // Live signal count + date range
+        // Use both the original signal date (recommendation_date) and the last modification time (updated_at)
+        // so "Last Updated" reflects the latest evaluation / refresh even if signals themselves are unchanged.
         const counts = await dbGet(`
             SELECT
                 COUNT(*)  AS total_live,
                 MIN(recommendation_date) AS live_since,
-                MAX(recommendation_date) AS last_updated
+                MAX(recommendation_date) AS last_signal_date,
+                MAX(updated_at) AS last_updated
             FROM trade_recommendations
             WHERE ${liveFilter()}
         `);
 
         // Fresher "last updated" — use latest across prices + consensus + evaluations
         // (updated daily even when no new user-specific trade recs are generated)
-        let lastUpdated = counts?.last_updated || null;
+        let lastUpdated = counts?.last_updated || counts?.last_signal_date || null;
         try {
             const fresh = await dbGet(`
                 SELECT GREATEST(
@@ -164,6 +167,7 @@ router.get('/summary', async (req, res) => {
                     COALESCE((SELECT MAX(prediction_date) FROM consensus_results), '1970-01-01'::date),
                     COALESCE((SELECT MAX(evaluated_at) FROM stock_signal_evals), '1970-01-01'::date),
                     COALESCE((SELECT MAX(signal_date) FROM scored_signals), '1970-01-01'::date),
+                    COALESCE((SELECT MAX(updated_at) FROM trade_recommendations), '1970-01-01'::date),
                     COALESCE('${lastUpdated || '1970-01-01'}'::date, '1970-01-01'::date)
                 ) AS freshest
             `);
@@ -175,7 +179,8 @@ router.get('/summary', async (req, res) => {
                 const c  = await dbGet(`SELECT MAX(prediction_date) AS d FROM consensus_results`);
                 const se = await dbGet(`SELECT MAX(evaluated_at) AS d FROM stock_signal_evals`).catch(() => null);
                 const ss = await dbGet(`SELECT MAX(signal_date) AS d FROM scored_signals`).catch(() => null);
-                const candidates = [lastUpdated, p?.d, c?.d, se?.d, ss?.d].filter(Boolean).sort();
+                const ur = await dbGet(`SELECT MAX(updated_at) AS d FROM trade_recommendations`).catch(() => null);
+                const candidates = [lastUpdated, p?.d, c?.d, se?.d, ss?.d, ur?.d].filter(Boolean).sort();
                 if (candidates.length) lastUpdated = candidates[candidates.length - 1];
             } catch (_2) {}
         }
