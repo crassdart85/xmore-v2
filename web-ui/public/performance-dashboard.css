@@ -469,8 +469,47 @@
     margin-top: 4px;
 }
 @media (max-width: 640px) {
-    .inst-grid { grid-template-columns: repeat(2, 1fr); }
-    .inst-sub-row { grid-template-columns: 1fr; }
+    .inst-grid { 
+        grid-template-columns: 1fr !important;
+        gap: 8px;
+    }
+    .inst-sub-row { 
+        grid-template-columns: 1fr !important;
+    }
+    .inst-card {
+        padding: 10px !important;
+        border-radius: 6px;
+    }
+    .inst-label {
+        font-size: 0.7em;
+    }
+    .inst-value {
+        font-size: 1.2em;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+    
+    /* Perf proof grid */
+    .perf-proof-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px;
+    }
+    
+    .perf-metric-card {
+        padding: 10px !important;
+        border-radius: 6px;
+    }
+    
+    .perf-metric-label {
+        font-size: 0.7em;
+        word-break: break-word;
+    }
+    
+    .perf-metric-value {
+        font-size: 1.5em;
+        line-height: 1.2;
+        word-break: break-word;
+    }
 }
 [dir="rtl"] .inst-bench-table th,
 [dir="rtl"] .inst-bench-table td { text-align: right; }

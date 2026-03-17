@@ -100,8 +100,43 @@
 }
 
 @media (max-width: 640px) {
-  .x-topbar { padding: 8px 12px; flex-wrap: wrap; }
-  .x-actions { width: 100%; justify-content: flex-start; }
+  .x-topbar { 
+    padding: 8px 10px !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    min-height: auto;
+  }
+  .x-brand {
+    font-size: 1em;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+  .x-actions { 
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-left: 0;
+    margin-top: 8px;
+  }
+  .x-nav-links {
+    display: none;
+    width: 100%;
+    gap: 4px;
+  }
+  .x-link {
+    padding: 6px 8px;
+    font-size: 0.75em;
+    border-radius: 4px;
+  }
+  .x-pill {
+    padding: 3px 8px;
+    font-size: 0.75em;
+  }
+  .x-back {
+    white-space: nowrap;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

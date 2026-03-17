@@ -1623,6 +1623,392 @@ footer {
     }
 }
 
+/* ────────────────────────────────────────────────────────────
+   MOBILE OPTIMIZATIONS (640px and below)
+   Ensuring no overlap, consistent spacing, and readable layout
+   ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    /* ──────────────────────────────────────────────────────────
+       HEADER IMPROVEMENTS
+    ────────────────────────────────────────────────────────── */
+    header {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        padding: 8px 10px !important;
+        min-height: auto !important;
+        height: auto !important;
+        align-items: center !important;
+    }
+
+    h1 {
+        font-size: 1.1em !important;
+        letter-spacing: 2px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .subtitle {
+        display: none !important;
+    }
+
+    .header-buttons {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        margin-left: 0 !important;
+        margin-top: 8px;
+        order: 10;
+    }
+
+    .header-link-secondary { 
+        display: none !important; 
+    }
+
+    .pro-link-btn { 
+        font-size: 0.75em !important;
+        padding: 6px 10px !important; 
+        letter-spacing: 0.5px;
+        min-height: 32px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    .theme-btn {
+        width: 36px !important;
+        height: 36px !important;
+        padding: 0 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lang-btn {
+        padding: 6px 10px !important;
+        font-size: 0.85em !important;
+        white-space: nowrap;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       CONTAINER & SPACING
+    ────────────────────────────────────────────────────────── */
+    .container {
+        padding: 0 10px 16px 10px !important;
+        gap: 12px !important;
+    }
+
+    body {
+        overflow-x: hidden !important;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       TICKER CONTAINER
+    ────────────────────────────────────────────────────────── */
+    .tv-ticker-container {
+        margin: 0 -10px !important;
+        border-radius: 0 !important;
+        height: auto !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       STATS GRID
+    ────────────────────────────────────────────────────────── */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+        margin: 12px 0 !important;
+    }
+
+    .stat-card {
+        padding: 12px 10px !important;
+        border-radius: 8px !important;
+        min-height: auto;
+    }
+
+    .stat-value {
+        font-size: 1.6em !important;
+        line-height: 1.2;
+        word-break: break-word;
+        white-space: normal;
+    }
+
+    .stat-label {
+        font-size: 0.75em !important;
+        line-height: 1.2;
+        margin-top: 4px;
+        white-space: normal;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       NAVIGATION TABS
+    ────────────────────────────────────────────────────────── */
+    .tab-nav {
+        margin: 0 -10px !important;
+        padding: 0 10px !important;
+        gap: 4px !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex-wrap: nowrap !important;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .tab-nav::-webkit-scrollbar {
+        height: 3px;
+    }
+
+    .tab-nav::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .tab-nav::-webkit-scrollbar-thumb {
+        background: var(--text-muted);
+        border-radius: 2px;
+    }
+
+    .tab-btn {
+        padding: 8px 12px !important;
+        font-size: 0.75em !important;
+        white-space: nowrap !important;
+        flex: 0 0 auto;
+        min-height: 36px;
+        display: flex;
+        align-items: center;
+        border: none;
+        background: transparent;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       SECTIONS & CONTENT
+    ────────────────────────────────────────────────────────── */
+    .section {
+        margin-bottom: 16px !important;
+    }
+
+    .section h2,
+    .section-header h2 {
+        font-size: 1.2em !important;
+        margin-bottom: 10px !important;
+        line-height: 1.3;
+        word-break: break-word;
+    }
+
+    .section-subtitle,
+    .section-header p {
+        font-size: 0.85em !important;
+        line-height: 1.4;
+        margin-bottom: 10px !important;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       SEARCH & FILTER BOXES
+    ────────────────────────────────────────────────────────── */
+    .search-box {
+        margin-bottom: 10px;
+    }
+
+    .search-box input {
+        width: 100% !important;
+        padding: 10px 12px !important;
+        font-size: 0.9em;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+    }
+
+    .screener-bar {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .screener-select,
+    .screener-input {
+        flex: 1 1 calc(50% - 3px) !important;
+        min-width: 120px !important;
+        padding: 8px 10px !important;
+        font-size: 0.85em !important;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+    }
+
+    .screener-label {
+        flex: 1 1 100% !important;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.85em;
+    }
+
+    .screener-label input {
+        flex: 1;
+        min-width: 60px;
+    }
+
+    .screener-reset {
+        flex: 0 0 auto;
+        padding: 8px 12px !important;
+        font-size: 0.85em !important;
+        white-space: nowrap;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       TABLES & DATA
+    ────────────────────────────────────────────────────────── */
+    .scrollable-container {
+        max-height: none !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        margin: 0 -10px;
+        padding: 0 10px;
+    }
+
+    table {
+        min-width: 400px !important;
+        font-size: 0.85em !important;
+    }
+
+    thead {
+        position: sticky;
+        top: 0;
+        background: var(--table-header-bg);
+        z-index: 10;
+    }
+
+    th,
+    td {
+        padding: 10px 8px !important;
+        font-size: 0.85em !important;
+        white-space: nowrap;
+        border-collapse: collapse;
+    }
+
+    .company-name {
+        max-width: 100px !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       SIGNAL & PREDICTION TAGS
+    ────────────────────────────────────────────────────────── */
+    .signal-up,
+    .signal-down,
+    .signal-hold,
+    .signal-flat,
+    .prediction-up,
+    .prediction-down,
+    .prediction-hold {
+        padding: 5px 8px !important;
+        font-size: 0.8em !important;
+        border-radius: 4px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       CARDS & GRIDS
+    ────────────────────────────────────────────────────────── */
+    .card {
+        padding: 12px !important;
+        border-radius: 8px !important;
+        margin-bottom: 10px;
+    }
+
+    .perf-proof-grid,
+    .perf-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+
+    .perf-metric-card {
+        padding: 12px !important;
+        border-radius: 8px;
+    }
+
+    .perf-metric-value {
+        font-size: 1.8em !important;
+        line-height: 1.1;
+    }
+
+    .perf-metric-label {
+        font-size: 0.75em !important;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       BUTTONS
+    ────────────────────────────────────────────────────────── */
+    button {
+        min-height: 36px !important;
+        padding: 8px 12px !important;
+        border-radius: 6px;
+        font-size: 0.85em !important;
+    }
+
+    .refresh-btn,
+    .action-btn {
+        width: 100% !important;
+        padding: 10px 12px !important;
+        margin-top: 8px;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       MODALS & OVERLAYS
+    ────────────────────────────────────────────────────────── */
+    .modal {
+        width: 96vw !important;
+        max-width: calc(100% - 8px) !important;
+        padding: 12px !important;
+        border-radius: 8px 8px 0 0;
+        max-height: 90vh !important;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       DISCLAIMERS & TEXT
+    ────────────────────────────────────────────────────────── */
+    footer {
+        margin-top: 20px;
+    }
+
+    .disclaimer {
+        font-size: 0.75em !important;
+        padding: 10px !important;
+        line-height: 1.4;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       PREVENT HORIZONTAL OVERFLOW
+    ────────────────────────────────────────────────────────── */
+    * {
+        max-width: 100%;
+    }
+
+    html,
+    body {
+        overflow-x: hidden !important;
+        width: 100vw !important;
+    }
+
+    /* ──────────────────────────────────────────────────────────
+       TEXT WRAPPING FOR ALL TEXT ELEMENTS
+    ────────────────────────────────────────────────────────── */
+    h1, h2, h3, h4, h5, h6 {
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+
+    p, span, label, div {
+        word-break: break-word;
+        overflow-wrap: break-word;
+    }
+}
+
 /* Small phones */
 /* Hide secondary nav links on small phones — PRO + lang + theme are enough */
 @media (max-width: 640px) {
