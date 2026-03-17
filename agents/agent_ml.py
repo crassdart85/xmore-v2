@@ -246,17 +246,20 @@ class MLAgent(BaseAgent):
         if symbol and symbol != 'UNKNOWN':
             try:
                 with get_connection() as conn:
-                    news_df = pd.read_sql(
-                        f"SELECT date, sentiment_score FROM news WHERE symbol='{symbol}'",
-                        conn
-                    )
+                    cur = conn.cursor()
+                    ph = '%s' if os.getenv('DATABASE_URL') else '?'
+                    cur.execute(f"SELECT date, sentiment_score FROM news WHERE symbol={ph}", (symbol,))
+                    rows = cur.fetchall()
+                    cols = [d[0] for d in cur.description] if cur.description else []
+                    news_df = pd.DataFrame([dict(zip(cols, r)) for r in rows])
             except Exception:
                 pass
 
         # Macro context (Brent, USD/EGP, EM)
         try:
             with get_connection() as conn:
-                macro_df = pd.read_sql("""
+                cur = conn.cursor()
+                cur.execute("""
                     SELECT date,
                         MAX(CASE WHEN symbol='MACRO_BRENT'  THEN close END) AS brent_close,
                         MAX(CASE WHEN symbol='MACRO_USDEGP' THEN close END) AS usdegp_close,
@@ -264,7 +267,10 @@ class MLAgent(BaseAgent):
                     FROM prices
                     WHERE symbol IN ('MACRO_BRENT', 'MACRO_USDEGP', 'MACRO_EEM')
                     GROUP BY date ORDER BY date
-                """, conn)
+                """)
+                rows = cur.fetchall()
+                cols = [d[0] for d in cur.description] if cur.description else []
+                macro_df = pd.DataFrame([dict(zip(cols, r)) for r in rows])
         except Exception:
             pass
 
