@@ -481,9 +481,9 @@ def create_tables():
             _safe_add_column(cursor, "agent_performance_daily", col_name, col_type)
 
         # Market regime log (written by run_agents.py after HMM detection)
-        cursor.execute("""
+        cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS regime_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id {auto_id},
                 date DATE NOT NULL UNIQUE,
                 regime TEXT NOT NULL,
                 hmm_state INTEGER,
