@@ -258,8 +258,10 @@ def embed_event_intel(client, days: int = 30, limit: int = 200) -> int:
         # detected_symbols may be a JSON string or list
         syms = article.get("detected_symbols") or []
         if isinstance(syms, str):
-            try:    syms = json.loads(syms)
-            except: syms = []
+            try:
+                syms = json.loads(syms)
+            except (json.JSONDecodeError, TypeError, ValueError):
+                syms = []
 
         meta = {
             "title":        title,
