@@ -188,10 +188,11 @@ function applyLang() {
   document.getElementById('sStocksTitle').innerHTML  = `<span>${t('stockTitle')}</span>`;
   document.getElementById('sSimTitle').innerHTML     = `<span>${t('simTitle')}</span>`;
   document.getElementById('sFooterNote').textContent = t('footer');
-  const lbl = document.getElementById('sSessionLabel');
+  const lbl    = document.getElementById('sSessionLabel');
   const dateEl = document.getElementById('sSessionDate');
-  const date = dateEl.textContent;
-  lbl.innerHTML = `${t('sessionLabel')} <span class="s-session-date">${date}</span>`;
+  const date   = dateEl ? dateEl.textContent : '—';
+  // Preserve id="sSessionDate" so subsequent applyLang() calls can still find the span
+  lbl.innerHTML = `${t('sessionLabel')} <span class="s-session-date" id="sSessionDate">${date}</span>`;
 }
 
 /* ─── Trend class ─────────────────────────────────────────────────────────── */

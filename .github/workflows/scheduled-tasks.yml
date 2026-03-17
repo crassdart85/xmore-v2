@@ -75,7 +75,7 @@ jobs:
   intraday-price-update:
     if: github.event.schedule == '0 7,8,9,10,11,12 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -392,7 +392,7 @@ jobs:
   etf-global-prices:
     if: github.event.schedule == '30 21 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -414,7 +414,7 @@ jobs:
   etf-global-prices-backstop:
     if: github.event.schedule == '30 4 * * 1-5' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
@@ -436,7 +436,7 @@ jobs:
   etf-global-universe:
     if: github.event.schedule == '0 5 * * 0' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with: { ref: main, fetch-depth: 1 }
