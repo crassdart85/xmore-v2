@@ -29,14 +29,27 @@ const pool = new Pool({
 
 /**
  * Execute a CREATE INDEX (or ALTER TABLE) statement safely.
- * Because max:1 keeps a single connection, the global lock_timeout set
- * in initializeDatabase() covers every call here as well.
- * Errors are logged as warnings; they never abort the whole init.
+ *
+ * Wraps each DDL in its own BEGIN/COMMIT with SET LOCAL so that
+ * lock_timeout and statement_timeout take effect even when Render's
+ * managed Postgres overrides session-level SET commands via role config
+ * or connection-pool resets between queries.
+ *
+ * SET LOCAL is transaction-scoped and cannot be overridden externally —
+ * it applies for the duration of the enclosing transaction only.
+ *
+ * Errors (lock timeout, statement timeout, concurrent run) are caught
+ * and logged as warnings; they never abort the whole init.
  */
 async function safeCreateIndex(db, sql) {
   try {
+    await db.query('BEGIN');
+    await db.query("SET LOCAL lock_timeout = '5s'");
+    await db.query('SET LOCAL statement_timeout = 0'); // no cap on index build time
     await db.query(sql);
+    await db.query('COMMIT');
   } catch (e) {
+    try { await db.query('ROLLBACK'); } catch (_) {}
     console.warn(`⚠️  DDL skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
   }
 }
