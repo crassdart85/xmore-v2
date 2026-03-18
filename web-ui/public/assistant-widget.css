@@ -234,6 +234,50 @@
     background: linear-gradient(135deg, #2563eb, #0891b2);
 }
 
+.x-assistant-mic {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb, #0891b2);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: filter 0.2s ease;
+}
+
+.x-assistant-mic:hover {
+    filter: saturate(1.1) brightness(1.08);
+}
+
+.x-assistant-mic:disabled {
+    background: rgba(148, 163, 184, 0.2);
+    color: rgba(148, 163, 184, 0.5);
+    cursor: not-allowed;
+}
+
+.x-assistant-mic.recording {
+    background: linear-gradient(135deg, #7c3aed, #0ea5e9);
+    animation: x-assistant-mic-pulse 0.8s ease-in-out infinite;
+}
+
+.x-assistant-mic.error {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+@keyframes x-assistant-mic-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(124, 58, 237, 0.5); }
+    50% { transform: scale(1.08); box-shadow: 0 0 0 6px rgba(124, 58, 237, 0); }
+}
+
+.x-assistant-input.listening {
+    color: var(--text-secondary, #cbd5e1);
+    font-style: italic;
+}
+
 html[dir="rtl"] .x-assistant-fab {
     right: auto;
     left: 24px;

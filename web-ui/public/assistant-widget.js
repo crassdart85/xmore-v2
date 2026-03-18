@@ -24,7 +24,17 @@
             buysPrompt: 'What are the strongest buy signals today?',
             macroPrompt: 'EGX macro brief for today',
             sendLabel: 'Send',
-            fallbackError: 'Could not reach the assistant right now.'
+            fallbackError: 'Could not reach the assistant right now.',
+            voiceLabel: 'Voice Input',
+            listeningLabel: 'Listening...',
+            listeningInLabel: 'Listening in',
+            micErrorLabel: 'Microphone not available',
+            micPermissionLabel: 'Microphone permission required',
+            unsupportedLabel: 'Voice input not supported in this browser',
+            noSpeechLabel: 'No speech detected. Please try again.',
+            networkErrorLabel: 'Network error. Please check your connection.',
+            unrecognizedLabel: 'Speech not recognized. Please try again.',
+            clickToTryAgainLabel: 'Click mic to try again'
         },
         ar: {
             title: 'مساعد البحث الذكي',
@@ -40,14 +50,26 @@
             buysPrompt: 'ما هي أقوى إشارات الشراء اليوم؟',
             macroPrompt: 'ملخص ماكرو EGX لليوم',
             sendLabel: 'إرسال',
-            fallbackError: 'تعذر الاتصال بالمساعد الآن.'
+            fallbackError: 'تعذر الاتصال بالمساعد الآن.',
+            voiceLabel: 'إدخال صوتي',
+            listeningLabel: 'جاري الاستماع...',
+            listeningInLabel: 'الاستماع في',
+            micErrorLabel: 'الميكروفون غير متاح',
+            micPermissionLabel: 'مطلوب إذن الميكروفون',
+            unsupportedLabel: 'إدخال صوتي غير مدعوم في هذا المتصفح',
+            noSpeechLabel: 'لم يتم الكشف عن كلام. يرجى المحاولة مرة أخرى.',
+            networkErrorLabel: 'خطأ في الشبكة. يرجى التحقق من اتصالك.',
+            unrecognizedLabel: 'لم يتم التعرف على الكلام. يرجى المحاولة مرة أخرى.',
+            clickToTryAgainLabel: 'انقر على الميك للمحاولة مرة أخرى'
         }
     };
 
     const state = {
         open: false,
         lang: getCurrentLang(),
-        typingEl: null
+        typingEl: null,
+        recognition: null,
+        isListening: false
     };
 
     function getCurrentLang() {
@@ -107,6 +129,14 @@
                 </div>
                 <div class="x-assistant-input-row">
                     <input id="xAssistantInput" class="x-assistant-input" type="text" maxlength="500" placeholder="${esc(t('placeholder'))}" autocomplete="off">
+                    <button id="xAssistantMic" class="x-assistant-mic" type="button" aria-label="${esc(t('voiceLabel'))}" title="${esc(t('voiceLabel'))}">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                            <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor"/>
+                            <path d="M5 11a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <line x1="12" y1="18" x2="12" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            <line x1="9" y1="21" x2="15" y2="21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                     <button id="xAssistantSend" class="x-assistant-send" type="button" aria-label="${esc(t('sendLabel'))}">&#10148;</button>
                 </div>
             </section>
@@ -137,6 +167,14 @@
         if (close) close.setAttribute('aria-label', t('closeLabel'));
         if (input) input.placeholder = t('placeholder');
         if (send) send.setAttribute('aria-label', t('sendLabel'));
+        const mic = document.getElementById('xAssistantMic');
+        if (mic && !mic.disabled && !state.isListening) {
+            mic.setAttribute('aria-label', t('voiceLabel'));
+            mic.setAttribute('title', t('voiceLabel'));
+        }
+        if (state.recognition) {
+            state.recognition.lang = state.lang === 'ar' ? 'ar-EG' : 'en-US';
+        }
         if (chips && chips.length === 3) {
             chips[0].textContent = t('macroChip');
             chips[1].textContent = t('moversChip');
@@ -197,6 +235,8 @@
         const send = document.getElementById('xAssistantSend');
         if (!input || !send) return;
 
+        if (state.isListening) stopListening();
+
         if (typeof prefill === 'string') input.value = prefill;
         const question = input.value.trim();
         if (!question) return;
@@ -245,6 +285,16 @@
         if (fab) fab.addEventListener('click', function () { setOpen(!state.open); });
         if (close) close.addEventListener('click', function () { setOpen(false); });
         if (send) send.addEventListener('click', function () { sendMessage(); });
+        const mic = document.getElementById('xAssistantMic');
+        if (mic) {
+            mic.addEventListener('click', function () {
+                if (state.isListening) {
+                    stopListening();
+                } else if (state.recognition) {
+                    startListening();
+                }
+            });
+        }
         if (input) {
             input.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -276,8 +326,157 @@
     function init() {
         buildWidget();
         refreshLanguage();
+        initSpeechRecognition();
         bindEvents();
         appendMessage('ai', t('welcome'));
+    }
+
+    function initSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const mic = document.getElementById('xAssistantMic');
+        if (!SpeechRecognition) {
+            if (mic) {
+                mic.disabled = true;
+                mic.setAttribute('title', t('unsupportedLabel'));
+                mic.setAttribute('aria-label', t('unsupportedLabel'));
+            }
+            return;
+        }
+        state.recognition = new SpeechRecognition();
+        state.recognition.continuous = false;
+        state.recognition.interimResults = true;
+        state.recognition.lang = state.lang === 'ar' ? 'ar-EG' : 'en-US';
+
+        state.recognition.onresult = function (event) {
+            const input = document.getElementById('xAssistantInput');
+            if (!input) return;
+            let interim = '';
+            let final = '';
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+                if (event.results[i].isFinal) {
+                    final += transcript;
+                } else {
+                    interim += transcript;
+                }
+            }
+            input.value = final || interim;
+            if (final) {
+                input.classList.remove('listening');
+            }
+        };
+
+        state.recognition.onend = function () {
+            if (state.isListening) {
+                const input = document.getElementById('xAssistantInput');
+                const text = input ? input.value.trim() : '';
+                stopListening();
+                if (text) {
+                    setTimeout(function () { sendMessage(); }, 100);
+                }
+            }
+        };
+
+        state.recognition.onerror = function (event) {
+            handleSpeechError(event.error);
+        };
+    }
+
+    function startListening() {
+        if (!state.recognition || state.isListening) return;
+        state.recognition.lang = state.lang === 'ar' ? 'ar-EG' : 'en-US';
+        const input = document.getElementById('xAssistantInput');
+        if (input) {
+            input.value = '';
+            input.placeholder = t('listeningLabel');
+            input.classList.add('listening');
+        }
+        state.isListening = true;
+        updateMicButtonState('recording');
+        try {
+            state.recognition.start();
+        } catch (_) {
+            state.isListening = false;
+            updateMicButtonState('idle');
+            if (input) {
+                input.placeholder = t('placeholder');
+                input.classList.remove('listening');
+            }
+        }
+    }
+
+    function stopListening() {
+        if (!state.isListening) return;
+        state.isListening = false;
+        const input = document.getElementById('xAssistantInput');
+        if (input) {
+            input.placeholder = t('placeholder');
+            input.classList.remove('listening');
+        }
+        updateMicButtonState('idle');
+        if (state.recognition) {
+            try { state.recognition.stop(); } catch (_) { /* already stopped */ }
+        }
+    }
+
+    function handleSpeechError(error) {
+        const input = document.getElementById('xAssistantInput');
+        let errorMsg = '';
+        if (error === 'aborted') {
+            stopListening();
+            return;
+        }
+        switch (error) {
+            case 'not-allowed':
+            case 'permission-denied':
+                errorMsg = t('micPermissionLabel');
+                break;
+            case 'no-speech':
+                errorMsg = t('noSpeechLabel');
+                break;
+            case 'network':
+                errorMsg = t('networkErrorLabel');
+                break;
+            default:
+                errorMsg = t('unrecognizedLabel');
+        }
+        stopListening();
+        if (input) {
+            const tryAgain = t('clickToTryAgainLabel');
+            input.placeholder = errorMsg + ' ' + tryAgain;
+            setTimeout(function () {
+                if (!state.isListening) {
+                    input.placeholder = t('placeholder');
+                }
+            }, 4000);
+        }
+        updateMicButtonState('error');
+        setTimeout(function () {
+            if (!state.isListening) {
+                updateMicButtonState('idle');
+            }
+        }, 4000);
+    }
+
+    function updateMicButtonState(micState) {
+        const mic = document.getElementById('xAssistantMic');
+        if (!mic || mic.disabled) return;
+        mic.classList.remove('recording', 'error');
+        switch (micState) {
+            case 'recording':
+                mic.classList.add('recording');
+                mic.setAttribute('aria-label', t('listeningLabel'));
+                mic.setAttribute('title', t('listeningLabel'));
+                break;
+            case 'error':
+                mic.classList.add('error');
+                mic.setAttribute('aria-label', t('micErrorLabel'));
+                mic.setAttribute('title', t('micErrorLabel'));
+                break;
+            default:
+                mic.setAttribute('aria-label', t('voiceLabel'));
+                mic.setAttribute('title', t('voiceLabel'));
+        }
     }
 
     if (document.readyState === 'loading') {
