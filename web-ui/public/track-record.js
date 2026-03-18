@@ -6,17 +6,58 @@ async function xfetch(url, retries = 2) {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (data && data.status === 'warming') {
+        console.warn(`[xfetch] ${url} warming up, retrying...`);
         await new Promise(r => setTimeout(r, 9000));
         continue;
       }
       return data;
     } catch (e) {
-      if (i === retries) return null;
+      console.error(`[xfetch] ${url} attempt ${i + 1}/${retries + 1} failed:`, e.message);
+      if (i === retries) {
+        console.error(`[xfetch] ${url} failed after ${retries + 1} attempts`);
+        return null;
+      }
       await new Promise(r => setTimeout(r, 3000));
     }
   }
   return null;
 }
+
+// ── Diagnostic: check if API is accessible ────────────────────
+async function diagnoseDatalLoading() {
+  console.log('🔍 [Diagnostic] Starting API health check...');
+  try {
+    const urls = [
+      '/api/track-record/summary?days=90',
+      '/api/track-record/agents',
+      '/api/track-record/top-stocks?days=90&limit=5'
+    ];
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, { method: 'GET' });
+        const text = await res.text();
+        console.log(`✓ ${url}:`);
+        console.log(`  Status: ${res.status}, Length: ${text.length} chars`);
+        if (res.ok) {
+          try {
+            const data = JSON.parse(text);
+            console.log(`  Data keys: ${Object.keys(data).join(', ')}`);
+          } catch (e) {
+            console.log(`  [Parse error] ${e.message}`);
+          }
+        }
+      } catch (e) {
+        console.error(`✗ ${url}: ${e.message}`);
+      }
+    }
+    console.log('🔍 [Diagnostic] Health check complete');
+  } catch (e) {
+    console.error('Diagnostic error:', e);
+  }
+}
+
+// Uncomment to debug: window.diagnoseDatalLoading = diagnoseDatalLoading; and call diagnoseDatalLoading() in console
+window.diagnoseDatalLoading = diagnoseDatalLoading;
 
 /* ─── Xmore Track Record — Investor Page ───────────────────── */
 
@@ -385,7 +426,15 @@ function colorClass(v, invert = false) {
 async function loadSummary() {
   try {
     const data = await xfetch(`/api/track-record/summary?days=${activeDays}`);
-    if (!data) return;
+    if (!data) {
+      console.warn('[Track Record] Summary API returned no data. Showing empty state.');
+      // Show empty state for KPIs
+      ['kpiTotal','kpiWin','kpiAlpha','kpiBeat','kpiSharpe','kpiPF'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = '—';
+      });
+      return;
+    }
     summaryCache = data;
     // Update signal count banner
     const bannerEl = document.getElementById('liveSignalCount');
@@ -562,7 +611,10 @@ function renderRiskRows(global_) {
 async function loadEquityCurve() {
   try {
     const data = await xfetch(`/api/track-record/equity-curve?days=${activeDays}`);
-    if (!data) return;
+    if (!data) {
+      console.warn('[Track Record] Equity curve API returned no data');
+      return;
+    }
 
     const empty = document.getElementById('equityEmpty');
     const footer = document.getElementById('equityFooter');
