@@ -23,6 +23,18 @@
       <a class="x-link active" href="/session" aria-current="page">Session</a>
       <a class="x-link" href="/docs">Docs</a>
     </nav>
+    <!-- Mobile menu button -->
+    <button id="sMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="sMobileMenuDropdown">
+      <span class="hamburger-icon">☰</span>
+    </button>
+    <!-- Mobile menu dropdown -->
+    <div id="sMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
+      <a href="/" class="mobile-menu-item" role="menuitem">🏠 Home</a>
+      <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
+      <a href="/pro" class="mobile-menu-item" role="menuitem">⭐ Pro</a>
+      <a href="/session" class="mobile-menu-item active" role="menuitem">📌 Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+    </div>
     <div class="s-auth-area">
       <span class="s-auth-user" id="sAuthUser" style="display:none"></span>
       <button class="s-auth-btn" id="sLogoutBtn" style="display:none" onclick="sHandleLogout()">Sign Out</button>
@@ -557,8 +569,62 @@ async function sCheckAuth() {
   } catch (_) {}
 }
 
+/* ─── Mobile Menu (640px and below) ────────────────────────────────────────── */
+function initSMobileMenu() {
+  const menuBtn = document.getElementById('sMobileMenuBtn');
+  const menuDropdown = document.getElementById('sMobileMenuDropdown');
+  const menuItems = document.querySelectorAll('#sMobileMenuDropdown .mobile-menu-item');
+
+  if (!menuBtn || !menuDropdown) return;
+
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isActive = menuDropdown.classList.contains('active');
+    if (isActive) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    } else {
+      menuDropdown.classList.add('active');
+      menuBtn.classList.add('active');
+      menuBtn.setAttribute('aria-expanded', 'true');
+      menuDropdown.setAttribute('aria-hidden', 'false');
+      menuItems[0]?.focus();
+    }
+  });
+
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
 /* ─── Init ────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
+  initSMobileMenu();
   document.documentElement.lang = lang;
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
   document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';

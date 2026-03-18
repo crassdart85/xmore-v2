@@ -263,8 +263,62 @@ let summaryCache = {};
 let equityChart = null;
 let logDataCache = [];
 
+// ── Mobile Menu (640px and below) ────────────────────────────────────
+function initTrMobileMenu() {
+  const menuBtn = document.getElementById('trMobileMenuBtn');
+  const menuDropdown = document.getElementById('trMobileMenuDropdown');
+  const menuItems = document.querySelectorAll('#trMobileMenuDropdown .mobile-menu-item');
+
+  if (!menuBtn || !menuDropdown) return;
+
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isActive = menuDropdown.classList.contains('active');
+    if (isActive) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    } else {
+      menuDropdown.classList.add('active');
+      menuBtn.classList.add('active');
+      menuBtn.setAttribute('aria-expanded', 'true');
+      menuDropdown.setAttribute('aria-hidden', 'false');
+      menuItems[0]?.focus();
+    }
+  });
+
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
 // ── Init ───────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  initTrMobileMenu();
   const html = document.getElementById('trHtml');
   html.setAttribute('lang', _LANG);
   html.setAttribute('dir', _LANG === 'ar' ? 'rtl' : 'ltr');

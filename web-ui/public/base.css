@@ -25,6 +25,7 @@
   padding: 10px 20px;
   background: var(--x-topbar-bg, transparent);
   border-bottom: 1px solid var(--x-topbar-border, transparent);
+  position: relative;
 }
 
 .x-topbar--dark {

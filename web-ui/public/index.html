@@ -37,11 +37,22 @@
                 <a href="/track-record" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Track Record ↗</a>
                 <a href="/session" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Session ?</a>
                 <a href="/pro" class="pro-link-btn">PRO ↗</a>
+                <!-- Mobile Menu Button (640px and below) -->
+                <button id="mobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenuDropdown">
+                    <span class="hamburger-icon">☰</span>
+                </button>
                 <button id="themeBtn" class="theme-btn" title="Toggle dark mode">
                     <span class="icon-sun">☀️</span>
                     <span class="icon-moon">🌙</span>
                 </button>
                 <button id="langBtn" class="lang-btn">عربي</button>
+                <!-- Mobile Menu Dropdown -->
+                <div id="mobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
+                    <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+                    <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
+                    <a href="/session" class="mobile-menu-item" role="menuitem">📌 Session</a>
+                    <a href="/pro" class="mobile-menu-item" role="menuitem">⭐ PRO</a>
+                </div>
             </div>
         </header>
 

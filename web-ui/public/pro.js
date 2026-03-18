@@ -84,6 +84,69 @@ function proToggleLang() {
 
 proApplyLang();
 
+// ── Mobile Menu (640px and below) ────────────────────────────────────────────
+function initProMobileMenu() {
+  const menuBtn = document.getElementById('proMobileMenuBtn');
+  const menuDropdown = document.getElementById('proMobileMenuDropdown');
+  const menuItems = document.querySelectorAll('#proMobileMenuDropdown .mobile-menu-item');
+
+  if (!menuBtn || !menuDropdown) return;
+
+  // Toggle menu on button click
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isActive = menuDropdown.classList.contains('active');
+    if (isActive) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    } else {
+      menuDropdown.classList.add('active');
+      menuBtn.classList.add('active');
+      menuBtn.setAttribute('aria-expanded', 'true');
+      menuDropdown.setAttribute('aria-hidden', 'false');
+      menuItems[0]?.focus();
+    }
+  });
+
+  // Close menu when a link is clicked
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  // Close menu on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initProMobileMenu);
+} else {
+  initProMobileMenu();
+}
+
 // ── FX rates ──────────────────────────────────────────────────────────────────
 async function loadFxRates() {
   const strip = document.getElementById('proFxStrip');

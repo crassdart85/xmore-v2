@@ -21,6 +21,18 @@
       <a class="x-link" href="/session">Session</a>
       <a class="x-link" href="/docs">Docs</a>
     </nav>
+    <!-- Mobile menu button -->
+    <button id="proMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="proMobileMenuDropdown">
+      <span class="hamburger-icon">☰</span>
+    </button>
+    <!-- Mobile menu dropdown -->
+    <div id="proMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
+      <a href="/" class="mobile-menu-item" role="menuitem">🏠 Home</a>
+      <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
+      <a href="/pro" class="mobile-menu-item active" role="menuitem">⭐ Pro</a>
+      <a href="/session" class="mobile-menu-item" role="menuitem">📌 Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+    </div>
     <!-- Live FX rates strip -->
     <div class="pro-fx-strip" id="proFxStrip">
       <span class="pro-fx-loading">FX…</span>

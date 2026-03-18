@@ -22,6 +22,20 @@
       <a class="x-link" href="/session">Session</a>
       <a class="x-link" href="/docs">Docs</a>
     </div>
+    <!-- Mobile menu button -->
+    <button id="landingMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="landingMobileMenuDropdown">
+      <span class="hamburger-icon">☰</span>
+    </button>
+    <!-- Mobile menu dropdown -->
+    <div id="landingMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
+      <a href="#why" class="mobile-menu-item" role="menuitem">Why Xmore</a>
+      <a href="#how" class="mobile-menu-item" role="menuitem">How It Works</a>
+      <a href="#edge" class="mobile-menu-item" role="menuitem">The Edge</a>
+      <div style="border-top: 1px solid var(--border-light); margin: 8px 0;"></div>
+      <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
+      <a href="/session" class="mobile-menu-item" role="menuitem">📌 Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+    </div>
     <div class="l-nav-actions x-actions">
       <a href="/pro" class="l-btn l-btn--ghost">Pro Dashboard</a>
       <a href="/" class="l-btn l-btn--primary">Open App</a>
@@ -234,6 +248,67 @@
       <a href="/pro">Pro</a>
     </div>
   </footer>
+
+<script>
+// Mobile Menu (640px and below)
+function initLandingMobileMenu() {
+  const menuBtn = document.getElementById('landingMobileMenuBtn');
+  const menuDropdown = document.getElementById('landingMobileMenuDropdown');
+  const menuItems = document.querySelectorAll('#landingMobileMenuDropdown .mobile-menu-item');
+
+  if (!menuBtn || !menuDropdown) return;
+
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isActive = menuDropdown.classList.contains('active');
+    if (isActive) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    } else {
+      menuDropdown.classList.add('active');
+      menuBtn.classList.add('active');
+      menuBtn.setAttribute('aria-expanded', 'true');
+      menuDropdown.setAttribute('aria-hidden', 'false');
+      menuItems[0]?.focus();
+    }
+  });
+
+  menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      menuDropdown.classList.remove('active');
+      menuBtn.classList.remove('active');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      menuDropdown.setAttribute('aria-hidden', 'true');
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initLandingMobileMenu);
+} else {
+  initLandingMobileMenu();
+}
+</script>
 
 </body>
 </html>
