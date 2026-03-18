@@ -60,7 +60,8 @@ except Exception as e:
 def _compute_market_data(df):
     """
     Derive market-level metrics from price DataFrame for the Risk Agent.
-    Returns dict with volume_20d_avg, volatility_20d, price, drawdowns, 52w range.
+    Returns dict with volume_20d_avg, volatility_20d, price, drawdowns, 52w range,
+    and recent_rsi (14-period RSI of the last close price).
     """
     if df is None or len(df) < 5:
         return None
@@ -107,6 +108,18 @@ def _compute_market_data(df):
         market['range_52w_position'] = (market['price'] - low_52w) / (high_52w - low_52w)
     else:
         market['range_52w_position'] = 0.5
+
+    # 14-period RSI (Wilder's smoothing)
+    market['recent_rsi'] = None
+    if len(df) >= 15:
+        delta = df['close'].diff()
+        gain = delta.where(delta > 0, 0.0)
+        loss = -delta.where(delta < 0, 0.0)
+        avg_gain = gain.ewm(alpha=1 / 14, min_periods=14, adjust=False).mean()
+        avg_loss = loss.ewm(alpha=1 / 14, min_periods=14, adjust=False).mean()
+        rs = avg_gain / avg_loss.replace(0, float('nan'))
+        rsi_series = 100 - (100 / (1 + rs))
+        market['recent_rsi'] = float(rsi_series.iloc[-1]) if not rsi_series.isna().iloc[-1] else None
 
     return market
 
@@ -281,6 +294,7 @@ def _store_consensus(conn, stock, today, consensus_result):
     signals_json = json.dumps(consensus_result.get('agent_signals', []))
     chain_json = json.dumps(consensus_result.get('reasoning_chain', []))
     display_json = json.dumps(consensus_result.get('display', {}))
+    momentum_alignment = consensus_result.get('momentum_alignment', 50.0)
 
     if os.getenv('DATABASE_URL'):
         cursor.execute("""
@@ -289,12 +303,12 @@ def _store_consensus(conn, stock, today, consensus_result):
              risk_adjusted, agent_agreement, agents_agreeing, agents_total,
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
-             agent_signals_json, reasoning_chain_json, display_json)
+             agent_signals_json, reasoning_chain_json, display_json, momentum_alignment)
             VALUES (%s, %s, %s, %s, %s, %s,
                     %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s,
-                    %s, %s, %s)
+                    %s, %s, %s, %s)
             ON CONFLICT (symbol, prediction_date)
             DO UPDATE SET
                 final_signal = EXCLUDED.final_signal,
@@ -315,7 +329,8 @@ def _store_consensus(conn, stock, today, consensus_result):
                 risk_assessment_json = EXCLUDED.risk_assessment_json,
                 agent_signals_json = EXCLUDED.agent_signals_json,
                 reasoning_chain_json = EXCLUDED.reasoning_chain_json,
-                display_json = EXCLUDED.display_json
+                display_json = EXCLUDED.display_json,
+                momentum_alignment = EXCLUDED.momentum_alignment
         """, (
             stock, today,
             consensus_result.get('final_signal', 'HOLD'),
@@ -332,7 +347,8 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('risk_action', 'PASS'),
             consensus_result.get('risk_score', 0),
             bull_json, bear_json, risk_json,
-            signals_json, chain_json, display_json
+            signals_json, chain_json, display_json,
+            momentum_alignment
         ))
     else:
         cursor.execute("""
@@ -341,12 +357,12 @@ def _store_consensus(conn, stock, today, consensus_result):
              risk_adjusted, agent_agreement, agents_agreeing, agents_total,
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
-             agent_signals_json, reasoning_chain_json, display_json)
+             agent_signals_json, reasoning_chain_json, display_json, momentum_alignment)
             VALUES (?, ?, ?, ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?,
-                    ?, ?, ?)
+                    ?, ?, ?, ?)
         """, (
             stock, today,
             consensus_result.get('final_signal', 'HOLD'),
@@ -363,7 +379,8 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('risk_action', 'PASS'),
             consensus_result.get('risk_score', 0),
             bull_json, bear_json, risk_json,
-            signals_json, chain_json, display_json
+            signals_json, chain_json, display_json,
+            momentum_alignment
         ))
 
 
@@ -635,6 +652,34 @@ def execute():
                     "symbol": stock,
                     "signal": consensus_result.get('final_signal', 'HOLD')
                 })
+
+                # ── Compute Momentum Alignment Score ──
+                # Score 0-100: how well RSI momentum agrees with the consensus signal.
+                # BUY signals gain higher scores when RSI > 60 (momentum confirms).
+                # SELL signals gain higher scores when RSI < 40 (momentum confirms).
+                # Contradicting momentum soft-downgrades confidence by 25%.
+                recent_rsi = market_data.get('recent_rsi') if market_data else None
+                final_signal = consensus_result.get('final_signal', 'HOLD')
+                momentum_alignment = 50.0  # neutral default
+
+                if recent_rsi is not None:
+                    is_buy = final_signal in ('UP', 'BUY', 'STRONG_BUY')
+                    is_sell = final_signal in ('DOWN', 'SELL', 'STRONG_SELL')
+
+                    if is_buy:
+                        # RSI >= 60 → strong momentum alignment (100); RSI <= 40 → weak (0)
+                        momentum_alignment = max(0.0, min(100.0, (recent_rsi - 40) / 20 * 100))
+                        if recent_rsi < 60 and consensus_result.get('confidence') is not None:
+                            consensus_result['confidence'] = max(0, consensus_result['confidence'] * 0.75)
+                            consensus_result['risk_adjusted'] = True
+                    elif is_sell:
+                        # RSI <= 40 → strong momentum alignment (100); RSI >= 60 → weak (0)
+                        momentum_alignment = max(0.0, min(100.0, (60 - recent_rsi) / 20 * 100))
+                        if recent_rsi > 40 and consensus_result.get('confidence') is not None:
+                            consensus_result['confidence'] = max(0, consensus_result['confidence'] * 0.75)
+                            consensus_result['risk_adjusted'] = True
+
+                consensus_result['momentum_alignment'] = round(momentum_alignment, 2)
 
                 # Store consensus result
                 _store_consensus(conn, stock, today, consensus_result)

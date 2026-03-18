@@ -969,6 +969,47 @@ def create_tables():
             )
         """)
 
+        # Table 37: Daily Top Picks (best 5 stocks per day, upserted idempotently)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS daily_top_picks (
+                id              {auto_id},
+                pick_date       DATE NOT NULL,
+                rank            INTEGER NOT NULL,
+                symbol          TEXT NOT NULL,
+                consensus_signal TEXT,
+                conviction      TEXT,
+                sentiment_score REAL,
+                weighted_score  REAL,
+                entry_price     REAL,
+                target_price    REAL,
+                rationale       TEXT,
+                created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(pick_date, rank)
+            )
+        """)
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_top_picks_date ON daily_top_picks(pick_date DESC)")
+
+        # Table 38: Daily Sector Rotation (top sectors by buy signal strength)
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS daily_sector_rotation (
+                id                    {auto_id},
+                rotation_date         DATE NOT NULL,
+                sector                TEXT NOT NULL,
+                buy_signal_count      INTEGER DEFAULT 0,
+                avg_conviction        REAL,
+                volatility_20d        REAL,
+                composite_score       REAL,
+                rank                  INTEGER,
+                recommended_allocation REAL,
+                created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(rotation_date, sector)
+            )
+        """)
+        _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_sector_rotation_date ON daily_sector_rotation(rotation_date DESC)")
+
+        # Add momentum_alignment column to consensus_results (safe for existing installs)
+        _safe_add_column(cursor, "consensus_results", "momentum_alignment", "REAL DEFAULT 50")
+
         # Create indexes for common queries
         _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)")
         _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)")
