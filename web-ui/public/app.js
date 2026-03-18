@@ -310,6 +310,7 @@ const TRANSLATIONS = {
         watchlistBrief: 'Track the stocks you care about so the app can personalize signals, briefing, and performance for you.',
         performanceBrief: 'Review strategy quality over time, including win rate, drawdown, and benchmark-relative performance.',
         consensusBrief: 'See where multiple agents agree, plus risk filters, to spot the strongest shared setup.',
+        consensusDcfNote: 'DCF valuation is included as a supplementary weekly signal in the consensus layer.',
         resultsBrief: 'Compare past predictions with real outcomes to understand what the model got right or wrong.',
         pricesBrief: 'Check the latest market prices and volume for each tracked stock in one quick table.',
         briefingBrief: 'Use this as your daily summary: key market context, priority signals, and suggested next actions.',
@@ -681,6 +682,7 @@ const TRANSLATIONS = {
         watchlistBrief: 'تابع الأسهم التي تهمك ليخصص النظام الإشارات والنشرة والأداء لك.',
         performanceBrief: 'تابع جودة الاستراتيجية عبر الوقت، بما في ذلك نسبة الفوز والسحب الأقصى والأداء مقابل المؤشر.',
         consensusBrief: 'اطلع على الأسهم التي يتفق عليها عدة وكلاء مع فلاتر المخاطر لتحديد أقوى الفرص.',
+        consensusDcfNote: 'تقييم DCF مضمّن كإشارة أسبوعية داعمة ضمن طبقة الإجماع.',
         resultsBrief: 'قارن التوقعات السابقة بالنتائج الفعلية لفهم ما أصابه النظام وما أخطأ فيه.',
         pricesBrief: 'راجع أحدث الأسعار وأحجام التداول للأسهم المتابعة في جدول واحد.',
         briefingBrief: 'استخدمها كملخص يومي: سياق السوق، أولويات الإشارات، والخطوات المقترحة.',
@@ -1043,6 +1045,10 @@ const AGENT_INFO = {
         en: { name: 'Consensus Signal', description: 'Weighted vote across all agents based on historical accuracy.' },
         ar: { name: 'إشارة الإجماع', description: 'تصويت مرجح عبر جميع الوكلاء بناءً على الدقة التاريخية.' }
     },
+    'DCF_Valuation_Agent': {
+        en: { name: 'DCF Valuation', description: 'Supplementary weekly discounted cash flow valuation signal.' },
+        ar: { name: 'تقييم DCF', description: 'إشارة تقييم داعمة أسبوعية تعتمد على التدفقات النقدية المخصومة.' }
+    },
 };
 
 // Get translation
@@ -1162,7 +1168,7 @@ function applyLanguage() {
     if (perfMonthlyTitle) perfMonthlyTitle.textContent = t('monthlyTrend');
     const resultsTitle = document.getElementById('resultsTitle');
     if (resultsTitle) resultsTitle.textContent = t('tabResults');
-    const briefIds = ['predictionsBrief', 'watchlistBrief', 'performanceBrief', 'consensusBrief', 'resultsBrief', 'pricesBrief', 'briefingBrief', 'tradesBrief', 'portfolioBrief', 'forecastsBrief', 'timemachineBrief', 'ratesBrief'];
+    const briefIds = ['predictionsBrief', 'watchlistBrief', 'performanceBrief', 'consensusBrief', 'consensusDcfNote', 'resultsBrief', 'pricesBrief', 'briefingBrief', 'tradesBrief', 'portfolioBrief', 'forecastsBrief', 'timemachineBrief', 'ratesBrief'];
     briefIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.textContent = t(id);
