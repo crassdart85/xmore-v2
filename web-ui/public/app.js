@@ -1256,7 +1256,7 @@ function getGlobalSearchItems() {
         { en: 'Prices', ar: 'الأسعار', target: 'prices' },
         { en: 'Time Machine', ar: 'آلة الزمن', target: 'timemachine' },
         { en: 'Rates', ar: 'الأسعار العالمية', target: 'rates' },
-        { en: 'ETFs', ar: 'صناديق الاستثمار', target: 'etf' },
+        { en: 'ETFs', ar: 'صناديق الاستثمار', target: 'etf', aliases: 'ETF ETP exchange traded fund exchange-traded fund fund صندوق مؤشرات صناديق المؤشرات صناديق متداولة' },
     ].map(item => {
         const enLabel = item.en;
         const arLabel = item.ar;
