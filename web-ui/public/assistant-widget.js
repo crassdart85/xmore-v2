@@ -24,6 +24,10 @@
             buysPrompt: 'What are the strongest buy signals today?',
             macroPrompt: 'EGX macro brief for today',
             sendLabel: 'Send',
+            voiceLabel: 'Voice input',
+            listeningLabel: 'Listening...',
+            micErrorLabel: 'Microphone error. Try again.',
+            micUnsupportedLabel: 'Voice input not supported in this browser',
             fallbackError: 'Could not reach the assistant right now.'
         },
         ar: {
@@ -40,6 +44,10 @@
             buysPrompt: 'ما هي أقوى إشارات الشراء اليوم؟',
             macroPrompt: 'ملخص ماكرو EGX لليوم',
             sendLabel: 'إرسال',
+            voiceLabel: 'إدخال صوتي',
+            listeningLabel: 'جارٍ الاستماع...',
+            micErrorLabel: 'خطأ في الميكروفون. حاول مرة أخرى.',
+            micUnsupportedLabel: 'الإدخال الصوتي غير مدعوم في هذا المتصفح',
             fallbackError: 'تعذر الاتصال بالمساعد الآن.'
         }
     };
@@ -47,7 +55,10 @@
     const state = {
         open: false,
         lang: getCurrentLang(),
-        typingEl: null
+        typingEl: null,
+        listening: false,
+        recognition: null,
+        manualStop: false
     };
 
     function getCurrentLang() {
@@ -108,6 +119,14 @@
                 <div class="x-assistant-input-row">
                     <input id="xAssistantInput" class="x-assistant-input" type="text" maxlength="500" placeholder="${esc(t('placeholder'))}" autocomplete="off">
                     <button id="xAssistantSend" class="x-assistant-send" type="button" aria-label="${esc(t('sendLabel'))}">&#10148;</button>
+                    <button id="xAssistantMic" class="x-assistant-mic" type="button" aria-label="${esc(t('voiceLabel'))}">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                            <rect x="9" y="2" width="6" height="11" rx="3" fill="currentColor"/>
+                            <path d="M5 10a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="12" y1="21" x2="12" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                 </div>
             </section>
         `;
@@ -123,6 +142,7 @@
         const close = document.getElementById('xAssistantClose');
         const input = document.getElementById('xAssistantInput');
         const send = document.getElementById('xAssistantSend');
+        const mic = document.getElementById('xAssistantMic');
         const chips = document.querySelectorAll('#xAssistantRoot .x-assistant-chip');
 
         if (fab) {
@@ -135,12 +155,24 @@
         }
         if (title) title.textContent = t('title');
         if (close) close.setAttribute('aria-label', t('closeLabel'));
-        if (input) input.placeholder = t('placeholder');
+        if (input && !state.listening) input.placeholder = t('placeholder');
         if (send) send.setAttribute('aria-label', t('sendLabel'));
+        if (mic) {
+            mic.setAttribute('aria-label', state.listening ? t('listeningLabel') : t('voiceLabel'));
+            if (!getSpeechRecognition()) {
+                mic.disabled = true;
+                mic.setAttribute('title', t('micUnsupportedLabel'));
+            }
+        }
         if (chips && chips.length === 3) {
             chips[0].textContent = t('macroChip');
             chips[1].textContent = t('moversChip');
             chips[2].textContent = t('buysChip');
+        }
+
+        // Stop recognition so it can restart with the new language on the next activation
+        if (state.listening) {
+            stopListening();
         }
     }
 
@@ -179,6 +211,101 @@
         messages.appendChild(bubble);
         messages.scrollTop = messages.scrollHeight;
         return bubble;
+    }
+
+    function getSpeechRecognition() {
+        return window.SpeechRecognition || window.webkitSpeechRecognition || null;
+    }
+
+    const LANG_LOCALE = { en: 'en-US', ar: 'ar-SA' };
+
+    function setListening(active) {
+        state.listening = active;
+        const mic = document.getElementById('xAssistantMic');
+        const input = document.getElementById('xAssistantInput');
+        if (mic) {
+            mic.classList.toggle('x-assistant-mic-listening', active);
+            mic.setAttribute('aria-label', active ? t('listeningLabel') : t('voiceLabel'));
+        }
+        if (input) {
+            input.placeholder = active ? t('listeningLabel') : t('placeholder');
+        }
+    }
+
+    function stopListening() {
+        if (state.recognition) {
+            state.manualStop = true;
+            try { state.recognition.abort(); } catch (_) { }
+            state.recognition = null;
+        }
+        setListening(false);
+    }
+
+    function startListening() {
+        const SR = getSpeechRecognition();
+        if (!SR) return;
+
+        if (state.listening) {
+            stopListening();
+            return;
+        }
+
+        state.manualStop = false;
+        const recognition = new SR();
+        recognition.lang = LANG_LOCALE[state.lang] || 'en-US';
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+        recognition.continuous = false;
+
+        recognition.onstart = function () {
+            setListening(true);
+        };
+
+        recognition.onresult = function (e) {
+            const input = document.getElementById('xAssistantInput');
+            if (!input) return;
+            let transcript = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                transcript += e.results[i][0].transcript;
+            }
+            input.value = transcript;
+        };
+
+        recognition.onend = function () {
+            setListening(false);
+            state.recognition = null;
+            if (!state.manualStop) {
+                const input = document.getElementById('xAssistantInput');
+                if (input && input.value.trim()) {
+                    sendMessage();
+                }
+            }
+            state.manualStop = false;
+        };
+
+        recognition.onerror = function (e) {
+            if (e.error === 'aborted') return;
+            setListening(false);
+            state.recognition = null;
+            if (e.error !== 'no-speech') {
+                const input = document.getElementById('xAssistantInput');
+                if (input) {
+                    input.placeholder = t('micErrorLabel');
+                    setTimeout(function () {
+                        const input = document.getElementById('xAssistantInput');
+                        if (input) input.placeholder = t('placeholder');
+                    }, 3000);
+                }
+            }
+        };
+
+        state.recognition = recognition;
+        try {
+            recognition.start();
+        } catch (_) {
+            state.recognition = null;
+            setListening(false);
+        }
     }
 
     function setOpen(nextOpen) {
@@ -240,6 +367,7 @@
         const close = document.getElementById('xAssistantClose');
         const send = document.getElementById('xAssistantSend');
         const input = document.getElementById('xAssistantInput');
+        const mic = document.getElementById('xAssistantMic');
         const chips = document.querySelectorAll('#xAssistantRoot .x-assistant-chip');
 
         if (fab) fab.addEventListener('click', function () { setOpen(!state.open); });
@@ -252,6 +380,14 @@
                     sendMessage();
                 }
             });
+        }
+        if (mic) {
+            if (getSpeechRecognition()) {
+                mic.addEventListener('click', function () { startListening(); });
+            } else {
+                mic.disabled = true;
+                mic.setAttribute('title', t('micUnsupportedLabel'));
+            }
         }
         if (chips && chips.length) {
             chips.forEach(function (chip) {
