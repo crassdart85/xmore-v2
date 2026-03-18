@@ -311,6 +311,11 @@ const TRANSLATIONS = {
         performanceBrief: 'Review strategy quality over time, including win rate, drawdown, and benchmark-relative performance.',
         consensusBrief: 'See where multiple agents agree, plus risk filters, to spot the strongest shared setup.',
         consensusDcfNote: 'DCF valuation is included as a supplementary weekly signal in the consensus layer.',
+        globalSearchPlaceholder: 'Search stocks, tabs, or pages...',
+        globalSearchNoResults: 'No matching results.',
+        globalSearchStocksLabel: 'Stock',
+        globalSearchTabLabel: 'Tab',
+        globalSearchPageLabel: 'Page',
         resultsBrief: 'Compare past predictions with real outcomes to understand what the model got right or wrong.',
         pricesBrief: 'Check the latest market prices and volume for each tracked stock in one quick table.',
         briefingBrief: 'Use this as your daily summary: key market context, priority signals, and suggested next actions.',
@@ -683,6 +688,11 @@ const TRANSLATIONS = {
         performanceBrief: 'تابع جودة الاستراتيجية عبر الوقت، بما في ذلك نسبة الفوز والسحب الأقصى والأداء مقابل المؤشر.',
         consensusBrief: 'اطلع على الأسهم التي يتفق عليها عدة وكلاء مع فلاتر المخاطر لتحديد أقوى الفرص.',
         consensusDcfNote: 'تقييم DCF مضمّن كإشارة أسبوعية داعمة ضمن طبقة الإجماع.',
+        globalSearchPlaceholder: 'ابحث عن سهم أو تبويب أو صفحة...',
+        globalSearchNoResults: 'لا توجد نتائج مطابقة.',
+        globalSearchStocksLabel: 'سهم',
+        globalSearchTabLabel: 'تبويب',
+        globalSearchPageLabel: 'صفحة',
         resultsBrief: 'قارن التوقعات السابقة بالنتائج الفعلية لفهم ما أصابه النظام وما أخطأ فيه.',
         pricesBrief: 'راجع أحدث الأسعار وأحجام التداول للأسهم المتابعة في جدول واحد.',
         briefingBrief: 'استخدمها كملخص يومي: سياق السوق، أولويات الإشارات، والخطوات المقترحة.',
@@ -1181,6 +1191,8 @@ function applyLanguage() {
     // Search placeholder
     const searchInput = document.getElementById('predictionsSearch');
     if (searchInput) searchInput.placeholder = t('searchPlaceholder');
+    const globalSearchInput = document.getElementById('globalSearchInput');
+    if (globalSearchInput) globalSearchInput.placeholder = t('globalSearchPlaceholder');
 
     // Refresh button
     const refreshBtn = document.getElementById('refreshBtn');
@@ -1212,6 +1224,194 @@ function applyLanguage() {
     if (typeof updateTradesLanguage === 'function') updateTradesLanguage();
     if (typeof updateBriefingLanguage === 'function') updateBriefingLanguage();
     if (typeof updateTimeMachineLanguage === 'function') updateTimeMachineLanguage();
+    if (typeof refreshGlobalSearchLanguage === 'function') refreshGlobalSearchLanguage();
+}
+
+// ============================================
+// GLOBAL SEARCH (Bilingual)
+// ============================================
+
+let _globalSearchResults = [];
+let _globalSearchActiveIndex = -1;
+
+function normalizeSearchValue(v) {
+    return String(v || '')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .trim();
+}
+
+function getGlobalSearchItems() {
+    const tabItems = [
+        { en: 'Predictions', ar: 'التنبؤات', target: 'predictions' },
+        { en: 'Consensus', ar: 'الإجماع', target: 'consensus' },
+        { en: 'Performance', ar: 'الأداء', target: 'performance' },
+        { en: 'Trades', ar: 'الصفقات', target: 'trades' },
+        { en: 'Portfolio', ar: 'المحفظة', target: 'portfolio' },
+        { en: 'Forecasts', ar: 'التوقعات', target: 'forecasts' },
+        { en: 'Watchlist', ar: 'المتابعة', target: 'watchlist' },
+        { en: 'Results', ar: 'النتائج', target: 'results' },
+        { en: 'Prices', ar: 'الأسعار', target: 'prices' },
+        { en: 'Time Machine', ar: 'آلة الزمن', target: 'timemachine' },
+        { en: 'Rates', ar: 'الأسعار العالمية', target: 'rates' },
+        { en: 'ETFs', ar: 'صناديق الاستثمار', target: 'etf' },
+    ].map(item => {
+        const enLabel = item.en;
+        const arLabel = item.ar;
+        return {
+            type: 'tab',
+            target: item.target,
+            label: currentLang === 'ar' ? arLabel : enLabel,
+            searchText: normalizeSearchValue(`${enLabel} ${arLabel}`)
+        };
+    });
+
+    const pageItems = [
+        { en: 'Docs', ar: 'التوثيق', target: '/docs' },
+        { en: 'Track Record', ar: 'سجل الأداء', target: '/track-record' },
+        { en: 'Session', ar: 'صفحة الجلسة', target: '/session' },
+        { en: 'Pro', ar: 'برو', target: '/pro' },
+    ].map(item => ({
+        type: 'page',
+        target: item.target,
+        label: currentLang === 'ar' ? item.ar : item.en,
+        searchText: normalizeSearchValue(`${item.en} ${item.ar}`)
+    }));
+
+    const stockItems = Object.keys(COMPANY_NAMES).map(symbol => {
+        const c = COMPANY_NAMES[symbol] || {};
+        const enName = c.en || symbol;
+        const arName = c.ar || enName;
+        return {
+            type: 'stock',
+            symbol,
+            label: `${symbol} — ${currentLang === 'ar' ? arName : enName}`,
+            searchText: normalizeSearchValue(`${symbol} ${enName} ${arName}`)
+        };
+    });
+
+    return [...tabItems, ...pageItems, ...stockItems];
+}
+
+function getGlobalSearchTypeLabel(type) {
+    if (type === 'stock') return t('globalSearchStocksLabel');
+    if (type === 'tab') return t('globalSearchTabLabel');
+    return t('globalSearchPageLabel');
+}
+
+function renderGlobalSearchResults(items) {
+    const resultsEl = document.getElementById('globalSearchResults');
+    if (!resultsEl) return;
+
+    if (!items.length) {
+        resultsEl.innerHTML = `<button class="global-search-item" type="button" disabled>${escapeHtml(t('globalSearchNoResults'))}</button>`;
+        resultsEl.hidden = false;
+        return;
+    }
+
+    resultsEl.innerHTML = items.map((item, idx) => `
+        <button class="global-search-item${idx === _globalSearchActiveIndex ? ' active' : ''}" type="button" data-index="${idx}">
+            ${escapeHtml(item.label)}
+            <span class="global-search-meta">${escapeHtml(getGlobalSearchTypeLabel(item.type))}</span>
+        </button>
+    `).join('');
+    resultsEl.hidden = false;
+
+    resultsEl.querySelectorAll('.global-search-item[data-index]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const i = Number(btn.getAttribute('data-index'));
+            const selected = _globalSearchResults[i];
+            if (selected) handleGlobalSearchSelect(selected);
+        });
+    });
+}
+
+function closeGlobalSearchResults() {
+    const resultsEl = document.getElementById('globalSearchResults');
+    if (!resultsEl) return;
+    resultsEl.hidden = true;
+    resultsEl.innerHTML = '';
+    _globalSearchResults = [];
+    _globalSearchActiveIndex = -1;
+}
+
+function handleGlobalSearchSelect(item) {
+    const input = document.getElementById('globalSearchInput');
+    if (input) input.value = item.label;
+    closeGlobalSearchResults();
+
+    if (item.type === 'tab') {
+        switchToTab(item.target, true);
+        return;
+    }
+
+    if (item.type === 'page') {
+        window.location.href = item.target;
+        return;
+    }
+
+    switchToTab('predictions', true);
+    const predSearch = document.getElementById('predictionsSearch');
+    if (predSearch) {
+        predSearch.value = item.symbol || '';
+        applyPredictionFilters();
+        predSearch.focus();
+    }
+}
+
+function refreshGlobalSearchLanguage() {
+    const input = document.getElementById('globalSearchInput');
+    if (!input) return;
+    if (!input.value.trim()) return;
+    const q = normalizeSearchValue(input.value);
+    const items = getGlobalSearchItems().filter(x => x.searchText.includes(q)).slice(0, 12);
+    _globalSearchResults = items;
+    _globalSearchActiveIndex = items.length ? 0 : -1;
+    renderGlobalSearchResults(items);
+}
+
+function initGlobalSearch() {
+    const input = document.getElementById('globalSearchInput');
+    const resultsEl = document.getElementById('globalSearchResults');
+    if (!input || !resultsEl) return;
+
+    input.addEventListener('input', () => {
+        const q = normalizeSearchValue(input.value);
+        if (!q) {
+            closeGlobalSearchResults();
+            return;
+        }
+        const items = getGlobalSearchItems().filter(x => x.searchText.includes(q)).slice(0, 12);
+        _globalSearchResults = items;
+        _globalSearchActiveIndex = items.length ? 0 : -1;
+        renderGlobalSearchResults(items);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (!resultsEl || resultsEl.hidden || !_globalSearchResults.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            _globalSearchActiveIndex = (_globalSearchActiveIndex + 1) % _globalSearchResults.length;
+            renderGlobalSearchResults(_globalSearchResults);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            _globalSearchActiveIndex = (_globalSearchActiveIndex - 1 + _globalSearchResults.length) % _globalSearchResults.length;
+            renderGlobalSearchResults(_globalSearchResults);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const selected = _globalSearchResults[Math.max(_globalSearchActiveIndex, 0)];
+            if (selected) handleGlobalSearchSelect(selected);
+        } else if (e.key === 'Escape') {
+            closeGlobalSearchResults();
+        }
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!resultsEl.hidden && !input.contains(e.target) && !resultsEl.contains(e.target)) {
+            closeGlobalSearchResults();
+        }
+    });
 }
 
 // ============================================
@@ -1720,6 +1920,7 @@ window.addEventListener('load', async () => {
         initNotyf();
         applyLanguage();
         initTabs();
+        initGlobalSearch();
         loadTradingViewTicker();
         loadGlobalSnapshotBar();
         loadRegimeBanner();
