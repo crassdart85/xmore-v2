@@ -308,29 +308,20 @@ let logDataCache = [];
 function initTrMobileMenu() {
   const menuBtn = document.getElementById('trMobileMenuBtn');
   const menuDropdown = document.getElementById('trMobileMenuDropdown');
-  const menuItems = document.querySelectorAll('#trMobileMenuDropdown .mobile-menu-item');
-
   if (!menuBtn || !menuDropdown) return;
 
-  menuBtn.addEventListener('click', (e) => {
+  const menuItems = document.querySelectorAll('#trMobileMenuDropdown .mobile-menu-item');
+
+  menuBtn.addEventListener('click', function(e) {
     e.stopPropagation();
-    const isActive = menuDropdown.classList.contains('active');
-    if (isActive) {
-      menuDropdown.classList.remove('active');
-      menuBtn.classList.remove('active');
-      menuBtn.setAttribute('aria-expanded', 'false');
-      menuDropdown.setAttribute('aria-hidden', 'true');
-    } else {
-      menuDropdown.classList.add('active');
-      menuBtn.classList.add('active');
-      menuBtn.setAttribute('aria-expanded', 'true');
-      menuDropdown.setAttribute('aria-hidden', 'false');
-      menuItems[0]?.focus();
-    }
+    menuDropdown.classList.toggle('active');
+    menuBtn.classList.toggle('active');
+    menuBtn.setAttribute('aria-expanded', menuDropdown.classList.contains('active') ? 'true' : 'false');
+    menuDropdown.setAttribute('aria-hidden', menuDropdown.classList.contains('active') ? 'false' : 'true');
   });
 
-  menuItems.forEach(item => {
-    item.addEventListener('click', () => {
+  menuItems.forEach(function(item) {
+    item.addEventListener('click', function() {
       menuDropdown.classList.remove('active');
       menuBtn.classList.remove('active');
       menuBtn.setAttribute('aria-expanded', 'false');
@@ -338,8 +329,8 @@ function initTrMobileMenu() {
     });
   });
 
-  document.addEventListener('click', (e) => {
-    if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+  document.addEventListener('click', function(e) {
+    if (menuDropdown.classList.contains('active') && !menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
       menuDropdown.classList.remove('active');
       menuBtn.classList.remove('active');
       menuBtn.setAttribute('aria-expanded', 'false');
@@ -347,8 +338,8 @@ function initTrMobileMenu() {
     }
   });
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && menuDropdown.classList.contains('active')) {
       menuDropdown.classList.remove('active');
       menuBtn.classList.remove('active');
       menuBtn.setAttribute('aria-expanded', 'false');

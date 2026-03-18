@@ -228,32 +228,22 @@ applyTheme();
 function initMobileMenu() {
     const menuBtn = document.getElementById('mobileMenuBtn');
     const menuDropdown = document.getElementById('mobileMenuDropdown');
-    const menuItems = document.querySelectorAll('.mobile-menu-item');
-
     if (!menuBtn || !menuDropdown) return;
 
+    const menuItems = document.querySelectorAll('.mobile-menu-item');
+
     // Toggle menu on button click
-    menuBtn.addEventListener('click', (e) => {
+    menuBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        const isActive = menuDropdown.classList.contains('active');
-        if (isActive) {
-            menuDropdown.classList.remove('active');
-            menuBtn.classList.remove('active');
-            menuBtn.setAttribute('aria-expanded', 'false');
-            menuDropdown.setAttribute('aria-hidden', 'true');
-        } else {
-            menuDropdown.classList.add('active');
-            menuBtn.classList.add('active');
-            menuBtn.setAttribute('aria-expanded', 'true');
-            menuDropdown.setAttribute('aria-hidden', 'false');
-            // Focus first menu item
-            menuItems[0]?.focus();
-        }
+        menuDropdown.classList.toggle('active');
+        menuBtn.classList.toggle('active');
+        menuBtn.setAttribute('aria-expanded', menuDropdown.classList.contains('active') ? 'true' : 'false');
+        menuDropdown.setAttribute('aria-hidden', menuDropdown.classList.contains('active') ? 'false' : 'true');
     });
 
     // Close menu when a link is clicked
-    menuItems.forEach(item => {
-        item.addEventListener('click', () => {
+    menuItems.forEach(function(item) {
+        item.addEventListener('click', function() {
             menuDropdown.classList.remove('active');
             menuBtn.classList.remove('active');
             menuBtn.setAttribute('aria-expanded', 'false');
@@ -262,8 +252,8 @@ function initMobileMenu() {
     });
 
     // Close menu when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
+    document.addEventListener('click', function(e) {
+        if (menuDropdown.classList.contains('active') && !menuBtn.contains(e.target) && !menuDropdown.contains(e.target)) {
             menuDropdown.classList.remove('active');
             menuBtn.classList.remove('active');
             menuBtn.setAttribute('aria-expanded', 'false');
@@ -272,8 +262,8 @@ function initMobileMenu() {
     });
 
     // Close menu on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && menuDropdown.classList.contains('active')) {
             menuDropdown.classList.remove('active');
             menuBtn.classList.remove('active');
             menuBtn.setAttribute('aria-expanded', 'false');
