@@ -3111,7 +3111,11 @@ async function sendChatMessage(prefill) {
         const res = await fetch('/api/rag/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question })
+            body: JSON.stringify({
+                question,
+                language: currentLang,
+                source_mode: 'hybrid'
+            })
         });
         const data = await res.json();
         // Remove typing indicator

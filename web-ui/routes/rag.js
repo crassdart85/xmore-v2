@@ -240,6 +240,19 @@ function cosineSim(a, b) {
     return dot / (Math.sqrt(na) * Math.sqrt(nb));
 }
 
+function uniqSources(sources, max = 12) {
+    const out = [];
+    const seen = new Set();
+    for (const s of (sources || [])) {
+        const key = `${(s.url || '').trim()}|${(s.title || '').trim()}|${(s.source || '').trim()}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push(s);
+        if (out.length >= max) break;
+    }
+    return out;
+}
+
 // ── POST /api/rag/ask — Q&A against market reports ──────────────────────────
 
 router.post('/ask', async (req, res) => {
@@ -354,7 +367,7 @@ XMORE PLATFORM — METHODOLOGY & DATA SOURCES:
 // ── POST /api/rag/chat — General EGX research chat ──────────────────────────
 
 router.post('/chat', optionalAuth, async (req, res) => {
-    const { question, symbol } = req.body || {};
+    const { question, symbol, language, source_mode } = req.body || {};
     if (!question || !question.trim()) {
         return res.status(400).json({ error: 'question is required' });
     }
@@ -364,6 +377,8 @@ router.post('/chat', optionalAuth, async (req, res) => {
 
     try {
         const sources = [];
+        const lang = (language === 'ar' || language === 'en') ? language : 'en';
+        const sourceMode = ['hybrid', 'news_only', 'knowledge_only'].includes(source_mode) ? source_mode : 'hybrid';
 
         // 1. Load EGX stock reference from DB
         let stockReferenceBlock = '';
@@ -384,9 +399,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
 
         // 2. Keyword-match news from main DB
         // Use Unicode-aware word extraction (handles Arabic + Latin)
-        const words = question.trim().toLowerCase().match(/[\w\u0600-\u06FF]{4,}/g) || [];
+        const words = question.trim().toLowerCase().match(/[\w\u0600-\u06FF]{3,}/g) || [];
         let newsRows = [];
-        if (symbol) {
+        if (sourceMode !== 'knowledge_only' && symbol) {
             // Symbol-specific first
             newsRows = await dbAll(
                 `SELECT headline, source, date, url FROM news
@@ -394,12 +409,16 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 [symbol.toUpperCase()]
             );
         }
-        if (newsRows.length < 5 && words.length > 0) {
-            // Keyword search in headlines (Latin keywords only — SQL LIKE is ASCII-safe)
-            const latinWords = words.filter(w => /[a-z]/.test(w)).slice(0, 3);
-            if (latinWords.length > 0) {
-                const likeClause = latinWords.map((w, i) => `headline LIKE ${ph(i + (symbol ? 2 : 1))}`).join(' OR ');
-                const likeParams = latinWords.map(w => `%${w}%`);
+        if (sourceMode !== 'knowledge_only' && newsRows.length < 5 && words.length > 0) {
+            // Keyword search in headlines (Arabic + English)
+            const terms = [...new Set(words)].slice(0, 5);
+            if (terms.length > 0) {
+                const likeClause = terms.map((w, i) =>
+                    _isPostgres
+                        ? `headline ILIKE ${ph(i + 1)}`
+                        : `LOWER(headline) LIKE LOWER(${ph(i + 1)})`
+                ).join(' OR ');
+                const likeParams = terms.map(w => `%${w}%`);
                 const extraRows = await dbAll(
                     `SELECT headline, source, date, url FROM news WHERE ${likeClause} ORDER BY date DESC LIMIT 10`,
                     likeParams
@@ -411,7 +430,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
             }
         }
         // Fallback: for general news questions (no symbol, nothing matched), return latest headlines
-        if (newsRows.length === 0 && !symbol) {
+        if (sourceMode !== 'knowledge_only' && newsRows.length === 0 && !symbol) {
             newsRows = await dbAll(
                 `SELECT headline, source, date, url FROM news ORDER BY date DESC LIMIT 10`,
                 []
@@ -430,7 +449,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
         // 3. RAG knowledge base (reports + ETFs + embedded news/event intel)
         let ragContext = '';
         let qEmbedding = null;
-        try {
+        if (sourceMode !== 'news_only') try {
             qEmbedding = await embedText(question.trim());
             const chunks = await retrieveTopChunks(qEmbedding, 6, null);
             const topChunks = chunks
@@ -461,7 +480,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
 
         // 3b. News RAG chunks (recency-weighted semantic matches)
         let newsRagContext = '';
-        try {
+        if (sourceMode !== 'knowledge_only') try {
             if (!qEmbedding) qEmbedding = await embedText(question.trim());
             const newsChunks = await dbAll(
                 `SELECT id, title, source_name, published_at, article_url, content, embedding
@@ -803,6 +822,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
 Use the live market data, stock reference, EGX knowledge, and knowledge base excerpts to answer questions.
 When discussing the user's portfolios, use the portfolio data provided — show actual vs forecast performance.
 Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
+Answer language must be ${lang === 'ar' ? 'Arabic' : 'English'}.
 ${symbolNote}
 
 ${EGX_MARKET_KNOWLEDGE}
@@ -818,7 +838,15 @@ ${newsRagContext}
 User question: ${question}`;
 
         const answer = await geminiGenerate(prompt, 0.3);
-        res.json({ answer, sources });
+        res.json({
+            answer,
+            sources: uniqSources(sources, 12),
+            retrieval_meta: {
+                language: lang,
+                source_mode: sourceMode,
+                news_hits: newsRows.length
+            }
+        });
 
     } catch (err) {
         console.error('RAG /chat error:', err.message);
