@@ -1246,6 +1246,7 @@ function getGlobalSearchItems() {
     const tabItems = [
         { en: 'Predictions', ar: 'التنبؤات', target: 'predictions' },
         { en: 'Consensus', ar: 'الإجماع', target: 'consensus' },
+        { en: 'DCF Valuation', ar: 'تقييم DCF', target: 'consensus', aliases: 'discounted cash flow intrinsic valuation التدفقات النقدية المخصومة تقييم جوهري' },
         { en: 'Performance', ar: 'الأداء', target: 'performance' },
         { en: 'Trades', ar: 'الصفقات', target: 'trades' },
         { en: 'Portfolio', ar: 'المحفظة', target: 'portfolio' },
@@ -1259,11 +1260,12 @@ function getGlobalSearchItems() {
     ].map(item => {
         const enLabel = item.en;
         const arLabel = item.ar;
+        const aliases = item.aliases || '';
         return {
             type: 'tab',
             target: item.target,
             label: currentLang === 'ar' ? arLabel : enLabel,
-            searchText: normalizeSearchValue(`${enLabel} ${arLabel}`)
+            searchText: normalizeSearchValue(`${enLabel} ${arLabel} ${aliases}`)
         };
     });
 
