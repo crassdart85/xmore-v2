@@ -45,3 +45,13 @@
 - `CURRENT_DATE - N` works in PG; SQLite needs `date('now', '-N days')`
 - `DATE` columns serialize as full ISO timestamps in JSON (pg client) — strip to `YYYY-MM-DD` on frontend
 - `_adapt_sql()` in Python scripts handles `?` → `%s` substitution; guard DB-specific SQL with `if DATABASE_URL:`
+## Mar 18, 2026
+### Docs page Arabic RTL not auto-applying
+- **Symptom**: /docs could open in LTR even when the main app was already in Arabic.
+- **Cause**: Docs page only read localStorage('docs-lang'), while the rest of the app uses localStorage('lang').
+- **Fix**: Added getInitialDocsLang() in web-ui/public/docs.html with precedence:
+  1) ?lang= query value
+  2) global localStorage('lang')
+  3) docs fallback localStorage('docs-lang')
+  4) document language / browser fallback
+- **Result**: Arabic docs now open RTL automatically and remain synced with site language.

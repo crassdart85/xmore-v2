@@ -145,8 +145,8 @@
   display: none !important;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   background: transparent;
   border: 1px solid var(--border-color, #444);
@@ -171,6 +171,7 @@
   border: 1px solid var(--border-color, #2a2a2a);
   border-radius: 6px;
   min-width: 180px;
+  max-width: calc(100% - 20px);
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
@@ -188,7 +189,9 @@
 }
 
 .mobile-menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   padding: 10px 14px;
   color: var(--text-primary, #f0f0f0);
   text-decoration: none;

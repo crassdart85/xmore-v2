@@ -567,3 +567,8 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 
 ## Track Record Copy Tweak (Mar 16, 2026)
 - `web-ui/public/track-record.html`: header badge shortened to ?Live pre-market signals?.
+## Mar 18, 2026 - Docs Arabic RTL Sync
+- Updated web-ui/public/docs.html language initialization to honor Arabic preference from localStorage('lang').
+- Added ?lang=ar/?lang=en query override on /docs.
+- Docs page now auto-applies dir='rtl' + right-aligned layout in Arabic without requiring a separate docs-only toggle state.
+- Docs language toggle now syncs both docs-lang and global lang in localStorage.

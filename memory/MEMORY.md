@@ -213,3 +213,8 @@
 - CDN libraries always wrapped with `typeof X !== 'undefined'` checks for graceful degradation
 - Skeleton templates use `.skeleton-shimmer` base class + shape classes (`.skeleton-card`, `.skeleton-metric`, `.skeleton-chart`, `.skeleton-row`, `.skeleton-text`)
 - Global utility functions in app.js: `escapeHtml()`, `animateValue()`, `showToast()`, `showSkeleton()`, `clearSkeleton()`, `renderEmptyState()` — all used by other modules via `typeof fn === 'function'` guards
+## Docs Page RTL Sync (Mar 18, 2026)
+- File: web-ui/public/docs.html
+- Added robust language resolver: query param -> global localStorage('lang') -> docs fallback.
+- Arabic mode now consistently applies RTL on /docs.
+- Docs toggle now updates global language preference too for cross-page consistency.

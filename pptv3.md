@@ -29,6 +29,37 @@ These five agents vote. A **Consensus Engine** weighs their votes by recent accu
 
 ---
 
+## Creating Your Account
+
+**Get started in under 30 seconds:**
+
+1. Click **"🔐 Login / Sign Up"** on any page (top-right corner)
+2. Switch to the **Sign Up** tab
+3. Enter your **email** and a **password** (8+ characters)
+4. Click **Sign Up** — you're logged in immediately
+
+**What you unlock with an account:**
+
+| Feature | Without account | With account |
+|---------|----------------|--------------|
+| Predictions, Briefing, Pro page | ✅ Full access | ✅ Full access |
+| Track Record | ✅ Full access | ✅ Full access |
+| Time Machine | ✅ Full access | ✅ Full access |
+| Watchlist (filter everything to your stocks) | ❌ | ✅ |
+| Portfolio & Forecast tracking | ❌ | ✅ |
+| Session Sheet (daily pivot levels + trade ideas) | ❌ | ✅ |
+| My Forecast Portfolio on Pro page | ❌ | ✅ |
+| AI Research Assistant (personalised answers) | ❌ | ✅ |
+
+**Security:**
+- Passwords hashed with bcrypt (12 rounds) — never stored in plaintext
+- Login rate-limited to 5 attempts per minute per IP
+- Bilingual interface (EN / عربي) — toggle anytime from the header
+
+> **Tip:** After signing up, immediately add stocks to your **Watchlist** — every tab then filters to show only your stocks for a personalised experience.
+
+---
+
 ## How to Use the Website
 
 **The main dashboard** is at the home URL. It has **13 tabs** across the top:

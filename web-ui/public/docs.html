@@ -229,42 +229,71 @@
     /* ── RTL Overrides ── */
     .docs-rtl {
       font-family: Tahoma, Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      direction: rtl;
     }
-    .docs-rtl .docs-layout {
-      flex-direction: row-reverse;
+
+    /* Layout reversals */
+    .docs-rtl .docs-layout         { flex-direction: row-reverse; }
+    .docs-rtl .docs-section-header { flex-direction: row-reverse; }
+    .docs-rtl .docs-header-links   { margin-left: 0; margin-right: auto; }
+    .docs-rtl .toc-pills            { flex-direction: row-reverse; flex-wrap: wrap; }
+    .docs-rtl .mock-tabs            { flex-direction: row-reverse; }
+    .docs-rtl .mock-stat-row        { flex-direction: row-reverse; }
+    .docs-rtl .mock-input-row       { flex-direction: row-reverse; }
+    .docs-rtl .mock-horizon-btns    { flex-direction: row-reverse; }
+    .docs-rtl .mock-totals          { flex-direction: row-reverse; }
+    .docs-rtl .mock-sector-row      { flex-direction: row-reverse; }
+    .docs-rtl .mock-alert-row       { flex-direction: row-reverse; }
+
+    /* Core cascade: ALL text in main and sidebar inherits right-align */
+    .docs-rtl .docs-main    { text-align: right; }
+    .docs-rtl .docs-sidebar { text-align: right; }
+
+    /* Sidebar: sub-item indent flips to right side */
+    .docs-rtl .docs-sidebar .toc-sub { padding-left: 0; padding-right: 18px; }
+    .docs-rtl .docs-sidebar h3       { margin-right: 6px; margin-left: 0; }
+
+    /* TOC pills */
+    .docs-rtl .toc-pill { text-align: right; }
+
+    /* Feature cards */
+    .docs-rtl .feature-card { text-align: right; }
+
+    /* Steps — counter moves to the right */
+    .docs-rtl .steps li         { padding: 10px 44px 10px 0; text-align: right; }
+    .docs-rtl .steps li::before { left: auto; right: 0; }
+
+    /* Tip / warn boxes — accent border flips to right edge */
+    .docs-rtl .tip-box,
+    .docs-rtl .warn-box {
+      border-left: none;
+      border-right-width: 3px;
+      border-right-style: solid;
+      border-radius: 8px 0 0 8px;
     }
-    .docs-rtl .docs-sidebar a {
-      text-align: right;
-    }
-    .docs-rtl .docs-sidebar h3 {
-      text-align: right;
-      margin-right: 6px;
-    }
-    .docs-rtl .docs-header-links {
-        margin-left: 0;
-        margin-right: auto;
-    }
-    .docs-rtl .docs-section-header {
-      flex-direction: row-reverse;
-    }
-    .docs-rtl .docs-main, .docs-rtl .docs-desc, .docs-rtl .feature-card h4, .docs-rtl .feature-card p, .docs-rtl h1, .docs-rtl h2, .docs-rtl h3, .docs-rtl h4, .docs-rtl .docs-section-title, .docs-rtl .docs-section-badge, .docs-rtl .docs-section-header, .docs-rtl .tip-box, .docs-rtl .warn-box, .docs-rtl .docs-sidebar, .docs-rtl .footer-left, .docs-rtl .footer-back {
-      text-align: right;
-    }
-    .docs-rtl .steps li {
-        padding: 10px 44px 10px 0;
-    }
-    .docs-rtl .steps li::before {
-        left: auto;
-        right: 0;
-    }
-    .docs-rtl .tip-box, .docs-rtl .warn-box {
-        border-left: none;
-        border-right-width: 3px;
-        border-right-style: solid;
-        border-radius: 8px 0 0 8px;
-    }
-    .docs-rtl .tip-box { border-right-color: var(--accent); }
+    .docs-rtl .tip-box  { border-right-color: var(--accent); }
     .docs-rtl .warn-box { border-right-color: var(--accent3); }
+
+    /* Mock tables: centre columns, right-align first (label) column */
+    .docs-rtl .mock-table th,
+    .docs-rtl .mock-table td              { text-align: center; }
+    .docs-rtl .mock-table th:first-child,
+    .docs-rtl .mock-table td:first-child  { text-align: right; }
+
+    /* Comparison table */
+    .docs-rtl .comp-mock-table th,
+    .docs-rtl .comp-mock-table td         { text-align: center; }
+    .docs-rtl .comp-mock-table .label-col { text-align: right; }
+
+    /* Brief mock */
+    .docs-rtl .brief-mock,
+    .docs-rtl .brief-mock .brief-sym,
+    .docs-rtl .brief-mock .brief-meta { text-align: right; }
+
+    /* Code blocks stay LTR — code is always left-to-right */
+    .docs-rtl .docs-code,
+    .docs-rtl code        { direction: ltr; text-align: left; unicode-bidi: embed; }
+    .docs-rtl .mockup-url { direction: ltr; text-align: left; }
 
   </style>
 </head>
@@ -1471,19 +1500,40 @@ const i18n = {
 };
 
 const langToggleBtn = document.getElementById('langToggleBtn');
-
-function setDocsLang(lang) {
-  if (lang !== 'ar' && lang !== 'en') {
-    lang = 'en';
+function normalizeDocsLang(lang) {
+  return lang === 'ar' ? 'ar' : 'en';
+}
+function getInitialDocsLang() {
+  const langFromQuery = new URLSearchParams(window.location.search).get('lang');
+  if (langFromQuery === 'ar' || langFromQuery === 'en') {
+    return langFromQuery;
   }
+  try {
+    const appLang = localStorage.getItem('lang');
+    if (appLang === 'ar' || appLang === 'en') {
+      return appLang;
+    }
 
+    const docsLang = localStorage.getItem('docs-lang');
+    if (docsLang === 'ar' || docsLang === 'en') {
+      return docsLang;
+    }
+  } catch (e) {
+    console.warn("Could not read language preference from localStorage.", e);
+  }
+  const htmlLang = document.documentElement.lang;
+  if (htmlLang === 'ar' || htmlLang === 'en') {
+    return htmlLang;
+  }
+  return navigator.language && navigator.language.toLowerCase().startsWith('ar') ? 'ar' : 'en';
+}
+function setDocsLang(lang) {
+  lang = normalizeDocsLang(lang);
   const isRTL = lang === 'ar';
   document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
   document.body.classList.toggle('docs-rtl', isRTL);
-
-  langToggleBtn.innerText = isRTL ? 'English' : 'عربي';
-
+  langToggleBtn.innerText = isRTL ? 'English' : 'Arabic';
   const elements = document.querySelectorAll('[data-i18n]');
   elements.forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -1491,20 +1541,18 @@ function setDocsLang(lang) {
       el.innerHTML = i18n[lang][key];
     }
   });
-
   try {
     localStorage.setItem('docs-lang', lang);
+    localStorage.setItem('lang', lang);
   } catch (e) {
     console.warn("Could not save language preference to localStorage.", e);
   }
 }
-
 function toggleDocsLang() {
-  const currentLang = localStorage.getItem('docs-lang') || 'en';
+  const currentLang = normalizeDocsLang(document.documentElement.lang);
   const newLang = currentLang === 'en' ? 'ar' : 'en';
   setDocsLang(newLang);
 }
-
 // Mobile Menu (640px and below)
 function initDocsMobileMenu() {
   const menuBtn = document.getElementById('docsMobileMenuBtn');
@@ -1551,22 +1599,13 @@ function initDocsMobileMenu() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initDocsMobileMenu();
-  try {
-    const savedLang = localStorage.getItem('docs-lang');
-    if (savedLang) {
-      setDocsLang(savedLang);
-    } else {
-      setDocsLang('en'); // Default to English
-    }
-  } catch (e) {
-    console.warn("Could not retrieve language preference from localStorage.", e);
-    setDocsLang('en');
-  }
+  setDocsLang(getInitialDocsLang());
 });
 
 </script>
 </body>
 </html>
+
 
 
 
