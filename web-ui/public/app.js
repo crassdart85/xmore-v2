@@ -1193,6 +1193,8 @@ function applyLanguage() {
     if (searchInput) searchInput.placeholder = t('searchPlaceholder');
     const globalSearchInput = document.getElementById('globalSearchInput');
     if (globalSearchInput) globalSearchInput.placeholder = t('globalSearchPlaceholder');
+    const mobileSearchInput = document.getElementById('mobileSearchInput');
+    if (mobileSearchInput) mobileSearchInput.placeholder = t('globalSearchPlaceholder');
 
     // Refresh button
     const refreshBtn = document.getElementById('refreshBtn');
@@ -1415,6 +1417,112 @@ function initGlobalSearch() {
         }
     });
 }
+
+// ============================================
+// MOBILE SEARCH MODAL
+// ============================================
+
+function initMobileSearch() {
+    const btn = document.getElementById('mobileSearchBtn');
+    const modal = document.getElementById('mobileSearchModal');
+    const input = document.getElementById('mobileSearchInput');
+    const resultsEl = document.getElementById('mobileSearchResults');
+    const closeBtn = document.getElementById('mobileSearchCloseBtn');
+    if (!btn || !modal || !input || !resultsEl) return;
+
+    let _results = [];
+    let _activeIndex = -1;
+
+    function openModal() {
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        // Short delay to allow display before focus (iOS fix)
+        setTimeout(() => input.focus(), 60);
+    }
+
+    function closeModal() {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        input.value = '';
+        resultsEl.innerHTML = '';
+        _results = [];
+        _activeIndex = -1;
+    }
+
+    function renderResults(items) {
+        if (!items.length) {
+            resultsEl.innerHTML = `<button class="global-search-item" type="button" disabled>${escapeHtml(t('globalSearchNoResults'))}</button>`;
+            return;
+        }
+        resultsEl.innerHTML = items.map((item, idx) => `
+            <button class="global-search-item${idx === _activeIndex ? ' active' : ''}" type="button" data-index="${idx}">
+                ${escapeHtml(item.label)}
+                <span class="global-search-meta">${escapeHtml(getGlobalSearchTypeLabel(item.type))}</span>
+            </button>
+        `).join('');
+        resultsEl.querySelectorAll('.global-search-item[data-index]').forEach(b => {
+            b.addEventListener('click', () => {
+                const i = Number(b.getAttribute('data-index'));
+                if (_results[i]) {
+                    handleGlobalSearchSelect(_results[i]);
+                    closeModal();
+                }
+            });
+        });
+    }
+
+    btn.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+
+    input.addEventListener('input', () => {
+        const q = normalizeSearchValue(input.value);
+        if (!q) {
+            resultsEl.innerHTML = '';
+            _results = [];
+            _activeIndex = -1;
+            return;
+        }
+        _results = getGlobalSearchItems().filter(x => x.searchText.includes(q)).slice(0, 12);
+        _activeIndex = _results.length ? 0 : -1;
+        renderResults(_results);
+    });
+
+    input.addEventListener('keydown', (e) => {
+        if (!_results.length) return;
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            _activeIndex = (_activeIndex + 1) % _results.length;
+            renderResults(_results);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            _activeIndex = (_activeIndex - 1 + _results.length) % _results.length;
+            renderResults(_results);
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            const selected = _results[Math.max(_activeIndex, 0)];
+            if (selected) {
+                handleGlobalSearchSelect(selected);
+                closeModal();
+            }
+        } else if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+}
+
+// Global ESC key closes mobile search modal when open (registered once)
+document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const modal = document.getElementById('mobileSearchModal');
+    if (modal && !modal.hidden) {
+        const input = document.getElementById('mobileSearchInput');
+        const resultsEl = document.getElementById('mobileSearchResults');
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        if (input) input.value = '';
+        if (resultsEl) resultsEl.innerHTML = '';
+    }
+});
 
 // ============================================
 // TAB NAVIGATION
@@ -1923,6 +2031,7 @@ window.addEventListener('load', async () => {
         applyLanguage();
         initTabs();
         initGlobalSearch();
+        initMobileSearch();
         loadTradingViewTicker();
         loadGlobalSnapshotBar();
         loadRegimeBanner();

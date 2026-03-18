@@ -41,6 +41,8 @@
                 <a href="/track-record" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Track Record ↗</a>
                 <a href="/session" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Session ?</a>
                 <a href="/pro" class="pro-link-btn header-link-secondary">PRO ↗</a>
+                <!-- Mobile Search Button (≤640px) -->
+                <button id="mobileSearchBtn" class="mobile-search-btn" title="Search" aria-label="Search" aria-haspopup="dialog" type="button">🔍</button>
                 <!-- Mobile Menu Button (640px and below) -->
                 <button id="mobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenuDropdown">
                     <span class="hamburger-icon">☰</span>
@@ -1052,6 +1054,17 @@
                 <button class="screener-reset" style="background:var(--accent);color:#fff" onclick="runComparison()" id="compRunBtn">Compare</button>
             </div>
             <div id="compResults" style="margin-top:16px"></div>
+        </div>
+    </div>
+
+    <!-- ── Mobile Full-Screen Search Modal ─────────────────────── -->
+    <div id="mobileSearchModal" class="mobile-search-modal" role="dialog" aria-modal="true" aria-label="Search" hidden>
+        <div class="mobile-search-modal-inner">
+            <div class="mobile-search-modal-bar">
+                <input id="mobileSearchInput" class="mobile-search-modal-input" type="search" placeholder="Search stocks, tabs, or pages..." autocomplete="off" spellcheck="false" />
+                <button id="mobileSearchCloseBtn" class="mobile-search-close-btn" aria-label="Close search" type="button">✕</button>
+            </div>
+            <div id="mobileSearchResults" class="mobile-search-modal-results" aria-live="polite"></div>
         </div>
     </div>
 
