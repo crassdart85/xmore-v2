@@ -5073,19 +5073,36 @@ button:active, .btn:active, .tab-btn:active {
     width: 54px;
     height: 54px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.34), rgba(255,255,255,0) 40%),
+        linear-gradient(135deg, #2563eb 0%, #0891b2 48%, #16a34a 100%);
     color: #fff;
     font-size: 24px;
     border: none;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.28);
+    box-shadow: 0 10px 26px rgba(2,6,23,0.36);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.2s, box-shadow 0.2s;
 }
-.chat-toggle-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+.chat-toggle-btn::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: 999px;
+    border: 2px solid rgba(59,130,246,0.34);
+    animation: chatFabPulse 1.9s ease-out infinite;
+    pointer-events: none;
+}
+.chat-toggle-btn:hover { transform: scale(1.08); box-shadow: 0 16px 34px rgba(2,6,23,0.42); }
 .chat-toggle-btn:active { transform: scale(0.96); }
+.chat-toggle-btn svg { display: block; }
+
+@keyframes chatFabPulse {
+    0% { transform: scale(0.92); opacity: 0.8; }
+    100% { transform: scale(1.2); opacity: 0; }
+}
 
 /* Chat panel */
 .chat-panel {
