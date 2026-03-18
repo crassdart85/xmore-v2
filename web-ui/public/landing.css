@@ -598,7 +598,7 @@ body {
 }
 
 /* ── Tablet (768px) ──────────────────────────– */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .l-hero-headline {
     font-size: 2.8rem;
   }
@@ -800,3 +800,4 @@ body {
     font-size: 14px;
   }
 }
+

@@ -583,7 +583,7 @@ canvas#tmEquityChart {
 }
 
 /* ─── Responsive ──────────────────────────── */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .tm-hero-card {
         flex-direction: column;
         gap: 16px;
@@ -955,7 +955,7 @@ canvas#tmEquityChart {
     margin-bottom: 16px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .fc-hero-grid { grid-template-columns: 1fr; }
 }
 
@@ -1500,3 +1500,4 @@ canvas#tmEquityChart {
 .fc-rerun-btn:active {
     transform: scale(0.97);
 }
+

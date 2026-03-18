@@ -291,7 +291,7 @@
     color: var(--text-secondary);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
     .perf-proof-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
     }
@@ -303,7 +303,7 @@
     }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .perf-proof-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 8px;
@@ -513,3 +513,4 @@
 }
 [dir="rtl"] .inst-bench-table th,
 [dir="rtl"] .inst-bench-table td { text-align: right; }
+

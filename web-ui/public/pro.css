@@ -666,7 +666,7 @@ body {
 .pro-pf-cta-btn { cursor: pointer; background: none; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .pro-movers-grid  { grid-template-columns: 1fr; }
   .pro-sector-grid  { grid-template-columns: 1fr; }
   .pro-egx-section  { grid-template-columns: 1fr; }
@@ -769,7 +769,7 @@ body {
    PRO — MOBILE RESPONSIVE (comprehensive)
    ============================================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   /* Header */
   .pro-header {
     padding: 8px 14px;
@@ -947,3 +947,4 @@ body {
   }
 }
 .pro-etf-prem.prem { color: #f59e0b; font-weight: 600; }
+

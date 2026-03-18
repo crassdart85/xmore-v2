@@ -287,7 +287,7 @@ html[dir="ltr"] .s-table td.s-name { text-align: left; color: var(--s-text); }
   gap: 16px;
   margin-bottom: 20px;
 }
-@media (max-width: 700px) { .s-index-wrap { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .s-index-wrap { grid-template-columns: 1fr; } }
 
 .s-index-card {
   background: var(--s-surface);
@@ -392,18 +392,18 @@ html[dir="rtl"] .s-footer { flex-direction: row-reverse; }
 html[dir="rtl"] .s-footer-note { text-align: right; }
 
 /* Mobile card layout RTL */
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   html[dir="rtl"] .s-table td { flex-direction: row-reverse; }
   html[dir="rtl"] .s-table td::before { text-align: right; }
 }
 
 /* ─── Responsive ────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .s-table th, .s-table td { padding: 6px 8px; font-size: 11px; }
   .s-container { padding: 12px; }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .s-table thead { display: none; }
   .s-table tr {
     display: block;
@@ -598,3 +598,4 @@ html[dir="rtl"] .s-footer-note { text-align: right; }
     display: flex !important;
   }
 }
+

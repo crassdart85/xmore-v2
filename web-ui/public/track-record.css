@@ -652,7 +652,7 @@ body {
 .tr-bt-stat-val.pos { color: var(--tr-green); }
 .tr-bt-stat-val.neg { color: var(--tr-red); }
 
-@media (max-width: 900px) { .tr-bt-summary { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 640px) { .tr-bt-summary { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 640px) { .tr-bt-summary { grid-template-columns: repeat(2, 1fr); } }
 
 /* ─── SIM tag ────────────────────────────────────────────────── */
@@ -693,11 +693,11 @@ html, body { overflow-x: hidden; max-width: 100%; }
 }
 
 /* ─── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 1100px) {
+@media (max-width: 640px) {
   .tr-agent-cards { grid-template-columns: repeat(3, 1fr); }
   .tr-transparency-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .tr-kpi-strip { grid-template-columns: repeat(3, 1fr); }
   .tr-two-col   { grid-template-columns: 1fr; }
   .tr-hero      { flex-direction: column; }
@@ -1452,7 +1452,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 }
 
 /* ─── Mobile: Prediction log as cards ───────────────────────── */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .tr-table--log thead { display: none; }
   .tr-table--log tr {
     display: block;
@@ -1481,7 +1481,7 @@ html, body { overflow-x: hidden; max-width: 100%; }
 }
 
 /* Mobile cards for other tables */
-@media (max-width: 767px) {
+@media (max-width: 640px) {
   .tr-table--cards thead { display: none; }
   .tr-table--cards tr {
     display: block;
@@ -1600,3 +1600,4 @@ html, body { overflow-x: hidden; max-width: 100%; }
     display: flex !important;
   }
 }
+

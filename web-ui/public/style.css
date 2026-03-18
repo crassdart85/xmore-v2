@@ -1434,7 +1434,7 @@ footer {
    ============================================ */
 
 /* Large tablets and small desktops */
-@media (max-width: 1024px) {
+@media (max-width: 640px) {
     .container {
         padding: 0 20px 20px;
         margin: 0;
@@ -1469,7 +1469,7 @@ footer {
 }
 
 /* Tablets */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     body {
         padding: 0;
     }
@@ -2336,7 +2336,7 @@ footer {
 }
 
 /* Landscape phones */
-@media (max-width: 768px) and (orientation: landscape) {
+@media (max-width: 640px) and (orientation: landscape) {
     header {
         padding: 6px 15px;
         height: auto;
@@ -3155,7 +3155,7 @@ footer {
 }
 
 /* Briefing responsive */
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .heatmap-grid {
         grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     }
@@ -3409,7 +3409,7 @@ footer {
     font-size: 12px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
     .global-snapshot-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
     }
@@ -3929,7 +3929,7 @@ button:active, .btn:active, .tab-btn:active {
     white-space: nowrap;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .admin-secret-row input {
         min-width: 100%;
     }
@@ -5721,7 +5721,7 @@ button:active, .btn:active, .tab-btn:active {
     flex: 0 0 auto;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     /* Sub-nav buttons: tighter on tablet */
     .etf-subnav-btn { font-size: 12px; padding: 6px 12px; min-width: auto; }
 
@@ -6200,7 +6200,7 @@ button:active, .btn:active, .tab-btn:active {
 .regime-val.amber { color: #f59e0b !important; }
 
 /* Mobile cards for dense dashboard tables */
-@media (max-width: 900px) {
+@media (max-width: 640px) {
     .table-cards thead { display: none; }
     .table-cards tr {
         display: block;
@@ -6232,3 +6232,4 @@ button:active, .btn:active, .tab-btn:active {
         padding-top: 8px;
     }
 }
+
