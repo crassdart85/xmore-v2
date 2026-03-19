@@ -36,16 +36,24 @@ class ConsensusAgent:
             with get_connection() as conn:
                 cursor = conn.cursor()
                 is_pg = bool(os.getenv('DATABASE_URL'))
-                bool_true = 'true' if is_pg else '1'
-                
-                cursor.execute(f"""
-                    SELECT agent_name,
-                           COUNT(*) as total,
-                           SUM(CASE WHEN was_correct = {bool_true} THEN 1 ELSE 0 END) as correct
-                    FROM evaluations
-                    WHERE agent_name != 'Consensus'
-                    GROUP BY agent_name
-                """)
+                if is_pg:
+                    cursor.execute("""
+                        SELECT agent_name,
+                               COUNT(*) as total,
+                               SUM(CASE WHEN was_correct IS TRUE THEN 1 ELSE 0 END) as correct
+                        FROM evaluations
+                        WHERE agent_name != %s
+                        GROUP BY agent_name
+                    """, ('Consensus',))
+                else:
+                    cursor.execute("""
+                        SELECT agent_name,
+                               COUNT(*) as total,
+                               SUM(CASE WHEN was_correct = 1 THEN 1 ELSE 0 END) as correct
+                        FROM evaluations
+                        WHERE agent_name != ?
+                        GROUP BY agent_name
+                    """, ('Consensus',))
                 
                 rows = cursor.fetchall()
                 for row in rows:

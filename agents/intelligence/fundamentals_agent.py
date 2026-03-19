@@ -200,8 +200,8 @@ def run_fundamentals(conn) -> int:
                         rev = qf.loc["Total Revenue", col]
                         qrev.append({"q": str(col.date()), "revenue": int(rev) if rev == rev else None})
                     row["quarterly_revenue"] = json.dumps(qrev)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[INTEL:FUNDAMENTALS] {ca}: quarterly revenue parse failed: {e}")
 
             # Ownership
             try:
@@ -209,8 +209,8 @@ def run_fundamentals(conn) -> int:
                 if major is not None and not major.empty:
                     row["insider_ownership_pct"]     = float(major.iloc[0, 0]) if len(major) > 0 else None
                     row["institution_ownership_pct"] = float(major.iloc[1, 0]) if len(major) > 1 else None
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[INTEL:FUNDAMENTALS] {ca}: ownership parse failed: {e}")
 
             ph = "%s" if DATABASE_URL else "?"
             cols = ", ".join(["ticker"] + list(row.keys()))

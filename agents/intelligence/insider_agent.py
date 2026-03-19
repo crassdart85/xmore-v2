@@ -76,7 +76,6 @@ def fetch_insider_data(conn) -> int:
 
     ensure_insider_table(conn)
     cursor = conn.cursor()
-    ph = "%s" if DATABASE_URL else "?"
     count = 0
 
     for ca, yahoo, *_ in EGX_TOP50:
@@ -98,12 +97,25 @@ def fetch_insider_data(conn) -> int:
                         except Exception:
                             txn_date = None
                         try:
+                            if DATABASE_URL:
+                                insert_sql = (
+                                    "INSERT INTO insider_transactions "
+                                    "(ticker, transaction_date, insider_name, insider_role, "
+                                    "transaction_type, shares_transacted, value_egp, source) "
+                                    "VALUES (%s,%s,%s,%s,%s,%s,%s,%s) "
+                                    "ON CONFLICT DO NOTHING"
+                                )
+                            else:
+                                insert_sql = (
+                                    "INSERT INTO insider_transactions "
+                                    "(ticker, transaction_date, insider_name, insider_role, "
+                                    "transaction_type, shares_transacted, value_egp, source) "
+                                    "VALUES (?,?,?,?,?,?,?,?) "
+                                    "ON CONFLICT (ticker, transaction_date, insider_name, transaction_type) DO NOTHING"
+                                )
+
                             cursor.execute(
-                                f"INSERT INTO insider_transactions "
-                                f"(ticker, transaction_date, insider_name, insider_role, "
-                                f"transaction_type, shares_transacted, value_egp, source) "
-                                f"VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})"
-                                + (" ON CONFLICT DO NOTHING" if DATABASE_URL else " ON CONFLICT (ticker, transaction_date, insider_name, transaction_type) DO NOTHING"),
+                                insert_sql,
                                 (
                                     ca, txn_date,
                                     str(row.get("Insider", ""))[:200],
@@ -115,8 +127,8 @@ def fetch_insider_data(conn) -> int:
                             count += 1
                         except Exception as ex:
                             logger.debug(f"[INTEL:INSIDER] {ca} insert: {ex}")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"[INTEL:INSIDER] {ca}: insider transactions unavailable: {e}")
 
         except Exception as e:
             logger.error(f"[INTEL:INSIDER] {ca}: {e}")

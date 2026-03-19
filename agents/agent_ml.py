@@ -251,13 +251,15 @@ class MLAgent(BaseAgent):
             try:
                 with get_connection() as conn:
                     cur = conn.cursor()
-                    ph = '%s' if os.getenv('DATABASE_URL') else '?'
-                    cur.execute(f"SELECT date, sentiment_score FROM news WHERE symbol={ph}", (symbol,))
+                    if os.getenv('DATABASE_URL'):
+                        cur.execute("SELECT date, sentiment_score FROM news WHERE symbol=%s", (symbol,))
+                    else:
+                        cur.execute("SELECT date, sentiment_score FROM news WHERE symbol=?", (symbol,))
                     rows = cur.fetchall()
                     cols = [d[0] for d in cur.description] if cur.description else []
                     news_df = pd.DataFrame([dict(zip(cols, r)) for r in rows])
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug(f"[{symbol}] Failed to load sentiment rows: {exc}")
 
         # Macro context (Brent, USD/EGP, EM)
         try:
@@ -275,8 +277,8 @@ class MLAgent(BaseAgent):
                 rows = cur.fetchall()
                 cols = [d[0] for d in cur.description] if cur.description else []
                 macro_df = pd.DataFrame([dict(zip(cols, r)) for r in rows])
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(f"[{symbol}] Failed to load macro context: {exc}")
 
         df = add_technical_indicators(df)
         df = add_sentiment_features(df, news_df)
@@ -359,8 +361,8 @@ class MLAgent(BaseAgent):
                      "value": round(float(last_row[fn].iloc[0]) if fn in last_row.columns else 0, 4)}
                     for fn, fi in feat_importance
                 ]
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug(f"[{symbol}] Unable to compute feature importances: {exc}")
 
             mapping = {0: "DOWN", 1: "FLAT", 2: "UP"}
             result = mapping.get(prediction, "HOLD")

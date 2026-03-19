@@ -13,6 +13,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = logging.getLogger(__name__)
 
+try:
+    from config.execution_config import EGX_ROUND_TRIP_RATE
+except ImportError:
+    EGX_ROUND_TRIP_RATE = 0.00725
+
+_COST_PCT = EGX_ROUND_TRIP_RATE * 100  # percentage points per trade
+
 WALK_FORWARD_CONFIG = {
     "train_window_days": 90,
     "test_window_days":  20,
@@ -239,15 +246,27 @@ class WalkForwardBacktest:
         pf = gross_wins / gross_loss if gross_loss > 0 else (999.0 if gross_wins > 0 else 1.0)
 
         all_rets = wins + losses
+
+        # Net return: deduct round-trip cost from every traded signal
+        all_rets_net = [r - _COST_PCT for r in wins] + [r - _COST_PCT for r in losses]
+        net_wins  = [r for r in all_rets_net if r > 0]
+        net_losses = [r for r in all_rets_net if r < 0]
+        net_gross_wins = sum(net_wins)
+        net_gross_loss = abs(sum(net_losses))
+        pf_net = (net_gross_wins / net_gross_loss
+                  if net_gross_loss > 0 else (999.0 if net_gross_wins > 0 else 0.0))
+
         return {
             'directional_accuracy': len(wins) / total,
             'signal_count':         total,
             'win_count':            len(wins),
             'loss_count':           len(losses),
             'avg_return_pct':       float(np.mean(all_rets)),
-            'avg_win_pct':          float(np.mean(wins))  if wins  else 0.0,
+            'avg_return_pct_net':   float(np.mean(all_rets_net)),
+            'avg_win_pct':          float(np.mean(wins))   if wins   else 0.0,
             'avg_loss_pct':         float(np.mean(losses)) if losses else 0.0,
             'profit_factor':        round(pf, 4),
+            'profit_factor_net':    round(pf_net, 4),
         }
 
     # ── 5. Walk-forward for one symbol ───────────────────────
@@ -298,7 +317,9 @@ class WalkForwardBacktest:
                 continue
             accs    = [w['directional_accuracy'] for w in windows]
             rets    = [w['avg_return_pct']        for w in windows]
+            rets_net = [w.get('avg_return_pct_net', w['avg_return_pct'] - _COST_PCT) for w in windows]
             pfs     = [w['profit_factor']          for w in windows]
+            pfs_net = [w.get('profit_factor_net', w['profit_factor']) for w in windows]
             signals_total = sum(w['signal_count'] for w in windows)
             wins_total    = sum(w['win_count']     for w in windows)
             losses_total  = sum(w['loss_count']    for w in windows)
@@ -316,9 +337,11 @@ class WalkForwardBacktest:
                 'win_count':               wins_total,
                 'loss_count':              losses_total,
                 'avg_return_pct':          float(np.mean(rets)),
+                'avg_return_pct_net':      float(np.mean(rets_net)),
                 'avg_win_pct':             float(np.mean([w['avg_win_pct']  for w in windows])),
                 'avg_loss_pct':            float(np.mean([w['avg_loss_pct'] for w in windows])),
                 'profit_factor':           float(np.mean(pfs)),
+                'profit_factor_net':       float(np.mean(pfs_net)),
                 'is_simulated':            False,
                 'data_quality_warning':    '',
             })

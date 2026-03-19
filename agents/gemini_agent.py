@@ -297,8 +297,8 @@ Rules:
                     emb = json.loads(r["embedding"])
                     sim = self._cosine_similarity(current_embedding, emb)
                     scored.append({**r, "similarity": sim})
-                except Exception:
-                    continue
+                except Exception as e:
+                    logger.debug("Skipping malformed historical embedding for %s: %s", symbol, e)
 
             scored.sort(key=lambda x: x["similarity"], reverse=True)
             top3 = [s for s in scored[:3] if s["similarity"] > 0.7]

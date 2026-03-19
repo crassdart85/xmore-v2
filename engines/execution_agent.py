@@ -10,6 +10,7 @@ from config.execution_config import (
     SLIPPAGE_TIERS, FILL_THRESHOLDS, MAX_ADV_PARTICIPATION,
     EGX_ROUND_TRIP_RATE, EGX_MIN_TICKET_EGP, EGX_DAILY_LIMIT_PCT,
     MAX_POSITION_PCT, MIN_EDGE_TO_COST_RATIO,
+    BASE_DAILY_VOLATILITY, calculate_position_size,
 )
 
 
@@ -121,8 +122,11 @@ class ExecutionAgent:
         prev_close       = market_data["prev_close"]
         portfolio_value  = market_data.get("portfolio_value_egp", self.portfolio_value_egp)
 
-        # 1. Max shares based on position sizing
-        max_shares = int((portfolio_value * MAX_POSITION_PCT) / raw_price) if raw_price > 0 else 0
+        # 1. Volatility-adjusted position size
+        daily_vol = market_data.get("daily_volatility", BASE_DAILY_VOLATILITY)
+        conviction = float(signal.get("xmore_score", signal.get("confidence", 50)) or 50)
+        position_pct = calculate_position_size(conviction, daily_vol)
+        max_shares = int((portfolio_value * position_pct) / raw_price) if raw_price > 0 else 0
 
         # 2. Fill simulation
         fill_info      = self.calculate_fill(max_shares, avg_daily_volume)
@@ -167,4 +171,6 @@ class ExecutionAgent:
             "split_schedule":           split_schedule,
             "realistic_stop_price":     realistic_stop,
             "rejection_reason":         "" if edge_check["approved"] else edge_check["reason"],
+            "position_size_pct":        round(position_pct, 4),
+            "daily_volatility_used":    round(daily_vol, 4),
         }

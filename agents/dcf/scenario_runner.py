@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import logging
 
 from agents.dcf.dcf_engine import run_dcf
+
+
+logger = logging.getLogger(__name__)
 
 
 def run_all_scenarios(data: dict, config) -> dict:
@@ -18,8 +22,7 @@ def run_all_scenarios(data: dict, config) -> dict:
             if r:
                 results[scenario] = r
         except Exception as e:
-            # Log in caller
-            continue
+            logger.warning("DCF scenario '%s' failed: %s", scenario, e)
 
     if not results:
         return {}

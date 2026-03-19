@@ -9,16 +9,19 @@
 
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const rateLimit = require('express-rate-limit');
+const rateLimitPkg = require('express-rate-limit');
 const { generateToken, authMiddleware, COOKIE_OPTIONS } = require('../middleware/auth');
 
 const router = express.Router();
 const SALT_ROUNDS = 12;
+const rateLimit = rateLimitPkg.rateLimit || rateLimitPkg;
+const ipKeyGenerator = rateLimitPkg.ipKeyGenerator || ((ip) => ip);
 
 // Rate limit login: 5 attempts per minute per IP
 const loginLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 5,
+    keyGenerator: (req) => ipKeyGenerator(req.ip || req.socket?.remoteAddress || ''),
     message: { error: 'Too many login attempts. Please try again in a minute.' },
     standardHeaders: true,
     legacyHeaders: false,

@@ -39,8 +39,50 @@ MAX_ADV_PARTICIPATION = 0.03        # Split orders if position > 3% of ADV
 EGX_DAILY_LIMIT_PCT    = 0.10       # ±10% max daily move — stops can gap through
 
 # ─── POSITION SIZING ────────────────────────────────────────────────────────
-MAX_POSITION_PCT       = 0.10       # Max 10% of portfolio per single stock
+MAX_POSITION_PCT       = 0.10       # Hard cap: max 10% of portfolio per single stock
 MAX_SECTOR_PCT         = 0.35       # Max 35% of portfolio in one sector
+BASE_DAILY_VOLATILITY  = 0.020      # 2.0% reference daily std (EGX mid-cap baseline)
+
+
+def calculate_position_size(
+    conviction_score: float,
+    daily_volatility: float,
+    max_loss_per_trade: float = 0.015,
+) -> float:
+    """
+    Volatility-adjusted position size as a fraction of portfolio.
+
+    Positions scale INVERSELY with daily_volatility and LINEARLY with
+    conviction_score (0–100 xmore_score or agent confidence).
+    Result is capped at MAX_POSITION_PCT (10%).
+
+    Args:
+        conviction_score:  0–100. Scores below 40 receive minimal allocation.
+        daily_volatility:  Daily standard deviation as a fraction (e.g. 0.03 = 3%).
+        max_loss_per_trade: Maximum tolerated portfolio loss per position (default 1.5%).
+
+    Returns:
+        Position size as fraction of portfolio (e.g. 0.07 = 7%).
+    """
+    daily_volatility = max(float(daily_volatility), 0.005)  # floor at 0.5%
+
+    # Scale inversely with volatility relative to baseline
+    vol_adj = min(BASE_DAILY_VOLATILITY / daily_volatility, 2.0)
+
+    # Conviction multiplier: 0.1 for low conviction, 1.0 at max
+    if conviction_score >= 100:
+        conviction_mult = 1.0
+    elif conviction_score >= 40:
+        conviction_mult = (float(conviction_score) - 40.0) / 60.0
+    else:
+        conviction_mult = 0.1
+
+    # Volatility-implied stop: 2× daily vol, minimum 2%
+    expected_stop_pct = max(daily_volatility * 2.0, 0.02)
+    base_size = max_loss_per_trade / expected_stop_pct
+
+    raw_size = base_size * vol_adj * (0.5 + 0.5 * conviction_mult)
+    return min(round(raw_size, 4), MAX_POSITION_PCT)
 
 # ─── HOLDING PERIOD RULES (replaces hard 30-day limit) ─────────────────────
 TRAILING_STOP_ACTIVATION_DAY = 20   # Trailing stop kicks in after day 20

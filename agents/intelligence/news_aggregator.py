@@ -89,8 +89,8 @@ def _compute_urgency(item: dict) -> float:
             score += 0.2
         elif age_hours < 6:
             score += 0.1
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"[INTEL:AGGREGATOR] urgency parse fallback: {e}")
     return min(1.0, score)
 
 
@@ -100,7 +100,6 @@ def aggregate_and_store(conn, items: list) -> dict:
 
     ensure_news_columns(conn)
     cursor = conn.cursor()
-    ph = "%s" if DATABASE_URL else "?"
     new = dups = material = 0
     material_tickers = []
 
@@ -113,7 +112,7 @@ def aggregate_and_store(conn, items: list) -> dict:
 
         # Content hash for dedup (ticker + first 80 chars of headline)
         key = f"{ticker}{item.get('headline','')[:80]}"
-        item["content_hash"] = hashlib.md5(key.encode("utf-8")).hexdigest()
+        item["content_hash"] = hashlib.sha256(key.encode("utf-8")).hexdigest()
 
         item["sentiment_score"] = _compute_sentiment(item)
         item["urgency_score"]   = _compute_urgency(item)
@@ -136,16 +135,26 @@ def aggregate_and_store(conn, items: list) -> dict:
 
         headline = item.get("headline", "")[:500]
 
-        sql = (
-            f"INSERT INTO news "
-            f"(symbol, date, headline, source, url, "
-            f"content_hash, sentiment_score, urgency_score, "
-            f"announcement_type, is_material, "
-            f"company_en, company_ar, language, raw_json, ticker) "
-            f"VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})"
-            + (" ON CONFLICT (content_hash) DO NOTHING" if DATABASE_URL else
-               " ON CONFLICT (symbol, headline, date) DO NOTHING")
-        )
+        if DATABASE_URL:
+            sql = (
+                "INSERT INTO news "
+                "(symbol, date, headline, source, url, "
+                "content_hash, sentiment_score, urgency_score, "
+                "announcement_type, is_material, "
+                "company_en, company_ar, language, raw_json, ticker) "
+                "VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
+                "ON CONFLICT (content_hash) DO NOTHING"
+            )
+        else:
+            sql = (
+                "INSERT INTO news "
+                "(symbol, date, headline, source, url, "
+                "content_hash, sentiment_score, urgency_score, "
+                "announcement_type, is_material, "
+                "company_en, company_ar, language, raw_json, ticker) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?) "
+                "ON CONFLICT (symbol, headline, date) DO NOTHING"
+            )
         params = (
             ticker or "",
             pub_date,

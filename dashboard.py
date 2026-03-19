@@ -171,7 +171,7 @@ with tab4:
     st.header("⚙️ Execution Quality")
     st.caption("Friction-adjusted signal analysis — EGX-specific transaction costs, slippage, and regime filtering.")
 
-    # ── 1. Regime Status ──────────────────────────────────────────────────────
+    # ── 1. Regime Status (P6 — enhanced with confidence + per-regime accuracy) ──
     st.subheader("📡 Market Regime (EGX30)")
     try:
         import sys, os
@@ -181,27 +181,132 @@ with tab4:
         regime_info = rf.get_current_regime()
         regime = regime_info.get("regime", "UNKNOWN")
         regime_color = {"BULL": "🟢", "NEUTRAL": "🟡", "BEAR": "🔴"}.get(regime, "⚪")
-        col_r1, col_r2, col_r3, col_r4 = st.columns(4)
+        dist_pct = regime_info.get("distance_from_ma_pct", 0)
+
+        # Confidence: distance from MA threshold expressed as 0–100 score
+        #   BULL: positive distance → closer to 0 = weak, further positive = stronger
+        #   BEAR: negative distance → more negative = stronger bear
+        raw_distance = abs(dist_pct)
+        regime_confidence = min(100, int(50 + raw_distance * 5))  # 50 at threshold, +5 per %
+
+        col_r1, col_r2, col_r3, col_r4, col_r5 = st.columns(5)
         col_r1.metric("Regime", f"{regime_color} {regime}")
         col_r2.metric("EGX30 Price", f"{regime_info.get('egx30_price', 'N/A'):,}" if regime_info.get("egx30_price") else "N/A")
         col_r3.metric("MA20", f"{regime_info.get('ma20', 'N/A'):,}" if regime_info.get("ma20") else "N/A")
-        col_r4.metric("Distance from MA", f"{regime_info.get('distance_from_ma_pct', 0):.1f}%")
+        col_r4.metric("Distance from MA", f"{dist_pct:.1f}%")
+        col_r5.metric("Regime Confidence", f"{regime_confidence}%")
+
         longs_ok = regime_info.get("new_longs_allowed", False)
         if longs_ok:
             st.success("✅ New long positions ALLOWED")
         else:
             st.error("🚫 New long positions BLOCKED — market not in BULL regime")
+
+        # Per-regime historical accuracy from evaluations DB
+        st.caption("**Per-regime historical signal accuracy (last 90 days)**")
+        try:
+            conn_regime = sqlite3.connect("stocks.db")
+            regime_acc_df = pd.read_sql(
+                """SELECT e.regime_at_signal,
+                          COUNT(*) as total,
+                          SUM(CASE WHEN e.was_correct = 1 THEN 1 ELSE 0 END) as correct,
+                          ROUND(100.0 * SUM(CASE WHEN e.was_correct = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as accuracy_pct
+                   FROM evaluations e
+                   WHERE e.regime_at_signal IS NOT NULL
+                     AND e.evaluation_date >= date('now', '-90 days')
+                   GROUP BY e.regime_at_signal
+                   ORDER BY accuracy_pct DESC""",
+                conn_regime
+            )
+            conn_regime.close()
+            if regime_acc_df.empty:
+                st.info("No per-regime accuracy data yet.")
+            else:
+                regime_acc_df.columns = ["Regime at Signal", "Total Signals", "Correct", "Accuracy %"]
+                st.dataframe(regime_acc_df, use_container_width=True, hide_index=True)
+        except Exception as ex:
+            st.caption(f"Per-regime accuracy unavailable: {ex}")
+
     except Exception as e:
         st.warning(f"Regime filter unavailable: {e}")
 
     st.divider()
 
-    # ── 2. Friction Cost Summary ──────────────────────────────────────────────
+    # ── 2. Net vs Gross Performance (P1) ──────────────────────────────────────
+    st.subheader("📊 Net vs Gross Performance")
+    try:
+        import sys, os
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from engines.performance_metrics import get_performance_summary
+
+        period_days = st.slider("Analysis period (days)", 7, 90, 30, key="exec_period")
+        perf = get_performance_summary(days=period_days)
+        if perf:
+            col_p1, col_p2, col_p3, col_p4, col_p5, col_p6 = st.columns(6)
+            gross_ret = perf.get("avg_return_1d", 0) or 0
+            net_ret   = perf.get("avg_return_1d_net", 0) or 0
+            gross_sr  = perf.get("sharpe_ratio", 0) or 0
+            net_sr    = perf.get("sharpe_ratio_net", 0) or 0
+            prof_acc  = perf.get("profitability_accuracy", 0) or 0
+            cost_drag = perf.get("cost_drag_total_pct", 0) or 0
+
+            col_p1.metric("Gross Avg Return", f"{gross_ret:.2f}%")
+            col_p2.metric("Net Avg Return",   f"{net_ret:.2f}%",
+                          delta=f"{net_ret - gross_ret:.2f}%")
+            col_p3.metric("Gross Sharpe",     f"{gross_sr:.2f}")
+            col_p4.metric("Net Sharpe",       f"{net_sr:.2f}",
+                          delta=f"{net_sr - gross_sr:.2f}")
+            col_p5.metric("Profitability %",  f"{prof_acc*100:.1f}%",
+                          help="Fraction of directional trades profitable after transaction costs")
+            col_p6.metric("Total Cost Drag",  f"{cost_drag:.2f}%",
+                          help="Cumulative cost drag across all signals in the period")
+        else:
+            st.info("Performance data not available for the selected period.")
+    except Exception as e:
+        st.info(f"Net/Gross performance unavailable: {e}")
+
+    st.divider()
+
+    # ── 3. Execution Filter Stats (P8) ────────────────────────────────────────
+    st.subheader("🔍 Execution Filter Statistics")
+    try:
+        from engines.performance_metrics import get_execution_filter_stats
+        filter_stats = get_execution_filter_stats(days=locals().get("period_days", 30))
+        if filter_stats:
+            col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
+            total   = filter_stats.get("total_signals", 0) or 0
+            blocked = filter_stats.get("blocked_count", 0) or 0
+            split   = filter_stats.get("split_count", 0) or 0
+            blocked_pct = (blocked / total * 100) if total > 0 else 0
+            col_f1.metric("Total Signals", int(total))
+            col_f2.metric("Approved",  int(total - blocked))
+            col_f3.metric("Blocked",   int(blocked),
+                          delta=f"{blocked_pct:.0f}%",
+                          delta_color="inverse")
+            col_f4.metric("Split/Scaled", int(split))
+            col_f5.metric("Edge Ratio Avg", f"{filter_stats.get('avg_edge_ratio', 0) or 0:.2f}")
+
+            if blocked_pct > 40:
+                st.warning(
+                    f"⚠️ {blocked_pct:.0f}% of signals are being blocked. "
+                    "Review regime filter and execution thresholds."
+                )
+            edge_min = filter_stats.get("min_edge_ratio", None)
+            edge_max = filter_stats.get("max_edge_ratio", None)
+            if edge_min is not None and edge_max is not None:
+                st.caption(f"Edge ratio range: **{edge_min:.2f}** – **{edge_max:.2f}**")
+        else:
+            st.info("No execution filter data available for the selected period.")
+    except Exception as e:
+        st.info(f"Execution filter stats unavailable: {e}")
+
+    st.divider()
+
+    # ── 4. Friction Cost Summary ──────────────────────────────────────────────
     st.subheader("💸 Friction Cost Summary")
     try:
         conn_exec = sqlite3.connect("stocks.db")
-        period_days = st.slider("Analysis period (days)", 7, 90, 30, key="exec_period")
-        cutoff = (datetime.now() - timedelta(days=period_days)).strftime("%Y-%m-%d")
+        cutoff = (datetime.now() - timedelta(days=locals().get("period_days", 30))).strftime("%Y-%m-%d")
 
         cost_df = pd.read_sql(
             """SELECT SUM(round_trip_cost_egp) as total_cost,
@@ -223,7 +328,52 @@ with tab4:
 
     st.divider()
 
-    # ── 3. Blocked Signals Log ────────────────────────────────────────────────
+    # ── 5. Sector Concentration (P7) ─────────────────────────────────────────
+    st.subheader("🏗️ Sector Concentration")
+    try:
+        conn_sector = sqlite3.connect("stocks.db")
+        sector_cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+
+        sector_raw = pd.read_sql(
+            """SELECT sector_en,
+                      COUNT(*) as signal_count,
+                      AVG(COALESCE(kelly_fraction, position_size_pct, 0.08)) as avg_alloc
+               FROM trade_recommendations
+               WHERE recommendation_date >= ?
+                 AND (execution_approved = 1 OR execution_approved IS NULL)
+                 AND sector_en IS NOT NULL
+               GROUP BY sector_en
+               ORDER BY signal_count DESC""",
+            conn_sector, params=[sector_cutoff]
+        )
+        conn_sector.close()
+
+        if sector_raw.empty:
+            st.info("No sector data available (sector_en column may not be populated yet).")
+        else:
+            total_alloc = sector_raw["avg_alloc"].sum()
+            sector_raw["combined_pct"] = (sector_raw["avg_alloc"] / max(total_alloc, 1) * 100).round(1)
+            SECTOR_LIMIT = 35.0
+
+            def _sector_status(pct):
+                if pct > SECTOR_LIMIT:
+                    return "🔴 OVER LIMIT"
+                if pct > SECTOR_LIMIT * 0.85:
+                    return "🟡 WARNING"
+                return "🟢 OK"
+
+            sector_raw["status"] = sector_raw["combined_pct"].apply(_sector_status)
+            sector_raw = sector_raw[["sector_en", "signal_count", "combined_pct", "status"]]
+            sector_raw.columns = ["Sector", "Signals (30d)", "Estimated Alloc %", "Status"]
+            st.dataframe(sector_raw, use_container_width=True, hide_index=True)
+            st.caption(f"Sector limit: {SECTOR_LIMIT:.0f}% — signals with status 🔴 exceed soft concentration cap.")
+
+    except Exception as e:
+        st.info(f"Sector concentration data unavailable: {e}")
+
+    st.divider()
+
+    # ── 6. Blocked Signals Log ────────────────────────────────────────────────
     st.subheader("🚫 Blocked Signals (last 20)")
     try:
         blocked_df = pd.read_sql(
@@ -242,7 +392,7 @@ with tab4:
 
     st.divider()
 
-    # ── 4. Trailing Stop Monitor ──────────────────────────────────────────────
+    # ── 7. Trailing Stop Monitor ──────────────────────────────────────────────
     st.subheader("📍 Open Position Trailing Stop Monitor")
     try:
         positions_df = pd.read_sql(
@@ -282,4 +432,4 @@ with tab4:
     except Exception as e:
         st.info(f"Position data not available: {e}")
 
-st.sidebar.caption("v2.1 Enhanced")
+st.sidebar.caption("v2.2 Financial Audit")

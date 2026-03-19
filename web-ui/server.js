@@ -1,9 +1,12 @@
 ﻿console.log('=== SERVER.JS STARTING ===');
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-const { optionalAuth } = require('./middleware/auth');
+const crypto = require('crypto');
+const rateLimitPkg = require('express-rate-limit');
+const { optionalAuth, JWT_SECRET } = require('./middleware/auth');
 
 // Route modules
 const { router: authRouter, attachDb: attachAuthDb } = require('./routes/auth');
@@ -23,12 +26,21 @@ const { router: screeningRouter, attachDb: attachScreeningDb } = require('./rout
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const IS_PROD = process.env.NODE_ENV === 'production';
+const rateLimit = rateLimitPkg.rateLimit || rateLimitPkg;
+const ipKeyGenerator = rateLimitPkg.ipKeyGenerator || ((ip) => ip);
 
 // Middleware
 const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
+
+app.set('trust proxy', 1);
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+
 app.use(cors({
   origin: (origin, cb) => {
     // No origin header (server-to-server, same-origin GET, etc.) â€” always allow
@@ -39,14 +51,28 @@ app.use(cors({
         ? cb(null, true)
         : cb(new Error('CORS origin not allowed'));
     }
-    // No allowlist configured â€” allow same-origin (browser sends Origin on POST
-    // even for same-origin requests, so we must permit it)
+    // Fail closed in production when no explicit CORS allowlist is configured.
+    if (IS_PROD) {
+      return cb(new Error('CORS is not configured for production'));
+    }
+    // Development fallback.
     return cb(null, true);
   },
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
+
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  keyGenerator: (req) => ipKeyGenerator(req.ip || req.socket?.remoteAddress || ''),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down and try again shortly.' }
+});
+
+app.use('/api', apiLimiter);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -353,12 +379,21 @@ app.post('/api/admin/login', express.json(), (req, res) => {
   if (!expectedPass) {
     return res.status(503).json({ error: 'Admin credentials not configured. Set ADMIN_PASSWORD environment variable.' });
   }
-  if (!username || !password || username !== expectedUser || password !== expectedPass) {
+
+  const providedUser = String(username || '');
+  const providedPass = String(password || '');
+  const safeEquals = (a, b) => {
+    const aBuf = Buffer.from(String(a));
+    const bBuf = Buffer.from(String(b));
+    if (aBuf.length !== bBuf.length) return false;
+    return crypto.timingSafeEqual(aBuf, bBuf);
+  };
+
+  if (!providedUser || !providedPass || !safeEquals(providedUser, expectedUser) || !safeEquals(providedPass, expectedPass)) {
     return res.status(401).json({ error: 'Invalid username or password' });
   }
   const jwt = require('jsonwebtoken');
-  const jwtSecret = process.env.JWT_SECRET || 'dev-fallback-secret';
-  const token = jwt.sign({ role: 'admin', user: username }, jwtSecret, { expiresIn: '8h' });
+  const token = jwt.sign({ role: 'admin', user: providedUser }, JWT_SECRET, { expiresIn: '8h' });
   res.json({ ok: true, token });
 });
 

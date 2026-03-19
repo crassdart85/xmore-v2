@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { JWT_SECRET } = require('./auth');
 
 function requireAdminSecret(req, res, next) {
     const auth = req.headers['authorization'] || '';
@@ -9,8 +10,7 @@ function requireAdminSecret(req, res, next) {
     }
 
     try {
-        const jwtSecret = process.env.JWT_SECRET || 'dev-fallback-secret';
-        const payload = jwt.verify(token, jwtSecret);
+        const payload = jwt.verify(token, JWT_SECRET);
         if (!payload || payload.role !== 'admin') {
             return res.status(403).json({ error: 'Admin access denied' });
         }

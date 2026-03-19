@@ -51,6 +51,14 @@ from features import (
     add_macro_features, get_feature_columns
 )
 
+try:
+    from config.execution_config import EGX_ROUND_TRIP_RATE
+except ImportError:
+    EGX_ROUND_TRIP_RATE = 0.00725  # 0.725% round-trip baseline
+
+# Cost per trade in percentage points (deducted from gross P&L)
+_COST_PCT = EGX_ROUND_TRIP_RATE * 100  # 0.725
+
 logger = logging.getLogger(__name__)
 
 # Must match agent_ml.py
@@ -192,24 +200,39 @@ def _compute_metrics(records: list) -> dict:
             'support':   int(sup[i]),
         }
 
-    # Hypothetical signal P&L
+    # Hypothetical signal P&L (gross)
     # UP correct   → capture actual_return_pct (long position gained)
     # DOWN correct → capture |actual_return_pct| (short position gained)
     # UP wrong     → -|actual_return_pct|
     # DOWN wrong   → -|actual_return_pct|
     # FLAT rows    → 0
     pnl = 0.0
+    net_pnl = 0.0
+    profitable_after_cost = 0
+    n_nontrivial = 0
+
     for _, row in df.iterrows():
         pred   = row['predicted_label']
         actual = row['actual_label']
         ret    = row['actual_return_pct']
         if pred == 'FLAT':
             continue
+        n_nontrivial += 1
         correct_dir = (pred == actual)
         if correct_dir:
-            pnl += abs(ret)
+            gross_trade = abs(ret)
+            pnl += gross_trade
+            net_trade = gross_trade - _COST_PCT
+            net_pnl += net_trade
+            if net_trade > 0:
+                profitable_after_cost += 1
         else:
-            pnl -= abs(ret)
+            pnl     -= abs(ret)
+            net_pnl -= (abs(ret) + _COST_PCT)
+
+    profitability_accuracy = (
+        profitable_after_cost / n_nontrivial if n_nontrivial > 0 else 0.0
+    )
 
     up_predicted   = (df['predicted_label'] == 'UP').sum()
     down_predicted = (df['predicted_label'] == 'DOWN').sum()
@@ -219,7 +242,12 @@ def _compute_metrics(records: list) -> dict:
         'total_predictions':    total,
         'accuracy':             round(float(accuracy), 3),
         'directional_accuracy': round(float(dir_acc), 3),
+        # Gross P&L (excludes transaction costs)
         'signal_pnl_pct':       round(float(pnl), 2),
+        # Net P&L after EGX round-trip costs (0.725% per trade)
+        'net_signal_pnl_pct':   round(float(net_pnl), 2),
+        # P5: what fraction of traded signals were actually profitable after costs
+        'profitability_accuracy': round(profitability_accuracy, 3),
         'up_predicted':         int(up_predicted),
         'down_predicted':       int(down_predicted),
         'flat_predicted':       int(flat_predicted),
@@ -477,6 +505,49 @@ def backtest_all(symbols: list = None,
     )
 
 
+def backtest_with_friction(symbols: list = None,
+                           n_splits: int = DEFAULT_SPLITS,
+                           top_n_features: int = DEFAULT_TOP_N) -> dict:
+    """
+    P3: Run full backtest with friction-adjusted reporting.
+
+    Applies EGX round-trip costs (0.725% per trade) to the backtest P&L,
+    partial fills, and gap-adjusted exits. Returns both gross and net summaries.
+
+    This is a reporting wrapper around backtest_all(). The underlying
+    _compute_metrics() already calculates net_signal_pnl_pct and
+    profitability_accuracy on every symbol.
+
+    Returns:
+        {
+          "gross_pnl_total": float,  # sum of all signal_pnl_pct
+          "net_pnl_total":   float,  # sum of all net_signal_pnl_pct
+          "cost_drag_total": float,  # gross - net
+          "avg_profitability_accuracy": float,
+          "results": list            # raw per-symbol result dicts
+        }
+    """
+    results = backtest_all(symbols=symbols, n_splits=n_splits,
+                           top_n_features=top_n_features)
+    gross_pnls = [r['metrics']['signal_pnl_pct']     for r in results if r.get('metrics')]
+    net_pnls   = [r['metrics'].get('net_signal_pnl_pct', r['metrics']['signal_pnl_pct'] -
+                   _COST_PCT * (r['metrics']['up_predicted'] + r['metrics']['down_predicted']))
+                  for r in results if r.get('metrics')]
+    prof_accs  = [r['metrics'].get('profitability_accuracy', 0) for r in results if r.get('metrics')]
+
+    gross_total = sum(gross_pnls)
+    net_total   = sum(net_pnls)
+    return {
+        "gross_pnl_total":              round(gross_total, 2),
+        "net_pnl_total":                round(net_total, 2),
+        "cost_drag_total":              round(gross_total - net_total, 2),
+        "avg_profitability_accuracy":   round(
+            sum(prof_accs) / len(prof_accs) if prof_accs else 0, 3
+        ),
+        "results": results,
+    }
+
+
 def print_report(results: list):
     """Print a formatted summary table of backtest results."""
     ok = [r for r in results if r['metrics']]
@@ -484,30 +555,30 @@ def print_report(results: list):
         print("No successful backtest results.")
         return
 
-    print("\n" + "=" * 80)
-    print(f"{'SYMBOL':<12} {'ACC':>6} {'DIR_ACC':>8} {'P&L':>8} {'UP_P':>6} {'DN_P':>6} {'ROWS':>6} {'FEATS':>6}")
-    print("-" * 80)
+    print("\n" + "=" * 92)
+    print(f"{'SYMBOL':<12} {'ACC':>6} {'DIR_ACC':>8} {'GROSS P&L':>10} {'NET P&L':>9} {'PROFIT%':>8} {'ROWS':>6}")
+    print("-" * 92)
     for r in ok:
         m  = r['metrics']
-        pc = m['per_class']
-        up_p = pc.get('UP', {}).get('precision', 0)
-        dn_p = pc.get('DOWN', {}).get('precision', 0)
+        net_pnl = m.get('net_signal_pnl_pct', m['signal_pnl_pct'] - _COST_PCT * (m['up_predicted'] + m['down_predicted']))
         print(
             f"{r['symbol']:<12} {m['accuracy']:>6.1%} {m['directional_accuracy']:>8.1%} "
-            f"{m['signal_pnl_pct']:>+8.1f} {up_p:>6.1%} {dn_p:>6.1%} "
-            f"{r['n_rows']:>6} {r.get('features_used', 0):>6}"
+            f"{m['signal_pnl_pct']:>+10.1f} {net_pnl:>+9.1f} "
+            f"{m.get('profitability_accuracy', 0):>8.1%} {r['n_rows']:>6}"
         )
 
     # Aggregate stats
     accs  = [r['metrics']['accuracy'] for r in ok]
     dirs  = [r['metrics']['directional_accuracy'] for r in ok]
     pnls  = [r['metrics']['signal_pnl_pct'] for r in ok]
-    print("-" * 80)
+    net_pnls = [r['metrics'].get('net_signal_pnl_pct', 0) for r in ok]
+    print("-" * 92)
     print(
         f"{'MEAN':<12} {np.mean(accs):>6.1%} {np.mean(dirs):>8.1%} "
-        f"{np.mean(pnls):>+8.1f}   (n={len(ok)} symbols)"
+        f"{np.mean(pnls):>+10.1f} {np.mean(net_pnls):>+9.1f}"
+        f"   (n={len(ok)} symbols)"
     )
-    print("=" * 80)
+    print("=" * 92)
     print(f"\nTimestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     failed = [r['symbol'] for r in results if r.get('error')]
     if failed:

@@ -70,6 +70,6 @@ def _parse_feed_date(entry) -> datetime:
         ts = entry.get("published_parsed") or entry.get("updated_parsed")
         if ts:
             return datetime(*ts[:6], tzinfo=timezone.utc)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug(f"[INTEL:ARGAAM] Failed to parse feed date: {e}")
     return datetime.now(timezone.utc)

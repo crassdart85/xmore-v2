@@ -78,6 +78,51 @@ def collect_egx_data():
         return collect_prices_yfinance(config.EGX_STOCKS)
 
 
+def validate_price_continuity(symbol: str, df) -> None:
+    """
+    Check a price DataFrame for data-quality issues and log warnings.
+
+    Checks:
+      - Date gaps > 7 calendar days (missing data / exchange closure anomaly)
+      - Single-day price jumps > 15% (potential unadjusted corporate action)
+
+    Args:
+        symbol: Ticker string for logging.
+        df:     DataFrame returned by yf.Ticker.history(), indexed by DatetimeIndex.
+    """
+    if df is None or len(df) < 2:
+        return
+
+    import pandas as pd
+    dates = pd.to_datetime(df.index)
+
+    # --- Gap check ---
+    for i in range(1, len(dates)):
+        gap_days = (dates[i] - dates[i - 1]).days
+        if gap_days > 7:
+            msg = f"Date gap of {gap_days} calendar days between {dates[i-1].date()} and {dates[i].date()}"
+            logger.warning("[DataQuality] %s: %s", symbol, msg)
+            try:
+                log_data_quality_issue(symbol, "date_gap", msg, "medium")
+            except Exception:
+                pass
+
+    # --- Price-jump check (> 15 %) ---
+    closes = df["Close"].dropna()
+    pct_changes = closes.pct_change().dropna()
+    for ts, chg in pct_changes.items():
+        if abs(chg) > 0.15:
+            msg = (
+                f"Price jump of {chg*100:.1f}% on {getattr(ts, 'date', lambda: ts)()}"
+                f" — possible split or unadjusted corporate action"
+            )
+            logger.warning("[DataQuality] %s: %s", symbol, msg)
+            try:
+                log_data_quality_issue(symbol, "price_jump", msg, "high")
+            except Exception:
+                pass
+
+
 def collect_prices_yfinance(symbols=None):
     """
     Fetch stock prices from Yahoo Finance and save to DB.
@@ -98,6 +143,7 @@ def collect_prices_yfinance(symbols=None):
         try:
             ticker = yf.Ticker(symbol)
             df = ticker.history(period="90d")
+            validate_price_continuity(symbol, df)
             
             if DATABASE_URL:
                 yf_sql = """

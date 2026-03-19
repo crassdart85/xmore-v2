@@ -20,14 +20,34 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 # EGX-correct risk parameters
 try:
-    from config.execution_config import EGX_RISK_FREE_RATE_ANNUAL, EGX_TRADING_DAYS_PER_YEAR
+    from config.execution_config import (
+        EGX_RISK_FREE_RATE_ANNUAL, EGX_TRADING_DAYS_PER_YEAR, EGX_ROUND_TRIP_RATE,
+    )
 except ImportError:
     EGX_RISK_FREE_RATE_ANNUAL = 0.2725
     EGX_TRADING_DAYS_PER_YEAR = 247
+    EGX_ROUND_TRIP_RATE = 0.00725  # 0.725% round-trip baseline
 
 # Daily risk-free rate: (1 + annual) ^ (1/247) - 1
 EGX_DAILY_RF = (1 + EGX_RISK_FREE_RATE_ANNUAL) ** (1 / EGX_TRADING_DAYS_PER_YEAR) - 1
 MINIMUM_TRADES_FOR_METRICS = 30
+
+
+# ─── COST UTILITIES ──────────────────────────────────────────
+
+def apply_transaction_costs(returns: list, cost_percents: list = None) -> list:
+    """
+    Deduct round-trip transaction costs from a gross return series.
+    Returns are in percentage points (e.g. 2.5 = 2.5%).
+    If cost_percents is provided it must have the same length as returns.
+    Falls back to EGX_ROUND_TRIP_RATE * 100 (= 0.725 pp) per trade.
+    """
+    if not returns:
+        return []
+    default_cost_pct = EGX_ROUND_TRIP_RATE * 100  # 0.725 percentage points
+    if cost_percents and len(cost_percents) == len(returns):
+        return [r - c for r, c in zip(returns, cost_percents)]
+    return [r - default_cost_pct for r in returns]
 
 
 # ─── SQL HELPERS ───────────────────────────────────────────────
@@ -110,7 +130,9 @@ def get_performance_summary(
                 tr.alpha_1d, tr.alpha_5d,
                 tr.was_correct,
                 tr.recommendation_date,
-                tr.symbol
+                tr.symbol,
+                tr.round_trip_cost_egp,
+                tr.position_value_egp
             FROM trade_recommendations tr
             WHERE {where}
             ORDER BY tr.recommendation_date ASC
@@ -130,6 +152,26 @@ def get_performance_summary(
         bench_1d = [float(r["bench_1d"]) for r in rows if r.get("bench_1d") is not None]
         alphas_1d = [float(r["alpha_1d"]) for r in rows if r.get("alpha_1d") is not None]
         correct = [r["was_correct"] for r in rows if r.get("was_correct") is not None]
+
+        # Per-trade cost in percentage points (for cost-adjusted / net metrics)
+        costs_pct = []
+        for r in rows:
+            if r.get("return_1d") is None:
+                continue
+            rtc = r.get("round_trip_cost_egp")
+            pve = r.get("position_value_egp")
+            if rtc and pve and float(pve) > 0:
+                costs_pct.append(float(rtc) / float(pve) * 100)
+            else:
+                costs_pct.append(EGX_ROUND_TRIP_RATE * 100)  # default 0.725 pp
+
+        returns_1d_net = apply_transaction_costs(returns_1d, costs_pct)
+        cost_drag_total = sum(costs_pct) if costs_pct else 0.0
+        profitable_after_cost = sum(1 for r in returns_1d_net if r > 0)
+        profitability_accuracy = (
+            round(profitable_after_cost / len(returns_1d_net) * 100, 1)
+            if returns_1d_net else 0
+        )
 
         return {
             # Core counts
@@ -158,12 +200,25 @@ def get_performance_summary(
                 sum(1 for a in alphas_1d if a > 0) / len(alphas_1d) * 100, 1
             ) if alphas_1d else 0,
 
-            # Risk Metrics
+            # Risk Metrics (gross)
             "sharpe_ratio": round(sharpe_ratio(returns_1d), 2),
             "sortino_ratio": round(sortino_ratio(returns_1d), 2),
             "max_drawdown": round(max_drawdown(returns_1d), 2),
             "volatility": round(stddev(returns_1d), 3),
             "profit_factor": round(profit_factor(returns_1d), 2),
+
+            # Net (cost-adjusted) metrics — use these for reporting
+            "avg_return_1d_net": round(avg(returns_1d_net), 3),
+            "cumulative_return_net": round(cumulative_return(returns_1d_net), 2),
+            "sharpe_ratio_net": round(sharpe_ratio(returns_1d_net), 2),
+            "sortino_ratio_net": round(sortino_ratio(returns_1d_net), 2),
+            "max_drawdown_net": round(max_drawdown(returns_1d_net), 2),
+            "profit_factor_net": round(profit_factor(returns_1d_net), 2),
+
+            # P5: Directional accuracy vs profitability accuracy
+            "profitability_accuracy": profitability_accuracy,  # % trades profitable after costs
+            "cost_drag_total_pct": round(cost_drag_total, 2),
+            "avg_cost_per_trade_pct": round(avg(costs_pct), 4) if costs_pct else 0,
 
             # Metadata
             "first_prediction": str(rows[0]["recommendation_date"]),
@@ -695,7 +750,8 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
     try:
         cursor.execute(f"""
             SELECT recommendation_date, actual_next_day_return,
-                   benchmark_1d_return, alpha_1d, was_correct
+                   benchmark_1d_return, alpha_1d, was_correct,
+                   round_trip_cost_egp, position_value_egp
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
             AND {live_filter}
@@ -711,6 +767,24 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
     trade_count = len(rows)
     returns_1d  = [float(r["actual_next_day_return"]) for r in rows if r.get("actual_next_day_return") is not None]
     bench_1d    = [float(r["benchmark_1d_return"]) for r in rows if r.get("benchmark_1d_return") is not None]
+
+    # Build cost-per-trade list for net metrics
+    costs_pct_full = []
+    for r in rows:
+        if r.get("actual_next_day_return") is None:
+            continue
+        rtc = r.get("round_trip_cost_egp")
+        pve = r.get("position_value_egp")
+        if rtc and pve and float(pve) > 0:
+            costs_pct_full.append(float(rtc) / float(pve) * 100)
+        else:
+            costs_pct_full.append(EGX_ROUND_TRIP_RATE * 100)
+    returns_1d_net = apply_transaction_costs(returns_1d, costs_pct_full)
+    cost_drag_total = sum(costs_pct_full) if costs_pct_full else 0.0
+    profitability_accuracy_full = (
+        round(sum(1 for r in returns_1d_net if r > 0) / len(returns_1d_net) * 100, 1)
+        if returns_1d_net else 0
+    )
 
     # Data quality warnings
     warnings = []
@@ -748,10 +822,16 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
     wl  = calculate_win_loss_ratio(trades_for_wl)
     bench = calculate_benchmark_comparison(returns_1d, bench_1d) if bench_1d else {}
 
+    sr_net  = sharpe_ratio(returns_1d_net)
+    so_net  = sortino_ratio(returns_1d_net)
+    mdd_net = max_drawdown(returns_1d_net)
+    pf_net  = profit_factor(returns_1d_net)
+
     return {
         "period_days":          days,
         "generated_at":         datetime.now(timezone.utc).isoformat() + "Z",
         "trade_count":          trade_count,
+        # Gross metrics (price movement only)
         "sharpe_ratio":         round(sr, 4),
         "sortino_ratio":        round(so, 4),
         "calmar_ratio":         round(cal, 4) if cal is not None else None,
@@ -759,6 +839,14 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
         "rolling_sharpe_30d":   rolling_sh,
         "win_loss":             wl,
         "benchmark":            bench,
+        # Net (cost-adjusted) metrics — primary reporting metrics
+        "sharpe_ratio_net":     round(sr_net, 4),
+        "sortino_ratio_net":    round(so_net, 4),
+        "max_drawdown_net":     round(mdd_net, 4),
+        "profit_factor_net":    round(pf_net, 4),
+        "avg_return_net":       round(avg(returns_1d_net), 4),
+        "cost_drag_total_pct":  round(cost_drag_total, 2),
+        "profitability_accuracy": profitability_accuracy_full,
         "risk_free_rate_used":  EGX_RISK_FREE_RATE_ANNUAL,
         "minimum_trades_met":   trade_count >= MINIMUM_TRADES_FOR_METRICS,
         "data_quality_warning": " | ".join(warnings),
@@ -772,6 +860,60 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
 
 
 # ─── HELPERS ──────────────────────────────────────────────────
+
+def get_execution_filter_stats(days: int = 30) -> dict:
+    """
+    P8: Report what fraction of signals are blocked by the edge-ratio filter
+    or require order splitting. Alerts if > 40% are blocked.
+    """
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        ph = '%s' if DATABASE_URL else '?'
+        if DATABASE_URL:
+            date_part = f"recommendation_date >= CURRENT_DATE - {ph}::integer"
+            approved_val = "TRUE"
+            blocked_val  = "FALSE"
+            split_val    = "TRUE"
+        else:
+            date_part = f"recommendation_date >= date('now', '-' || {ph} || ' days')"
+            approved_val = "1"
+            blocked_val  = "0"
+            split_val    = "1"
+        try:
+            rows = _query(cursor, f"""
+                SELECT
+                    COUNT(*) AS total_signals,
+                    SUM(CASE WHEN execution_approved = {approved_val} THEN 1 ELSE 0 END) AS approved_count,
+                    SUM(CASE WHEN execution_approved = {blocked_val} THEN 1 ELSE 0 END) AS blocked_count,
+                    SUM(CASE WHEN split_required = {split_val} THEN 1 ELSE 0 END) AS split_count,
+                    AVG(edge_ratio) AS avg_edge_ratio,
+                    MIN(edge_ratio) AS min_edge_ratio,
+                    MAX(edge_ratio) AS max_edge_ratio
+                FROM trade_recommendations
+                WHERE {date_part}
+                AND execution_approved IS NOT NULL
+            """, [days])
+            row = rows[0] if rows else {}
+            total   = int(row.get("total_signals") or 0)
+            blocked = int(row.get("blocked_count") or 0)
+            return {
+                "total": total,
+                "approved": int(row.get("approved_count") or 0),
+                "blocked_by_edge": blocked,
+                "blocked_pct": round(blocked / total * 100, 1) if total else 0,
+                "split_required": int(row.get("split_count") or 0),
+                "avg_edge_ratio": round(float(row.get("avg_edge_ratio") or 0), 2),
+                "min_edge_ratio": round(float(row.get("min_edge_ratio") or 0), 2),
+                "max_edge_ratio": round(float(row.get("max_edge_ratio") or 0), 2),
+                "period_days": days,
+            }
+        except Exception:
+            return {
+                "total": 0, "approved": 0, "blocked_by_edge": 0, "blocked_pct": 0,
+                "split_required": 0, "avg_edge_ratio": 0, "min_edge_ratio": 0,
+                "max_edge_ratio": 0, "period_days": days,
+            }
+
 
 def avg(lst: list) -> float:
     return sum(lst) / len(lst) if lst else 0.0
@@ -792,6 +934,11 @@ def empty_metrics() -> dict:
         "max_drawdown": 0, "volatility": 0, "profit_factor": 0,
         "avg_alpha_1d": 0, "avg_benchmark_1d": 0, "cumulative_alpha": 0,
         "beat_benchmark_pct": 0, "best_trade": 0, "worst_trade": 0,
+        # Net / cost-adjusted metrics
+        "avg_return_1d_net": 0, "cumulative_return_net": 0,
+        "sharpe_ratio_net": 0, "sortino_ratio_net": 0,
+        "max_drawdown_net": 0, "profit_factor_net": 0,
+        "profitability_accuracy": 0, "cost_drag_total_pct": 0, "avg_cost_per_trade_pct": 0,
         "meets_minimum": False, "live_trade_count": 0,
         "first_prediction": None, "last_prediction": None,
         "period_days": 0, "live_only": True
