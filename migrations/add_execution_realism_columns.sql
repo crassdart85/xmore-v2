@@ -9,6 +9,12 @@ ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS edge_ratio           
 ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS split_required             BOOLEAN DEFAULT FALSE;
 ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS realistic_stop_price       REAL;
 ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS execution_approved         BOOLEAN DEFAULT TRUE;
+ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS volatility_position_pct    REAL;
+ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS kelly_position_pct         REAL;
+ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS position_size_pct          REAL;
+ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS shares_requested           INTEGER;
+ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS shares_expected            INTEGER;
+ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS position_sizing_mode       TEXT;
 ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS days_held                  INTEGER DEFAULT 0;
 ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS highest_price_since_entry  REAL;
 ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS trailing_stop_active       BOOLEAN DEFAULT FALSE;

@@ -54,13 +54,18 @@ class KellyAllocator:
 
     def __init__(self, db_connection=None):
         self._conn = db_connection
+        self._stats_cache: Dict[str, Dict[str, float]] = {}
 
     # ── Agent statistics ─────────────────────────────────────────────────────
 
-    def get_agent_stats(self, agent_name: str,
-                        symbol: Optional[str] = None) -> Dict[str, float]:
+    def get_signal_stats(self, symbol: Optional[str] = None) -> Dict[str, float]:
         """
-        Fetch rolling 30-day win rate and average win/loss for an agent.
+        Fetch rolling-window BUY performance stats.
+
+        Priority:
+          1) Symbol-specific BUY stats (if symbol provided and enough samples)
+          2) Global BUY stats fallback
+
         Returns dict with: win_rate, avg_win_pct, avg_loss_pct, trade_count.
         Falls back to neutral defaults if data unavailable.
         """
@@ -71,62 +76,73 @@ class KellyAllocator:
             "trade_count": 0,
         }
 
+        cache_key = (symbol or "_GLOBAL_").upper()
+        if cache_key in self._stats_cache:
+            return self._stats_cache[cache_key]
+
         conn = self._conn
         if conn is None:
-            try:
-                conn = get_connection().__enter__() if get_connection else None
-            except Exception:
-                return neutral
+            return neutral
         if conn is None:
             return neutral
 
         ph = "%s" if _DATABASE_URL else "?"
-        try:
+
+        def _fetch(sym: Optional[str]) -> Optional[Dict[str, float]]:
             cursor = conn.cursor()
-            sym_clause = f" AND symbol = {ph}" if symbol else ""
-            params = [HISTORY_DAYS]
-            if symbol:
-                params.append(symbol)
+            sym_clause = f" AND symbol = {ph}" if sym else ""
+            params = []
+            if sym:
+                params.append(sym)
 
             if _DATABASE_URL:
-                date_filter = f"recommendation_date >= CURRENT_DATE - {ph}::integer"
+                date_filter = f"recommendation_date >= CURRENT_DATE - INTERVAL '{HISTORY_DAYS} days'"
             else:
-                date_filter = f"recommendation_date >= date('now', '-' || {ph} || ' days')"
+                date_filter = f"recommendation_date >= date('now', '-{HISTORY_DAYS} days')"
 
             cursor.execute(f"""
                 SELECT
                     COUNT(*) AS total,
-                    SUM(CASE WHEN was_correct = {'TRUE' if _DATABASE_URL else '1'} THEN 1 ELSE 0 END) AS wins,
-                    AVG(CASE WHEN was_correct = {'TRUE' if _DATABASE_URL else '1'}
+                    SUM(CASE WHEN actual_next_day_return > 0 THEN 1 ELSE 0 END) AS wins,
+                    AVG(CASE WHEN actual_next_day_return > 0
                              THEN actual_next_day_return END) AS avg_win,
-                    AVG(CASE WHEN was_correct = {'FALSE' if _DATABASE_URL else '0'}
-                             THEN actual_next_day_return END) AS avg_loss
+                    AVG(CASE WHEN actual_next_day_return < 0
+                             THEN ABS(actual_next_day_return) END) AS avg_loss
                 FROM trade_recommendations
-                WHERE agent_name = {ph}
-                AND {date_filter}
-                AND was_correct IS NOT NULL
-                {sym_clause}
-            """, [agent_name] + params)
+                WHERE action = 'BUY'
+                  AND actual_next_day_return IS NOT NULL
+                  AND (is_live = {'TRUE' if _DATABASE_URL else '1'} OR is_live IS NULL)
+                  AND {date_filter}
+                  {sym_clause}
+            """, params)
             row = cursor.fetchone()
             if not row:
-                return neutral
+                return None
 
             total = int(row[0] or 0)
-            wins  = int(row[1] or 0)
+            wins = int(row[1] or 0)
             if total < 5:
-                return neutral  # Too little data
+                return None
 
-            win_rate   = wins / total
-            avg_win    = abs(float(row[2] or 2.0))   # percentage
-            avg_loss   = abs(float(row[3] or 1.5))   # percentage
+            avg_win = abs(float(row[2] or 2.0))   # percentage
+            avg_loss = abs(float(row[3] or 1.5))  # percentage
             return {
-                "win_rate":    win_rate,
+                "win_rate": wins / total,
                 "avg_win_pct": max(avg_win, 0.01),
                 "avg_loss_pct": max(avg_loss, 0.01),
                 "trade_count": total,
             }
+
+        try:
+            stats = _fetch(symbol) if symbol else None
+            if not stats:
+                stats = _fetch(None)  # global fallback
+            if not stats:
+                stats = neutral
+            self._stats_cache[cache_key] = stats
+            return stats
         except Exception as e:
-            logger.debug("KellyAllocator: stats query failed for %s: %s", agent_name, e)
+            logger.debug("KellyAllocator: stats query failed for %s: %s", symbol or "_GLOBAL_", e)
             return neutral
 
     # ── Kelly formula ────────────────────────────────────────────────────────
@@ -157,13 +173,11 @@ class KellyAllocator:
     def allocate(self, signals: List[Dict]) -> List[Dict]:
         """
         Add 'kelly_position_pct' to each signal dict.
-
-        Normalises allocations so the total across all signals never exceeds
-        MAX_TOTAL_EXPOSURE. Signals without an 'agent_name' key use the
-        DEFAULT_POSITION_PCT fallback.
+        Normalises allocations so combined Kelly exposure never exceeds
+        MAX_TOTAL_EXPOSURE.
 
         Args:
-            signals: List of signal dicts (must contain at minimum 'agent_name').
+            signals: List of signal dicts (should contain at minimum 'symbol' or 'ticker').
 
         Returns:
             Same list with 'kelly_position_pct' added in-place.
@@ -173,17 +187,21 @@ class KellyAllocator:
 
         raw_f: List[float] = []
         for sig in signals:
-            agent  = sig.get("agent_name", "")
             symbol = sig.get("symbol", sig.get("ticker"))
-            if agent:
-                stats = self.get_agent_stats(agent, symbol)
-                f = self.conservative_kelly(
-                    stats["win_rate"],
-                    stats["avg_win_pct"],
-                    stats["avg_loss_pct"],
-                )
-            else:
-                f = DEFAULT_POSITION_PCT
+            stats = self.get_signal_stats(symbol)
+            f = self.conservative_kelly(
+                stats["win_rate"],
+                stats["avg_win_pct"],
+                stats["avg_loss_pct"],
+            )
+
+            # Confidence-aware modulation keeps Kelly responsive to current signal quality.
+            try:
+                confidence = float(sig.get("confidence", 50) or 50)
+            except Exception:
+                confidence = 50.0
+            conf_mult = min(max(confidence / 70.0, 0.70), 1.20)
+            f = min(max(f * conf_mult, MIN_KELLY_F), MAX_POSITION_PCT)
             raw_f.append(f)
 
         total_f = sum(raw_f)
@@ -194,9 +212,15 @@ class KellyAllocator:
 
         # Normalise so total ≤ MAX_TOTAL_EXPOSURE
         scale = min(MAX_TOTAL_EXPOSURE / total_f, 1.0)
-        for sig, f in zip(signals, raw_f):
-            normalised = round(f * scale, 4)
-            sig["kelly_position_pct"] = max(normalised, MIN_KELLY_F)
+        effective_floor = min(MIN_KELLY_F, MAX_TOTAL_EXPOSURE / max(len(signals), 1))
+        scaled_allocations = [max(round(f * scale, 4), effective_floor) for f in raw_f]
+        scaled_total = sum(scaled_allocations)
+        if scaled_total > MAX_TOTAL_EXPOSURE and scaled_total > 0:
+            cap_scale = MAX_TOTAL_EXPOSURE / scaled_total
+            scaled_allocations = [round(v * cap_scale, 4) for v in scaled_allocations]
+
+        for sig, alloc in zip(signals, scaled_allocations):
+            sig["kelly_position_pct"] = alloc
 
         logger.debug(
             "KellyAllocator: allocated %d signals, total_f=%.3f, scale=%.3f",

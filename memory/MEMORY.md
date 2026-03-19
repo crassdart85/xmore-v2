@@ -259,3 +259,37 @@
 - Verified /api/intelligence/quality returns overall_status, freshness, and drift.
 - Verified /api/rag/chat returns retrieval_meta.resolved_entities and sources on a live request.
 - Validation also found and fixed pre-existing syntax errors in web-ui/public/performance-dashboard.js; npm run check now passes locally.
+
+## Financial Audit Follow-Through (Mar 19, 2026)
+- Kelly sizing is now active in the live recommendation pipeline:
+  - `run_agents.py` applies Kelly sizing before execution realism.
+  - `engines/execution_agent.py` blends volatility sizing with `kelly_position_pct`.
+- Kelly sizing persistence/runtime fields were standardized:
+  - `position_size_pct`
+  - `volatility_position_pct`
+  - `kelly_position_pct`
+  - `shares_requested`
+  - `shares_expected`
+  - `position_sizing_mode`
+  - plus execution realism cost/fill fields already persisted when schema supports them.
+- `engines/kelly_allocator.py` now learns from resolved live `BUY` rows only, with symbol fallback to global stats and tighter exposure-cap enforcement.
+- New friction-aware helper added:
+  - `engines/backtest_friction.py`
+  - used by both `engines/backtest.py` and `engines/walk_forward_backtest.py`
+  - directional backtests now include fill ratio, slippage drag, and transaction cost drag.
+- Public reporting is now net-first:
+  - `web-ui/routes/performance.js`
+  - `web-ui/routes/track-record.js`
+  - gross metrics remain available as secondary context.
+- `web-ui/public/track-record.js` copy was corrected to describe public performance metrics as net-of-transaction-cost metrics.
+- Schema/bootstrap now includes the new execution + Kelly fields in:
+  - `database.py`
+  - `web-ui/init-db.js`
+  - `migrations/add_execution_realism_columns.sql`
+- `dashboard.py` execution-filter monitoring now reads the correct keys from `get_execution_filter_stats(...)`.
+- Local verification completed:
+  - Python compile checks on audit-touched engine/db/dashboard files passed.
+  - `node --check` passed for performance/track-record/init-db JS files.
+  - `python -m pytest tests/test_execution_realism.py -q` passed (`12 passed`).
+- Remaining known gap:
+  - stop-loss/gap-through-stop lifecycle simulation is still not a full explicit backtest execution model.

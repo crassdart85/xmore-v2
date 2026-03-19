@@ -253,6 +253,33 @@ const I18N = {
   }
 };
 
+Object.assign(I18N.en, {
+  kpiAlphaDesc: 'Net excess return per signal over the benchmark index after transaction costs.',
+  kpiSharpeDesc: 'Net risk-adjusted return (annualised). >1 is strong.',
+  kpiPFDesc: 'Net gains divided by net losses after transaction costs. >1.5 is robust.',
+});
+I18N.en.riskRows = [
+  { label: 'Max Drawdown', key: 'max_drawdown', desc: 'Largest peak-to-trough cumulative loss. Lower is better.', negate: true },
+  { label: 'Volatility (ann.)', key: 'volatility', desc: 'Annualised standard deviation of net daily returns.', negate: false },
+  { label: 'Sharpe Ratio', key: 'sharpe_ratio', desc: 'Net risk-adjusted return. >1 = strong. >2 = exceptional.', negate: false },
+  { label: 'Profit Factor', key: 'profit_factor', desc: 'Net profit divided by net loss after transaction costs. >1.5 indicates robust edge.', negate: false },
+  { label: 'Avg 1D Return', key: 'avg_return_1d', desc: 'Mean net return per signal on a next-day basis.', negate: false },
+  { label: 'Avg Alpha', key: 'avg_alpha_1d', desc: 'Mean net excess return vs EGX30 per signal.', negate: false },
+];
+Object.assign(I18N.ar, {
+  kpiAlphaDesc: '\u0627\u0644\u0639\u0627\u0626\u062f \u0627\u0644\u0632\u0627\u0626\u062f \u0627\u0644\u0635\u0627\u0641\u064a \u0644\u0643\u0644 \u0625\u0634\u0627\u0631\u0629 \u0641\u0648\u0642 \u0627\u0644\u0645\u0624\u0634\u0631 \u0628\u0639\u062f \u062a\u0643\u0627\u0644\u064a\u0641 \u0627\u0644\u062a\u0646\u0641\u064a\u0630.',
+  kpiSharpeDesc: '\u0627\u0644\u0639\u0627\u0626\u062f \u0627\u0644\u0635\u0627\u0641\u064a \u0627\u0644\u0645\u0639\u062f\u0644 \u0644\u0644\u0645\u062e\u0627\u0637\u0631 \u0633\u0646\u0648\u064a\u0627\u064b. \u0623\u0643\u062b\u0631 \u0645\u0646 1 \u0642\u0648\u064a.',
+  kpiPFDesc: '\u0635\u0627\u0641\u064a \u0627\u0644\u0623\u0631\u0628\u0627\u062d \u0645\u0642\u0633\u0648\u0645\u0627\u064b \u0639\u0644\u0649 \u0635\u0627\u0641\u064a \u0627\u0644\u062e\u0633\u0627\u0626\u0631 \u0628\u0639\u062f \u062a\u0643\u0627\u0644\u064a\u0641 \u0627\u0644\u062a\u0646\u0641\u064a\u0630. \u0623\u0643\u062b\u0631 \u0645\u0646 1.5 \u0645\u062a\u064a\u0646.',
+});
+I18N.ar.riskRows = [
+  { label: '\u0623\u0642\u0635\u0649 \u062a\u0631\u0627\u062c\u0639', key: 'max_drawdown', desc: '\u0623\u0643\u0628\u0631 \u062e\u0633\u0627\u0631\u0629 \u062a\u0631\u0627\u0643\u0645\u064a\u0629 \u0645\u0646 \u0627\u0644\u0642\u0645\u0629 \u0644\u0644\u0642\u0627\u0639. \u0627\u0644\u0623\u0642\u0644 \u0623\u0641\u0636\u0644.', negate: true },
+  { label: '\u0627\u0644\u062a\u0642\u0644\u0628 (\u0633\u0646\u0648\u064a)', key: 'volatility', desc: '\u0627\u0644\u0627\u0646\u062d\u0631\u0627\u0641 \u0627\u0644\u0645\u0639\u064a\u0627\u0631\u064a \u0627\u0644\u0633\u0646\u0648\u064a \u0644\u0644\u0639\u0648\u0627\u0626\u062f \u0627\u0644\u064a\u0648\u0645\u064a\u0629 \u0627\u0644\u0635\u0627\u0641\u064a\u0629.', negate: false },
+  { label: '\u0646\u0633\u0628\u0629 \u0634\u0627\u0631\u0628', key: 'sharpe_ratio', desc: '\u0627\u0644\u0639\u0627\u0626\u062f \u0627\u0644\u0635\u0627\u0641\u064a \u0627\u0644\u0645\u0639\u062f\u0644 \u0644\u0644\u0645\u062e\u0627\u0637\u0631. \u0623\u0643\u062b\u0631 \u0645\u0646 1 \u0642\u0648\u064a. \u0623\u0643\u062b\u0631 \u0645\u0646 2 \u0627\u0633\u062a\u062b\u0646\u0627\u0626\u064a.', negate: false },
+  { label: '\u0645\u0639\u0627\u0645\u0644 \u0627\u0644\u0631\u0628\u062d', key: 'profit_factor', desc: '\u0635\u0627\u0641\u064a \u0627\u0644\u0631\u0628\u062d \u0645\u0642\u0633\u0648\u0645\u0627\u064b \u0639\u0644\u0649 \u0635\u0627\u0641\u064a \u0627\u0644\u062e\u0633\u0627\u0626\u0631 \u0628\u0639\u062f \u062a\u0643\u0627\u0644\u064a\u0641 \u0627\u0644\u062a\u0646\u0641\u064a\u0630. \u0623\u0643\u062b\u0631 \u0645\u0646 1.5 \u064a\u062f\u0644 \u0639\u0644\u0649 \u0645\u064a\u0632\u0629 \u0645\u062a\u064a\u0646\u0629.', negate: false },
+  { label: '\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0627\u0626\u062f 1 \u064a\u0648\u0645', key: 'avg_return_1d', desc: '\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0627\u0626\u062f \u0627\u0644\u0635\u0627\u0641\u064a \u0644\u0643\u0644 \u0625\u0634\u0627\u0631\u0629 \u0639\u0644\u0649 \u0623\u0633\u0627\u0633 \u064a\u0648\u0645 \u0648\u0627\u062d\u062f.', negate: false },
+  { label: '\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0623\u0644\u0641\u0627', key: 'avg_alpha_1d', desc: '\u0645\u062a\u0648\u0633\u0637 \u0627\u0644\u0639\u0627\u0626\u062f \u0627\u0644\u0632\u0627\u0626\u062f \u0627\u0644\u0635\u0627\u0641\u064a \u0645\u0642\u0627\u0631\u0646\u0629 \u0628\u0640 EGX30 \u0644\u0643\u0644 \u0625\u0634\u0627\u0631\u0629.', negate: false },
+];
+
 function t(key) { return I18N[_LANG][key] || I18N['en'][key] || key; }
 
 function trToggleLang() {
@@ -411,6 +438,27 @@ function colorClass(v, invert = false) {
   if (isNaN(n)) return '';
   if (invert) return n > 0 ? 'neg' : 'pos';
   return n > 0 ? 'pos' : n < 0 ? 'neg' : '';
+}
+
+function isNetReportingBasis(obj) {
+  return !!obj && obj.reporting_basis === 'net_of_transaction_costs';
+}
+
+function withNetLabel(label) {
+  return `${label} (Net)`;
+}
+
+function withGrossLabel(label) {
+  return `${label} (Gross, secondary)`;
+}
+
+function formatMetricValueForKey(key, raw) {
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return '—';
+  if (key === 'max_drawdown') return '-' + fmt(Math.abs(n), 2) + '%';
+  if (key === 'volatility') return fmt(n * 100, 2) + '%';
+  if (key.includes('return') || key.includes('alpha')) return fmtPct(n, 3);
+  return fmt(n, 2);
 }
 
 // ── Summary ────────────────────────────────────────────────────
@@ -1292,4 +1340,3 @@ async function loadEtfSignals() {
 function exportCSV() {
   window.location.href = `/api/track-record/predictions/export?days=${activeDays}`;
 }
-

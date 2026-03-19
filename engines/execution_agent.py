@@ -122,10 +122,38 @@ class ExecutionAgent:
         prev_close       = market_data["prev_close"]
         portfolio_value  = market_data.get("portfolio_value_egp", self.portfolio_value_egp)
 
-        # 1. Volatility-adjusted position size
+        # 1. Volatility-adjusted position size (baseline)
         daily_vol = market_data.get("daily_volatility", BASE_DAILY_VOLATILITY)
         conviction = float(signal.get("xmore_score", signal.get("confidence", 50)) or 50)
-        position_pct = calculate_position_size(conviction, daily_vol)
+        volatility_position_pct = calculate_position_size(conviction, daily_vol)
+
+        # 1b. Optional Kelly overlay from upstream allocator.
+        # Rule: keep vol sizing as baseline, blend with Kelly when supplied.
+        kelly_raw = signal.get("kelly_position_pct")
+        try:
+            kelly_position_pct = float(kelly_raw) if kelly_raw is not None else None
+        except Exception:
+            kelly_position_pct = None
+        if kelly_position_pct is not None:
+            kelly_position_pct = min(max(kelly_position_pct, 0.0), MAX_POSITION_PCT)
+
+        overlay_weight = signal.get("kelly_overlay_weight", 0.65)
+        try:
+            overlay_weight = float(overlay_weight)
+        except Exception:
+            overlay_weight = 0.65
+        overlay_weight = min(max(overlay_weight, 0.0), 1.0)
+
+        if kelly_position_pct is not None and kelly_position_pct > 0:
+            position_pct = ((1.0 - overlay_weight) * volatility_position_pct) + (
+                overlay_weight * kelly_position_pct
+            )
+            position_pct = min(max(position_pct, 0.01), MAX_POSITION_PCT)
+            sizing_mode = "kelly_overlay"
+        else:
+            position_pct = volatility_position_pct
+            sizing_mode = "volatility_only"
+
         max_shares = int((portfolio_value * position_pct) / raw_price) if raw_price > 0 else 0
 
         # 2. Fill simulation
@@ -172,5 +200,8 @@ class ExecutionAgent:
             "realistic_stop_price":     realistic_stop,
             "rejection_reason":         "" if edge_check["approved"] else edge_check["reason"],
             "position_size_pct":        round(position_pct, 4),
+            "volatility_position_pct":  round(volatility_position_pct, 4),
+            "kelly_position_pct":       round(kelly_position_pct, 4) if kelly_position_pct is not None else None,
+            "position_sizing_mode":     sizing_mode,
             "daily_volatility_used":    round(daily_vol, 4),
         }

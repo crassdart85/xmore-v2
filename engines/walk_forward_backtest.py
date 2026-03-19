@@ -12,6 +12,7 @@ from typing import Optional
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 logger = logging.getLogger(__name__)
+from engines.backtest_friction import estimate_directional_trade_return
 
 try:
     from config.execution_config import EGX_ROUND_TRIP_RATE
@@ -205,9 +206,11 @@ class WalkForwardBacktest:
             return None
 
         price_map = dict(zip(prices['date'], prices['close'].astype(float)))
+        volume_map = dict(zip(prices['date'], prices['volume'].fillna(0).astype(float))) if 'volume' in prices.columns else {}
         price_dates = sorted(price_map.keys())
 
         wins, losses = [], []
+        all_rets_net = []
         for _, row in signals.iterrows():
             sig_date = row['date']
             signal   = str(row.get(signal_col, 'HOLD')).upper()
@@ -220,22 +223,24 @@ class WalkForwardBacktest:
             if len(later) < horizon:
                 continue
             entry = price_map[sig_date]
-            exit_ = price_map[later[horizon - 1]]
+            exit_date = later[horizon - 1]
+            exit_ = price_map[exit_date]
             if entry <= 0:
                 continue
-            ret = (exit_ - entry) / entry * 100
-            if signal == 'UP':
-                direction_ret = ret
-                win = ret > 0
-            elif signal == 'DOWN':
-                direction_ret = -ret
-                win = ret < 0
-            else:
-                continue
+            friction = estimate_directional_trade_return(
+                direction=signal,
+                entry_price=entry,
+                exit_price=exit_,
+                avg_daily_volume=volume_map.get(sig_date, 0),
+            )
+            direction_ret = float(friction.get('gross_direction_return_pct', 0.0))
+            net_direction_ret = float(friction.get('net_direction_return_pct', direction_ret - _COST_PCT))
+            win = direction_ret > 0
             if win:
                 wins.append(direction_ret)
             else:
                 losses.append(direction_ret)
+            all_rets_net.append(net_direction_ret)
 
         total = len(wins) + len(losses)
         if total < self.cfg['min_test_signals']:
@@ -246,9 +251,6 @@ class WalkForwardBacktest:
         pf = gross_wins / gross_loss if gross_loss > 0 else (999.0 if gross_wins > 0 else 1.0)
 
         all_rets = wins + losses
-
-        # Net return: deduct round-trip cost from every traded signal
-        all_rets_net = [r - _COST_PCT for r in wins] + [r - _COST_PCT for r in losses]
         net_wins  = [r for r in all_rets_net if r > 0]
         net_losses = [r for r in all_rets_net if r < 0]
         net_gross_wins = sum(net_wins)

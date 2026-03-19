@@ -249,6 +249,7 @@ with tab4:
             net_sr    = perf.get("sharpe_ratio_net", 0) or 0
             prof_acc  = perf.get("profitability_accuracy", 0) or 0
             cost_drag = perf.get("cost_drag_total_pct", 0) or 0
+            prof_acc_pct = prof_acc * 100 if prof_acc <= 1 else prof_acc
 
             col_p1.metric("Gross Avg Return", f"{gross_ret:.2f}%")
             col_p2.metric("Net Avg Return",   f"{net_ret:.2f}%",
@@ -256,7 +257,7 @@ with tab4:
             col_p3.metric("Gross Sharpe",     f"{gross_sr:.2f}")
             col_p4.metric("Net Sharpe",       f"{net_sr:.2f}",
                           delta=f"{net_sr - gross_sr:.2f}")
-            col_p5.metric("Profitability %",  f"{prof_acc*100:.1f}%",
+            col_p5.metric("Profitability %",  f"{prof_acc_pct:.1f}%",
                           help="Fraction of directional trades profitable after transaction costs")
             col_p6.metric("Total Cost Drag",  f"{cost_drag:.2f}%",
                           help="Cumulative cost drag across all signals in the period")
@@ -274,14 +275,17 @@ with tab4:
         filter_stats = get_execution_filter_stats(days=locals().get("period_days", 30))
         if filter_stats:
             col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
-            total   = filter_stats.get("total_signals", 0) or 0
-            blocked = filter_stats.get("blocked_count", 0) or 0
-            split   = filter_stats.get("split_count", 0) or 0
-            blocked_pct = (blocked / total * 100) if total > 0 else 0
+            total   = filter_stats.get("total", filter_stats.get("total_signals", 0)) or 0
+            approved = filter_stats.get("approved", filter_stats.get("approved_count", 0)) or 0
+            blocked = filter_stats.get("blocked_by_edge", filter_stats.get("blocked_count", 0)) or 0
+            split   = filter_stats.get("split_required", filter_stats.get("split_count", 0)) or 0
+            blocked_pct = filter_stats.get("blocked_pct", None)
+            if blocked_pct is None:
+                blocked_pct = (blocked / total * 100) if total > 0 else 0
             col_f1.metric("Total Signals", int(total))
-            col_f2.metric("Approved",  int(total - blocked))
-            col_f3.metric("Blocked",   int(blocked),
-                          delta=f"{blocked_pct:.0f}%",
+            col_f2.metric("Approved",  int(approved if approved else max(total - blocked, 0)))
+            col_f3.metric("Blocked by Edge",   int(blocked),
+                          delta=f"{blocked_pct:.1f}%",
                           delta_color="inverse")
             col_f4.metric("Split/Scaled", int(split))
             col_f5.metric("Edge Ratio Avg", f"{filter_stats.get('avg_edge_ratio', 0) or 0:.2f}")

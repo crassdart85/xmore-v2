@@ -50,6 +50,7 @@ from features import (
     add_technical_indicators, add_sentiment_features,
     add_macro_features, get_feature_columns
 )
+from engines.backtest_friction import estimate_directional_trade_return
 
 try:
     from config.execution_config import EGX_ROUND_TRIP_RATE
@@ -163,7 +164,7 @@ def _load_macro_df(conn) -> pd.DataFrame:
 def _compute_metrics(records: list) -> dict:
     """
     Compute performance metrics from a list of prediction records.
-    Each record: {actual, predicted, actual_return_pct}
+    Each record includes raw returns and may include friction-adjusted fields.
     """
     if not records:
         return {}
@@ -213,22 +214,16 @@ def _compute_metrics(records: list) -> dict:
 
     for _, row in df.iterrows():
         pred   = row['predicted_label']
-        actual = row['actual_label']
         ret    = row['actual_return_pct']
         if pred == 'FLAT':
             continue
         n_nontrivial += 1
-        correct_dir = (pred == actual)
-        if correct_dir:
-            gross_trade = abs(ret)
-            pnl += gross_trade
-            net_trade = gross_trade - _COST_PCT
-            net_pnl += net_trade
-            if net_trade > 0:
-                profitable_after_cost += 1
-        else:
-            pnl     -= abs(ret)
-            net_pnl -= (abs(ret) + _COST_PCT)
+        gross_trade = float(row.get('gross_direction_return_pct', ret if pred == 'UP' else -abs(ret)))
+        net_trade = float(row.get('net_direction_return_pct', gross_trade - _COST_PCT))
+        pnl += gross_trade
+        net_pnl += net_trade
+        if net_trade > 0:
+            profitable_after_cost += 1
 
     profitability_accuracy = (
         profitable_after_cost / n_nontrivial if n_nontrivial > 0 else 0.0
@@ -317,6 +312,9 @@ def backtest_symbol(symbol: str,
         X_all = clean[available].values
         y_all = clean['target'].astype(int).values
         ret_all = clean['future_return'].values * 100  # pct
+        entry_prices_all = clean['close'].astype(float).values
+        exit_prices_all = clean['close'].shift(-5).astype(float).values
+        volumes_all = clean['volume'].fillna(0).astype(float).values
 
         # ── Walk-forward splits ──────────────────────────────────────────────
         # Use TimeSeriesSplit with a minimum training gap
@@ -368,11 +366,26 @@ def backtest_symbol(symbol: str,
             fold_acc = (preds == y_test).mean()
             fold_scores.append(round(float(fold_acc), 3))
 
-            for pred, actual, ret in zip(preds, y_test, ret_all[test_idx]):
+            for pred, actual, ret, row_idx in zip(preds, y_test, ret_all[test_idx], test_idx):
+                pred_label = {0: 'DOWN', 1: 'FLAT', 2: 'UP'}.get(int(pred), 'FLAT')
+                friction = (
+                    estimate_directional_trade_return(
+                        direction=pred_label,
+                        entry_price=entry_prices_all[row_idx],
+                        exit_price=exit_prices_all[row_idx],
+                        avg_daily_volume=volumes_all[row_idx],
+                    )
+                    if pred_label in {'UP', 'DOWN'} else {}
+                )
                 records.append({
                     'predicted':        int(pred),
                     'actual':           int(actual),
                     'actual_return_pct': float(ret),
+                    'gross_direction_return_pct': float(friction.get('gross_direction_return_pct', 0.0)),
+                    'net_direction_return_pct': float(friction.get('net_direction_return_pct', 0.0)),
+                    'fill_ratio': float(friction.get('fill_ratio', 0.0)),
+                    'slippage_drag_pct': float(friction.get('slippage_drag_pct', 0.0)),
+                    'transaction_cost_pct': float(friction.get('transaction_cost_pct', 0.0)),
                 })
 
         if not records:
@@ -511,8 +524,8 @@ def backtest_with_friction(symbols: list = None,
     """
     P3: Run full backtest with friction-adjusted reporting.
 
-    Applies EGX round-trip costs (0.725% per trade) to the backtest P&L,
-    partial fills, and gap-adjusted exits. Returns both gross and net summaries.
+    Applies EGX round-trip costs plus slippage-aware, liquidity-aware
+    return estimates to the backtest P&L. Returns both gross and net summaries.
 
     This is a reporting wrapper around backtest_all(). The underlying
     _compute_metrics() already calculates net_signal_pnl_pct and

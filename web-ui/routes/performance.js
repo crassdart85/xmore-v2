@@ -48,6 +48,27 @@ function isTableMissing(err) {
 function boolTrue() { return isPostgres ? 'TRUE' : '1'; }
 function boolFalse() { return isPostgres ? 'FALSE' : '0'; }
 function ph(n) { return isPostgres ? `$${n}` : '?'; }
+const DEFAULT_ROUND_TRIP_COST_PCT = 0.725;
+
+function perTradeCostPct(row) {
+    const rtc = Number(row?.round_trip_cost_egp);
+    const pve = Number(row?.position_value_egp);
+    if (Number.isFinite(rtc) && Number.isFinite(pve) && pve > 0) {
+        return (rtc / pve) * 100;
+    }
+    return DEFAULT_ROUND_TRIP_COST_PCT;
+}
+
+function costPctSql(alias = '') {
+    const p = alias ? `${alias}.` : '';
+    return `CASE
+        WHEN ${p}round_trip_cost_egp IS NOT NULL
+         AND ${p}position_value_egp IS NOT NULL
+         AND ${p}position_value_egp > 0
+        THEN (${p}round_trip_cost_egp / ${p}position_value_egp) * 100
+        ELSE ${DEFAULT_ROUND_TRIP_COST_PCT}
+    END`;
+}
 
 
 // â”€â”€â”€ PUBLIC: Overall performance summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -69,7 +90,8 @@ router.get('/summary', async (req, res) => {
         try {
             // Try live-only first (is_simulated = FALSE OR NULL)
             rows = await dbAll(`
-                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
+                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct,
+                       round_trip_cost_egp, position_value_egp
                 FROM trade_recommendations
                 WHERE actual_next_day_return IS NOT NULL
                 AND ${liveFilter}
@@ -81,7 +103,8 @@ router.get('/summary', async (req, res) => {
             if (!rows.length) {
                 metricsIncludeSimulated = true;
                 rows = await dbAll(`
-                    SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
+                    SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct,
+                           round_trip_cost_egp, position_value_egp
                     FROM trade_recommendations
                     WHERE actual_next_day_return IS NOT NULL
                     AND ${liveFilter}
@@ -130,25 +153,41 @@ router.get('/summary', async (req, res) => {
         };
         const buildStats = (subset) => {
             const total = subset.length;
-            const returnsArr = subset.map(r => toNum(r.actual_next_day_return));
-            const alphaArr = subset.map(r => r.alpha_1d == null ? toNum(r.actual_next_day_return) - toNum(r.benchmark_1d_return) : toNum(r.alpha_1d));
+            const returnsArrGross = subset.map(r => toNum(r.actual_next_day_return));
+            const costsPct = subset.map(perTradeCostPct);
+            const returnsArr = returnsArrGross.map((r, i) => r - costsPct[i]); // Net (primary reporting basis)
             const benchArr = subset.map(r => toNum(r.benchmark_1d_return));
+            const alphaArrGross = subset.map((r, i) =>
+                r.alpha_1d == null ? returnsArrGross[i] - benchArr[i] : toNum(r.alpha_1d)
+            );
+            const alphaArr = returnsArr.map((r, i) => r - benchArr[i]); // Net alpha (primary)
             const wins = subset.filter(r => r.was_correct === true || r.was_correct === 1 || r.was_correct === 't').length;
             const vol = stdev(returnsArr) * Math.sqrt(252);
+            const volGross = stdev(returnsArrGross) * Math.sqrt(252);
             const sharpe = stdev(alphaArr) > 0 ? (mean(alphaArr) / stdev(alphaArr)) * Math.sqrt(252) : 0;
+            const sharpeGross = stdev(alphaArrGross) > 0 ? (mean(alphaArrGross) / stdev(alphaArrGross)) * Math.sqrt(252) : 0;
             return {
                 trades: total,
                 wins,
                 losses: total - wins,
                 win_rate: total ? (wins / total) * 100 : 0,
                 avg_return_1d: mean(returnsArr),
+                avg_return_1d_gross: mean(returnsArrGross),
                 avg_alpha_1d: mean(alphaArr),
+                avg_alpha_1d_gross: mean(alphaArrGross),
                 avg_benchmark_1d: mean(benchArr),
                 beat_benchmark_count: alphaArr.filter(a => a > 0).length,
+                beat_benchmark_count_gross: alphaArrGross.filter(a => a > 0).length,
                 volatility: vol,
+                volatility_gross: volGross,
                 sharpe_ratio: sharpe,
+                sharpe_ratio_gross: sharpeGross,
                 max_drawdown: calcMaxDrawdown(returnsArr),
-                profit_factor: calcProfitFactor(returnsArr)
+                max_drawdown_gross: calcMaxDrawdown(returnsArrGross),
+                profit_factor: calcProfitFactor(returnsArr),
+                profit_factor_gross: calcProfitFactor(returnsArrGross),
+                avg_cost_per_trade_pct: mean(costsPct),
+                cost_drag_total_pct: costsPct.reduce((a, b) => a + b, 0)
             };
         };
 
@@ -227,16 +266,21 @@ router.get('/summary', async (req, res) => {
             return { wr, aw, al, wl, pf, exp: wr * aw + (1 - wr) * al, mW, mL };
         };
 
-        const allR = rows.map(r => toNum(r.actual_next_day_return));
+        const allRGross = rows.map(r => toNum(r.actual_next_day_return));
+        const allCosts = rows.map(perTradeCostPct);
+        const allR = allRGross.map((r, i) => r - allCosts[i]); // Net returns (primary)
         const benchR = rows.map(r => toNum(r.benchmark_1d_return));
         const mddAll = calcMaxDrawdown(allR);
+        const mddGross = calcMaxDrawdown(allRGross);
         const ddDet = calcDdDetails(allR);
         const wl = calcWL(allR);
+        const wlGross = calcWL(allRGross);
         const tradeCount = rows.length;
         const qWarn = tradeCount < 30
             ? `Only ${tradeCount} completed trades. Minimum 30 required for reliable metrics. Displayed metrics are indicative only.` : '';
 
         const institutional_metrics = {
+            reporting_basis: 'net_of_transaction_costs',
             data_transparency: {
                 signals_in_metrics:         rows.length,
                 simulated_signals_excluded: metricsIncludeSimulated ? 0 : simCount,
@@ -265,10 +309,19 @@ router.get('/summary', async (req, res) => {
             risk_free_rate_applied:   '27.25%',
             minimum_trades_met:       tradeCount >= 30,
             data_quality_warning:     qWarn,
+            avg_cost_per_trade_pct:   Number((allCosts.length ? mean(allCosts) : 0).toFixed(4)),
+            cost_drag_total_pct:      Number(allCosts.reduce((a, b) => a + b, 0).toFixed(2)),
+            gross_secondary: {
+                sharpe_ratio_gross: Number(calcSharpeEgx(allRGross).toFixed(2)),
+                sortino_ratio_gross: Number(calcSortinoEgx(allRGross).toFixed(2)),
+                calmar_ratio_gross: Number(calcCalmar(allRGross, mddGross).toFixed(2)),
+                profit_factor_gross: Number(wlGross.pf.toFixed(2))
+            }
         };
 
         return res.json({
             available: true,
+            reporting_basis: 'net_of_transaction_costs',
             institutional_metrics,
             global: {
                 total_predictions: allStats.trades,
@@ -276,48 +329,76 @@ router.get('/summary', async (req, res) => {
                 losses: allStats.losses,
                 win_rate: Number(allStats.win_rate.toFixed(1)),
                 avg_return_1d: Number(allStats.avg_return_1d.toFixed(3)),
+                avg_return_1d_net: Number(allStats.avg_return_1d.toFixed(3)),
+                avg_return_1d_gross: Number(allStats.avg_return_1d_gross.toFixed(3)),
                 avg_return_5d: 0,
                 avg_alpha_1d: Number(allStats.avg_alpha_1d.toFixed(3)),
+                avg_alpha_1d_gross: Number(allStats.avg_alpha_1d_gross.toFixed(3)),
                 avg_benchmark_1d: Number(allStats.avg_benchmark_1d.toFixed(3)),
                 beat_benchmark_pct: allStats.trades ? Math.round((allStats.beat_benchmark_count / allStats.trades) * 100) : 0,
+                beat_benchmark_pct_gross: allStats.trades ? Math.round((allStats.beat_benchmark_count_gross / allStats.trades) * 100) : 0,
                 meets_minimum: allStats.trades >= 100,
                 first_prediction: rows[0].recommendation_date,
                 last_prediction: rows[rows.length - 1].recommendation_date,
                 sharpe_ratio: Number(allStats.sharpe_ratio.toFixed(3)),
+                sharpe_ratio_gross: Number(allStats.sharpe_ratio_gross.toFixed(3)),
                 max_drawdown: Number(allStats.max_drawdown.toFixed(3)),
+                max_drawdown_gross: Number(allStats.max_drawdown_gross.toFixed(3)),
                 volatility: Number(allStats.volatility.toFixed(3)),
-                profit_factor: Number(allStats.profit_factor.toFixed(3))
+                volatility_gross: Number(allStats.volatility_gross.toFixed(3)),
+                profit_factor: Number(allStats.profit_factor.toFixed(3)),
+                profit_factor_gross: Number(allStats.profit_factor_gross.toFixed(3)),
+                avg_cost_per_trade_pct: Number(allStats.avg_cost_per_trade_pct.toFixed(4)),
+                cost_drag_total_pct: Number(allStats.cost_drag_total_pct.toFixed(2))
             },
             rolling: {
                 "30d": {
                     trades: r30.trades,
                     win_rate: Number(r30.win_rate.toFixed(1)),
                     alpha: Number(r30.avg_alpha_1d.toFixed(3)),
+                    alpha_gross: Number(r30.avg_alpha_1d_gross.toFixed(3)),
                     sharpe_ratio: Number(r30.sharpe_ratio.toFixed(3)),
+                    sharpe_ratio_gross: Number(r30.sharpe_ratio_gross.toFixed(3)),
                     max_drawdown: Number(r30.max_drawdown.toFixed(3)),
+                    max_drawdown_gross: Number(r30.max_drawdown_gross.toFixed(3)),
                     volatility: Number(r30.volatility.toFixed(3)),
-                    profit_factor: Number(r30.profit_factor.toFixed(3))
+                    volatility_gross: Number(r30.volatility_gross.toFixed(3)),
+                    profit_factor: Number(r30.profit_factor.toFixed(3)),
+                    profit_factor_gross: Number(r30.profit_factor_gross.toFixed(3)),
+                    avg_cost_per_trade_pct: Number(r30.avg_cost_per_trade_pct.toFixed(4))
                 },
                 "60d": {
                     trades: r60.trades,
                     win_rate: Number(r60.win_rate.toFixed(1)),
                     alpha: Number(r60.avg_alpha_1d.toFixed(3)),
+                    alpha_gross: Number(r60.avg_alpha_1d_gross.toFixed(3)),
                     sharpe_ratio: Number(r60.sharpe_ratio.toFixed(3)),
+                    sharpe_ratio_gross: Number(r60.sharpe_ratio_gross.toFixed(3)),
                     max_drawdown: Number(r60.max_drawdown.toFixed(3)),
+                    max_drawdown_gross: Number(r60.max_drawdown_gross.toFixed(3)),
                     volatility: Number(r60.volatility.toFixed(3)),
-                    profit_factor: Number(r60.profit_factor.toFixed(3))
+                    volatility_gross: Number(r60.volatility_gross.toFixed(3)),
+                    profit_factor: Number(r60.profit_factor.toFixed(3)),
+                    profit_factor_gross: Number(r60.profit_factor_gross.toFixed(3)),
+                    avg_cost_per_trade_pct: Number(r60.avg_cost_per_trade_pct.toFixed(4))
                 },
                 "90d": {
                     trades: r90.trades,
                     win_rate: Number(r90.win_rate.toFixed(1)),
                     alpha: Number(r90.avg_alpha_1d.toFixed(3)),
+                    alpha_gross: Number(r90.avg_alpha_1d_gross.toFixed(3)),
                     sharpe_ratio: Number(r90.sharpe_ratio.toFixed(3)),
+                    sharpe_ratio_gross: Number(r90.sharpe_ratio_gross.toFixed(3)),
                     max_drawdown: Number(r90.max_drawdown.toFixed(3)),
+                    max_drawdown_gross: Number(r90.max_drawdown_gross.toFixed(3)),
                     volatility: Number(r90.volatility.toFixed(3)),
-                    profit_factor: Number(r90.profit_factor.toFixed(3))
+                    volatility_gross: Number(r90.volatility_gross.toFixed(3)),
+                    profit_factor: Number(r90.profit_factor.toFixed(3)),
+                    profit_factor_gross: Number(r90.profit_factor_gross.toFixed(3)),
+                    avg_cost_per_trade_pct: Number(r90.avg_cost_per_trade_pct.toFixed(4))
                 }
             },
-            disclaimer: "All metrics are from live predictions only. No backfilled or backtested data is included in these figures."
+            disclaimer: "Primary metrics are net of transaction costs and based on live predictions. Gross pre-cost metrics are included as secondary fields."
         });
     } catch (err) {
         console.error('Performance summary error:', err);
@@ -376,8 +457,10 @@ router.get('/by-stock', async (req, res) => {
                 ${isPostgres ? 's.name_en, s.name_ar, s.sector_en' : "tr.symbol AS name_en, '' AS name_ar, '' AS sector_en"},
                 COUNT(*) AS total,
                 SUM(CASE WHEN tr.was_correct = ${boolTrue()} THEN 1 ELSE 0 END) AS correct,
-                ${isPostgres ? 'ROUND(AVG(tr.actual_next_day_return)::numeric, 3)' : 'ROUND(AVG(tr.actual_next_day_return), 3)'} AS avg_return,
-                ${isPostgres ? 'ROUND(AVG(tr.alpha_1d)::numeric, 3)' : 'ROUND(AVG(tr.alpha_1d), 3)'} AS avg_alpha,
+                ${isPostgres ? `ROUND(AVG(tr.actual_next_day_return - (${costPctSql('tr')}))::numeric, 3)` : `ROUND(AVG(tr.actual_next_day_return - (${costPctSql('tr')})), 3)`} AS avg_return,
+                ${isPostgres ? `ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')}))::numeric, 3)` : `ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')})), 3)`} AS avg_alpha,
+                ${isPostgres ? 'ROUND(AVG(tr.actual_next_day_return)::numeric, 3)' : 'ROUND(AVG(tr.actual_next_day_return), 3)'} AS avg_return_gross,
+                ${isPostgres ? 'ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return))::numeric, 3)' : 'ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return)), 3)'} AS avg_alpha_gross,
                 ${isPostgres
                 ? `ROUND((SUM(CASE WHEN tr.was_correct = TRUE THEN 1 ELSE 0 END))::numeric / NULLIF(COUNT(*), 0) * 100, 1)`
                 : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0) * 100, 1)`
@@ -415,7 +498,8 @@ router.get('/equity-curve', async (req, res) => {
         const rows = await dbAll(`
             SELECT
                 recommendation_date AS date,
-                ${isPostgres ? 'ROUND(AVG(actual_next_day_return)::numeric, 4)' : 'ROUND(AVG(actual_next_day_return), 4)'} AS xmore,
+                ${isPostgres ? 'ROUND(AVG(actual_next_day_return)::numeric, 4)' : 'ROUND(AVG(actual_next_day_return), 4)'} AS xmore_gross,
+                ${isPostgres ? `ROUND(AVG(${costPctSql()})::numeric, 4)` : `ROUND(AVG(${costPctSql()}), 4)`} AS avg_cost_pct,
                 ${isPostgres ? 'ROUND(AVG(benchmark_1d_return)::numeric, 4)' : 'ROUND(AVG(benchmark_1d_return), 4)'} AS egx30
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
@@ -425,27 +509,44 @@ router.get('/equity-curve', async (req, res) => {
             ORDER BY recommendation_date ASC
         `, [days]);
 
-        let xmoreCum = 0, egx30Cum = 0;
+        let xmoreCum = 0, xmoreCumGross = 0, egx30Cum = 0;
         const series = rows.map(r => {
-            xmoreCum += parseFloat(r.xmore) || 0;
+            const gross = parseFloat(r.xmore_gross) || 0;
+            const cost = parseFloat(r.avg_cost_pct) || 0;
+            const net = gross - cost;
+            xmoreCum += net;
+            xmoreCumGross += gross;
             egx30Cum += parseFloat(r.egx30) || 0;
             return {
                 date: r.date,
                 xmore: Math.round(xmoreCum * 100) / 100,
+                xmore_gross: Math.round(xmoreCumGross * 100) / 100,
                 egx30: Math.round(egx30Cum * 100) / 100,
-                alpha: Math.round((xmoreCum - egx30Cum) * 100) / 100
+                alpha: Math.round((xmoreCum - egx30Cum) * 100) / 100,
+                alpha_gross: Math.round((xmoreCumGross - egx30Cum) * 100) / 100
             };
         });
 
         return res.json({
+            reporting_basis: 'net_of_transaction_costs',
             series,
             total_xmore: series.length ? series[series.length - 1].xmore : 0,
+            total_xmore_gross: series.length ? series[series.length - 1].xmore_gross : 0,
             total_egx30: series.length ? series[series.length - 1].egx30 : 0,
-            total_alpha: series.length ? series[series.length - 1].alpha : 0
+            total_alpha: series.length ? series[series.length - 1].alpha : 0,
+            total_alpha_gross: series.length ? series[series.length - 1].alpha_gross : 0
         });
     } catch (err) {
         if (isTableMissing(err)) {
-            return res.json({ series: [], total_xmore: 0, total_egx30: 0, total_alpha: 0 });
+            return res.json({
+                reporting_basis: 'net_of_transaction_costs',
+                series: [],
+                total_xmore: 0,
+                total_xmore_gross: 0,
+                total_egx30: 0,
+                total_alpha: 0,
+                total_alpha_gross: 0
+            });
         }
         console.error('Equity curve error:', err);
         res.status(500).json({ error: 'Failed to load equity curve.' });
@@ -579,7 +680,8 @@ router.get('/full-report', async (req, res) => {
         let rows = [];
         try {
             rows = await dbAll(`
-                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct
+                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d, was_correct,
+                       round_trip_cost_egp, position_value_egp
                 FROM trade_recommendations
                 WHERE actual_next_day_return IS NOT NULL
                 AND ${liveFilter}
@@ -602,7 +704,9 @@ router.get('/full-report', async (req, res) => {
         const TRADING_DAYS = 247, EGX_RF = 0.2725;
         const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
 
-        const allR  = rows.map(r => toNum(r.actual_next_day_return));
+        const allRGross  = rows.map(r => toNum(r.actual_next_day_return));
+        const costs = rows.map(perTradeCostPct);
+        const allR = allRGross.map((r, i) => r - costs[i]);
         const benchR = rows.map(r => toNum(r.benchmark_1d_return));
         const window = 30;
         const rollingSharpe = [];
@@ -623,6 +727,7 @@ router.get('/full-report', async (req, res) => {
 
         return res.json({
             available: true,
+            reporting_basis: 'net_of_transaction_costs',
             period_days: days,
             generated_at: new Date().toISOString(),
             trade_count: tradeCount,
@@ -630,8 +735,11 @@ router.get('/full-report', async (req, res) => {
             rolling_sharpe_30d: rollingSharpe,
             benchmark_returns: benchR,
             portfolio_returns: allR,
+            portfolio_returns_gross: allRGross,
             risk_free_rate_used: EGX_RF,
             minimum_trades_met: tradeCount >= 30,
+            avg_cost_per_trade_pct: Number((costs.length ? mean(costs) : 0).toFixed(4)),
+            total_cost_drag_pct: Number(costs.reduce((a, b) => a + b, 0).toFixed(2)),
             data_quality_warning: warnings.join(' | '),
         });
     } catch (err) {
@@ -653,7 +761,8 @@ router.get('/export-summary', async (req, res) => {
         let rows = [];
         try {
             rows = await dbAll(`
-                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d
+                SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d,
+                       round_trip_cost_egp, position_value_egp
                 FROM trade_recommendations
                 WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}
                 ORDER BY recommendation_date ASC
@@ -665,7 +774,9 @@ router.get('/export-summary', async (req, res) => {
         const stdev = arr => { if (arr.length < 2) return 0; const m = mean(arr); return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1)); };
         const TRADING_DAYS = 247, EGX_RF = 0.2725;
         const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
-        const allR    = rows.map(r => toNum(r.actual_next_day_return));
+        const allRGross = rows.map(r => toNum(r.actual_next_day_return));
+        const costs = rows.map(perTradeCostPct);
+        const allR = allRGross.map((r, i) => r - costs[i]); // Net primary
         const benchR  = rows.map(r => toNum(r.benchmark_1d_return));
         const calcSharpe = arr => { const m = mean(arr), s = stdev(arr); return s > 0 ? (m - dailyRf) / s * Math.sqrt(TRADING_DAYS) : 0; };
         const calcSortino = arr => { const m = mean(arr), dn = arr.filter(v => v < 0); if (!dn.length) return 99.9; const ds = stdev(dn); return ds > 0 ? (m - dailyRf) / ds * Math.sqrt(TRADING_DAYS) : 99.9; };
@@ -695,8 +806,10 @@ router.get('/export-summary', async (req, res) => {
         const wr = allR.length ? (wins.length / allR.length * 100).toFixed(1) : 0;
         const pf = losses.length ? (wins.reduce((a, b) => a + b, 0) / Math.abs(losses.reduce((a, b) => a + b, 0))).toFixed(2) : 'â€”';
         const totalRet = ((allR.reduce((a, b) => a + b, 0))).toFixed(2);
+        const totalRetGross = ((allRGross.reduce((a, b) => a + b, 0))).toFixed(2);
         const benchTotal = (benchR.reduce((a, b) => a + b, 0)).toFixed(2);
         const alpha = (Number(totalRet) - Number(benchTotal)).toFixed(2);
+        const alphaGross = (Number(totalRetGross) - Number(benchTotal)).toFixed(2);
         const genDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         const periodStart = rows.length ? String(rows[0].recommendation_date).slice(0, 10) : 'â€”';
         const periodEnd   = rows.length ? String(rows[rows.length - 1].recommendation_date).slice(0, 10) : 'â€”';
@@ -741,34 +854,37 @@ router.get('/export-summary', async (req, res) => {
   <div class="header-meta">Generated: ${genDate}<br>Risk-free rate: CBE 27.25%</div>
 </div>
 ${warn}
-<h2>Return Quality</h2>
+<h2>Return Quality (Net of Transaction Costs)</h2>
 <div class="grid">
-  <div class="card"><div class="card-label">Sharpe Ratio</div><div class="card-value ${sharpe >= 1.5 ? 'green' : sharpe >= 0.8 ? 'amber' : 'red'}">${fmtNum(sharpe)}</div></div>
-  <div class="card"><div class="card-label">Sortino Ratio</div><div class="card-value ${sortino >= 2 ? 'green' : sortino >= 1 ? 'amber' : 'red'}">${fmtNum(sortino)}</div></div>
-  <div class="card"><div class="card-label">Calmar Ratio</div><div class="card-value ${calmar >= 2 ? 'green' : calmar >= 1 ? 'amber' : 'red'}">${fmtNum(calmar)}</div></div>
-  <div class="card"><div class="card-label">Information Ratio</div><div class="card-value ${ir >= 0.75 ? 'green' : ir >= 0.4 ? 'amber' : 'red'}">${fmtNum(ir)}</div></div>
+  <div class="card"><div class="card-label">Net Sharpe Ratio</div><div class="card-value ${sharpe >= 1.5 ? 'green' : sharpe >= 0.8 ? 'amber' : 'red'}">${fmtNum(sharpe)}</div></div>
+  <div class="card"><div class="card-label">Net Sortino Ratio</div><div class="card-value ${sortino >= 2 ? 'green' : sortino >= 1 ? 'amber' : 'red'}">${fmtNum(sortino)}</div></div>
+  <div class="card"><div class="card-label">Net Calmar Ratio</div><div class="card-value ${calmar >= 2 ? 'green' : calmar >= 1 ? 'amber' : 'red'}">${fmtNum(calmar)}</div></div>
+  <div class="card"><div class="card-label">Net Information Ratio</div><div class="card-value ${ir >= 0.75 ? 'green' : ir >= 0.4 ? 'amber' : 'red'}">${fmtNum(ir)}</div></div>
 </div>
 <h2>Risk Profile</h2>
 <div class="grid">
-  <div class="card"><div class="card-label">Max Drawdown</div><div class="card-value ${mdd > -0.1 ? 'green' : mdd > -0.2 ? 'amber' : 'red'}">${(mdd * 100).toFixed(1)}%</div></div>
+  <div class="card"><div class="card-label">Net Max Drawdown</div><div class="card-value ${mdd > -0.1 ? 'green' : mdd > -0.2 ? 'amber' : 'red'}">${(mdd * 100).toFixed(1)}%</div></div>
   <div class="card"><div class="card-label">Win Rate</div><div class="card-value ${Number(wr) >= 55 ? 'green' : Number(wr) >= 45 ? 'amber' : 'red'}">${wr}%</div></div>
-  <div class="card"><div class="card-label">Profit Factor</div><div class="card-value ${Number(pf) >= 2 ? 'green' : Number(pf) >= 1 ? 'amber' : 'red'}">${pf}</div></div>
-  <div class="card"><div class="card-label">Total Alpha</div><div class="card-value ${Number(alpha) >= 0 ? 'green' : 'red'}">${fmtPct(alpha)}</div></div>
+  <div class="card"><div class="card-label">Net Profit Factor</div><div class="card-value ${Number(pf) >= 2 ? 'green' : Number(pf) >= 1 ? 'amber' : 'red'}">${pf}</div></div>
+  <div class="card"><div class="card-label">Net Total Alpha</div><div class="card-value ${Number(alpha) >= 0 ? 'green' : 'red'}">${fmtPct(alpha)}</div></div>
 </div>
-<h2>Equity Curve (Cumulative Portfolio Value)</h2>
+<h2>Equity Curve (Net Cumulative Portfolio Value)</h2>
 ${svgEquity}
 <h2>Benchmark Comparison</h2>
 <table>
   <thead><tr><th>Metric</th><th>Xmore2</th><th>EGX30 Benchmark</th></tr></thead>
   <tbody>
-    <tr><td>Total Return</td><td class="${Number(totalRet) >= 0 ? 'highlight' : ''}">${fmtPct(totalRet)}</td><td>${fmtPct(benchTotal)}</td></tr>
-    <tr><td>Alpha vs Benchmark</td><td class="highlight">${fmtPct(alpha)}</td><td>â€”</td></tr>
-    <tr><td>Sharpe Ratio</td><td class="highlight">${fmtNum(sharpe)}</td><td>â€”</td></tr>
-    <tr><td>Profit Factor</td><td class="${Number(pf) >= 1 ? 'highlight' : ''}">${pf}</td><td>â€”</td></tr>
-    <tr><td>Max Drawdown</td><td class="${mdd > -0.1 ? 'highlight' : ''}">${(mdd * 100).toFixed(1)}%</td><td>â€”</td></tr>
+    <tr><td>Total Return (Net)</td><td class="${Number(totalRet) >= 0 ? 'highlight' : ''}">${fmtPct(totalRet)}</td><td>${fmtPct(benchTotal)}</td></tr>
+    <tr><td>Total Return (Gross, secondary)</td><td>${fmtPct(totalRetGross)}</td><td>${fmtPct(benchTotal)}</td></tr>
+    <tr><td>Alpha vs Benchmark (Net)</td><td class="highlight">${fmtPct(alpha)}</td><td>â€”</td></tr>
+    <tr><td>Alpha vs Benchmark (Gross, secondary)</td><td>${fmtPct(alphaGross)}</td><td>â€”</td></tr>
+    <tr><td>Sharpe Ratio (Net)</td><td class="highlight">${fmtNum(sharpe)}</td><td>â€”</td></tr>
+    <tr><td>Profit Factor (Net)</td><td class="${Number(pf) >= 1 ? 'highlight' : ''}">${pf}</td><td>â€”</td></tr>
+    <tr><td>Max Drawdown (Net)</td><td class="${mdd > -0.1 ? 'highlight' : ''}">${(mdd * 100).toFixed(1)}%</td><td>â€”</td></tr>
+    <tr><td>Avg Cost per Trade</td><td>${fmtPct(costs.length ? mean(costs) : 0, 3)}</td><td>â€”</td></tr>
   </tbody>
 </table>
-<div class="footer">Generated by Xmore2 &nbsp;|&nbsp; Data source: Egyptian Exchange (EGX) &nbsp;|&nbsp; Risk-free rate: CBE 27.25% &nbsp;|&nbsp; All predictions are live, immutable, and time-stamped at generation.</div>
+<div class="footer">Generated by Xmore2 &nbsp;|&nbsp; Primary reporting basis: net of transaction costs &nbsp;|&nbsp; Gross metrics shown only as secondary context.</div>
 </body>
 </html>`;
 

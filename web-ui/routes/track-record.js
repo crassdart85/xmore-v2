@@ -49,88 +49,149 @@ function dateWindow(days, col = 'recommendation_date') {
 function round(expr) {
     return isPostgres ? `ROUND(${expr}::numeric, 4)` : `ROUND(${expr}, 4)`;
 }
+const DEFAULT_ROUND_TRIP_COST_PCT = 0.725;
+
+function toNum(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function mean(arr) {
+    return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+}
+
+function stdev(arr) {
+    if (arr.length < 2) return 0;
+    const m = mean(arr);
+    return Math.sqrt(arr.reduce((a, v) => a + ((v - m) ** 2), 0) / (arr.length - 1));
+}
+
+function calcProfitFactor(returnsArr) {
+    const grossProfit = returnsArr.filter(v => v > 0).reduce((a, b) => a + b, 0);
+    const grossLoss = Math.abs(returnsArr.filter(v => v < 0).reduce((a, b) => a + b, 0));
+    if (grossLoss === 0) return grossProfit > 0 ? 9.99 : null;
+    return grossProfit / grossLoss;
+}
+
+function calcMaxDrawdownAbs(returnsArr) {
+    let cum = 0;
+    let peak = 0;
+    let maxDd = 0;
+    returnsArr.forEach(r => {
+        cum += r;
+        if (cum > peak) peak = cum;
+        const dd = peak - cum;
+        if (dd > maxDd) maxDd = dd;
+    });
+    return maxDd;
+}
+
+function perTradeCostPct(row) {
+    const rtc = toNum(row?.round_trip_cost_egp);
+    const pve = toNum(row?.position_value_egp);
+    if (pve > 0) return (rtc / pve) * 100;
+    return DEFAULT_ROUND_TRIP_COST_PCT;
+}
+
+function costPctSql(alias = '') {
+    const p = alias ? `${alias}.` : '';
+    return `CASE
+        WHEN ${p}round_trip_cost_egp IS NOT NULL
+         AND ${p}position_value_egp IS NOT NULL
+         AND ${p}position_value_egp > 0
+        THEN (${p}round_trip_cost_egp / ${p}position_value_egp) * 100
+        ELSE ${DEFAULT_ROUND_TRIP_COST_PCT}
+    END`;
+}
 
 // â”€â”€ KPI helper: accuracy + alpha + sharpe + beat + PF + max DD â”€
 async function kpiForWindow(days) {
     try {
-        const live = liveFilter();
-        const dw   = dateWindow(days);
-
-        const row = await dbGet(`
+        const rows = await dbAll(`
             SELECT
-                COUNT(*)                                                            AS total,
-                SUM(CASE WHEN was_correct = ${boolTrue()} THEN 1 ELSE 0 END)       AS correct,
-                ${round('AVG(COALESCE(alpha_1d, actual_next_day_return - benchmark_1d_return))')} AS avg_alpha,
-                ${round('AVG(actual_next_day_return)')}                             AS avg_return,
-                ${round('STDDEV_SAMP(actual_next_day_return)')}                     AS std_return,
-                ${round('STDDEV_SAMP(actual_next_day_return * 1.0)')}               AS volatility_raw,
-                ${round('STDDEV_SAMP(CASE WHEN actual_next_day_return < 0 THEN actual_next_day_return END)')} AS std_neg,
-                SUM(CASE WHEN COALESCE(alpha_1d, actual_next_day_return - benchmark_1d_return) > 0 THEN 1 ELSE 0 END) AS beat_count,
-                ${round('SUM(CASE WHEN actual_next_day_return > 0 THEN actual_next_day_return ELSE 0 END)')} AS gross_profit,
-                ${round('SUM(CASE WHEN actual_next_day_return < 0 THEN ABS(actual_next_day_return) ELSE 0 END)')} AS gross_loss
+                recommendation_date,
+                actual_next_day_return,
+                benchmark_1d_return,
+                alpha_1d,
+                was_correct,
+                round_trip_cost_egp,
+                position_value_egp
             FROM trade_recommendations
             WHERE was_correct IS NOT NULL
-            AND ${live}
-            AND ${dw}
+            AND ${liveFilter()}
+            AND ${dateWindow(days)}
+            ORDER BY recommendation_date ASC
         `);
-        if (!row || !parseInt(row.total)) return null;
+        if (!rows.length) return null;
 
-        const total   = parseInt(row.total);
-        const correct = parseInt(row.correct) || 0;
-        const alpha   = parseFloat(row.avg_alpha) || 0;
-        const ret     = parseFloat(row.avg_return) || 0;
-        const std     = parseFloat(row.std_return)     || 0;
-        const volRaw  = parseFloat(row.volatility_raw) || 0;
-        const stdNeg  = parseFloat(row.std_neg)        || 0;
-        const beatCnt = parseInt(row.beat_count)   || 0;
-        const grossP  = parseFloat(row.gross_profit) || 0;
-        const grossL  = parseFloat(row.gross_loss)   || 0;
+        const total = rows.length;
+        const correct = rows.filter(r => r.was_correct === true || r.was_correct === 1 || r.was_correct === 't').length;
+
+        const returnsGross = rows.map(r => toNum(r.actual_next_day_return));
+        const bench = rows.map(r => toNum(r.benchmark_1d_return));
+        const costsPct = rows.map(perTradeCostPct);
+        const returnsNet = returnsGross.map((r, i) => r - costsPct[i]);
+
+        const alphaGross = rows.map((r, i) =>
+            r.alpha_1d == null ? (returnsGross[i] - bench[i]) : toNum(r.alpha_1d)
+        );
+        const alphaNet = returnsNet.map((r, i) => r - bench[i]);
 
         const cbeDailyRf = Math.pow(1.2725, 1 / 247) - 1;
-        const dailyRet   = ret / 100;
-        const dailyStd   = std / 100;
-        const dailyStdN  = stdNeg / 100;
-        const sharpe     = dailyStd  > 0 ? ((dailyRet - cbeDailyRf) / dailyStd)  * Math.sqrt(247) : 0;
-        const sortino    = dailyStdN > 0 ? ((dailyRet - cbeDailyRf) / dailyStdN) * Math.sqrt(247) : 0;
-        const profitFactor = grossL > 0 ? parseFloat((grossP / grossL).toFixed(4)) : (grossP > 0 ? 9.99 : null);
-        const beatPct    = total > 0 ? parseFloat(((beatCnt / total) * 100).toFixed(1)) : 0;
+        const calcSharpe = arr => {
+            const m = mean(arr), s = stdev(arr);
+            if (s <= 0) return 0;
+            return ((m / 100) - cbeDailyRf) / (s / 100) * Math.sqrt(247);
+        };
+        const calcSortino = arr => {
+            const m = mean(arr);
+            const downside = arr.filter(v => v < 0);
+            if (!downside.length) return 99.9;
+            const ds = stdev(downside);
+            if (ds <= 0) return 99.9;
+            return ((m / 100) - cbeDailyRf) / (ds / 100) * Math.sqrt(247);
+        };
+        const calcVol = arr => {
+            const s = stdev(arr);
+            return s > 0 ? (s / 100) * Math.sqrt(247) : 0;
+        };
 
-        // Max drawdown via cumulative P&L (PostgreSQL only)
-        let maxDD = null;
-        if (isPostgres) {
-            try {
-                const ddRow = await dbGet(`
-                    WITH cumul AS (
-                        SELECT SUM(actual_next_day_return)
-                               OVER (ORDER BY recommendation_date ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cum
-                        FROM trade_recommendations
-                        WHERE was_correct IS NOT NULL AND ${live} AND ${dw}
-                    ),
-                    peaks AS (
-                        SELECT cum, MAX(cum) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS peak
-                        FROM cumul
-                    )
-                    SELECT ${round('MIN(cum - peak)')} AS max_dd FROM peaks
-                `);
-                if (ddRow && ddRow.max_dd != null) maxDD = parseFloat(Math.abs(parseFloat(ddRow.max_dd)).toFixed(2));
-            } catch (_) {}
-        }
+        const beatNet = alphaNet.filter(a => a > 0).length;
+        const beatGross = alphaGross.filter(a => a > 0).length;
 
-        // Annualised volatility (std_dev of daily returns Ã— âˆš247) as decimal e.g. 0.142
-        const volatility = volRaw > 0 ? parseFloat(((volRaw / 100) * Math.sqrt(247)).toFixed(4)) : null;
+        const pfNet = calcProfitFactor(returnsNet);
+        const pfGross = calcProfitFactor(returnsGross);
+        const mddNet = calcMaxDrawdownAbs(returnsNet);
+        const mddGross = calcMaxDrawdownAbs(returnsGross);
 
         return {
-            total_signals:        total,
-            directional_accuracy: total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
-            alpha_vs_egx30:       parseFloat(alpha.toFixed(4)),
-            avg_return_1d:        parseFloat(ret.toFixed(4)),
-            avg_alpha_1d:         parseFloat(alpha.toFixed(4)),
-            sharpe_ratio:         parseFloat(sharpe.toFixed(2)),
-            sortino_ratio:        parseFloat(sortino.toFixed(2)),
-            beat_benchmark_pct:   beatPct,
-            profit_factor:        profitFactor,
-            max_drawdown:         maxDD,
-            volatility:           volatility,
+            reporting_basis:       'net_of_transaction_costs',
+            total_signals:         total,
+            directional_accuracy:  total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
+
+            // Primary (net)
+            alpha_vs_egx30:        parseFloat(mean(alphaNet).toFixed(4)),
+            avg_return_1d:         parseFloat(mean(returnsNet).toFixed(4)),
+            avg_alpha_1d:          parseFloat(mean(alphaNet).toFixed(4)),
+            sharpe_ratio:          parseFloat(calcSharpe(returnsNet).toFixed(2)),
+            sortino_ratio:         parseFloat(calcSortino(returnsNet).toFixed(2)),
+            beat_benchmark_pct:    total > 0 ? parseFloat(((beatNet / total) * 100).toFixed(1)) : 0,
+            profit_factor:         pfNet == null ? null : parseFloat(pfNet.toFixed(4)),
+            max_drawdown:          parseFloat(mddNet.toFixed(2)),
+            volatility:            parseFloat(calcVol(returnsNet).toFixed(4)),
+            avg_cost_per_trade_pct: parseFloat(mean(costsPct).toFixed(4)),
+            cost_drag_total_pct:   parseFloat(costsPct.reduce((a, b) => a + b, 0).toFixed(2)),
+
+            // Secondary (gross)
+            alpha_vs_egx30_gross:  parseFloat(mean(alphaGross).toFixed(4)),
+            avg_return_1d_gross:   parseFloat(mean(returnsGross).toFixed(4)),
+            avg_alpha_1d_gross:    parseFloat(mean(alphaGross).toFixed(4)),
+            sharpe_ratio_gross:    parseFloat(calcSharpe(returnsGross).toFixed(2)),
+            sortino_ratio_gross:   parseFloat(calcSortino(returnsGross).toFixed(2)),
+            beat_benchmark_pct_gross: total > 0 ? parseFloat(((beatGross / total) * 100).toFixed(1)) : 0,
+            profit_factor_gross:   pfGross == null ? null : parseFloat(pfGross.toFixed(4)),
+            max_drawdown_gross:    parseFloat(mddGross.toFixed(2)),
+            volatility_gross:      parseFloat(calcVol(returnsGross).toFixed(4)),
         };
     } catch (e) {
         console.error('[track-record] kpiForWindow error:', e);
@@ -226,6 +287,7 @@ router.get('/summary', async (req, res) => {
         return res.json({
             platform:             'Xmore2',
             description:          'Market Intelligence for the Egyptian Exchange',
+            reporting_basis:      'net_of_transaction_costs',
             live_since:           counts?.live_since || null,
             last_updated:         lastUpdated || null,
             total_live_signals:   liveCount,
@@ -244,7 +306,7 @@ router.get('/summary', async (req, res) => {
                 simulated_signals_included: simCount,
                 metrics_basis:              'live_and_simulated',
                 earliest_signal_date:       counts?.live_since || null,
-                note:                       'Simulated rows are clearly tagged SIM in the prediction log.',
+                note:                       'Primary KPIs are net of transaction costs. Simulated rows are clearly tagged SIM in the prediction log.',
             },
         });
     } catch (err) {
@@ -264,7 +326,8 @@ router.get('/equity-curve', async (req, res) => {
         const rows = await dbAll(`
             SELECT
                 recommendation_date AS date,
-                ${round('AVG(actual_next_day_return)')} AS xmore,
+                ${round('AVG(actual_next_day_return)')} AS xmore_gross,
+                ${round(`AVG(${costPctSql()})`)} AS avg_cost_pct,
                 ${round('AVG(benchmark_1d_return)')}    AS egx30
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
@@ -274,15 +337,21 @@ router.get('/equity-curve', async (req, res) => {
             ORDER BY recommendation_date ASC
         `);
 
-        let xmoreCum = 0, egx30Cum = 0;
+        let xmoreCum = 0, xmoreCumGross = 0, egx30Cum = 0;
         const series = rows.map(r => {
-            xmoreCum += parseFloat(r.xmore) || 0;
+            const gross = parseFloat(r.xmore_gross) || 0;
+            const cost = parseFloat(r.avg_cost_pct) || 0;
+            const net = gross - cost;
+            xmoreCum += net;
+            xmoreCumGross += gross;
             egx30Cum += parseFloat(r.egx30) || 0;
             return {
                 date:  r.date,
                 xmore: Math.round(xmoreCum * 100) / 100,
+                xmore_gross: Math.round(xmoreCumGross * 100) / 100,
                 egx30: Math.round(egx30Cum * 100) / 100,
                 alpha: Math.round((xmoreCum - egx30Cum) * 100) / 100,
+                alpha_gross: Math.round((xmoreCumGross - egx30Cum) * 100) / 100,
             };
         });
 
@@ -294,15 +363,28 @@ router.get('/equity-curve', async (req, res) => {
         });
 
         return res.json({
+            reporting_basis: 'net_of_transaction_costs',
             days,
             series,
             drawdown_series,
             total_xmore: series.length ? series[series.length - 1].xmore : 0,
+            total_xmore_gross: series.length ? series[series.length - 1].xmore_gross : 0,
             total_egx30: series.length ? series[series.length - 1].egx30 : 0,
             total_alpha: series.length ? series[series.length - 1].alpha : 0,
+            total_alpha_gross: series.length ? series[series.length - 1].alpha_gross : 0,
         });
     } catch (err) {
-        if (isTableMissing(err)) return res.json({ days: 90, series: [], drawdown_series: [], total_xmore: 0, total_egx30: 0, total_alpha: 0 });
+        if (isTableMissing(err)) return res.json({
+            reporting_basis: 'net_of_transaction_costs',
+            days: 90,
+            series: [],
+            drawdown_series: [],
+            total_xmore: 0,
+            total_xmore_gross: 0,
+            total_egx30: 0,
+            total_alpha: 0,
+            total_alpha_gross: 0
+        });
         console.error('[track-record] /equity-curve error:', err);
         res.status(500).json({ error: 'Failed to load equity curve.' });
     }
@@ -357,12 +439,15 @@ router.get('/top-stocks', async (req, res) => {
                 ${isPostgres ? 's.name_en, s.sector_en' : "tr.symbol AS name_en, '' AS sector_en"},
                 COUNT(*)   AS signal_count,
                 SUM(CASE WHEN tr.was_correct = ${boolTrue()} THEN 1 ELSE 0 END) AS correct,
-                ${round('AVG(tr.alpha_1d)')}                AS avg_alpha,
-                ${round('AVG(tr.actual_next_day_return)')}  AS avg_return,
+                ${round(`AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')}))`)} AS avg_alpha,
+                ${round(`AVG(tr.actual_next_day_return - (${costPctSql('tr')}))`)}  AS avg_return,
+                ${round('AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return))')} AS avg_alpha_gross,
+                ${round('AVG(tr.actual_next_day_return)')}  AS avg_return_gross,
                 ${isPostgres
-                    ? `ROUND(MAX(tr.actual_next_day_return)::numeric, 4)`
-                    : `ROUND(MAX(tr.actual_next_day_return), 4)`
+                    ? `ROUND(MAX((tr.actual_next_day_return - (${costPctSql('tr')})))::numeric, 4)`
+                    : `ROUND(MAX((tr.actual_next_day_return - (${costPctSql('tr')}))), 4)`
                 }                                            AS best_return,
+                ${round('MAX(tr.actual_next_day_return)')}   AS best_return_gross,
                 ${isPostgres
                     ? `ROUND((SUM(CASE WHEN tr.was_correct = TRUE THEN 1 ELSE 0 END))::numeric / NULLIF(COUNT(*), 0) * 100, 1)`
                     : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 1)`
@@ -384,9 +469,15 @@ router.get('/top-stocks', async (req, res) => {
             signal_count:         parseInt(r.signal_count) || 0,
             directional_accuracy: parseInt(r.signal_count) > 0
                 ? parseFloat(((parseInt(r.correct) || 0) / parseInt(r.signal_count)).toFixed(4)) : 0,
+            alpha_avg_net:        parseFloat(r.avg_alpha) || 0,
             alpha_avg:            parseFloat(r.avg_alpha) || 0,
+            avg_return_net:       parseFloat(r.avg_return) || 0,
             avg_return:           parseFloat(r.avg_return) || 0,
+            alpha_avg_gross:      parseFloat(r.avg_alpha_gross) || 0,
+            avg_return_gross:     parseFloat(r.avg_return_gross) || 0,
+            best_signal_return_net: parseFloat(r.best_return) || 0,
             best_signal_return:   parseFloat(r.best_return) || 0,
+            best_signal_return_gross: parseFloat(r.best_return_gross) || 0,
             win_rate:             parseFloat(r.win_rate) || 0,
         });
 
@@ -403,6 +494,7 @@ router.get('/top-stocks', async (req, res) => {
             .sort((a, b) => b.avg_alpha - a.avg_alpha);
 
         return res.json({
+            reporting_basis:  'net_of_transaction_costs',
             period_days:      days,
             top_by_alpha:     rows.slice(0, limit).map(map),
             bottom_by_alpha:  [...rows].sort((a, b) => (parseFloat(a.avg_alpha) || 0) - (parseFloat(b.avg_alpha) || 0)).slice(0, limit).map(map),
@@ -706,8 +798,10 @@ router.get('/sector-accuracy', async (req, res) => {
                SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
                         WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
                         ELSE 0 END) AS win_count,
-               ${round('AVG(tr.actual_next_day_return)')} AS avg_return,
-               ${round('AVG(tr.alpha_1d)')} AS avg_alpha
+               ${round(`AVG(tr.actual_next_day_return - (${costPctSql('tr')}))`)} AS avg_return,
+               ${round(`AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')}))`)} AS avg_alpha,
+               ${round('AVG(tr.actual_next_day_return)')} AS avg_return_gross,
+               ${round('AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return))')} AS avg_alpha_gross
         FROM trade_recommendations tr
         LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol
         WHERE tr.recommendation_date >= NOW() - INTERVAL '${days} days'
@@ -725,8 +819,10 @@ router.get('/sector-accuracy', async (req, res) => {
                SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
                         WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
                         ELSE 0 END) AS win_count,
-               ROUND(AVG(tr.actual_next_day_return),4) AS avg_return,
-               ROUND(AVG(tr.alpha_1d),4) AS avg_alpha
+               ROUND(AVG(tr.actual_next_day_return - (${costPctSql('tr')})),4) AS avg_return,
+               ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')})),4) AS avg_alpha,
+               ROUND(AVG(tr.actual_next_day_return),4) AS avg_return_gross,
+               ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return)),4) AS avg_alpha_gross
         FROM trade_recommendations tr
         LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol
         WHERE tr.recommendation_date >= date('now', '-${days} days')
@@ -739,12 +835,15 @@ router.get('/sector-accuracy', async (req, res) => {
       `);
     }
     res.json(rows.map(r => ({
+      reporting_basis: 'net_of_transaction_costs',
       sector:       r.sector,
       signal_count: parseInt(r.signal_count) || 0,
       win_count:    parseInt(r.win_count)    || 0,
       win_rate:     r.signal_count > 0 ? parseFloat((r.win_count / r.signal_count).toFixed(4)) : 0,
       avg_return:   parseFloat(r.avg_return) || 0,
       avg_alpha:    parseFloat(r.avg_alpha)  || 0,
+      avg_return_gross: parseFloat(r.avg_return_gross) || 0,
+      avg_alpha_gross:  parseFloat(r.avg_alpha_gross)  || 0,
     })));
   } catch (err) {
     if (isTableMissing(err)) return res.json([]);
@@ -768,8 +867,10 @@ router.get('/regime-stats', async (req, res) => {
                SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
                         WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
                         ELSE 0 END) AS win_count,
-               ${round('AVG(tr.actual_next_day_return)')} AS avg_return,
-               ${round('AVG(tr.alpha_1d)')} AS avg_alpha
+               ${round(`AVG(tr.actual_next_day_return - (${costPctSql('tr')}))`)} AS avg_return,
+               ${round(`AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')}))`)} AS avg_alpha,
+               ${round('AVG(tr.actual_next_day_return)')} AS avg_return_gross,
+               ${round('AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return))')} AS avg_alpha_gross
         FROM trade_recommendations tr
         LEFT JOIN regime_log rl ON rl.date = tr.recommendation_date
         WHERE tr.action IN ('BUY','SELL')
@@ -784,8 +885,10 @@ router.get('/regime-stats', async (req, res) => {
                SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
                         WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
                         ELSE 0 END) AS win_count,
-               ROUND(AVG(tr.actual_next_day_return),4) AS avg_return,
-               ROUND(AVG(tr.alpha_1d),4) AS avg_alpha
+               ROUND(AVG(tr.actual_next_day_return - (${costPctSql('tr')})),4) AS avg_return,
+               ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')})),4) AS avg_alpha,
+               ROUND(AVG(tr.actual_next_day_return),4) AS avg_return_gross,
+               ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return)),4) AS avg_alpha_gross
         FROM trade_recommendations tr
         LEFT JOIN regime_log rl ON rl.date = tr.recommendation_date
         WHERE tr.action IN ('BUY','SELL')
@@ -795,12 +898,15 @@ router.get('/regime-stats', async (req, res) => {
       `);
     }
     res.json(rows.map(r => ({
+      reporting_basis: 'net_of_transaction_costs',
       regime:       r.regime,
       signal_count: parseInt(r.signal_count) || 0,
       win_count:    parseInt(r.win_count)    || 0,
       win_rate:     r.signal_count > 0 ? parseFloat((r.win_count / r.signal_count).toFixed(4)) : 0,
       avg_return:   parseFloat(r.avg_return) || 0,
       avg_alpha:    parseFloat(r.avg_alpha)  || 0,
+      avg_return_gross: parseFloat(r.avg_return_gross) || 0,
+      avg_alpha_gross:  parseFloat(r.avg_alpha_gross)  || 0,
     })));
   } catch (err) {
     if (isTableMissing(err)) return res.json([]);

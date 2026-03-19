@@ -3,7 +3,7 @@
 ## Project Overview
 Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
 
-**Last Updated**: February 18, 2026
+**Last Updated**: March 19, 2026
 
 ## Deployment Architecture
 - **Render.com** - Hosts web dashboard + PostgreSQL database
@@ -582,3 +582,60 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - Verified /api/intelligence/quality returns overall_status, freshness, and drift.
 - Verified /api/rag/chat returns retrieval_meta.resolved_entities and sources on a live request.
 - Validation also found and fixed pre-existing syntax errors in web-ui/public/performance-dashboard.js; npm run check now passes locally.
+
+## Mar 19, 2026 - Financial Audit Follow-Through
+- `run_agents.py`
+  - Kelly sizing now runs on BUY recommendations before execution realism via `apply_kelly_sizing(...)`.
+  - stored recommendation rows now persist execution/sizing fields when schema columns exist:
+    - `realistic_fill_price`
+    - `position_value_egp`
+    - `round_trip_cost_egp`
+    - `edge_ratio`
+    - `split_required`
+    - `realistic_stop_price`
+    - `execution_approved`
+    - `position_size_pct`
+    - `volatility_position_pct`
+    - `kelly_position_pct`
+    - `shares_requested`
+    - `shares_expected`
+    - `position_sizing_mode`
+  - trade recommendation column introspection cache now avoids permanently caching an empty result set.
+- `engines/execution_agent.py`
+  - live sizing now blends volatility-based sizing with upstream Kelly sizing using `position_sizing_mode` values:
+    - `volatility_only`
+    - `kelly_overlay`
+- `engines/kelly_allocator.py`
+  - allocator now uses resolved live BUY performance rows as the learning basis.
+  - symbol-specific stats fall back to global BUY stats when sample size is thin.
+  - allocation flooring was tightened so post-floor normalization does not exceed `MAX_TOTAL_EXPOSURE`.
+- Backtest realism upgraded:
+  - new helper `engines/backtest_friction.py`
+  - `engines/backtest.py` and `engines/walk_forward_backtest.py` now use slippage-aware, fill-aware, transaction-cost-aware directional returns instead of only flat cost drag.
+  - stored per-trade friction fields include:
+    - `gross_direction_return_pct`
+    - `net_direction_return_pct`
+    - `fill_ratio`
+    - `slippage_drag_pct`
+    - `transaction_cost_pct`
+- Public performance publication standard updated:
+  - `web-ui/routes/performance.js` now reports net-of-transaction-cost metrics as primary and keeps gross metrics as secondary context.
+  - `web-ui/routes/track-record.js` now reports summary, equity curve, top-stocks, sector, and regime outputs on a net-first basis with gross secondary fields.
+  - `web-ui/public/track-record.js` copy now explicitly describes Sharpe, alpha, profit factor, volatility, and return metrics as net-of-cost metrics.
+- Schema/bootstrap coverage added:
+  - `database.py`
+  - `web-ui/init-db.js`
+  - `migrations/add_execution_realism_columns.sql`
+  - all now include execution realism and Kelly sizing columns listed above.
+- Dashboard audit widget compatibility fixed in `dashboard.py`:
+  - execution filter stats now read `total`, `approved`, `blocked_by_edge`, and `split_required`
+  - profitability display handles both fraction and percent style inputs safely.
+- Verification run completed locally:
+  - `python -m py_compile run_agents.py engines/execution_agent.py engines/kelly_allocator.py engines/portfolio_rebalancer.py engines/backtest_friction.py engines/backtest.py engines/walk_forward_backtest.py database.py dashboard.py`
+  - `node --check web-ui/routes/performance.js`
+  - `node --check web-ui/routes/track-record.js`
+  - `node --check web-ui/public/track-record.js`
+  - `node --check web-ui/init-db.js`
+  - `python -m pytest tests/test_execution_realism.py -q` -> `12 passed`
+- Remaining audit gap:
+  - backtests are now materially friction-aware, but they still do not simulate the full stop-loss lifecycle with explicit gap-through-stop execution behavior end-to-end.

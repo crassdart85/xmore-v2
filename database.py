@@ -526,6 +526,24 @@ def create_tables():
         for col_name, col_type in session_columns:
             _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
 
+        execution_columns = [
+            ("realistic_fill_price", "REAL"),
+            ("position_value_egp", "REAL"),
+            ("round_trip_cost_egp", "REAL"),
+            ("edge_ratio", "REAL"),
+            ("split_required", f"{bool_default}"),
+            ("realistic_stop_price", "REAL"),
+            ("execution_approved", f"{bool_default}"),
+            ("volatility_position_pct", "REAL"),
+            ("kelly_position_pct", "REAL"),
+            ("position_size_pct", "REAL"),
+            ("shares_requested", "INTEGER"),
+            ("shares_expected", "INTEGER"),
+            ("position_sizing_mode", "TEXT"),
+        ]
+        for col_name, col_type in execution_columns:
+            _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
+
         # Add benchmark + quantity columns to user_positions
         position_columns = [
             ("benchmark_return_pct", "REAL"),

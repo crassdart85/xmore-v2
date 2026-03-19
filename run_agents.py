@@ -1349,6 +1349,49 @@ def store_trade_recommendation(user_id, rec, trading_date):
         else:
             cursor.execute(query_sqlite, params)
 
+        # Best-effort persistence of execution/sizing fields when optional columns exist.
+        trade_cols = _get_trade_rec_columns(conn)
+        optional_map = {
+            "realistic_fill_price": "realistic_fill_price",
+            "position_value_egp": "position_value_egp",
+            "round_trip_cost_egp": "round_trip_cost_egp",
+            "edge_ratio": "edge_ratio",
+            "split_required": "split_required",
+            "realistic_stop_price": "realistic_stop_price",
+            "execution_approved": "execution_approved",
+            "position_size_pct": "position_size_pct",
+            "volatility_position_pct": "volatility_position_pct",
+            "kelly_position_pct": "kelly_position_pct",
+            "shares_requested": "shares_requested",
+            "shares_expected": "shares_expected",
+            "position_sizing_mode": "position_sizing_mode",
+        }
+        updates = {}
+        for col, key in optional_map.items():
+            if col not in trade_cols:
+                continue
+            if key not in rec:
+                continue
+            value = rec.get(key)
+            if value is None:
+                continue
+            if col in {"split_required", "execution_approved"} and not os.getenv("DATABASE_URL"):
+                value = 1 if bool(value) else 0
+            updates[col] = value
+
+        if updates:
+            ph = "%s" if os.getenv("DATABASE_URL") else "?"
+            set_clause = ", ".join([f"{col} = {ph}" for col in updates.keys()])
+            sql = (
+                f"UPDATE trade_recommendations "
+                f"SET {set_clause}, updated_at = CURRENT_TIMESTAMP "
+                f"WHERE user_id = {ph} AND symbol = {ph} AND recommendation_date = {ph}"
+            )
+            cursor.execute(
+                sql,
+                (*updates.values(), user_id, rec["symbol"], trading_date),
+            )
+
 from engines.trade_recommender import (
     generate_recommendation,
     score_recommendation_priority,
@@ -1460,6 +1503,102 @@ try:
 except Exception as _er_err:
     logger.warning(f"Execution realism layer not available: {_er_err}")
     _EXECUTION_REALISM_ENABLED = False
+
+try:
+    from engines.kelly_allocator import KellyAllocator
+    from engines.portfolio_rebalancer import PortfolioRebalancer
+    _KELLY_SIZING_ENABLED = True
+except Exception as _kelly_err:
+    logger.warning(f"Kelly sizing layer not available: {_kelly_err}")
+    _KELLY_SIZING_ENABLED = False
+
+_TRADE_REC_COLUMNS_CACHE = {}
+
+
+def _get_trade_rec_columns(conn) -> set:
+    """Return cached set of trade_recommendations columns for current backend."""
+    backend = "pg" if os.getenv("DATABASE_URL") else "sqlite"
+    cached = _TRADE_REC_COLUMNS_CACHE.get(backend)
+    if cached:
+        return cached
+
+    cols = set()
+    try:
+        cursor = conn.cursor()
+        if os.getenv("DATABASE_URL"):
+            cursor.execute("""
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'trade_recommendations'
+            """)
+            rows = cursor.fetchall() or []
+            for row in rows:
+                if isinstance(row, dict):
+                    col = row.get("column_name")
+                else:
+                    col = row[0] if row else None
+                if col:
+                    cols.add(str(col))
+        else:
+            cursor.execute("PRAGMA table_info(trade_recommendations)")
+            rows = cursor.fetchall() or []
+            for row in rows:
+                if isinstance(row, dict):
+                    col = row.get("name")
+                else:
+                    col = row[1] if len(row) > 1 else None
+                if col:
+                    cols.add(str(col))
+    except Exception as e:
+        logger.debug(f"Could not read trade_recommendations columns: {e}")
+
+    if cols:
+        _TRADE_REC_COLUMNS_CACHE[backend] = cols
+    return cols
+
+
+def apply_kelly_sizing(recs: list, conn) -> list:
+    """
+    Apply Kelly allocations to BUY recommendations, then concentration rebalance.
+    Writes sizing to rec['kelly_position_pct'] and rec['position_size_pct'].
+    """
+    if not _KELLY_SIZING_ENABLED or not recs:
+        return recs
+
+    buy_recs = [r for r in recs if (r.get("action") or "").upper() == "BUY"]
+    if not buy_recs:
+        return recs
+
+    try:
+        allocator = KellyAllocator(conn)
+        allocator.allocate(buy_recs)
+
+        # Enforce stock/sector caps after Kelly sizing.
+        rebalancer = PortfolioRebalancer()
+        rebalancer.rebalance(buy_recs)
+
+        for rec in buy_recs:
+            kelly_pct = rec.get("kelly_position_pct")
+            try:
+                kelly_pct = float(kelly_pct) if kelly_pct is not None else None
+            except Exception:
+                kelly_pct = None
+            if kelly_pct is None:
+                continue
+            rec["kelly_position_pct"] = round(kelly_pct, 4)
+            rec["position_size_pct"] = round(kelly_pct, 4)
+            rec["position_sizing_mode"] = "kelly_pre_exec"
+
+        total_alloc = sum(float(r.get("kelly_position_pct") or 0) for r in buy_recs)
+        logger.info(
+            "  [KELLY] applied to %d BUY signal(s), combined pre-exec allocation %.1f%%",
+            len(buy_recs),
+            total_alloc * 100.0,
+        )
+    except Exception as e:
+        logger.warning(f"Kelly sizing skipped: {e}")
+
+    return recs
 
 
 def _log_blocked_signal(signal: dict, conn, regime_info: str = ""):
@@ -1573,6 +1712,7 @@ def apply_execution_realism(
             "expected_return_pct": (rec.get("target_pct") or 0) / 100,
             "stop_loss_pct":       (rec.get("stop_loss_pct") or 0) / 100,
             "consensus_score":     rec.get("confidence") or 0,
+            "kelly_position_pct":  rec.get("kelly_position_pct"),
         }
 
         result = exec_agent.evaluate_signal(signal, market_data)
@@ -1585,11 +1725,17 @@ def apply_execution_realism(
                 "edge_ratio":           result["edge_ratio"],
                 "split_required":       result["split_required"],
                 "realistic_stop_price": result["realistic_stop_price"],
+                "shares_requested":     result["shares_requested"],
+                "shares_expected":      result["shares_expected"],
+                "position_size_pct":    result["position_size_pct"],
+                "volatility_position_pct": result.get("volatility_position_pct"),
+                "kelly_position_pct":   result.get("kelly_position_pct"),
+                "position_sizing_mode": result.get("position_sizing_mode", "volatility_only"),
                 "execution_approved":   True,
             })
             logger.info(
                 f"  [APPROVED] {rec.get('symbol')} fill={result['realistic_fill_price']:.4f} "
-                f"edge={result['edge_ratio']}x"
+                f"edge={result['edge_ratio']}x size={result.get('position_size_pct', 0)*100:.1f}%"
             )
             approved.append(rec)
         else:
@@ -1918,6 +2064,9 @@ def generate_daily_trade_recommendations(trading_date):
             
             # Sort
             user_recs.sort(key=lambda r: r["priority"], reverse=True)
+
+            # Kelly sizing overlay (pre-execution): only affects BUY recommendations.
+            user_recs = apply_kelly_sizing(user_recs, conn)
 
             # ── Execution realism gate ─────────────────────────────────────
             user_recs = apply_execution_realism(user_recs, conn)

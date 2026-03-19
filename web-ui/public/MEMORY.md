@@ -167,3 +167,36 @@ Stock trading prediction system with web dashboard. Uses multiple signal engines
 - Verified /api/rag/chat returns retrieval_meta.resolved_entities and sources on a live request.
 - Validation also found and fixed pre-existing syntax errors in web-ui/public/performance-dashboard.js; npm run check now passes locally.
 
+## Mar 19, 2026 - Net Reporting + Audit Follow-Through
+- `routes/performance.js`
+  - all primary published metrics are now net of transaction costs.
+  - gross metrics remain available as explicit secondary fields.
+  - summary/institutional/equity-curve responses now declare `reporting_basis: 'net_of_transaction_costs'`.
+  - added/standardized cost transparency fields such as:
+    - `avg_cost_per_trade_pct`
+    - `cost_drag_total_pct`
+- `routes/track-record.js`
+  - summary windows now compute alpha, return, Sharpe, Sortino, volatility, max drawdown, and profit factor on a net basis first.
+  - equity curve now publishes `xmore` as net cumulative return and `xmore_gross` as secondary context.
+  - top-stocks, sector-accuracy, and regime-stats now return net-first averages with gross companion fields.
+- `public/track-record.js`
+  - KPI and risk-copy text now explicitly describes public metrics as net-of-transaction-cost metrics.
+  - English and Arabic risk descriptions were overridden to keep UI wording aligned with the new reporting basis.
+- `init-db.js`
+  - trade recommendation bootstrap now adds execution realism + Kelly sizing columns needed by the public reporting layer:
+    - `realistic_fill_price`
+    - `position_value_egp`
+    - `round_trip_cost_egp`
+    - `edge_ratio`
+    - `split_required`
+    - `realistic_stop_price`
+    - `execution_approved`
+    - `volatility_position_pct`
+    - `kelly_position_pct`
+    - `position_size_pct`
+    - `shares_requested`
+    - `shares_expected`
+    - `position_sizing_mode`
+- UI-facing implication:
+  - track record and performance pages should now be interpreted as net reporting by default, with gross fields only as reference context.
+

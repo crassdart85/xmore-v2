@@ -443,6 +443,11 @@ async function initializeDatabase() {
       ['patterns','TEXT'],
       ['is_live','BOOLEAN DEFAULT FALSE'], ['is_simulated','BOOLEAN DEFAULT FALSE'],
       ['resolved_at','TIMESTAMP'], ['buyhold_1d_return','REAL'], ['model_version','TEXT'],
+      ['realistic_fill_price','REAL'], ['position_value_egp','REAL'], ['round_trip_cost_egp','REAL'],
+      ['edge_ratio','REAL'], ['split_required','BOOLEAN DEFAULT FALSE'], ['realistic_stop_price','REAL'],
+      ['execution_approved','BOOLEAN DEFAULT TRUE'], ['volatility_position_pct','REAL'],
+      ['kelly_position_pct','REAL'], ['position_size_pct','REAL'],
+      ['shares_requested','INTEGER'], ['shares_expected','INTEGER'], ['position_sizing_mode','TEXT'],
     ]) {
       try { await pool.query(`ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS ${col[0]} ${col[1]}`); } catch(_) {}
     }
