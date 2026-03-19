@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="base.css">
-    <title>Xmore — AI Stock Prediction Dashboard</title>
+    <title>Xmore â€” Market Intelligence Dashboard</title>
     <meta name="description"
-        content="Xmore is an AI-powered stock prediction system for the Egyptian Exchange (EGX) and US markets. Live performance tracking, multi-agent consensus signals.">
+        content="Xmore is an market intelligence and signal-ranking system for the Egyptian Exchange (EGX) and US markets. Live performance tracking, multi-agent consensus signals.">
     <link rel="stylesheet" href="style.css?v=20260215a">
     <link rel="stylesheet" href="auth.css?v=20260215a">
     <link rel="stylesheet" href="performance-dashboard.css?v=20260215a">
@@ -23,7 +23,7 @@
 
         <header class="x-topbar x-topbar--dark">
             <h1 class="x-brand">Xmore</h1>
-            <p class="subtitle">AI Stock Prediction Dashboard</p>
+            <p class="subtitle">Market Intelligence Dashboard</p>
             <div class="header-buttons x-actions">
                 <!-- User auth area -->
                 <div id="userInfoBar" class="user-info-bar" style="display:none;">
@@ -31,31 +31,31 @@
                     <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
                 <div id="loginPrompt" class="login-prompt">
-                    <button id="showAuthBtn" class="auth-trigger-btn">🔐 Login / Sign Up</button>
+                    <button id="showAuthBtn" class="auth-trigger-btn">ðŸ” Login / Sign Up</button>
                 </div>
                 <div class="global-search-wrap">
                     <input id="globalSearchInput" class="global-search-input" type="search" placeholder="Search stocks, tabs, or pages..." autocomplete="off" />
                     <div id="globalSearchResults" class="global-search-results" aria-live="polite" hidden></div>
                 </div>
                 <a href="/docs" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Docs</a>
-                <a href="/track-record" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Track Record ↗</a>
+                <a href="/track-record" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Track Record â†—</a>
                 <a href="/session" class="pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Session ?</a>
-                <a href="/pro" class="pro-link-btn header-link-secondary">PRO ↗</a>
+                <a href="/pro" class="pro-link-btn header-link-secondary">PRO â†—</a>
                 <!-- Mobile Menu Button (640px and below) -->
                 <button id="mobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenuDropdown">
-                    <span class="hamburger-icon">☰</span>
+                    <span class="hamburger-icon">â˜°</span>
                 </button>
                 <button id="themeBtn" class="theme-btn" title="Toggle dark mode">
-                    <span class="icon-sun">☀️</span>
-                    <span class="icon-moon">🌙</span>
+                    <span class="icon-sun">â˜€ï¸</span>
+                    <span class="icon-moon">ðŸŒ™</span>
                 </button>
-                <button id="langBtn" class="lang-btn">عربي</button>
+                <button id="langBtn" class="lang-btn">Ø¹Ø±Ø¨ÙŠ</button>
                 <!-- Mobile Menu Dropdown -->
                 <div id="mobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-                    <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
-                    <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
-                    <a href="/session" class="mobile-menu-item" role="menuitem">📌 Session</a>
-                    <a href="/pro" class="mobile-menu-item" role="menuitem">⭐ PRO</a>
+                    <a href="/docs" class="mobile-menu-item" role="menuitem">ðŸ“š Docs</a>
+                    <a href="/track-record" class="mobile-menu-item" role="menuitem">ðŸ“Š Track Record</a>
+                    <a href="/session" class="mobile-menu-item" role="menuitem">ðŸ“Œ Session</a>
+                    <a href="/pro" class="mobile-menu-item" role="menuitem">â­ PRO</a>
                 </div>
             </div>
         </header>
@@ -131,7 +131,7 @@
         <section class="tab-content" id="tab-watchlist" role="tabpanel" aria-labelledby="tabWatchlist">
             <div id="watchlistSection">
                 <div class="watchlist-header">
-                    <h2 id="wlTitle">⭐ My Watchlist</h2>
+                    <h2 id="wlTitle">â­ My Watchlist</h2>
                     <button id="wlAddBtn" class="wl-add-btn">+ Add Stock</button>
                 </div>
                 <p class="section-subtitle" id="watchlistBrief">Track the stocks you care about so the app can personalize signals, briefing, and performance for you.</p>
@@ -151,7 +151,7 @@
         <!-- Tab: Predictions -->
         <section class="tab-content active" id="tab-predictions" role="tabpanel" aria-labelledby="tabPredictions">
             <div class="section-header">
-                <p class="section-subtitle" id="predictionsBrief">Start here: see today's AI signals by stock and scan for bullish, bearish, or neutral direction.</p>
+                <p class="section-subtitle" id="predictionsBrief">Start here: see today's signals by stock and scan for bullish, bearish, or neutral direction.</p>
             </div>
             <div class="search-box">
                 <input type="text" id="predictionsSearch" placeholder="Search by stock symbol or company name..."
@@ -161,9 +161,9 @@
             <div class="screener-bar" id="screenerBar">
                 <select id="screenerSignal" onchange="filterPredictions()" class="screener-select">
                     <option value="">All Signals</option>
-                    <option value="up">↑ Bullish (UP)</option>
-                    <option value="down">↓ Bearish (DOWN)</option>
-                    <option value="hold">— Hold</option>
+                    <option value="up">â†‘ Bullish (UP)</option>
+                    <option value="down">â†“ Bearish (DOWN)</option>
+                    <option value="hold">â€” Hold</option>
                 </select>
                 <select id="screenerConviction" onchange="filterPredictions()" class="screener-select">
                     <option value="">All Conviction</option>
@@ -179,8 +179,8 @@
                     <input type="number" id="screenerMinConf" min="0" max="100" value="0"
                         oninput="filterPredictions()" class="screener-input" placeholder="0">%
                 </label>
-                <button onclick="resetScreener()" class="screener-reset">✕ Reset</button>
-                <button onclick="openComparisonModal()" class="screener-reset" id="compareBtn" style="background:var(--accent);color:#fff;margin-left:auto">⇔ Compare</button>
+                <button onclick="resetScreener()" class="screener-reset">âœ• Reset</button>
+                <button onclick="openComparisonModal()" class="screener-reset" id="compareBtn" style="background:var(--accent);color:#fff;margin-left:auto">â‡” Compare</button>
             </div>
             <div id="predictions" class="scrollable-container">
                 <div class="skeleton-loader">
@@ -304,7 +304,7 @@
         <section class="tab-content" id="tab-briefing" role="tabpanel" aria-labelledby="tabBriefing">
             <div class="section-header">
                 <h2 id="briefingTitle">Daily Market Briefing</h2>
-                <p class="section-subtitle" id="briefingSubtitle">AI-generated market overview and personalized action
+                <p class="section-subtitle" id="briefingSubtitle">Market overview and personalized action
                     items.</p>
                 <p class="section-subtitle" id="briefingBrief">Use this as your daily summary: key market context, priority signals, and suggested next actions.</p>
             </div>
@@ -317,7 +317,7 @@
         <section class="tab-content" id="tab-trades" role="tabpanel" aria-labelledby="tabTrades">
             <div class="section-header">
                 <h2 id="tradesTitle">Today's Recommendations</h2>
-                <p class="section-subtitle" id="tradesSubtitle">AI-generated trade signals for today's market session.
+                <p class="section-subtitle" id="tradesSubtitle">Trade signals for today's market session.
                 </p>
                 <p class="section-subtitle" id="tradesBrief">View executable trade ideas with direction and rationale for the current session.</p>
             </div>
@@ -337,19 +337,19 @@
             <div id="portfolioTotals" class="pf-totals-strip" style="display:none">
                 <div class="pf-total-pill">
                     <span class="pf-total-label" id="ptlCostLabel">Invested</span>
-                    <span class="pf-total-val" id="ptlCost">—</span>
+                    <span class="pf-total-val" id="ptlCost">â€”</span>
                 </div>
                 <div class="pf-total-pill">
                     <span class="pf-total-label" id="ptlValueLabel">Market Value</span>
-                    <span class="pf-total-val" id="ptlValue">—</span>
+                    <span class="pf-total-val" id="ptlValue">â€”</span>
                 </div>
                 <div class="pf-total-pill">
                     <span class="pf-total-label" id="ptlPnlLabel">P&amp;L</span>
-                    <span class="pf-total-val" id="ptlPnl">—</span>
+                    <span class="pf-total-val" id="ptlPnl">â€”</span>
                 </div>
                 <div class="pf-total-pill">
                     <span class="pf-total-label" id="ptlRetLabel">Return</span>
-                    <span class="pf-total-val" id="ptlRet">—</span>
+                    <span class="pf-total-val" id="ptlRet">â€”</span>
                 </div>
             </div>
 
@@ -381,8 +381,8 @@
                 <div class="alerts-add-row">
                     <input type="text" id="alertSymbol" placeholder="Symbol e.g. COMI.CA" class="screener-input" style="width:130px">
                     <select id="alertCondition" class="screener-select">
-                        <option value="above" id="alertAbove">Above ↑</option>
-                        <option value="below" id="alertBelow">Below ↓</option>
+                        <option value="above" id="alertAbove">Above â†‘</option>
+                        <option value="below" id="alertBelow">Below â†“</option>
                     </select>
                     <input type="number" id="alertPrice" placeholder="Target price" class="screener-input" style="width:120px" min="0" step="0.01">
                     <button class="screener-reset" id="alertAddBtn" onclick="addPriceAlert()">+ Add Alert</button>
@@ -416,7 +416,7 @@
                         <label>Stocks <span class="fc-max-hint">(select up to 20)</span></label>
                         <div id="pfSelectedTags" class="fc-selected-tags"></div>
                         <div class="fc-symbol-wrapper">
-                            <input type="text" id="pfSymbolSearch" placeholder="Search and add stocks…" autocomplete="off" class="fc-symbol-search">
+                            <input type="text" id="pfSymbolSearch" placeholder="Search and add stocksâ€¦" autocomplete="off" class="fc-symbol-search">
                             <div id="pfSymbolDropdown" class="fc-symbol-dropdown" style="display:none"></div>
                         </div>
                         <div class="fc-selection-counter"><span id="pfSelectionCount">0</span>/20 selected</div>
@@ -478,12 +478,12 @@
             <!-- Past / Future sub-tabs -->
             <div class="tm-subtab-row" role="tablist">
                 <button class="tm-subtab-btn tm-subtab-active" id="tmSubPast" role="tab"
-                    aria-selected="true" aria-controls="tmTabPast" data-translate="tmSubPastLabel">⏮ Past</button>
+                    aria-selected="true" aria-controls="tmTabPast" data-translate="tmSubPastLabel">â® Past</button>
                 <button class="tm-subtab-btn" id="tmSubFuture" role="tab"
-                    aria-selected="false" aria-controls="tmTabFuture" data-translate="tmSubFutureLabel">⏭ Future</button>
+                    aria-selected="false" aria-controls="tmTabFuture" data-translate="tmSubFutureLabel">â­ Future</button>
             </div>
 
-            <!-- ═══ PAST TAB ═══════════════════════════════════════════════ -->
+            <!-- â•â•â• PAST TAB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <div id="tmTabPast">
 
             <!-- Input Form -->
@@ -516,7 +516,7 @@
                     </div>
 
                     <button id="tmSimulateBtn" class="tm-simulate-btn" data-translate="tmSimulate">Simulate</button>
-                    <p class="tm-loading-warning" data-translate="tmLoadingWarning">This may take 30–60 seconds while we fetch live market data.</p>
+                    <p class="tm-loading-warning" data-translate="tmLoadingWarning">This may take 30â€“60 seconds while we fetch live market data.</p>
                 </div>
             </div>
 
@@ -609,12 +609,12 @@
                 <div class="tm-spinner"></div>
                 <p data-translate="tmCalculating">Traveling through time...</p>
                 <p class="tm-loading-sub" data-translate="tmAnalyzing">Fetching live market data &amp; running simulation</p>
-                <p class="tm-loading-warn" data-translate="tmLoadingWarning">This may take 30–60 seconds.</p>
+                <p class="tm-loading-warn" data-translate="tmLoadingWarning">This may take 30â€“60 seconds.</p>
             </div>
 
             </div><!-- /tmTabPast -->
 
-            <!-- ═══ FUTURE TAB ════════════════════════════════════════════ -->
+            <!-- â•â•â• FUTURE TAB â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
             <div id="tmTabFuture" style="display:none">
 
             <div class="tm-input-card">
@@ -626,12 +626,12 @@
                     <!-- Mode toggle -->
                     <div class="fc-mode-toggle" role="group" aria-label="Forecast mode">
                         <button class="fc-mode-btn fc-mode-active" id="fcModeAuto">
-                            <span class="fc-mode-name" data-translate="fcModeAuto">🤖 AI picks for me</span>
+                            <span class="fc-mode-name" data-translate="fcModeAuto">ðŸ¤– Automatic picks</span>
                             <span class="fc-mode-desc" data-translate="fcModeAutoDesc">Auto-selects the best EGX30 stock for your date</span>
                         </button>
                         <button class="fc-mode-btn" id="fcModeManual">
-                            <span class="fc-mode-name" data-translate="fcModeManual">🔍 I pick manually</span>
-                            <span class="fc-mode-desc" data-translate="fcModeManualDesc">Pick 1–20 stocks and compare forecasts</span>
+                            <span class="fc-mode-name" data-translate="fcModeManual">ðŸ” I pick manually</span>
+                            <span class="fc-mode-desc" data-translate="fcModeManualDesc">Pick 1â€“20 stocks and compare forecasts</span>
                         </button>
                     </div>
 
@@ -653,7 +653,7 @@
                         <div class="tm-field">
                             <label for="fcEndDate" data-translate="fcEndDateLabel">Target Date</label>
                             <input type="date" id="fcEndDate" class="tm-date-input">
-                            <p class="fc-date-hint" data-translate="fcEndDateHint">Up to 30 days from today — AI picks the best EGX30 stock for you</p>
+                            <p class="fc-date-hint" data-translate="fcEndDateHint">Up to 30 days from today â€” The system picks the best EGX30 stock for you</p>
                         </div>
                     </div>
 
@@ -663,7 +663,7 @@
                             <label>Stocks <span class="fc-max-hint">(select up to 20)</span></label>
                             <div id="fcSelectedTags" class="fc-selected-tags"></div>
                             <div class="fc-symbol-wrapper">
-                                <input type="text" id="fcSymbolSearch" placeholder="Search and add stocks…" autocomplete="off" class="fc-symbol-search">
+                                <input type="text" id="fcSymbolSearch" placeholder="Search and add stocksâ€¦" autocomplete="off" class="fc-symbol-search">
                                 <div id="fcSymbolDropdown" class="fc-symbol-dropdown" style="display:none"></div>
                             </div>
                             <div class="fc-selection-counter"><span id="fcSelectionCount">0</span>/20 selected</div>
@@ -697,7 +697,7 @@
                             <label class="fc-scenario-opt" data-scenario="bear">
                                 <input type="radio" name="fcScenario" value="bear">
                                 <span class="fc-scenario-label" data-translate="fcBear">Bear</span>
-                                <span class="fc-scenario-hint" data-translate="fcBearHint">−2% drift drag</span>
+                                <span class="fc-scenario-hint" data-translate="fcBearHint">âˆ’2% drift drag</span>
                             </label>
                         </div>
                     </div>
@@ -709,14 +709,14 @@
             <!-- Forecast Results (hidden until sim runs) -->
             <div id="fcResults" style="display:none">
 
-                <!-- AI-chosen stock banner -->
+                <!-- Chosen stock banner -->
                 <div id="fcChosenBanner" class="fc-chosen-banner" style="display:none">
                     <div class="fc-chosen-left">
-                        <span class="fc-chosen-tag" data-translate="fcChosenBy">AI Best Pick</span>
-                        <span class="fc-chosen-name" id="fcChosenName">—</span>
+                        <span class="fc-chosen-tag" data-translate="fcChosenBy">Top Pick</span>
+                        <span class="fc-chosen-name" id="fcChosenName">â€”</span>
                         <span class="fc-chosen-symbol" id="fcChosenSymbol"></span>
                     </div>
-                    <button class="fc-ranking-toggle" id="fcRankingToggle" data-translate="fcSeeRanking">See ranking ▼</button>
+                    <button class="fc-ranking-toggle" id="fcRankingToggle" data-translate="fcSeeRanking">See ranking â–¼</button>
                 </div>
                 <!-- Top-5 ranking (collapsible) -->
                 <div id="fcRanking" class="fc-ranking" style="display:none"></div>
@@ -725,7 +725,7 @@
                 <div class="fc-hero-grid">
                     <div class="fc-hero-card fc-hero-main">
                         <div class="fc-hero-label" data-translate="fcExpectedValue">Expected Value</div>
-                        <div class="fc-hero-value" id="fcExpectedValue">—</div>
+                        <div class="fc-hero-value" id="fcExpectedValue">â€”</div>
                         <div class="fc-hero-return" id="fcExpectedReturn"></div>
                     </div>
                     <div class="fc-hero-card">
@@ -733,11 +733,11 @@
                         <div class="fc-prob-bar-wrap">
                             <div class="fc-prob-bar" id="fcProbBar"></div>
                         </div>
-                        <div class="fc-hero-value fc-prob-value" id="fcProbValue">—</div>
+                        <div class="fc-hero-value fc-prob-value" id="fcProbValue">â€”</div>
                     </div>
                     <div class="fc-hero-card">
                         <div class="fc-hero-label" data-translate="fcVolatility">Annual Volatility</div>
-                        <div class="fc-hero-value" id="fcVolatility">—</div>
+                        <div class="fc-hero-value" id="fcVolatility">â€”</div>
                         <div class="fc-hero-sub" id="fcDriftUsed"></div>
                     </div>
                 </div>
@@ -749,17 +749,17 @@
                 <div class="fc-range-card">
                     <div class="fc-range-item fc-range-worst">
                         <div class="fc-range-label" data-translate="fcWorstCase">Worst Case (5th pct)</div>
-                        <div class="fc-range-value" id="fcWorstCase">—</div>
+                        <div class="fc-range-value" id="fcWorstCase">â€”</div>
                         <div class="fc-range-ret" id="fcWorstRet"></div>
                     </div>
                     <div class="fc-range-mid">
                         <div class="fc-range-label" data-translate="fcMedian">Median</div>
-                        <div class="fc-range-value" id="fcMedian">—</div>
+                        <div class="fc-range-value" id="fcMedian">â€”</div>
                         <div class="fc-range-ret" id="fcMedianRet"></div>
                     </div>
                     <div class="fc-range-item fc-range-best">
                         <div class="fc-range-label" data-translate="fcBestCase">Best Case (95th pct)</div>
-                        <div class="fc-range-value" id="fcBestCase">—</div>
+                        <div class="fc-range-value" id="fcBestCase">â€”</div>
                         <div class="fc-range-ret" id="fcBestRet"></div>
                     </div>
                 </div>
@@ -786,25 +786,25 @@
                 <div class="fc-params-row">
                     <div class="fc-param">
                         <span class="fc-param-label" data-translate="fcDrift">Historical Drift</span>
-                        <span class="fc-param-value" id="fcDrift">—</span>
+                        <span class="fc-param-value" id="fcDrift">â€”</span>
                     </div>
                     <div class="fc-param">
                         <span class="fc-param-label" data-translate="fcScenarioUsed">Scenario Adj.</span>
-                        <span class="fc-param-value" id="fcScenarioUsed">—</span>
+                        <span class="fc-param-value" id="fcScenarioUsed">â€”</span>
                     </div>
                     <div class="fc-param">
                         <span class="fc-param-label" data-translate="fcDataPoints">Data Points</span>
-                        <span class="fc-param-value" id="fcDataPoints">—</span>
+                        <span class="fc-param-value" id="fcDataPoints">â€”</span>
                     </div>
                     <div class="fc-param">
                         <span class="fc-param-label" data-translate="fcSimCount">Simulations</span>
-                        <span class="fc-param-value" id="fcSimCount">—</span>
+                        <span class="fc-param-value" id="fcSimCount">â€”</span>
                     </div>
                 </div>
 
                 <!-- Re-run button -->
                 <div class="fc-rerun-row">
-                    <button class="fc-rerun-btn" id="fcRerunBtn" data-translate="fcRerun">Modify &amp; Re-run ↑</button>
+                    <button class="fc-rerun-btn" id="fcRerunBtn" data-translate="fcRerun">Modify &amp; Re-run â†‘</button>
                 </div>
 
                 <!-- Disclaimer -->
@@ -825,21 +825,21 @@
                     <div class="fc-stage" id="fcStage1">
                         <div class="fc-stage-dot"></div>
                         <div class="fc-stage-text">
-                            <span class="fc-stage-label" data-translate="fcStage1">Fetching price history…</span>
+                            <span class="fc-stage-label" data-translate="fcStage1">Fetching price historyâ€¦</span>
                             <span class="fc-stage-sub" data-translate="fcStage1Sub">Loading historical EGX data</span>
                         </div>
                     </div>
                     <div class="fc-stage" id="fcStage2">
                         <div class="fc-stage-dot"></div>
                         <div class="fc-stage-text">
-                            <span class="fc-stage-label" id="fcStage2Label" data-translate="fcStage2Auto">Scanning EGX30 stocks…</span>
+                            <span class="fc-stage-label" id="fcStage2Label" data-translate="fcStage2Auto">Scanning EGX30 stocksâ€¦</span>
                             <span class="fc-stage-sub" data-translate="fcStage2Sub">Computing GBM parameters per stock</span>
                         </div>
                     </div>
                     <div class="fc-stage" id="fcStage3">
                         <div class="fc-stage-dot"></div>
                         <div class="fc-stage-text">
-                            <span class="fc-stage-label" data-translate="fcStage3">Running 5,000 Monte Carlo paths…</span>
+                            <span class="fc-stage-label" data-translate="fcStage3">Running 5,000 Monte Carlo pathsâ€¦</span>
                             <span class="fc-stage-sub" data-translate="fcStage3Sub">Projecting probabilistic outcomes</span>
                         </div>
                     </div>
@@ -850,7 +850,7 @@
 
         </section>
 
-        <!-- Tab: ETFs — Fund Intelligence Dashboard -->
+        <!-- Tab: ETFs â€” Fund Intelligence Dashboard -->
         <section id="tab-etf" class="tab-content" role="tabpanel" aria-labelledby="tabEtf">
 
             <!-- Sub-navigation -->
@@ -871,7 +871,7 @@
 
             <!-- Toolbar: search + view toggle -->
             <div class="etf-toolbar">
-                <input type="search" class="etf-search-input" id="etfSearchInput" placeholder="Search by symbol or name…" autocomplete="off">
+                <input type="search" class="etf-search-input" id="etfSearchInput" placeholder="Search by symbol or nameâ€¦" autocomplete="off">
                 <div class="etf-view-toggle">
                     <button class="etf-view-btn active" data-view="grid" title="Grid view">
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="0" y="0" width="6" height="6" rx="1" fill="currentColor"/><rect x="8" y="0" width="6" height="6" rx="1" fill="currentColor"/><rect x="0" y="8" width="6" height="6" rx="1" fill="currentColor"/><rect x="8" y="8" width="6" height="6" rx="1" fill="currentColor"/></svg>
@@ -883,7 +883,7 @@
             </div>
 
             <!-- Loading state (shared) -->
-            <div id="etfMainLoading" class="etf-state-msg">Loading fund data…</div>
+            <div id="etfMainLoading" class="etf-state-msg">Loading fund dataâ€¦</div>
 
             <!-- ETFs sub-panel -->
             <div id="etfPanel-etfs" class="etf-subpanel"></div>
@@ -895,7 +895,7 @@
             <div id="etfPanel-equity-funds" class="etf-subpanel" style="display:none">
                 <div class="etf-coming-soon">
                     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                    <strong>Equity Mutual Funds — Coming Soon</strong>
+                    <strong>Equity Mutual Funds â€” Coming Soon</strong>
                     <span>Open-ended mutual funds (CI, Beltone, EFG Hermes, NBE) will be available here once the data pipeline is live.</span>
                 </div>
             </div>
@@ -905,7 +905,7 @@
 
         </section>
 
-        <!-- Tab: Rates — FX & Gold -->
+        <!-- Tab: Rates â€” FX & Gold -->
         <section class="tab-content" id="tab-rates" role="tabpanel" aria-labelledby="tabRates">
             <div class="section-header">
                 <h2 id="ratesTitle">Currency & Gold Rates</h2>
@@ -931,9 +931,9 @@
                     Past performance does not guarantee future results.
                 </p>
                 <p class="disclaimer disclaimer-ar" id="disclaimerAR">
-                    Xmore أداة معلومات وتحليلات، وليس مستشاراً استثمارياً مرخصاً أو وسيطاً.
-                    هذا ليس نصيحة مالية. استخدم هذا كمدخل واحد في قرارك، وليس كضمان.
-                    الأداء السابق لا يضمن النتائج المستقبلية.
+                    Xmore Ø£Ø¯Ø§Ø© Ù…Ø¹Ù„ÙˆÙ…Ø§Øª ÙˆØªØ­Ù„ÙŠÙ„Ø§ØªØŒ ÙˆÙ„ÙŠØ³ Ù…Ø³ØªØ´Ø§Ø±Ø§Ù‹ Ø§Ø³ØªØ«Ù…Ø§Ø±ÙŠØ§Ù‹ Ù…Ø±Ø®ØµØ§Ù‹ Ø£Ùˆ ÙˆØ³ÙŠØ·Ø§Ù‹.
+                    Ù‡Ø°Ø§ Ù„ÙŠØ³ Ù†ØµÙŠØ­Ø© Ù…Ø§Ù„ÙŠØ©. Ø§Ø³ØªØ®Ø¯Ù… Ù‡Ø°Ø§ ÙƒÙ…Ø¯Ø®Ù„ ÙˆØ§Ø­Ø¯ ÙÙŠ Ù‚Ø±Ø§Ø±ÙƒØŒ ÙˆÙ„ÙŠØ³ ÙƒØ¶Ù…Ø§Ù†.
+                    Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø³Ø§Ø¨Ù‚ Ù„Ø§ ÙŠØ¶Ù…Ù† Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø§Ù„Ù…Ø³ØªÙ‚Ø¨Ù„ÙŠØ©.
                 </p>
                 <a href="/terms" class="terms-link" id="termsLink">Terms of Service</a>
             </div>
@@ -944,7 +944,7 @@
     <div id="authModal" class="auth-modal-overlay" style="display:none;" role="presentation">
         <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authWelcome">
             <button id="authCloseBtn" class="auth-close-btn" aria-label="Close">&times;</button>
-            <h2 id="authWelcome" class="auth-welcome">🔐 Welcome to Xmore</h2>
+            <h2 id="authWelcome" class="auth-welcome">ðŸ” Welcome to Xmore</h2>
             <div class="auth-tabs">
                 <button id="authLoginTab" class="auth-tab active" data-auth-tab="login">Login</button>
                 <button id="authSignupTab" class="auth-tab" data-auth-tab="signup">Sign Up</button>
@@ -999,7 +999,7 @@
                 <button onclick="closeWhyModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;padding:2px 6px;" aria-label="Close">&times;</button>
             </div>
             <div id="whyModalBody" style="overflow-y:auto;padding:20px;flex:1;">
-                <div id="whyModalLoading" style="text-align:center;padding:40px;color:var(--text-muted);">&#10240; Analyzing signals and news…</div>
+                <div id="whyModalLoading" style="text-align:center;padding:40px;color:var(--text-muted);">&#10240; Analyzing signals and newsâ€¦</div>
                 <div id="whyModalContent" style="display:none;">
                     <div id="whyModalExplanation" style="line-height:1.7;color:var(--text-primary);margin-bottom:16px;white-space:pre-wrap;"></div>
                     <div id="whyModalSources" style="border-top:1px solid var(--border-color);padding-top:12px;font-size:12px;color:var(--text-muted);"></div>
@@ -1018,7 +1018,7 @@
                 <button onclick="closeEtfModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-muted);line-height:1;padding:2px 6px;" aria-label="Close">&times;</button>
             </div>
             <div id="etfModalBody" style="overflow-y:auto;padding:20px;flex:1;">
-                <div id="etfModalLoading" style="text-align:center;padding:40px;color:var(--text-muted);">Loading holdings…</div>
+                <div id="etfModalLoading" style="text-align:center;padding:40px;color:var(--text-muted);">Loading holdingsâ€¦</div>
                 <div id="etfModalContent" style="display:none;">
                     <div id="etfModalMeta" style="font-size:12px;color:var(--text-muted);margin-bottom:12px;"></div>
                     <table class="etf-holdings-table table-cards">
@@ -1032,40 +1032,11 @@
         </div>
     </div>
 
-    <!-- ================================================ -->
-    <!-- FLOATING RESEARCH CHAT WIDGET                   -->
-    <!-- ================================================ -->
-    <button id="chatToggleBtn" class="chat-toggle-btn" title="AI Research Assistant" aria-label="Open AI Research Assistant">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true">
-            <path d="M4 12a8 8 0 0 1 8-8h6a2 2 0 0 1 2 2v6a8 8 0 0 1-8 8h-1l-4 3v-4A8 8 0 0 1 4 12Z" fill="currentColor" opacity=".93"></path>
-            <circle cx="10" cy="12" r="1.4" fill="#0b1220"></circle>
-            <circle cx="14" cy="12" r="1.4" fill="#0b1220"></circle>
-            <circle cx="18" cy="12" r="1.4" fill="#0b1220"></circle>
-        </svg>
-    </button>
-    <div id="chatPanel" class="chat-panel chat-hidden" role="dialog" aria-label="AI Research Assistant">
-        <div class="chat-header">
-            <span id="chatTitle">AI Research Assistant</span>
-            <button id="chatClose" onclick="closeChatPanel()" aria-label="Close chat">&times;</button>
-        </div>
-        <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
-        <div class="chat-quick-chips">
-            <button class="chat-chip" onclick="sendMacroRead()">📊 Macro Brief</button>
-            <button class="chat-chip" onclick="sendChatMessage('What are the top movers on EGX today?')">📈 Top Movers</button>
-            <button class="chat-chip" onclick="sendChatMessage('What are the strong buy signals today?')">🎯 Buy Signals</button>
-        </div>
-        <div class="chat-input-row">
-            <input id="chatInput" type="text" placeholder="Ask about any EGX stock…" autocomplete="off" maxlength="400">
-            <button id="chatSend" onclick="sendChatMessage()">&#10148;</button>
-        </div>
-    </div>
-
-    <!-- ── Comparison Modal ─────────────────────────────────────── -->
     <div id="comparisonModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeComparisonModal()">
         <div class="modal-box modal-wide">
             <div class="modal-header">
                 <span id="compModalTitle">Stock Comparison</span>
-                <button class="modal-close" onclick="closeComparisonModal()">✕</button>
+                <button class="modal-close" onclick="closeComparisonModal()">âœ•</button>
             </div>
             <div class="comp-symbol-row">
                 <input type="text" id="compSym1" class="screener-input" placeholder="Symbol 1" maxlength="12">
@@ -1078,15 +1049,15 @@
         </div>
     </div>
 
-    <!-- ── Per-Stock AI Brief Modal ─────────────────────────────── -->
+    <!-- â”€â”€ Per-Stock Market Brief Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div id="briefModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeBriefModal()">
         <div class="modal-box">
             <div class="modal-header">
                 <span id="briefModalSymbol">Stock Brief</span>
-                <button class="modal-close" onclick="closeBriefModal()">✕</button>
+                <button class="modal-close" onclick="closeBriefModal()">âœ•</button>
             </div>
             <div id="briefModalBody" style="padding:12px 0;line-height:1.7;white-space:pre-wrap">
-                <p class="loading">Generating brief...</p>
+                <p class="loading">Loading brief...</p>
             </div>
         </div>
     </div>
@@ -1094,3 +1065,6 @@
 </body>
 
 </html>
+
+
+

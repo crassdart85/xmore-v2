@@ -129,6 +129,16 @@ const upload = multer({
 
 router.use(requireAdminSecret);
 
+router.get('/internal-docs-html', (_req, res) => {
+    try {
+        const docsPath = path.join(__dirname, '..', 'private', 'admin-docs.html');
+        const html = fs.readFileSync(docsPath, 'utf8');
+        res.type('html').send(html);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to load internal docs', details: err.message });
+    }
+});
+
 const ARABIC_RE = /[\u0600-\u06FF]/g;
 const LATIN_RE = /[A-Za-z]/g;
 const SENTENCE_SPLIT_RE = /(?<=[.!?\u061f])\s+/;

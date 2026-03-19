@@ -1,7 +1,7 @@
-/**
+﻿/**
  * Performance API Routes
  * Investor-grade, public performance endpoints.
- * No auth required — this is transparency.
+ * No auth required â€” this is transparency.
  */
 
 const express = require('express');
@@ -50,7 +50,7 @@ function boolFalse() { return isPostgres ? 'FALSE' : '0'; }
 function ph(n) { return isPostgres ? `$${n}` : '?'; }
 
 
-// ─── PUBLIC: Overall performance summary ──────────────────────
+// â”€â”€â”€ PUBLIC: Overall performance summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/summary', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 365, 365);
@@ -159,7 +159,7 @@ router.get('/summary', async (req, res) => {
         const r60 = buildStats(filterDays(60));
         const r90 = buildStats(filterDays(90));
 
-        // ── Institutional metrics (EGX-correct risk-free rate: 27.25%) ──
+        // â”€â”€ Institutional metrics (EGX-correct risk-free rate: 27.25%) â”€â”€
         const EGX_RF = 0.2725;
         const TRADING_DAYS = 247;
         const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
@@ -327,7 +327,7 @@ router.get('/summary', async (req, res) => {
 
 
 
-// ─── PUBLIC: Per-agent comparison ─────────────────────────────
+// â”€â”€â”€ PUBLIC: Per-agent comparison â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/by-agent', async (req, res) => {
     try {
         const rows = await dbAll(`
@@ -361,7 +361,7 @@ router.get('/by-agent', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Per-stock performance ────────────────────────────
+// â”€â”€â”€ PUBLIC: Per-stock performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/by-stock', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
@@ -403,7 +403,7 @@ router.get('/by-stock', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Equity curve data ────────────────────────────────
+// â”€â”€â”€ PUBLIC: Equity curve data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/equity-curve', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 180, 365);
@@ -453,7 +453,7 @@ router.get('/equity-curve', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Open predictions (transparency) ─────────────────
+// â”€â”€â”€ PUBLIC: Open predictions (transparency) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/predictions/open', async (req, res) => {
     try {
         const dateFilter = isPostgres
@@ -482,7 +482,7 @@ router.get('/predictions/open', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Prediction history (auditable) ───────────────────
+// â”€â”€â”€ PUBLIC: Prediction history (auditable) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/predictions/history', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
@@ -538,7 +538,7 @@ router.get('/predictions/history', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Audit trail (for trust) ──────────────────────────
+// â”€â”€â”€ PUBLIC: Audit trail (for trust) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/audit', async (req, res) => {
     try {
         const limit = Math.min(parseInt(req.query.limit) || 50, 200);
@@ -567,7 +567,7 @@ router.get('/audit', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Full institutional report (JSON) ──────────────────
+// â”€â”€â”€ PUBLIC: Full institutional report (JSON) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/full-report', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
@@ -641,7 +641,7 @@ router.get('/full-report', async (req, res) => {
 });
 
 
-// ─── PUBLIC: Investor PDF export (HTML) ───────────────────────
+// â”€â”€â”€ PUBLIC: Investor PDF export (HTML) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/export-summary', async (req, res) => {
     try {
         const days = Math.min(parseInt(req.query.days) || 90, 365);
@@ -693,23 +693,23 @@ router.get('/export-summary', async (req, res) => {
         const sharpe = calcSharpe(allR), sortino = calcSortino(allR), calmar = calcCalmar(allR, mdd), ir = calcIR(allR, benchR);
         const wins = allR.filter(v => v > 0), losses = allR.filter(v => v < 0);
         const wr = allR.length ? (wins.length / allR.length * 100).toFixed(1) : 0;
-        const pf = losses.length ? (wins.reduce((a, b) => a + b, 0) / Math.abs(losses.reduce((a, b) => a + b, 0))).toFixed(2) : '—';
+        const pf = losses.length ? (wins.reduce((a, b) => a + b, 0) / Math.abs(losses.reduce((a, b) => a + b, 0))).toFixed(2) : 'â€”';
         const totalRet = ((allR.reduce((a, b) => a + b, 0))).toFixed(2);
         const benchTotal = (benchR.reduce((a, b) => a + b, 0)).toFixed(2);
         const alpha = (Number(totalRet) - Number(benchTotal)).toFixed(2);
         const genDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        const periodStart = rows.length ? String(rows[0].recommendation_date).slice(0, 10) : '—';
-        const periodEnd   = rows.length ? String(rows[rows.length - 1].recommendation_date).slice(0, 10) : '—';
+        const periodStart = rows.length ? String(rows[0].recommendation_date).slice(0, 10) : 'â€”';
+        const periodEnd   = rows.length ? String(rows[rows.length - 1].recommendation_date).slice(0, 10) : 'â€”';
 
         const fmtPct = (v, dec = 2) => `${v >= 0 ? '+' : ''}${Number(v).toFixed(dec)}%`;
         const fmtNum = (v, dec = 2) => Number(v).toFixed(dec);
-        const warn = rows.length < 30 ? `<div style="background:#fef3c7;border:1px solid #f59e0b;padding:8px 14px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#92400e">⚠ Only ${rows.length} completed trades. Minimum 30 required for statistically reliable metrics.</div>` : '';
+        const warn = rows.length < 30 ? `<div style="background:#fef3c7;border:1px solid #f59e0b;padding:8px 14px;border-radius:6px;margin-bottom:16px;font-size:12px;color:#92400e">âš  Only ${rows.length} completed trades. Minimum 30 required for statistically reliable metrics.</div>` : '';
 
         const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Xmore2 Performance Report — ${genDate}</title>
+<title>Xmore2 Performance Report â€” ${genDate}</title>
 <style>
   @page { size: A4; margin: 18mm; }
   * { box-sizing: border-box; }
@@ -735,8 +735,8 @@ router.get('/export-summary', async (req, res) => {
 <body>
 <div class="header">
   <div>
-    <h1>Xmore2 — AI-Powered EGX Trading</h1>
-    <div style="color:#6b7280;font-size:11px">Performance Report · ${periodStart} → ${periodEnd} · ${rows.length} resolved predictions</div>
+    <h1>Xmore2 â€” EGX Trading Performance</h1>
+    <div style="color:#6b7280;font-size:11px">Performance Report Â· ${periodStart} â†’ ${periodEnd} Â· ${rows.length} resolved predictions</div>
   </div>
   <div class="header-meta">Generated: ${genDate}<br>Risk-free rate: CBE 27.25%</div>
 </div>
@@ -762,10 +762,10 @@ ${svgEquity}
   <thead><tr><th>Metric</th><th>Xmore2</th><th>EGX30 Benchmark</th></tr></thead>
   <tbody>
     <tr><td>Total Return</td><td class="${Number(totalRet) >= 0 ? 'highlight' : ''}">${fmtPct(totalRet)}</td><td>${fmtPct(benchTotal)}</td></tr>
-    <tr><td>Alpha vs Benchmark</td><td class="highlight">${fmtPct(alpha)}</td><td>—</td></tr>
-    <tr><td>Sharpe Ratio</td><td class="highlight">${fmtNum(sharpe)}</td><td>—</td></tr>
-    <tr><td>Profit Factor</td><td class="${Number(pf) >= 1 ? 'highlight' : ''}">${pf}</td><td>—</td></tr>
-    <tr><td>Max Drawdown</td><td class="${mdd > -0.1 ? 'highlight' : ''}">${(mdd * 100).toFixed(1)}%</td><td>—</td></tr>
+    <tr><td>Alpha vs Benchmark</td><td class="highlight">${fmtPct(alpha)}</td><td>â€”</td></tr>
+    <tr><td>Sharpe Ratio</td><td class="highlight">${fmtNum(sharpe)}</td><td>â€”</td></tr>
+    <tr><td>Profit Factor</td><td class="${Number(pf) >= 1 ? 'highlight' : ''}">${pf}</td><td>â€”</td></tr>
+    <tr><td>Max Drawdown</td><td class="${mdd > -0.1 ? 'highlight' : ''}">${(mdd * 100).toFixed(1)}%</td><td>â€”</td></tr>
   </tbody>
 </table>
 <div class="footer">Generated by Xmore2 &nbsp;|&nbsp; Data source: Egyptian Exchange (EGX) &nbsp;|&nbsp; Risk-free rate: CBE 27.25% &nbsp;|&nbsp; All predictions are live, immutable, and time-stamped at generation.</div>
@@ -782,3 +782,4 @@ ${svgEquity}
 
 
 module.exports = { router, attachDb: attachDb };
+

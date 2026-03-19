@@ -1,18 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr" id="trHtml">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="base.css">
-  <link rel="stylesheet" href="assistant-widget.css?v=20260318a">
-  <title>Xmore — Track Record</title>
+  <link rel="stylesheet" href="base.css">  <title>Xmore â€” Track Record</title>
   <link rel="stylesheet" href="track-record.css">
 </head>
 <body>
 
   <!-- Header -->
   <header class="tr-header x-topbar x-topbar--dark">
-    <a href="/" class="tr-back x-back" data-i18n="back">← Dashboard</a>
+    <a href="/" class="tr-back x-back" data-i18n="back">â† Dashboard</a>
     <div class="tr-header-brand">
       <span class="tr-logo x-brand">XMORE <span class="tr-logo-tag" data-i18n="logoTag">TRACK RECORD</span></span>
       <span class="tr-live-badge">Live pre-market signals</span>
@@ -26,15 +24,15 @@
     </nav>
     <!-- Mobile menu button -->
     <button id="trMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="trMobileMenuDropdown">
-      <span class="hamburger-icon">☰</span>
+      <span class="hamburger-icon">â˜°</span>
     </button>
     <!-- Mobile menu dropdown -->
     <div id="trMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-      <a href="/" class="mobile-menu-item" role="menuitem">🏠 Home</a>
-      <a href="/track-record" class="mobile-menu-item active" role="menuitem">📊 Track Record</a>
-      <a href="/pro" class="mobile-menu-item" role="menuitem">⭐ Pro</a>
-      <a href="/session" class="mobile-menu-item" role="menuitem">📌 Session</a>
-      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+      <a href="/" class="mobile-menu-item" role="menuitem">ðŸ  Home</a>
+      <a href="/track-record" class="mobile-menu-item active" role="menuitem">ðŸ“Š Track Record</a>
+      <a href="/pro" class="mobile-menu-item" role="menuitem">â­ Pro</a>
+      <a href="/session" class="mobile-menu-item" role="menuitem">ðŸ“Œ Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">ðŸ“š Docs</a>
     </div>
     <div class="tr-header-controls x-actions">
       <div class="tr-period-group">
@@ -43,9 +41,9 @@
         <button class="tr-period-btn" data-days="180">180D</button>
         <button class="tr-period-btn" data-days="365" data-i18n-val="all">ALL</button>
       </div>
-      <button class="tr-lang-btn" id="trLangBtn" onclick="trToggleLang()">🇪🇬 عربي</button>
+      <button class="tr-lang-btn" id="trLangBtn" onclick="trToggleLang()">ðŸ‡ªðŸ‡¬ Ø¹Ø±Ø¨ÙŠ</button>
       <button class="header-tracker-btn" id="openTrackerBtn" onclick="document.getElementById('trackerPanel').classList.remove('collapsed')">
-        <span>◉ TRACKER</span>
+        <span>â—‰ TRACKER</span>
         <span class="tracker-badge" id="trackerCountHeader">0</span>
       </button>
     </div>
@@ -56,14 +54,13 @@
     <!-- Hero / Intro -->
     <div class="tr-hero">
       <div class="tr-hero-text">
-        <h1 class="tr-hero-title" data-i18n="heroTitle">AI-Powered EGX Stock Predictions — Verified Performance</h1>
+        <h1 class="tr-hero-title" data-i18n="heroTitle">EGX Stock Predictions — Verified Performance</h1>
         <p class="tr-hero-body" data-i18n="heroBody">
-          Every signal shown below was generated <strong>before market open</strong> by Xmore's multi-agent
-          AI system and recorded with an immutable timestamp. No predictions have been altered, removed,
-          or backdated. What you see is what was called — win or lose.
+          Every signal shown below was generated <strong>before market open</strong> by Xmore's multi-engine signal system and recorded with an immutable timestamp. No predictions have been altered, removed,
+          or backdated. What you see is what was called â€” win or lose.
         </p>
         <div class="tr-hero-pills">
-          <span class="tr-pill" data-i18n="pill1">5 AI Agents</span>
+          <span class="tr-pill" data-i18n="pill1">5 Signal Engines</span>
           <span class="tr-pill" data-i18n="pill2">Weighted Consensus</span>
           <span class="tr-pill" data-i18n="pill3">EGX-Listed Stocks</span>
           <span class="tr-pill" data-i18n="pill4">Automated. Unbiased.</span>
@@ -72,11 +69,11 @@
       <div class="tr-hero-stat-group">
         <div class="tr-hero-stat" id="heroDateRange">
           <div class="tr-hero-stat-label" data-i18n="trackingSince">Tracking Since</div>
-          <div class="tr-hero-stat-val" id="heroSince">—</div>
+          <div class="tr-hero-stat-val" id="heroSince">â€”</div>
         </div>
         <div class="tr-hero-stat">
           <div class="tr-hero-stat-label" data-i18n="lastUpdate">Last Updated</div>
-          <div class="tr-hero-stat-val" id="heroLast">—</div>
+          <div class="tr-hero-stat-val" id="heroLast">â€”</div>
         </div>
       </div>
     </div>
@@ -85,47 +82,47 @@
     <div class="tr-kpi-strip">
       <div class="tr-kpi-card">
         <div class="tr-kpi-label" data-i18n="kpiSignals">TOTAL SIGNALS</div>
-        <div class="tr-kpi-value" id="kpiTotal">—</div>
+        <div class="tr-kpi-value" id="kpiTotal">â€”</div>
         <div class="tr-kpi-desc" data-i18n="kpiSignalsDesc">Live, timestamped calls made to date</div>
       </div>
       <div class="tr-kpi-card">
         <div class="tr-kpi-label" data-i18n="kpiWinRate">WIN RATE</div>
-        <div class="tr-kpi-value" id="kpiWin">—</div>
+        <div class="tr-kpi-value" id="kpiWin">â€”</div>
         <div class="tr-kpi-desc" data-i18n="kpiWinRateDesc">% of calls where direction was correct next-day</div>
       </div>
       <div class="tr-kpi-card">
         <div class="tr-kpi-label" data-i18n="kpiAlpha">AVG ALPHA vs EGX30</div>
-        <div class="tr-kpi-value" id="kpiAlpha">—</div>
+        <div class="tr-kpi-value" id="kpiAlpha">â€”</div>
         <div class="tr-kpi-desc" data-i18n="kpiAlphaDesc">Excess return per signal over the benchmark index</div>
       </div>
       <div class="tr-kpi-card">
         <div class="tr-kpi-label" data-i18n="kpiBeat">BEAT BENCHMARK</div>
-        <div class="tr-kpi-value" id="kpiBeat">—</div>
+        <div class="tr-kpi-value" id="kpiBeat">â€”</div>
         <div class="tr-kpi-desc" data-i18n="kpiBeatDesc">Signals that outperformed EGX30 on the same day</div>
       </div>
       <div class="tr-kpi-card">
         <div class="tr-kpi-label" data-i18n="kpiSharpe">SHARPE RATIO</div>
-        <div class="tr-kpi-value" id="kpiSharpe">—</div>
+        <div class="tr-kpi-value" id="kpiSharpe">â€”</div>
         <div class="tr-kpi-desc" data-i18n="kpiSharpeDesc">Risk-adjusted return (annualised). >1 is strong.</div>
       </div>
       <div class="tr-kpi-card">
         <div class="tr-kpi-label" data-i18n="kpiPF">PROFIT FACTOR</div>
-        <div class="tr-kpi-value" id="kpiPF">—</div>
-        <div class="tr-kpi-desc" data-i18n="kpiPFDesc">Gross gains ÷ gross losses. >1.5 is robust.</div>
+        <div class="tr-kpi-value" id="kpiPF">â€”</div>
+        <div class="tr-kpi-desc" data-i18n="kpiPFDesc">Gross gains Ã· gross losses. >1.5 is robust.</div>
       </div>
     </div>
 
     <!-- Signal Count Banner -->
     <div class="signal-count-banner">
-      <span id="liveSignalCount">—</span> live signals evaluated · Updated daily at 6:00 AM Cairo time
+      <span id="liveSignalCount">â€”</span> live signals evaluated Â· Updated daily at 6:00 AM Cairo time
     </div>
 
     <!-- Live Signal Feed -->
     <div class="tr-section">
       <div class="tr-section-title"><span class="live-dot"></span><span data-i18n="signalFeedTitle">LIVE SIGNAL FEED</span></div>
-      <p class="tr-section-desc" data-i18n="signalFeedDesc">The 20 most recent signals, each with an immutable timestamp showing exactly when it was generated — before market open.</p>
+      <p class="tr-section-desc" data-i18n="signalFeedDesc">The 20 most recent signals, each with an immutable timestamp showing exactly when it was generated â€” before market open.</p>
       <div class="tr-signal-feed" id="trSignalFeed">
-        <div class="tr-loading" data-i18n="loading">Loading…</div>
+        <div class="tr-loading" data-i18n="loading">Loadingâ€¦</div>
       </div>
     </div>
 
@@ -133,18 +130,18 @@
     <div class="tr-section">
       <div class="tr-section-title" data-i18n="rollingTitle">ROLLING PERFORMANCE WINDOWS</div>
       <p class="tr-section-desc" data-i18n="rollingDesc">
-        Performance is reported across multiple time horizons so you can assess consistency —
+        Performance is reported across multiple time horizons so you can assess consistency â€”
         not just a single cherry-picked period. A strong system performs across all windows.
       </p>
       <div class="tr-rolling-cards" id="trRollingCards">
-        <div class="tr-loading" data-i18n="loading">Loading…</div>
+        <div class="tr-loading" data-i18n="loading">Loadingâ€¦</div>
       </div>
     </div>
 
     <!-- Signal Distribution -->
     <div class="tr-section">
-      <div class="tr-section-title" data-i18n="distTitle">SIGNAL DISTRIBUTION — UP / DOWN / HOLD</div>
-      <p class="tr-section-desc" data-i18n="distDesc">How the system splits its calls. A healthy signal engine is not always bullish — it holds and shorts when the data warrants it.</p>
+      <div class="tr-section-title" data-i18n="distTitle">SIGNAL DISTRIBUTION â€” UP / DOWN / HOLD</div>
+      <p class="tr-section-desc" data-i18n="distDesc">How the system splits its calls. A healthy signal engine is not always bullish â€” it holds and shorts when the data warrants it.</p>
       <div class="tr-dist-wrap" id="trDistWrap">
         <div class="tr-dist-chart-box">
           <canvas id="distChart"></canvas>
@@ -160,7 +157,7 @@
           <span class="tr-section-title" data-i18n="equityTitle">CUMULATIVE RETURN: XMORE SIGNALS vs EGX 30 BENCHMARK</span>
           <p class="tr-section-desc" data-i18n="equityDesc">
             This chart compounds the daily average return of all Xmore signals (blue) against the
-            EGX 30 benchmark return on the same day (grey). The widening gap represents alpha —
+            EGX 30 benchmark return on the same day (grey). The widening gap represents alpha â€”
             value generated beyond what the market gave for free.
           </p>
         </div>
@@ -180,11 +177,11 @@
 
     <!-- Agent Methodology -->
     <div class="tr-section">
-      <div class="tr-section-title" data-i18n="methodTitle">HOW THE PREDICTIONS ARE MADE — THE AGENT ENSEMBLE</div>
+      <div class="tr-section-title" data-i18n="methodTitle">HOW THE PREDICTIONS ARE MADE â€” THE AGENT ENSEMBLE</div>
       <p class="tr-section-desc" data-i18n="methodDesc">
-        Xmore uses five independent AI agents, each analysing the same stock from a different lens.
+        Xmore uses five independent signal engines, each analysing the same stock from a different lens.
         Their individual signals are weighted into a single consensus score. No single agent controls
-        the outcome — disagreement between agents is flagged as elevated risk.
+        the outcome â€” disagreement between agents is flagged as elevated risk.
       </p>
       <div class="tr-agent-cards">
         <div class="tr-agent-card">
@@ -204,7 +201,7 @@
           <div class="tr-agent-desc" data-i18n="agentML">Trained on historical EGX price, volume and technical features. Learns non-linear patterns invisible to rule-based agents.</div>
         </div>
         <div class="tr-agent-card">
-          <div class="tr-agent-name">Gemini LLM</div>
+          <div class="tr-agent-name">News & Events</div>
           <div class="tr-agent-desc" data-i18n="agentLLM">Reads Arabic and English financial news to incorporate sentiment and corporate announcements into the signal.</div>
         </div>
       </div>
@@ -228,7 +225,7 @@
           </tr>
         </thead>
         <tbody id="agentTableBody">
-          <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+          <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loadingâ€¦</td></tr>
         </tbody>
       </table>
     </div>
@@ -238,22 +235,22 @@
       <div class="tr-section-title" data-i18n="sectorTitle">ACCURACY BY SECTOR</div>
       <p class="tr-section-desc" data-i18n="sectorDesc">Which EGX sectors does Xmore read best? Win rate and average return per sector over the selected period.</p>
       <div class="tr-sector-bars" id="trSectorBars">
-        <div class="tr-loading" data-i18n="loading">Loading…</div>
+        <div class="tr-loading" data-i18n="loading">Loadingâ€¦</div>
       </div>
     </div>
 
     <!-- Regime-Aware Performance -->
     <div class="tr-section">
       <div class="tr-section-title" data-i18n="regimeTitle">PERFORMANCE BY MARKET REGIME</div>
-      <p class="tr-section-desc" data-i18n="regimeDesc">Xmore's HMM model classifies the market into Calm, Turbulent, and Crisis regimes. Signals are gated or downgraded in adverse regimes. This table shows accuracy per regime — proving the gate works.</p>
+      <p class="tr-section-desc" data-i18n="regimeDesc">Xmore's HMM model classifies the market into Calm, Turbulent, and Crisis regimes. Signals are gated or downgraded in adverse regimes. This table shows accuracy per regime â€” proving the gate works.</p>
       <div id="trRegimeTable">
-        <div class="tr-loading" data-i18n="loading">Loading…</div>
+        <div class="tr-loading" data-i18n="loading">Loadingâ€¦</div>
       </div>
     </div>
 
     <!-- Methodology Comparison -->
     <div class="tr-section tr-section--method">
-      <div class="tr-section-title" data-i18n="methodCompTitle">TWO WAYS TO MEASURE EDGE — WHAT THEY MEAN</div>
+      <div class="tr-section-title" data-i18n="methodCompTitle">TWO WAYS TO MEASURE EDGE â€” WHAT THEY MEAN</div>
       <div class="tr-method-compare">
         <div class="tr-method-card tr-method-card--simple">
           <div class="tr-method-card-label" data-i18n="simpleBacktest">Simple Backtest</div>
@@ -263,7 +260,7 @@
         <div class="tr-method-divider">vs</div>
         <div class="tr-method-card tr-method-card--wf">
           <div class="tr-method-card-label" data-i18n="walkForward">Walk-Forward Validation</div>
-          <div class="tr-method-card-body" data-i18n="walkForwardDesc">Trains on 90 days of data, tests on the next 20 days it has never seen. Rolls forward in 10-day steps. The model is always tested on truly unseen data — the institutional standard.</div>
+          <div class="tr-method-card-body" data-i18n="walkForwardDesc">Trains on 90 days of data, tests on the next 20 days it has never seen. Rolls forward in 10-day steps. The model is always tested on truly unseen data â€” the institutional standard.</div>
           <div class="tr-method-card-verdict tr-method-card-verdict--good" data-i18n="wfVerdict">Out-of-sample. Institutional grade.</div>
         </div>
       </div>
@@ -271,20 +268,20 @@
 
     <!-- Walk-Forward Backtest Results -->
     <div class="tr-section">
-      <div class="tr-section-title" data-i18n="backtestTitle">WALK-FORWARD BACKTEST — ML AGENT VALIDATION</div>
+      <div class="tr-section-title" data-i18n="backtestTitle">WALK-FORWARD BACKTEST â€” ML AGENT VALIDATION</div>
       <p class="tr-section-desc" data-i18n="backtestDesc">
         The ML RandomForest agent is independently validated using a walk-forward methodology:
-        the model is trained on historical EGX data, then tested on the following unseen period —
+        the model is trained on historical EGX data, then tested on the following unseen period â€”
         simulating real-world deployment without look-ahead bias. Results are recalculated every Sunday.
         This section shows out-of-sample accuracy, directional accuracy, and the hypothetical signal P&amp;L
         for each stock the ML agent has evaluated.
       </p>
       <div class="tr-backtest-note" data-i18n="backtestNote">
         Note: Walk-forward backtest results are separate from the live prediction log above.
-        They measure the ML agent's historical edge on past data — not real capital deployed.
+        They measure the ML agent's historical edge on past data â€” not real capital deployed.
       </div>
       <div id="backtestContent">
-        <div class="tr-loading" data-i18n="loading">Loading…</div>
+        <div class="tr-loading" data-i18n="loading">Loadingâ€¦</div>
       </div>
     </div>
 
@@ -308,7 +305,7 @@
             </tr>
           </thead>
           <tbody id="stockTableBody">
-            <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+            <tr><td colspan="5" class="tr-loading" data-i18n="loading">Loadingâ€¦</td></tr>
           </tbody>
         </table>
       </div>
@@ -319,7 +316,7 @@
           Institutional-grade risk statistics calculated from the live prediction history.
         </p>
         <div class="tr-risk-rows" id="riskRows">
-          <div class="tr-loading" data-i18n="loading">Loading…</div>
+          <div class="tr-loading" data-i18n="loading">Loadingâ€¦</div>
         </div>
       </div>
 
@@ -332,11 +329,11 @@
           <span class="tr-section-title" data-i18n="logTitle">FULL PREDICTION LOG</span>
           <p class="tr-section-desc" data-i18n="logDesc">
             Every live signal ever issued, with the actual next-day return and whether the directional
-            call was correct. All entries are read-only — prediction fields are immutable after issuance.
+            call was correct. All entries are read-only â€” prediction fields are immutable after issuance.
           </p>
         </div>
         <div class="tr-log-filters">
-          <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">⬇ Export CSV</button>
+          <button class="tr-export-btn" id="trExportBtn" onclick="exportCSV()" data-i18n="exportBtn">â¬‡ Export CSV</button>
           <select class="tr-select" id="logFilter" onchange="logPage=1;loadLog()">
             <option value="" data-i18n="filterAll">All Signals</option>
             <option value="UP" data-i18n="filterUp">UP only</option>
@@ -359,7 +356,7 @@
             </tr>
           </thead>
           <tbody id="logTableBody">
-            <tr><td colspan="8" class="tr-loading" data-i18n="loading">Loading…</td></tr>
+            <tr><td colspan="8" class="tr-loading" data-i18n="loading">Loadingâ€¦</td></tr>
           </tbody>
         </table>
       </div>
@@ -402,7 +399,7 @@
     <div class="tr-disclaimer">
       <strong data-i18n="disclaimerTitle">Important Disclaimer:</strong>
       <span data-i18n="disclaimerText">
-        Performance metrics combine live pre-market predictions (since March 2026) and historical simulation signals generated using the same agent logic on past EGX price data. Simulated signals are clearly tagged SIM in the prediction log. No future price data was used at any point — all signals reflect only information available before that day's market open. Past performance does not guarantee future results. Xmore signals are for informational purposes and do not constitute investment advice.
+        Performance metrics combine live pre-market predictions (since March 2026) and historical simulation signals generated using the same agent logic on past EGX price data. Simulated signals are clearly tagged SIM in the prediction log. No future price data was used at any point â€” all signals reflect only information available before that day's market open. Past performance does not guarantee future results. Xmore signals are for informational purposes and do not constitute investment advice.
       </span>
       <div id="trDateRange" style="margin-top:6px;font-size:10px;"></div>
     </div>
@@ -414,7 +411,7 @@
     <div class="tracker-header" onclick="document.getElementById('trackerPanel').classList.toggle('collapsed')">
       <span class="tracker-title">MY TRACKER</span>
       <span class="tracker-count" id="trackerCount">0</span>
-      <button class="tracker-toggle">›</button>
+      <button class="tracker-toggle">â€º</button>
     </div>
     <div class="tracker-body" id="trackerBody"></div>
     <div class="tracker-footer">
@@ -424,7 +421,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <script src="track-record.js"></script>
-  <script src="assistant-widget.js?v=20260318a"></script>
-</body>
+  <script src="track-record.js"></script></body>
 </html>
+
+

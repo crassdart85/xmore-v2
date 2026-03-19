@@ -1,9 +1,9 @@
 ﻿# Xmore Project Memory
 
 ## Project Overview
-Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
+Stock trading prediction system with web dashboard. Uses multiple signal engines to rank stock movements.
 
-**Last Updated**: February 12, 2026
+**Last Updated**: March 19, 2026
 
 > **Note**: The primary MEMORY.md is at the project root (`/MEMORY.md`). This file is kept for quick reference within the web-ui directory.
 
@@ -40,6 +40,20 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 ## Track Record Copy (Mar 16, 2026)
 - `track-record.html`: header badge shortened to ?Live pre-market signals?.
 
+## UI Overhaul & Assistant Widget Removal (Mar 19, 2026)
+- Removed `assistant-widget.css` and `assistant-widget.js` (deprecated voice assistant).
+- `app.js`: major refactor — slimmed consensus card renderer, removed widget bootstrap calls.
+- `admin.html` / `admin.js`: expanded admin dashboard with additional controls and table views.
+- `docs.html`: stripped legacy content, now a lightweight reference page.
+- `private/admin-docs.html`: new private admin documentation page.
+- `routes/admin.js`: additional admin API endpoints.
+- `routes/performance.js`, `routes/rag.js`, `routes/track-record.js`: minor fixes and response normalization.
+- `server.js`: updated static-file serving and route mounts; removed assistant widget endpoint.
+- `briefing.js`, `timemachine.js`, `trades.js`: refactored for clarity and reduced duplication.
+- `landing.html`, `pro.html`, `session.html`: markup and copy updates.
+- `track-record.html` / `track-record.js`: accuracy table improvements and mobile polish.
+- `style.css`: combined utility classes, dark-mode refinements.
+
 ## Adaptive Weighting + Change Intelligence (Mar 19, 2026)
 - `../server.js`
   - `/api/consensus` and `/api/consensus/:symbol` now expose calibrated confidence, expected edge, ranking score, and stored calibration metadata.
@@ -49,7 +63,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
     - macro moves from FX and market regime history
   - added `/api/intelligence/quality` for freshness checks and agent drift monitoring.
 - `../routes/rag.js`
-  - assistant retrieval now resolves bilingual entities from `egx30_stocks`, `instrument`, and `instrument_alias`.
+  - research retrieval now resolves bilingual entities from `egx30_stocks`, `instrument`, and `instrument_alias`.
   - symbol/entity-specific news and structured chunks are prioritized ahead of generic retrieval.
   - `retrieval_meta` includes resolved entities.
 - `app.js`
@@ -133,3 +147,4 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - Verified /api/intelligence/quality returns overall_status, freshness, and drift.
 - Verified /api/rag/chat returns retrieval_meta.resolved_entities and sources on a live request.
 - Validation also found and fixed pre-existing syntax errors in web-ui/public/performance-dashboard.js; npm run check now passes locally.
+

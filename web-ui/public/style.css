@@ -1,5 +1,5 @@
 /* ============================================
-   Xmore Dashboard — Phase 1 CSS
+   Xmore Dashboard â€” Phase 1 CSS
    ============================================ */
 
 /* ============================================
@@ -83,10 +83,29 @@ a:focus-visible {
 body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     background: var(--bg-gradient-start);
+    color: var(--text-primary);
     min-height: 100vh;
     padding: 0;
-    transition: background 0.3s ease;
+    transition: background 0.3s ease, color 0.3s ease;
     font-size: 14px;
+}
+
+p,
+label,
+small,
+span,
+li,
+dd,
+dt {
+    color: inherit;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+    color: inherit;
 }
 
 .container {
@@ -281,6 +300,38 @@ h1 {
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
+}
+
+.section-header,
+.section-head {
+    color: var(--text-primary);
+}
+
+.section-subtitle,
+.section-header p,
+.section-head p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.section h3,
+.section h4,
+.section h5,
+.section h6,
+.card h2,
+.card h3,
+.card h4 {
+    color: var(--text-primary);
+}
+
+.card p,
+.card li,
+.metric p,
+.benefit p,
+.feature p,
+.proof p,
+.foot-copy {
+    color: var(--text-secondary);
 }
 
 .section h2::after {
@@ -1229,7 +1280,7 @@ footer {
     color: var(--accent);
 }
 
-/* Prices tab — date column hidden on small screens to keep table readable */
+/* Prices tab â€” date column hidden on small screens to keep table readable */
 @media (max-width: 480px) {
     .prices-date-col { display: none; }
 }
@@ -1705,14 +1756,14 @@ footer {
     }
 }
 
-/* ────────────────────────────────────────────────────────────
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
    MOBILE OPTIMIZATIONS (640px and below)
    Ensuring no overlap, consistent spacing, and readable layout
-   ──────────────────────────────────────────────────────────── */
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 640px) {
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        HEADER IMPROVEMENTS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     header {
         flex-wrap: wrap !important;
         gap: 8px !important;
@@ -1777,9 +1828,9 @@ footer {
         white-space: nowrap;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        MOBILE MENU BUTTON & DROPDOWN
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .mobile-menu-btn {
         display: flex !important;
         align-items: center;
@@ -1861,9 +1912,9 @@ footer {
         left: 10px;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        CONTAINER & SPACING
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .container {
         padding: 0 10px 16px 10px !important;
         gap: 12px !important;
@@ -1873,9 +1924,9 @@ footer {
         overflow-x: hidden !important;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        TICKER CONTAINER
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .tv-ticker-container {
         margin: 0 -10px !important;
         border-radius: 0 !important;
@@ -1884,9 +1935,9 @@ footer {
         -webkit-overflow-scrolling: touch !important;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        STATS GRID
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .stats-grid {
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
@@ -1913,9 +1964,9 @@ footer {
         white-space: normal;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        NAVIGATION TABS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .tab-nav {
         margin: 0 -10px !important;
         padding: 0 10px !important;
@@ -1951,9 +2002,9 @@ footer {
         background: transparent;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        SECTIONS & CONTENT
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .section {
         margin-bottom: 16px !important;
     }
@@ -1973,9 +2024,9 @@ footer {
         margin-bottom: 10px !important;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        SEARCH & FILTER BOXES
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .search-box {
         margin-bottom: 10px;
     }
@@ -2025,9 +2076,9 @@ footer {
         white-space: nowrap;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        TABLES & DATA
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .scrollable-container {
         max-height: none !important;
         overflow-x: auto !important;
@@ -2064,9 +2115,9 @@ footer {
         display: block;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        SIGNAL & PREDICTION TAGS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .signal-up,
     .signal-down,
     .signal-hold,
@@ -2081,9 +2132,9 @@ footer {
         white-space: nowrap;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        CARDS & GRIDS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .card {
         padding: 12px !important;
         border-radius: 8px !important;
@@ -2110,9 +2161,9 @@ footer {
         font-size: 0.75em !important;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        BUTTONS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     button {
         min-height: 36px !important;
         padding: 8px 12px !important;
@@ -2127,9 +2178,9 @@ footer {
         margin-top: 8px;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        MODALS & OVERLAYS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .modal {
         width: 96vw !important;
         max-width: calc(100% - 8px) !important;
@@ -2138,9 +2189,9 @@ footer {
         max-height: 90vh !important;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        DISCLAIMERS & TEXT
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     footer {
         margin-top: 20px;
     }
@@ -2151,9 +2202,9 @@ footer {
         line-height: 1.4;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        PREVENT HORIZONTAL OVERFLOW
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     * {
         max-width: 100%;
     }
@@ -2164,9 +2215,9 @@ footer {
         width: 100vw !important;
     }
 
-    /* ──────────────────────────────────────────────────────────
+    /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
        TEXT WRAPPING FOR ALL TEXT ELEMENTS
-    ────────────────────────────────────────────────────────── */
+    â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     h1, h2, h3, h4, h5, h6 {
         word-break: break-word;
         overflow-wrap: break-word;
@@ -2180,7 +2231,7 @@ footer {
 }
 
 /* Small phones */
-/* Hide secondary nav links on small phones — PRO + lang + theme are enough */
+/* Hide secondary nav links on small phones â€” PRO + lang + theme are enough */
 @media (max-width: 640px) {
     .header-link-secondary { display: none !important; }
     .pro-link-btn { font-size: 0.65em; padding: 4px 8px; letter-spacing: 0.5px; }
@@ -2470,7 +2521,7 @@ footer {
 }
 
 /* ============================================
-   CONSENSUS TAB — 3-Layer Pipeline
+   CONSENSUS TAB â€” 3-Layer Pipeline
    ============================================ */
 
 /* Risk Overview Summary Bar */
@@ -2876,7 +2927,7 @@ footer {
 }
 
 .risk-warnings-list li::before {
-    content: '⚠';
+    content: 'âš ';
     position: absolute;
     left: 0;
     font-size: 0.9em;
@@ -3903,7 +3954,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 /* ============================================
-   UPGRADE 7: ACCESSIBILITY — SKIP LINK
+   UPGRADE 7: ACCESSIBILITY â€” SKIP LINK
    ============================================ */
 .skip-link {
     position: absolute;
@@ -4076,7 +4127,7 @@ button:active, .btn:active, .tab-btn:active {
     border: 1px solid rgba(180, 83, 9, 0.4);
 }
 
-/* ── Custom News Sources form ───────────────────── */
+/* â”€â”€ Custom News Sources form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-source-form {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -4174,7 +4225,7 @@ button:active, .btn:active, .tab-btn:active {
     }
 }
 
-/* ── Admin tab bar ──────────────────────────────── */
+/* â”€â”€ Admin tab bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-tab-bar {
     display: flex;
     align-items: flex-end;
@@ -4235,7 +4286,7 @@ button:active, .btn:active, .tab-btn:active {
 .admin-tab-panel { display: none; }
 .admin-tab-panel.active { display: block; }
 
-/* ── Gear button & dropdown ─────────────────────── */
+/* â”€â”€ Gear button & dropdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-tab-config-wrap {
     position: relative;
     flex-shrink: 0;
@@ -4295,7 +4346,7 @@ button:active, .btn:active, .tab-btn:active {
     .admin-tab-btn { padding: 8px 12px; font-size: 0.82em; }
 }
 
-/* ── Admin info banners ─────────────────────────── */
+/* â”€â”€ Admin info banners â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-info-banner {
     display: flex;
     gap: 12px;
@@ -4345,7 +4396,7 @@ button:active, .btn:active, .tab-btn:active {
     background: var(--border-color);
 }
 
-/* ── Prices tab ─────────────────────────────────── */
+/* â”€â”€ Prices tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-prices-toolbar {
     display: flex;
     align-items: center;
@@ -4369,7 +4420,7 @@ button:active, .btn:active, .tab-btn:active {
 .price-up   { color: #059669; font-weight: 600; }
 .price-down { color: #dc2626; font-weight: 600; }
 
-/* ── Settings tab ───────────────────────────────── */
+/* â”€â”€ Settings tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .admin-settings-card {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
@@ -4428,8 +4479,44 @@ button:active, .btn:active, .tab-btn:active {
 .admin-toggle-switch input:disabled + .admin-toggle-track { opacity: 0.5; cursor: not-allowed; }
 .admin-settings-reset-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
 
+.admin-docs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+
+.admin-docs-shell {
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--card-bg);
+  min-height: 72vh;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.admin-docs-shell iframe {
+  width: 100%;
+  min-height: 72vh;
+  border: 0;
+  display: block;
+  background: #0d1117;
+}
+
+@media (max-width: 640px) {
+  .admin-docs-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-docs-shell,
+  .admin-docs-shell iframe {
+    min-height: 68vh;
+  }
+}
+
 /* ============================================================
-   SAVED FORECAST PORTFOLIOS — #pfSection
+   SAVED FORECAST PORTFOLIOS â€” #pfSection
    ============================================================ */
 
 .pf-section {
@@ -4785,7 +4872,7 @@ button:active, .btn:active, .tab-btn:active {
 [dir="rtl"] .pf-results-table th:first-child,
 [dir="rtl"] .pf-results-table td:first-child { text-align: right; }
 
-/* ── Card header (name + actions row) ──────────────────────────────────── */
+/* â”€â”€ Card header (name + actions row) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-card-header {
     display: flex;
     align-items: flex-start;
@@ -4794,7 +4881,7 @@ button:active, .btn:active, .tab-btn:active {
     margin-bottom: 8px;
 }
 
-/* ── Card meta (pills row) ──────────────────────────────────────────────── */
+/* â”€â”€ Card meta (pills row) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-card-meta {
     display: flex;
     flex-wrap: wrap;
@@ -4805,7 +4892,7 @@ button:active, .btn:active, .tab-btn:active {
     margin-bottom: 0;
 }
 
-/* ── Scenario badge ─────────────────────────────────────────────────────── */
+/* â”€â”€ Scenario badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-scenario-badge {
     font-size: 0.72rem;
     font-weight: 700;
@@ -4818,7 +4905,7 @@ button:active, .btn:active, .tab-btn:active {
 .pf-scenario-bull { background: rgba(72,199,116,0.15);  color: var(--green, #48C774); }
 .pf-scenario-bear { background: rgba(255,80,80,0.15);   color: var(--red, #FF5050); }
 
-/* ── JS-generated button classes (pf-btn-*) ────────────────────────────── */
+/* â”€â”€ JS-generated button classes (pf-btn-*) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-btn-view,
 .pf-btn-run,
 .pf-btn-edit,
@@ -4861,7 +4948,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 .pf-btn-delete:hover { background: rgba(255,80,80,0.1); color: var(--red, #FF5050); border-color: rgba(255,80,80,0.4); }
 
-/* ── Results table (JS uses .pf-table, not .pf-results-table) ──────────── */
+/* â”€â”€ Results table (JS uses .pf-table, not .pf-results-table) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 .pf-table {
@@ -4892,11 +4979,11 @@ button:active, .btn:active, .tab-btn:active {
 .pf-table tr:last-child td { border-bottom: none; }
 .pf-table tr:hover td { background: rgba(255,255,255,0.03); }
 
-/* ── Color helpers used in results ─────────────────────────────────────── */
+/* â”€â”€ Color helpers used in results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-positive { color: var(--green, #48C774); }
 .pf-negative { color: var(--red, #FF5050); }
 
-/* ── Run date / loading / error states ─────────────────────────────────── */
+/* â”€â”€ Run date / loading / error states â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .pf-run-date {
     font-size: 0.78rem;
     color: var(--text-muted);
@@ -4920,13 +5007,13 @@ button:active, .btn:active, .tab-btn:active {
 .pf-row-failed td { opacity: 0.7; }
 .pf-pending { font-size: 1rem; }
 
-/* ── RTL additions ──────────────────────────────────────────────────────── */
+/* â”€â”€ RTL additions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 [dir="rtl"] .pf-card-header { flex-direction: row-reverse; }
 [dir="rtl"] .pf-card-actions { flex-direction: row-reverse; }
 [dir="rtl"] .pf-table th, [dir="rtl"] .pf-table td { text-align: left; }
 [dir="rtl"] .pf-table th:first-child, [dir="rtl"] .pf-table td:first-child { text-align: right; }
 
-/* ── Responsive ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width: 600px) {
     .pf-list { grid-template-columns: 1fr; }
     .pf-card { padding: 14px; }
@@ -4947,7 +5034,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 /* ============================================================
-   PORTFOLIO RESULT CARDS — rich per-stock grid
+   PORTFOLIO RESULT CARDS â€” rich per-stock grid
    ============================================================ */
 
 /* Results title */
@@ -4958,7 +5045,7 @@ button:active, .btn:active, .tab-btn:active {
     color: var(--text-primary);
 }
 
-/* Card grid — 3 cols desktop, 2 tablet, 1 mobile */
+/* Card grid â€” 3 cols desktop, 2 tablet, 1 mobile */
 .pf-result-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -5197,7 +5284,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 /* ============================================================
-   RAG — SENTIMENT BADGE CLICKABLE
+   RAG â€” SENTIMENT BADGE CLICKABLE
    ============================================================ */
 .sentiment-badge-clickable {
     cursor: pointer;
@@ -5209,7 +5296,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 /* ============================================================
-   RAG — RESEARCH CHAT WIDGET
+   RAG â€” RESEARCH CHAT WIDGET
    ============================================================ */
 
 /* Floating toggle button */
@@ -5331,7 +5418,7 @@ button:active, .btn:active, .tab-btn:active {
     align-self: flex-end;
     border-bottom-right-radius: 4px;
 }
-.chat-msg-ai {
+.chat-msg-response {
     background: var(--input-bg);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
@@ -5445,7 +5532,7 @@ button:active, .btn:active, .tab-btn:active {
     .chat-hidden { transform: translateY(100%); }
 }
 
-/* ── Why This Signal? Modal ───────────────────────────────────────────────── */
+/* â”€â”€ Why This Signal? Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .why-signal-btn-row {
     margin-top: 12px;
     display: flex;
@@ -5543,7 +5630,7 @@ button:active, .btn:active, .tab-btn:active {
     .why-modal-card { padding: 18px 14px; width: 96%; }
 }
 
-/* ── ETF Tab ──────────────────────────────────────────────────────────────── */
+/* â”€â”€ ETF Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /* ETF Panel (card wrapper for each section) */
 .etf-panel {
@@ -5627,8 +5714,8 @@ button:active, .btn:active, .tab-btn:active {
 .etf-pos { color: #22c55e; }
 .etf-neg { color: #ef4444; }
 
-.prem-positive { color: #f59e0b; }   /* trading above NAV — amber */
-.prem-negative { color: #22c55e; }   /* trading at discount — green */
+.prem-positive { color: #f59e0b; }   /* trading above NAV â€” amber */
+.prem-negative { color: #22c55e; }   /* trading at discount â€” green */
 
 /* Global ETF table */
 .etf-global-table-wrap {
@@ -5689,7 +5776,7 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 /* ============================================================
-   ETF FUND INTELLIGENCE DASHBOARD — redesigned
+   ETF FUND INTELLIGENCE DASHBOARD â€” redesigned
    ============================================================ */
 
 /* Sub-tab navigation */
@@ -5948,7 +6035,7 @@ button:active, .btn:active, .tab-btn:active {
 .etf-coming-soon span { font-size: 12px; }
 
 /* ============================================================
-   ETF — Mobile responsive
+   ETF â€” Mobile responsive
    ============================================================ */
 
 /* Sub-nav: always horizontal-scroll, never wraps */
@@ -6200,7 +6287,7 @@ button:active, .btn:active, .tab-btn:active {
 .comp-table td:first-child, .comp-table th:first-child { text-align: left; font-weight: 600; }
 
 /* ============================================================
-   AI BRIEF MODAL
+   MARKET BRIEF MODAL
    ============================================================ */
 #briefModalBody {
     padding: 16px 20px;
@@ -6230,6 +6317,7 @@ button:active, .btn:active, .tab-btn:active {
     border: 1px solid var(--border-color);
     border-radius: 12px;
     transition: box-shadow 0.2s;
+    min-width: 0;
 }
 .rate-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
 .rate-icon  { font-size: 1.5rem; }
@@ -6251,6 +6339,42 @@ button:active, .btn:active, .tab-btn:active {
     font-weight: 600;
     color: var(--text-secondary);
     margin-bottom: 8px;
+}
+
+[data-theme="dark"] .tab-content,
+[data-theme="dark"] .section,
+[data-theme="dark"] .section-header,
+[data-theme="dark"] .section-head,
+[data-theme="dark"] .section h2,
+[data-theme="dark"] .section h3,
+[data-theme="dark"] .section h4,
+[data-theme="dark"] .section-subtitle,
+[data-theme="dark"] .section-header p,
+[data-theme="dark"] .section-head p,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .perf-stat-card,
+[data-theme="dark"] .risk-stat-card,
+[data-theme="dark"] .rate-card,
+[data-theme="dark"] .rate-chart-card {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .section-subtitle,
+[data-theme="dark"] .section-header p,
+[data-theme="dark"] .section-head p,
+[data-theme="dark"] .stat-label,
+[data-theme="dark"] .rate-label,
+[data-theme="dark"] .rate-chart-label,
+[data-theme="dark"] .metric p,
+[data-theme="dark"] .benefit p,
+[data-theme="dark"] .feature p,
+[data-theme="dark"] .proof p,
+[data-theme="dark"] .foot-copy {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] canvas {
+    color-scheme: dark;
 }
 
 /* ============================================================
@@ -6278,15 +6402,24 @@ button:active, .btn:active, .tab-btn:active {
     border-color: var(--accent);
 }
 
-@media (max-width: 600px) {
-    .pf-totals-strip { gap: 8px; }
-    .pf-total-pill { min-width: 90px; }
-    .rates-card-grid { grid-template-columns: repeat(2, 1fr); }
-    .rates-history-grid { grid-template-columns: 1fr; }
-    .comp-symbol-row input { width: 100%; }
+@media (min-width: 641px) {
+    .rates-card-grid {
+        grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
+    }
 }
 
-/* ─── Universal Investor Scoring Panel ──────────────────────────── */
+@media (max-width: 640px) {
+    .pf-totals-strip { gap: 8px; }
+    .pf-total-pill { min-width: 90px; }
+    .rates-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rates-history-grid { grid-template-columns: 1fr; }
+    .comp-symbol-row input { width: 100%; }
+    .rate-card,
+    .rate-chart-card { padding: 12px; }
+    .rate-value { font-size: 1.05rem; }
+}
+
+/* â”€â”€â”€ Universal Investor Scoring Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .scoring-panel-wrapper {
     margin-top: 28px;
     padding: 20px;
@@ -6402,7 +6535,7 @@ button:active, .btn:active, .tab-btn:active {
     .scoring-mode-bar { gap: 4px; }
 }
 
-/* ── Regime Banner ─────────────────────────────────────────────────────────── */
+/* â”€â”€ Regime Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .regime-banner {
     display: flex;
     align-items: center;
@@ -6474,4 +6607,3 @@ button:active, .btn:active, .tab-btn:active {
         padding-top: 8px;
     }
 }
-

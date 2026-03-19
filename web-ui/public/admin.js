@@ -1,4 +1,4 @@
-const API_BASE = '/api/admin';
+﻿const API_BASE = '/api/admin';
 const TOKEN_KEY = 'admin_token';
 const LANG_KEY = 'lang';
 const THEME_KEY = 'theme';
@@ -11,7 +11,7 @@ const auditHealth = document.getElementById('auditHealth');
 const agentHealth = document.getElementById('agentHealth');
 
 function escapeHtml(value) {
-    return String(value ? '')
+    return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -67,7 +67,7 @@ async function adminLogin() {
     }
 
     loginBtn.disabled = true;
-    loginStatus.textContent = 'Logging in…';
+    loginStatus.textContent = 'Logging inâ€¦';
     loginStatus.style.color = '';
 
     try {
@@ -87,6 +87,7 @@ async function adminLogin() {
         await Promise.all([loadSystemHealth(), loadReports(), loadSources()]);
         const activePanel = document.querySelector('.admin-tab-panel.active');
         if (activePanel && activePanel.id === 'tab-prices') loadPrices();
+        if (activePanel && activePanel.id === 'tab-product-docs') loadInternalDocs();
     } catch (_e) {
         loginStatus.textContent = 'Connection error. Try again.';
         loginStatus.style.color = '#ef4444';
@@ -172,8 +173,8 @@ function renderSystemHealth(data) {
     agentHealth.innerHTML = agent ? `
         <p><strong>Date:</strong> ${escapeHtml(agent.snapshot_date || '-')}</p>
         <p><strong>Agent:</strong> ${escapeHtml(agent.agent_name || '-')}</p>
-        <p><strong>30D:</strong> ${escapeHtml(String(agent.win_rate_30d ? '-'))}% (${escapeHtml(String(agent.predictions_30d ? 0))} preds)</p>
-        <p><strong>90D:</strong> ${escapeHtml(String(agent.win_rate_90d ? '-'))}% (${escapeHtml(String(agent.predictions_90d ? 0))} preds)</p>
+        <p><strong>30D:</strong> ${escapeHtml(String(agent.win_rate_30d ?? '-'))}% (${escapeHtml(String(agent.predictions_30d ?? 0))} preds)</p>
+        <p><strong>90D:</strong> ${escapeHtml(String(agent.win_rate_90d ?? '-'))}% (${escapeHtml(String(agent.predictions_90d ?? 0))} preds)</p>
     ` : '<p class="no-data">No agent daily data available.</p>';
 }
 
@@ -328,7 +329,7 @@ function renderSources(sources) {
             ? '<span class="admin-status-badge admin-status-processed">Active</span>'
             : '<span class="admin-status-badge admin-status-pending">Paused</span>';
         const lastFetched = s.last_fetched_at ? formatDate(s.last_fetched_at) : 'Never';
-        const urlDisplay = s.source_url ? `<span title="${escapeHtml(s.source_url)}">${escapeHtml(s.source_url.slice(0, 40))}${s.source_url.length > 40 ? '…' : ''}</span>` : '—';
+        const urlDisplay = s.source_url ? `<span title="${escapeHtml(s.source_url)}">${escapeHtml(s.source_url.slice(0, 40))}${s.source_url.length > 40 ? 'â€¦' : ''}</span>` : 'â€”';
         const toggleLabel = s.is_active ? 'Pause' : 'Resume';
         return `<tr>
             <td>${escapeHtml(s.name)}</td>
@@ -373,7 +374,7 @@ async function saveSource() {
         return setSourceStatus('Bot token and Chat ID are required for Bot Channel sources.', true);
     }
 
-    setSourceStatus('Saving…');
+    setSourceStatus('Savingâ€¦');
     try {
         await fetchJson(`${API_BASE}/sources`, {
             method: 'POST',
@@ -422,9 +423,9 @@ async function deleteSource(id) {
 async function fetchSourceNow(id, btn) {
     if (btn) {
         btn.disabled = true;
-        btn.textContent = 'Fetching…';
+        btn.textContent = 'Fetchingâ€¦';
     }
-    setSourceStatus('Fetching…');
+    setSourceStatus('Fetchingâ€¦');
     try {
         const result = await fetchJson(`${API_BASE}/sources/${id}/fetch`, { method: 'POST' });
         const msg = result.ok
@@ -446,7 +447,7 @@ function updateSourceFormFields() {
     srcUrlRow.style.display = (needsUrl || needsBot) ? '' : 'none';
     srcBotRow.style.display = needsBot ? '' : 'none';
     srcChatRow.style.display = needsBot ? '' : 'none';
-    srcUrl.placeholder = 'https://…';
+    srcUrl.placeholder = 'https://â€¦';
 }
 
 function bindSourceForm() {
@@ -487,7 +488,7 @@ async function submitWhatsApp() {
         return setWaStatus('Please paste text or select a file.', true);
     }
 
-    setWaStatus('Submitting to pipeline…');
+    setWaStatus('Submitting to pipelineâ€¦');
     waSubmitBtn.disabled = true;
 
     const body = new FormData();
@@ -499,7 +500,7 @@ async function submitWhatsApp() {
         const result = await fetchJson(`${API_BASE}/sources/manual`, { method: 'POST', body });
         if (result.ok) {
             const sym = (result.symbols_matched || []).join(', ') || 'general market';
-            setWaStatus(`Stored and matched to: ${sym} (${result.language || 'auto'}, ${result.sentiment || '—'})`);
+            setWaStatus(`Stored and matched to: ${sym} (${result.language || 'auto'}, ${result.sentiment || 'â€”'})`);
             waText.value = '';
             waSelectedFile = null;
             waFileName.textContent = '';
@@ -589,6 +590,7 @@ const TAB_DEFS = [
     { id: 'tab-ask-reports',       label: 'Ask Reports' },
     { id: 'tab-settings',          label: 'Settings' },
     { id: 'tab-etf-docs',          label: 'ETF Docs' },
+    { id: 'tab-product-docs',      label: 'Product Docs' },
 ];
 
 const HIDDEN_TABS_KEY = 'admin_hidden_tabs';
@@ -695,13 +697,49 @@ function initTabs() {
     switchTab(target);
 }
 
+function bindInternalDocsTab() {
+    const refreshBtn = document.getElementById('adminDocsRefreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => loadInternalDocs(true));
+    }
+}
+
+let _internalDocsLoaded = false;
+
+async function loadInternalDocs(force = false) {
+    if (_internalDocsLoaded && !force) return;
+    const statusEl = document.getElementById('adminDocsStatus');
+    const frameEl = document.getElementById('adminDocsFrame');
+    if (!statusEl || !frameEl) return;
+
+    statusEl.textContent = 'Loading internal docs...';
+    try {
+        const response = await fetch(`${API_BASE}/internal-docs-html`, {
+            headers: apiHeaders()
+        });
+        if (!response.ok) {
+            if (response.status === 401) {
+                setToken('');
+                showLoginForm('Session expired. Please log in again.');
+            }
+            throw new Error(`Failed to load internal docs (${response.status})`);
+        }
+        const html = await response.text();
+        frameEl.srcdoc = html;
+        _internalDocsLoaded = true;
+        statusEl.textContent = `Loaded ${new Date().toLocaleString()}`;
+    } catch (err) {
+        statusEl.textContent = err.message || 'Failed to load internal docs.';
+    }
+}
+
 // ============================================================
 // BOOTSTRAP
 // ============================================================
 // LATEST STOCK PRICES
 // ============================================================
 
-// Minimal company name map — ticker -> display name
+// Minimal company name map â€” ticker -> display name
 const COMPANY_NAMES = {
     // EGX
     'COMI.CA': 'Commercial International Bank',
@@ -736,7 +774,7 @@ const COMPANY_NAMES = {
 let _allPriceRows = [];    // full dataset for client-side search
 
 function formatChange(change, pct) {
-    if (change == null || isNaN(change)) return '<td class="num">—</td><td class="num">—</td>';
+    if (change == null || isNaN(change)) return '<td class="num">â€”</td><td class="num">â€”</td>';
     const sign  = change >= 0 ? '+' : '';
     const cls   = change >= 0 ? 'price-up' : 'price-down';
     const arrow = change >= 0 ? '&#9650;' : '&#9660;';
@@ -745,7 +783,7 @@ function formatChange(change, pct) {
 }
 
 function formatVolume(v) {
-    if (v == null || isNaN(v)) return '—';
+    if (v == null || isNaN(v)) return 'â€”';
     if (v >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M';
     if (v >= 1_000)     return (v / 1_000).toFixed(1) + 'K';
     return String(v);
@@ -755,12 +793,12 @@ function renderPriceRows(rows) {
     const tbody = document.getElementById('priceRows');
     if (!tbody) return;
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="10" class="no-data">No price data available yet. Data is collected Mon–Fri at 4:30 PM EST.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="no-data">No price data available yet. Data is collected Monâ€“Fri at 4:30 PM EST.</td></tr>';
         return;
     }
     tbody.innerHTML = rows.map(r => {
-        const name   = COMPANY_NAMES[r.symbol] || '—';
-        const fmt    = v => (v != null && !isNaN(v)) ? Number(v).toFixed(2) : '—';
+        const name   = COMPANY_NAMES[r.symbol] || 'â€”';
+        const fmt    = v => (v != null && !isNaN(v)) ? Number(v).toFixed(2) : 'â€”';
         const open   = fmt(r.open);
         const high   = fmt(r.high);
         const low    = fmt(r.low);
@@ -770,7 +808,7 @@ function renderPriceRows(rows) {
         const pct    = r.change_pct != null ? Number(r.change_pct) : null;
         const changeCells = (change != null && pct != null)
             ? formatChange(change, pct)
-            : '<td class="num">—</td><td class="num">—</td>';
+            : '<td class="num">â€”</td><td class="num">â€”</td>';
         return `<tr>
             <td><strong>${escapeHtml(r.symbol)}</strong></td>
             <td>${escapeHtml(name)}</td>
@@ -780,7 +818,7 @@ function renderPriceRows(rows) {
             <td class="num">${escapeHtml(close)}</td>
             ${changeCells}
             <td class="num">${escapeHtml(vol)}</td>
-            <td>${escapeHtml(r.date || '—')}</td>
+            <td>${escapeHtml(r.date || 'â€”')}</td>
         </tr>`;
     }).join('');
 }
@@ -798,7 +836,7 @@ function filterPrices(query) {
 async function loadPrices() {
     const tbody = document.getElementById('priceRows');
     const dateEl = document.getElementById('pricesDate');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="no-data">Loading…</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="no-data">Loadingâ€¦</td></tr>';
     try {
         const rows = await fetchJson('/api/prices');
         _allPriceRows = rows || [];
@@ -834,6 +872,9 @@ function bindPricesTab() {
         if (btn && btn.dataset.tab === 'tab-etf-docs') {
             loadEtfDocs();
         }
+        if (btn && btn.dataset.tab === 'tab-product-docs') {
+            loadInternalDocs();
+        }
     });
 }
 
@@ -848,21 +889,21 @@ async function loadForecastAccuracy() {
     _faLoaded = true;
 
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    setVal('faStatTotal',     '…');
-    setVal('faStatEvaluated', '…');
-    setVal('faStatAvgError',  '…');
-    setVal('faStatHitRate',   '…');
+    setVal('faStatTotal',     'â€¦');
+    setVal('faStatEvaluated', 'â€¦');
+    setVal('faStatAvgError',  'â€¦');
+    setVal('faStatHitRate',   'â€¦');
 
     try {
         const data = await fetchJson(`${API_BASE}/forecast-accuracy`);
 
         // Summary
-        setVal('faStatTotal',     data.summary?.total_forecasts    ? '—');
-        setVal('faStatEvaluated', data.summary?.total_evaluated    ? '—');
+        setVal('faStatTotal',     data.summary?.total_forecasts ?? '—');
+        setVal('faStatEvaluated', data.summary?.total_evaluated ?? '—');
         const avgErr = data.summary?.avg_error_pct;
-        setVal('faStatAvgError',  avgErr != null ? avgErr.toFixed(2) + '%' : '—');
+        setVal('faStatAvgError',  avgErr != null ? avgErr.toFixed(2) + '%' : 'â€”');
         const hitRate = data.summary?.within_10pct_rate;
-        setVal('faStatHitRate',   hitRate != null ? (hitRate * 100).toFixed(1) + '%' : '—');
+        setVal('faStatHitRate',   hitRate != null ? (hitRate * 100).toFixed(1) + '%' : 'â€”');
 
         // Per-stock table
         const stockBody = document.getElementById('faStockTableBody');
@@ -874,10 +915,10 @@ async function loadForecastAccuracy() {
                 stockBody.innerHTML = rows.map(r => `<tr>
                     <td><strong>${escapeHtml(r.symbol)}</strong></td>
                     <td>${r.total_forecasts}</td>
-                    <td class="num">${r.avg_expected_pct != null ? r.avg_expected_pct.toFixed(2) + '%' : '—'}</td>
-                    <td class="num">${r.avg_actual_pct != null ? r.avg_actual_pct.toFixed(2) + '%' : '—'}</td>
-                    <td class="num">${r.avg_error_pct != null ? r.avg_error_pct.toFixed(2) + '%' : '—'}</td>
-                    <td class="num">${r.within_10pct_rate != null ? (r.within_10pct_rate * 100).toFixed(1) + '%' : '—'}</td>
+                    <td class="num">${r.avg_expected_pct != null ? r.avg_expected_pct.toFixed(2) + '%' : 'â€”'}</td>
+                    <td class="num">${r.avg_actual_pct != null ? r.avg_actual_pct.toFixed(2) + '%' : 'â€”'}</td>
+                    <td class="num">${r.avg_error_pct != null ? r.avg_error_pct.toFixed(2) + '%' : 'â€”'}</td>
+                    <td class="num">${r.within_10pct_rate != null ? (r.within_10pct_rate * 100).toFixed(1) + '%' : 'â€”'}</td>
                 </tr>`).join('');
             }
         }
@@ -890,14 +931,14 @@ async function loadForecastAccuracy() {
                 recentBody.innerHTML = '<tr><td colspan="7" class="admin-muted" style="text-align:center;padding:20px;">No evaluations recorded yet.</td></tr>';
             } else {
                 recentBody.innerHTML = evals.map(e => {
-                    const errPct = e.error_pct != null ? e.error_pct.toFixed(2) + '%' : '—';
-                    const within = e.within_10pct ? '<span style="color:var(--green)">✓ Within 10%</span>' : '<span style="color:var(--red)">✗ Outside 10%</span>';
+                    const errPct = e.error_pct != null ? e.error_pct.toFixed(2) + '%' : 'â€”';
+                    const within = e.within_10pct ? '<span style="color:var(--green)">âœ“ Within 10%</span>' : '<span style="color:var(--red)">âœ— Outside 10%</span>';
                     return `<tr>
-                        <td>${escapeHtml(e.run_date || '—')}</td>
+                        <td>${escapeHtml(e.run_date || 'â€”')}</td>
                         <td><strong>${escapeHtml(e.symbol)}</strong></td>
-                        <td>${escapeHtml(e.target_date || '—')}</td>
-                        <td class="num">${e.expected_return_pct != null ? e.expected_return_pct.toFixed(2) + '%' : '—'}</td>
-                        <td class="num">${e.actual_return_pct != null ? e.actual_return_pct.toFixed(2) + '%' : '—'}</td>
+                        <td>${escapeHtml(e.target_date || 'â€”')}</td>
+                        <td class="num">${e.expected_return_pct != null ? e.expected_return_pct.toFixed(2) + '%' : 'â€”'}</td>
+                        <td class="num">${e.actual_return_pct != null ? e.actual_return_pct.toFixed(2) + '%' : 'â€”'}</td>
                         <td class="num">${errPct}</td>
                         <td>${within}</td>
                     </tr>`;
@@ -988,7 +1029,7 @@ function bindSettingsTab() {
 }
 
 // ============================================================
-// RAG — ASK REPORTS TAB
+// RAG â€” ASK REPORTS TAB
 // ============================================================
 
 const RAG_BASE = '/api/rag';
@@ -1007,7 +1048,7 @@ async function loadRagEmbedStatus() {
 async function loadRagDocuments() {
     const tbody = document.getElementById('ragDocsBody');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="6" class="admin-muted" style="text-align:center;padding:16px;">Loading…</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="admin-muted" style="text-align:center;padding:16px;">Loadingâ€¦</td></tr>';
     try {
         const data = await fetchJson(`${RAG_BASE}/documents`);
         const docs = data.documents || [];
@@ -1044,14 +1085,14 @@ async function loadRagDocuments() {
 async function triggerEmbed() {
     const btn = document.getElementById('ragEmbedBtn');
     const statusEl = document.getElementById('ragEmbedStatus');
-    if (btn) { btn.disabled = true; btn.textContent = 'Embedding…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Embeddingâ€¦'; }
     try {
         await fetchJson(`${RAG_BASE}/embed`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        if (statusEl) statusEl.textContent = 'Embedding started — check server logs. Refresh status in a minute.';
+        if (statusEl) statusEl.textContent = 'Embedding started â€” check server logs. Refresh status in a minute.';
     } catch (e) {
         if (statusEl) statusEl.textContent = `Embed error: ${e.message}`;
     } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '↻ Embed Documents'; }
+        if (btn) { btn.disabled = false; btn.textContent = 'â†» Embed Documents'; }
     }
 }
 
@@ -1066,7 +1107,7 @@ async function askReports() {
     const question = questionEl ? questionEl.value.trim() : '';
     if (!question) return;
 
-    if (askBtn) { askBtn.disabled = true; askBtn.textContent = 'Thinking…'; }
+    if (askBtn) { askBtn.disabled = true; askBtn.textContent = 'Thinkingâ€¦'; }
     if (answerBox) answerBox.style.display = 'none';
     if (errorEl) errorEl.style.display = 'none';
 
@@ -1080,7 +1121,7 @@ async function askReports() {
         if (answerEl) answerEl.textContent = data.answer || '(No answer returned)';
         if (sourcesEl) {
             const srcs = (data.sources || []).map(s =>
-                `<span style="display:inline-block;margin-right:12px;">📄 ${escapeHtml(s.filename)} (similarity: ${s.similarity})</span>`
+                `<span style="display:inline-block;margin-right:12px;">ðŸ“„ ${escapeHtml(s.filename)} (similarity: ${s.similarity})</span>`
             ).join('');
             sourcesEl.innerHTML = srcs ? `<strong>Sources:</strong> ${srcs}` : '';
         }
@@ -1108,6 +1149,7 @@ async function bootstrap() {
     bindSourceForm();
     bindWaDropZone();
     bindPricesTab();
+    bindInternalDocsTab();
     renderFrontendTabToggles();
     bindSettingsTab();
 
@@ -1116,6 +1158,7 @@ async function bootstrap() {
         await Promise.all([loadSystemHealth(), loadReports(), loadSources()]);
         const activePanel = document.querySelector('.admin-tab-panel.active');
         if (activePanel && activePanel.id === 'tab-prices') loadPrices();
+        if (activePanel && activePanel.id === 'tab-product-docs') loadInternalDocs();
     } else {
         showLoginForm();
     }
@@ -1123,7 +1166,7 @@ async function bootstrap() {
 
 bootstrap();
 
-// ── ETF Docs ───────────────────────────────────────────────────────────────
+// â”€â”€ ETF Docs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const _EMBED_STATUS_COLORS = {
     PENDING: 'color:#9ca3af;',
@@ -1135,7 +1178,7 @@ const _EMBED_STATUS_COLORS = {
 async function loadEtfDocs() {
     const tbody  = document.getElementById('etfDocsTableBody');
     const count  = document.getElementById('etfDocsCount');
-    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="no-data">Loading…</td></tr>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" class="no-data">Loadingâ€¦</td></tr>';
     try {
         const rows = await fetchJson('/api/etf/documents');
         if (count) count.textContent = `${rows.length} document${rows.length === 1 ? '' : 's'}`;
@@ -1145,19 +1188,20 @@ async function loadEtfDocs() {
         }
         tbody.innerHTML = rows.map(r => {
             const statusStyle = _EMBED_STATUS_COLORS[r.embed_status] || 'color:var(--text-muted);';
-            const fetched = r.fetched_at ? r.fetched_at.toString().slice(0, 10) : '—';
-            const title   = escapeHtml(r.title || r.url || '—');
-            const errMsg  = r.embed_error ? `<span title="${escapeHtml(r.embed_error)}" style="cursor:help;">&#9888; ${escapeHtml(r.embed_error.slice(0, 40))}…</span>` : '—';
+            const fetched = r.fetched_at ? r.fetched_at.toString().slice(0, 10) : 'â€”';
+            const title   = escapeHtml(r.title || r.url || 'â€”');
+            const errMsg  = r.embed_error ? `<span title="${escapeHtml(r.embed_error)}" style="cursor:help;">&#9888; ${escapeHtml(r.embed_error.slice(0, 40))}â€¦</span>` : 'â€”';
             return `<tr>
                 <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${title}">${title}</td>
-                <td>${escapeHtml(r.doc_type || '—')}</td>
-                <td>${escapeHtml(r.instrument_symbol || '—')}</td>
+                <td>${escapeHtml(r.doc_type || 'â€”')}</td>
+                <td>${escapeHtml(r.instrument_symbol || 'â€”')}</td>
                 <td style="font-size:12px;color:var(--text-muted);">${fetched}</td>
-                <td style="${statusStyle}">${r.embed_status || '—'}</td>
-                <td style="font-size:12px;">${r.embed_error ? errMsg : '—'}</td>
+                <td style="${statusStyle}">${r.embed_status || 'â€”'}</td>
+                <td style="font-size:12px;">${r.embed_error ? errMsg : 'â€”'}</td>
             </tr>`;
         }).join('');
     } catch (err) {
         if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="error-message">${escapeHtml(err.message)}</td></tr>`;
     }
 }
+

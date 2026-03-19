@@ -1,6 +1,6 @@
-'use strict';
+﻿'use strict';
 /**
- * RAG Routes — Retrieval-Augmented Generation for Xmore
+ * RAG Routes â€” Retrieval-Augmented Generation for Xmore
  *
  * POST /api/rag/ask              Q&A against embedded market reports
  * POST /api/rag/chat             General EGX research chat with news context
@@ -23,7 +23,7 @@ function attachDb(db, isPostgres) {
     _isPostgres = !!isPostgres;
 }
 
-// ── DB helpers ───────────────────────────────────────────────────────────────
+// â”€â”€ DB helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function ph(n) { return _isPostgres ? `$${n}` : '?'; }
 
@@ -64,7 +64,7 @@ function dbRun(sql, params = []) {
     });
 }
 
-// ── pgvector availability flag (set once on first use) ────────────────────────
+// â”€â”€ pgvector availability flag (set once on first use) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 let _pgvectorAvailable = null;
 
@@ -83,7 +83,7 @@ async function hasPgvector() {
     return _pgvectorAvailable;
 }
 
-// ── Unified top-K retrieval (pgvector if available, in-memory cosine fallback) ──
+// â”€â”€ Unified top-K retrieval (pgvector if available, in-memory cosine fallback) â”€â”€
 
 /**
  * Retrieve the top-K most similar chunks to a query embedding.
@@ -97,7 +97,7 @@ async function retrieveTopChunks(qEmbedding, topK = 5, sourceTypes = null) {
     const useVec = await hasPgvector();
 
     if (useVec) {
-        // pgvector path — O(log n) with IVFFlat index
+        // pgvector path â€” O(log n) with IVFFlat index
         const vecStr = '[' + qEmbedding.join(',') + ']';
         let sql, params;
         if (sourceTypes && sourceTypes.length > 0) {
@@ -154,7 +154,7 @@ function _parseMeta(metaStr) {
     try { return JSON.parse(metaStr); } catch { return {}; }
 }
 
-// ── Gemini API helpers ───────────────────────────────────────────────────────
+// â”€â”€ Gemini API helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const GEMINI_API_KEY = process.env.GOOGLE_API_KEY || '';
 
@@ -226,7 +226,7 @@ async function geminiGenerateGrounded(prompt, temperature = 0.3) {
     return { text, sources };
 }
 
-// ── Cosine similarity (pure JS) ──────────────────────────────────────────────
+// â”€â”€ Cosine similarity (pure JS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function cosineSim(a, b) {
     if (!a || !b || a.length !== b.length) return 0;
@@ -258,10 +258,10 @@ function normalizeEntityText(value) {
         .toLowerCase()
         .normalize('NFKD')
         .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[أإآ]/g, 'ا')
-        .replace(/ى/g, 'ي')
-        .replace(/ة/g, 'ه')
-        .replace(/ـ/g, '')
+        .replace(/[Ø£Ø¥Ø¢]/g, 'Ø§')
+        .replace(/Ù‰/g, 'ÙŠ')
+        .replace(/Ø©/g, 'Ù‡')
+        .replace(/Ù€/g, '')
         .replace(/[^\w\u0600-\u06FF]+/g, ' ')
         .trim();
 }
@@ -362,7 +362,7 @@ function resolveEntities(question, catalog, explicitSymbol) {
         .slice(0, 5);
 }
 
-// ── POST /api/rag/ask — Q&A against market reports ──────────────────────────
+// â”€â”€ POST /api/rag/ask â€” Q&A against market reports â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.post('/ask', async (req, res) => {
     const { question } = req.body || {};
@@ -428,25 +428,25 @@ Answer concisely and cite the source where relevant.`;
     }
 });
 
-// ── Static EGX market knowledge (injected into every /chat prompt) ───────────
+// â”€â”€ Static EGX market knowledge (injected into every /chat prompt) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const EGX_MARKET_KNOWLEDGE = `
-EGYPTIAN EXCHANGE (EGX) — REFERENCE KNOWLEDGE
+EGYPTIAN EXCHANGE (EGX) â€” REFERENCE KNOWLEDGE
 ==============================================
 The Egyptian Exchange (EGX) is the stock exchange of Egypt, one of the oldest in the region,
 established in 1883. It is headquartered in Cairo with a branch in Alexandria.
 
 Key Facts:
-- Full name: Egyptian Exchange (البورصة المصرية)
+- Full name: Egyptian Exchange (Ø§Ù„Ø¨ÙˆØ±ØµØ© Ø§Ù„Ù…ØµØ±ÙŠØ©)
 - Website: https://www.egx.com.eg
-- Currency: Egyptian Pound (EGP / جنيه مصري)
-- Trading days: Sunday – Thursday (Friday/Saturday are weekends in Egypt)
-- Trading hours: 10:00 – 14:30 Cairo time (UTC+2)
-- Pre-open session: 09:30 – 10:00
+- Currency: Egyptian Pound (EGP / Ø¬Ù†ÙŠÙ‡ Ù…ØµØ±ÙŠ)
+- Trading days: Sunday â€“ Thursday (Friday/Saturday are weekends in Egypt)
+- Trading hours: 10:00 â€“ 14:30 Cairo time (UTC+2)
+- Pre-open session: 09:30 â€“ 10:00
 - Settlement: T+2
 - Main indices: EGX30 (top 30 by liquidity/activity), EGX70 (mid-cap), EGX100 (combined), EGX20 Capped
 - Symbol format: TICKER.CA  (e.g., COMI.CA for CIB, SWDY.CA for El-Sewedy Electric)
-- Regulator: Financial Regulatory Authority (FRA — الهيئة العامة للرقابة المالية)
+- Regulator: Financial Regulatory Authority (FRA â€” Ø§Ù„Ù‡ÙŠØ¦Ø© Ø§Ù„Ø¹Ø§Ù…Ø© Ù„Ù„Ø±Ù‚Ø§Ø¨Ø© Ø§Ù„Ù…Ø§Ù„ÙŠØ©)
 - ~250+ companies listed across 15+ sectors
 
 Major Sectors on EGX:
@@ -454,13 +454,13 @@ Banking, Real Estate & Construction, Telecommunications, Food & Beverage,
 Chemicals & Petrochemicals, Steel & Industrial, Ports & Logistics,
 Healthcare, Fintech, Textiles, Energy, Cement, Tourism & Hospitality
 
-XMORE PLATFORM — METHODOLOGY & DATA SOURCES:
-- Multi-agent AI stack: ML (LightGBM per-symbol), RSI (adaptive periods), MA (adaptive periods), Sentiment (Gemini + recency decay), Volume, Risk agents
-- Consensus engine: 4-layer pipeline — Layer 1 (agent vote), Layer 2 (weighted average), Layer 3 (risk filter), Layer 4 (regime gate: Crisis blocks UP signals; Turbulent downgrades conviction)
-- Market regime detection: Gaussian HMM on EGX30 price history — states: Calm, Turbulent, Crisis
+XMORE PLATFORM â€” METHODOLOGY & DATA SOURCES:
+- Multi-signal stack: ML (LightGBM per-symbol), RSI (adaptive periods), MA (adaptive periods), Sentiment (Gemini + recency decay), Volume, Risk agents
+- Consensus engine: 4-layer pipeline â€” Layer 1 (agent vote), Layer 2 (weighted average), Layer 3 (risk filter), Layer 4 (regime gate: Crisis blocks UP signals; Turbulent downgrades conviction)
+- Market regime detection: Gaussian HMM on EGX30 price history â€” states: Calm, Turbulent, Crisis
 - Walk-forward validation: 90-day train / 20-day test / 10-day step rolling windows across all 6 agents, validated weekly
 - Confidence gating: signals with max(probability) < 60% are converted to HOLD before publication
-- Live knowledge sources injected into this assistant:
+- Live knowledge sources injected into this response:
   * Latest prices, top gainers/losers, most active volume
   * Consensus signals + per-stock sentiment snapshots
   * Current market regime (Calm/Turbulent/Crisis) + 30-day signal distribution
@@ -473,7 +473,7 @@ XMORE PLATFORM — METHODOLOGY & DATA SOURCES:
   * Portfolio forecasts + actual vs forecast performance (user-specific, when logged in)
 `.trim();
 
-// ── POST /api/rag/chat — General EGX research chat ──────────────────────────
+// â”€â”€ POST /api/rag/chat â€” General EGX research chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.post('/chat', optionalAuth, async (req, res) => {
     const { question, symbol, language, source_mode } = req.body || {};
@@ -505,12 +505,12 @@ router.post('/chat', optionalAuth, async (req, res) => {
             );
             if (stocks.length > 0) {
                 const lines = stocks.map(s =>
-                    `  ${s.symbol.padEnd(12)} ${s.name_en} (${s.name_ar}) — ${s.sector_en || 'N/A'}`
+                    `  ${s.symbol.padEnd(12)} ${s.name_en} (${s.name_ar}) â€” ${s.sector_en || 'N/A'}`
                 ).join('\n');
                 stockReferenceBlock = `\nLISTED EGX STOCKS (${stocks.length} companies):\n${lines}`;
             }
         } catch (_e) {
-            // Table may not exist in older schema — skip silently
+            // Table may not exist in older schema â€” skip silently
         }
 
         // 2. Keyword-match news from main DB
@@ -569,7 +569,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
             );
         }
         let newsContext = newsRows.slice(0, 8).map(r =>
-            `- [${r.date}] ${r.headline} (${r.source}${r.symbol ? ` · ${r.symbol}` : ''})`
+            `- [${r.date}] ${r.headline} (${r.source}${r.symbol ? ` Â· ${r.symbol}` : ''})`
         ).join('\n');
 
         if (newsRows.length > 0) {
@@ -614,7 +614,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 }));
             }
         } catch (_e) {
-            // No rag_chunks available — skip silently
+            // No rag_chunks available â€” skip silently
         }
 
         // 3b. News RAG chunks (recency-weighted semantic matches)
@@ -647,13 +647,13 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 })));
             }
         } catch (_e) {
-            // news_rag_chunks missing — skip silently
+            // news_rag_chunks missing â€” skip silently
         }
 
         // 4. Live market data context
         let marketDataBlock = '';
         try {
-            // 4a. Latest prices — top gainers / losers / most active
+            // 4a. Latest prices â€” top gainers / losers / most active
             const priceRows = await dbAll(
                 _isPostgres
                 ? `SELECT DISTINCT ON (p.symbol) p.symbol, p.date, p.close, p.open,
@@ -821,7 +821,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 if (regimeRow.length > 0) {
                     const current = regimeRow[0];
                     const history = regimeRow.map(r => `${r.date}:${r.regime}`).join(', ');
-                    marketDataBlock += `\n  Market Regime: ${current.regime} (as of ${current.date}) — recent: ${history}`;
+                    marketDataBlock += `\n  Market Regime: ${current.regime} (as of ${current.date}) â€” recent: ${history}`;
                 }
             } catch (_e) { /* regime_log missing */ }
 
@@ -838,7 +838,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 if (sigDist.length > 0) {
                     const total = sigDist.reduce((s, r) => s + Number(r.cnt), 0);
                     const parts = sigDist.map(r => `${r.prediction}: ${r.cnt} (${Math.round(Number(r.cnt)/total*100)}%)`).join(', ');
-                    marketDataBlock += `\n  30-day Signal Distribution: ${parts} — total ${total} signals`;
+                    marketDataBlock += `\n  30-day Signal Distribution: ${parts} â€” total ${total} signals`;
                 }
             } catch (_e) { /* trade_recommendations missing */ }
 
@@ -856,7 +856,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                         const agents = JSON.parse(bt.agent_summaries_json || '[]');
                         agentSummary = agents.map(a => `${a.agent}: ${(a.accuracy*100).toFixed(1)}%`).join(', ');
                     } catch (_) {}
-                    marketDataBlock += `\n  Walk-Forward Backtest (${bt.run_date}): ${bt.symbols_tested} stocks, ${bt.windows_run} windows — accuracy: ${(bt.overall_accuracy*100).toFixed(1)}%${agentSummary ? ` | by agent: ${agentSummary}` : ''}`;
+                    marketDataBlock += `\n  Walk-Forward Backtest (${bt.run_date}): ${bt.symbols_tested} stocks, ${bt.windows_run} windows â€” accuracy: ${(bt.overall_accuracy*100).toFixed(1)}%${agentSummary ? ` | by agent: ${agentSummary}` : ''}`;
                 }
             } catch (_e) { /* backtest_run_log missing */ }
 
@@ -943,7 +943,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                             return `    ${r.symbol}: ${forecast}${prob}${actual}`;
                         }).join('\n') || '    (no forecast results yet)';
                         pfDetails.push(
-                            `  Portfolio "${pf.name}" — ${symbols.length} stock(s), ${pf.horizon_days}d ${pf.scenario} horizon, ${pf.investment_amount} EGP\n${stockLines}`
+                            `  Portfolio "${pf.name}" â€” ${symbols.length} stock(s), ${pf.horizon_days}d ${pf.scenario} horizon, ${pf.investment_amount} EGP\n${stockLines}`
                         );
                     }
                     portfolioBlock = `\nUSER'S FORECAST PORTFOLIOS:\n${pfDetails.join('\n')}`;
@@ -976,9 +976,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
         const entityNote = resolvedEntities.length
             ? `\nResolved entities: ${resolvedEntities.map(e => `${e.symbol} (${e.type})`).join(', ')}`
             : '';
-        const prompt = `You are an expert EGX financial research assistant with access to live market data.
+        const prompt = `You are an expert EGX financial market analyst with access to live market data.
 Use the live market data, stock reference, EGX knowledge, and knowledge base excerpts to answer questions.
-When discussing the user's portfolios, use the portfolio data provided — show actual vs forecast performance.
+When discussing the user's portfolios, use the portfolio data provided â€” show actual vs forecast performance.
 Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
 Answer language must be ${lang === 'ar' ? 'Arabic' : 'English'}.
 ${symbolNote}
@@ -1014,7 +1014,7 @@ User question: ${question}`;
     }
 });
 
-// ── POST /api/rag/macro — EGX Macro Driver Read with Google Search grounding ──
+// â”€â”€ POST /api/rag/macro â€” EGX Macro Driver Read with Google Search grounding â”€â”€
 
 router.post('/macro', async (req, res) => {
     if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
@@ -1095,7 +1095,7 @@ Given the macro mix: which EGX sectors have a tailwind vs headwind today?
 (Banks / Real Estate / Energy-exporters / Consumer-import-heavy / Industrials)
 
 ## 6. Net Tone
-One sentence: overall macro tone for EGX today — supportive / neutral / cautious — and why.
+One sentence: overall macro tone for EGX today â€” supportive / neutral / cautious â€” and why.
 ${dbSnapshot ? '\n' + dbSnapshot : ''}
 
 Keep each section 2-3 sentences. Cite the source searched. Flag any data that is delayed or unavailable.`;
@@ -1115,7 +1115,7 @@ Keep each section 2-3 sentences. Cite the source searched. Flag any data that is
     }
 });
 
-// ── GET /api/rag/embed/status — how many chunks are embedded ─────────────────
+// â”€â”€ GET /api/rag/embed/status â€” how many chunks are embedded â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.get('/embed/status', async (req, res) => {
     try {
@@ -1140,7 +1140,7 @@ router.get('/embed/status', async (req, res) => {
     }
 });
 
-// ── GET /api/rag/documents — document index / audit trail ────────────────────
+// â”€â”€ GET /api/rag/documents â€” document index / audit trail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.get('/documents', async (req, res) => {
     try {
@@ -1165,7 +1165,7 @@ router.get('/documents', async (req, res) => {
     }
 });
 
-// ── POST /api/rag/embed — embed reports in Node.js (no Python needed) ────────
+// â”€â”€ POST /api/rag/embed â€” embed reports in Node.js (no Python needed) â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.post('/embed', (req, res) => {
     if (!GEMINI_API_KEY) {
@@ -1176,7 +1176,7 @@ router.post('/embed', (req, res) => {
         ? parseInt(req.body.report_id, 10) || null
         : null;
 
-    // Respond immediately — embedding runs in background
+    // Respond immediately â€” embedding runs in background
     res.json({ ok: true, message: 'Embedding started (reports + recent news). Check status with GET /api/rag/embed/status' });
 
     // Reset pgvector availability cache so it re-checks after potentially adding the column
@@ -1194,7 +1194,7 @@ router.post('/embed', (req, res) => {
         .catch(err => console.error('[RAG embed] error:', err.message));
 });
 
-// ── POST /api/rag/why-signal — "Why This Signal?" explanation ────────────────
+// â”€â”€ POST /api/rag/why-signal â€” "Why This Signal?" explanation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //
 // Body: { symbol, signal, agent_name? }
 // Returns: { explanation, sources }
@@ -1242,7 +1242,7 @@ router.post('/why-signal', async (req, res) => {
 
         const prompt =
 `You are a concise EGX financial analyst. Explain in 3-4 bullet points why ${sym} has a ${sig} signal today.
-Draw on the evidence below. Be specific — mention concrete facts where present.
+Draw on the evidence below. Be specific â€” mention concrete facts where present.
 If evidence is insufficient, say so honestly.
 
 Knowledge base evidence:
@@ -1277,7 +1277,7 @@ Explain the ${sig} signal for ${sym}:`;
     }
 });
 
-// ── GET /api/sentiment/:symbol/evidence — articles that drove the badge ──────
+// â”€â”€ GET /api/sentiment/:symbol/evidence â€” articles that drove the badge â”€â”€â”€â”€â”€â”€
 
 router.get('/sentiment/:symbol/evidence', async (req, res) => {
     const symbol = req.params.symbol.toUpperCase();
@@ -1343,7 +1343,7 @@ router.get('/sentiment/:symbol/evidence', async (req, res) => {
     }
 });
 
-// ── News Q&A and drift adjustment endpoints ───────────────────────────────────
+// â”€â”€ News Q&A and drift adjustment endpoints â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // These call the Python news/ package via child_process.spawn, following
 // the same pattern used by timemachine.js (JSON stdout from Python CLI).
 
@@ -1386,7 +1386,7 @@ function spawnPythonCli(scriptRelPath, argObj, timeoutMs = 30000) {
     });
 }
 
-// ── POST /api/rag/news/ask — recency-weighted news Q&A ───────────────────────
+// â”€â”€ POST /api/rag/news/ask â€” recency-weighted news Q&A â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Body: { question, market?, portfolio?, language?, source_mode?, max_age_hours? }
 router.post('/news/ask', async (req, res) => {
     const { question, market, portfolio, language, source_mode, max_age_hours } = req.body || {};
@@ -1418,7 +1418,7 @@ router.post('/news/ask', async (req, res) => {
     }
 });
 
-// ── GET /api/rag/news/chunks — recent ingested chunks (for audit / debug) ────
+// â”€â”€ GET /api/rag/news/chunks â€” recent ingested chunks (for audit / debug) â”€â”€â”€â”€
 // Query params: market, event_type, limit (default 20)
 router.get('/news/chunks', async (req, res) => {
     const { market, event_type, limit = 20 } = req.query;
@@ -1453,7 +1453,7 @@ router.get('/news/chunks', async (req, res) => {
     }
 });
 
-// ── GET /api/rag/news/ingest — trigger manual ingestion cycle ─────────────────
+// â”€â”€ GET /api/rag/news/ingest â€” trigger manual ingestion cycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Returns immediately; ingestion runs in background.
 router.post('/news/ingest', (req, res) => {
     if (!GEMINI_API_KEY) {
@@ -1466,7 +1466,7 @@ router.post('/news/ingest', (req, res) => {
         .catch(err => console.error('[news/ingest] error:', err.message));
 });
 
-// ── GET /api/rag/drift/:ticker — current drift adjustments for a ticker ───────
+// â”€â”€ GET /api/rag/drift/:ticker â€” current drift adjustments for a ticker â”€â”€â”€â”€â”€â”€â”€
 router.get('/drift/:ticker', async (req, res) => {
     const ticker = req.params.ticker.toUpperCase();
     try {
@@ -1479,7 +1479,7 @@ router.get('/drift/:ticker', async (req, res) => {
     }
 });
 
-// ── GET /api/rag/drift — recent drift adjustments (all tickers) ───────────────
+// â”€â”€ GET /api/rag/drift â€” recent drift adjustments (all tickers) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/drift', async (req, res) => {
     const limit = parseInt(req.query.limit, 10) || 50;
     try {
@@ -1492,7 +1492,7 @@ router.get('/drift', async (req, res) => {
     }
 });
 
-// ── GET /api/rag/drift/verify/:id — audit hash integrity check ────────────────
+// â”€â”€ GET /api/rag/drift/verify/:id â€” audit hash integrity check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/drift/verify/:id', async (req, res) => {
     try {
         const result = await spawnPythonCli('news/drift_cli.py', { verify: req.params.id }, 15000);
@@ -1503,3 +1503,4 @@ router.get('/drift/verify/:id', async (req, res) => {
 });
 
 module.exports = { router, attachDb };
+

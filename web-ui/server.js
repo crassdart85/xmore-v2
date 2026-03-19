@@ -1,4 +1,4 @@
-console.log('=== SERVER.JS STARTING ===');
+﻿console.log('=== SERVER.JS STARTING ===');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -31,15 +31,15 @@ const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .filter(Boolean);
 app.use(cors({
   origin: (origin, cb) => {
-    // No origin header (server-to-server, same-origin GET, etc.) — always allow
+    // No origin header (server-to-server, same-origin GET, etc.) â€” always allow
     if (!origin) return cb(null, true);
-    // Explicit allowlist configured — use it
+    // Explicit allowlist configured â€” use it
     if (corsAllowedOrigins.length) {
       return corsAllowedOrigins.includes(origin)
         ? cb(null, true)
         : cb(new Error('CORS origin not allowed'));
     }
-    // No allowlist configured — allow same-origin (browser sends Origin on POST
+    // No allowlist configured â€” allow same-origin (browser sends Origin on POST
     // even for same-origin requests, so we must permit it)
     return cb(null, true);
   },
@@ -83,8 +83,8 @@ if (DATABASE_URL) {
   };
 
   pool.query('SELECT 1')
-    .then(() => console.log('✅ Connected to PostgreSQL database'))
-    .catch(err => console.error('❌ PostgreSQL connection failed:', err));
+    .then(() => console.log('âœ… Connected to PostgreSQL database'))
+    .catch(err => console.error('âŒ PostgreSQL connection failed:', err));
 
 } else {
   // Local: SQLite
@@ -94,9 +94,9 @@ if (DATABASE_URL) {
     // OPEN_READWRITE for auth writes; OPEN_CREATE if db doesn't exist yet
     const sqliteDb = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
       if (err) {
-        console.error('❌ Database connection failed:', err);
+        console.error('âŒ Database connection failed:', err);
       } else {
-        console.log('✅ Connected to SQLite database (read/write)');
+        console.log('âœ… Connected to SQLite database (read/write)');
         // Enable WAL mode for better concurrent reads/writes
         sqliteDb.run('PRAGMA journal_mode=WAL');
         sqliteDb.run('PRAGMA foreign_keys=ON');
@@ -110,7 +110,7 @@ if (DATABASE_URL) {
       run: (query, params, callback) => sqliteDb.run(query, params, callback)
     };
   } catch (err) {
-    console.warn('⚠️  SQLite not available (this is normal on Render). Using PostgreSQL only.');
+    console.warn('âš ï¸  SQLite not available (this is normal on Render). Using PostgreSQL only.');
     // Create a dummy db object that will fail gracefully
     db = {
       all: (query, params, callback) => callback(new Error('No database configured')),
@@ -345,7 +345,7 @@ app.use('/api', watchlistRouter);
 app.use('/api/trades', tradesRouter);
 app.use('/api/briefing', briefingRouter);
 app.use('/api/performance-v2', performanceRouter);
-// Admin login — public endpoint, not protected by requireAdminSecret
+// Admin login â€” public endpoint, not protected by requireAdminSecret
 app.post('/api/admin/login', express.json(), (req, res) => {
   const { username, password } = req.body || {};
   const expectedUser = process.env.ADMIN_USERNAME || 'admin';
@@ -1136,7 +1136,7 @@ app.get('/api/risk/overview', (req, res) => {
 });
 
 // ============================================
-// DERIVATIVES — Black-Scholes computed inline (no external service)
+// DERIVATIVES â€” Black-Scholes computed inline (no external service)
 // ============================================
 
 // Abramowitz & Stegun approximation for standard normal CDF
@@ -1282,7 +1282,7 @@ app.get('/api/fx-rates', async (req, res) => {
           GOLD_POUND_EGP:  +(gold24K * 21 / 24 * 8).toFixed(2),
         };
       }
-    } catch (_) { /* gold fetch failed — omit gold fields */ }
+    } catch (_) { /* gold fetch failed â€” omit gold fields */ }
     _fxCache = {
       USD_EGP: +egp.toFixed(2),
       USD_SAR: +sar.toFixed(4),
@@ -1331,7 +1331,7 @@ app.get('/api/fx-rates/history', (req, res) => {
 });
 
 // ============================================
-// PER-STOCK AI BRIEF
+// PER-STOCK BRIEF
 // ============================================
 const _briefCache = new Map(); // symbol -> { text, ts }
 
@@ -1344,7 +1344,7 @@ app.get('/api/stocks/:symbol/brief', async (req, res) => {
   if (cached && Date.now() - cached.ts < 3_600_000) return res.json({ brief: cached.text, symbol, cached: true });
 
   const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-  if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'AI brief not configured' });
+  if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Brief service not configured' });
 
   // Gather context from db
   const ctx = await new Promise(resolve => {
@@ -1391,7 +1391,7 @@ Format: 1) Current stance and signal quality 2) Key risk factor 3) Short-term ou
     _briefCache.set(symbol, { text, ts: Date.now() });
     res.json({ brief: text, symbol });
   } catch (err) {
-    res.status(502).json({ error: 'AI brief failed: ' + err.message });
+    res.status(502).json({ error: 'Brief failed: ' + err.message });
   }
 });
 
@@ -1471,8 +1471,9 @@ app.get('*', (req, res) => {
 // START SERVER
 // ============================================
 
-console.log(`⏳ Starting server on port ${PORT}...`);
+console.log(`â³ Starting server on port ${PORT}...`);
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Dashboard available`);
+  console.log(`ðŸš€ Server running on port ${PORT}`);
+  console.log(`ðŸ“Š Dashboard available`);
 });
+

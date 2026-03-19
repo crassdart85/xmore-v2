@@ -1,18 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="base.css">
-  <link rel="stylesheet" href="assistant-widget.css?v=20260318a">
-  <title>Xmore Pro — Market Overview</title>
+  <link rel="stylesheet" href="base.css">  <title>Xmore Pro â€” Market Overview</title>
   <link rel="stylesheet" href="pro.css">
 </head>
 <body>
 
   <!-- Header -->
   <header class="pro-header x-topbar x-topbar--dark">
-    <a href="/" class="pro-back x-back" data-i18n="back">← Dashboard</a>
+    <a href="/" class="pro-back x-back" data-i18n="back">â† Dashboard</a>
     <span class="pro-logo x-brand">XMORE <span class="pro-logo-tag">PRO</span></span>
     <span class="pro-market-label">EGX</span>
     <nav class="x-nav-links" aria-label="Primary">
@@ -24,22 +22,22 @@
     </nav>
     <!-- Mobile menu button -->
     <button id="proMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="proMobileMenuDropdown">
-      <span class="hamburger-icon">☰</span>
+      <span class="hamburger-icon">â˜°</span>
     </button>
     <!-- Mobile menu dropdown -->
     <div id="proMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-      <a href="/" class="mobile-menu-item" role="menuitem">🏠 Home</a>
-      <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
-      <a href="/pro" class="mobile-menu-item active" role="menuitem">⭐ Pro</a>
-      <a href="/session" class="mobile-menu-item" role="menuitem">📌 Session</a>
-      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+      <a href="/" class="mobile-menu-item" role="menuitem">ðŸ  Home</a>
+      <a href="/track-record" class="mobile-menu-item" role="menuitem">ðŸ“Š Track Record</a>
+      <a href="/pro" class="mobile-menu-item active" role="menuitem">â­ Pro</a>
+      <a href="/session" class="mobile-menu-item" role="menuitem">ðŸ“Œ Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">ðŸ“š Docs</a>
     </div>
     <!-- Live FX rates strip -->
     <div class="pro-fx-strip" id="proFxStrip">
-      <span class="pro-fx-loading">FX…</span>
+      <span class="pro-fx-loading">FXâ€¦</span>
     </div>
     <!-- Language toggle -->
-    <button class="pro-lang-btn" id="proLangBtn" onclick="proToggleLang()" aria-label="Switch language">عر</button>
+    <button class="pro-lang-btn" id="proLangBtn" onclick="proToggleLang()" aria-label="Switch language">Ø¹Ø±</button>
     <span class="pro-date" id="proDate"></span>
     <!-- Auth area -->
     <div class="pro-auth-area">
@@ -62,7 +60,7 @@
         <label class="pro-modal-label" data-i18n="email">Email</label>
         <input class="pro-modal-input" type="email" id="proAuthEmail" required autocomplete="email" placeholder="you@example.com">
         <label class="pro-modal-label" data-i18n="password">Password</label>
-        <input class="pro-modal-input" type="password" id="proAuthPassword" required minlength="8" autocomplete="current-password" placeholder="••••••••">
+        <input class="pro-modal-input" type="password" id="proAuthPassword" required minlength="8" autocomplete="current-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
         <div class="pro-modal-error" id="proAuthError" style="display:none"></div>
         <button class="pro-modal-submit" id="proAuthSubmit" type="submit" data-i18n="login">Login</button>
       </form>
@@ -76,36 +74,36 @@
   <div class="pro-stat-row">
     <div class="pro-stat">
       <span class="pro-stat-label" data-i18n="tracked">Tracked</span>
-      <span class="pro-stat-val" id="statTracked">—</span>
+      <span class="pro-stat-val" id="statTracked">â€”</span>
     </div>
     <div class="pro-stat">
       <span class="pro-stat-label" data-i18n="upToday">Up Today</span>
-      <span class="pro-stat-val green" id="statUp">—</span>
+      <span class="pro-stat-val green" id="statUp">â€”</span>
       <span class="pro-stat-sub" id="statUpPct"></span>
     </div>
     <div class="pro-stat">
       <span class="pro-stat-label" data-i18n="downToday">Down Today</span>
-      <span class="pro-stat-val red" id="statDown">—</span>
+      <span class="pro-stat-val red" id="statDown">â€”</span>
       <span class="pro-stat-sub" id="statDownPct"></span>
     </div>
     <div class="pro-stat">
       <span class="pro-stat-label" data-i18n="bestWinRate">Best Agent Win Rate</span>
-      <span class="pro-stat-val" id="statWinRate">—</span>
+      <span class="pro-stat-val" id="statWinRate">â€”</span>
     </div>
     <div class="pro-stat">
       <span class="pro-stat-label" data-i18n="lastData">Last Data</span>
-      <span class="pro-stat-val" id="statLastData">—</span>
+      <span class="pro-stat-val" id="statLastData">â€”</span>
     </div>
     <div class="pro-stat">
       <span class="pro-stat-label" data-i18n="marketRegime">Market Regime</span>
-      <span class="pro-stat-val" id="statRegime">—</span>
+      <span class="pro-stat-val" id="statRegime">â€”</span>
     </div>
   </div>
 
   <!-- EGX Index Section -->
   <div class="pro-egx-section">
     <div class="pro-egx-chart-panel">
-      <div class="pro-panel-title" data-i18n="egx30Title">EGX 30 — Intraday</div>
+      <div class="pro-panel-title" data-i18n="egx30Title">EGX 30 â€” Intraday</div>
       <div id="egx30ChartWidget"></div>
     </div>
     <div class="pro-egx-indices-panel">
@@ -126,7 +124,7 @@
             <th data-i18n="colChg">Chg%</th>
             <th data-i18n="colSignal">Signal</th>
             <th data-i18n="colConf">Conf</th>
-            <th data-i18n="colScore" title="Xmore Score (0–100): Bull×0.30 + Agreement×0.25 + Confidence×0.20 + Bear×0.25. ≥75=Very High, ≥60=High, ≥40=Moderate">Score ⓘ</th>
+            <th data-i18n="colScore" title="Xmore Score (0â€“100): BullÃ—0.30 + AgreementÃ—0.25 + ConfidenceÃ—0.20 + BearÃ—0.25. â‰¥75=Very High, â‰¥60=High, â‰¥40=Moderate">Score â“˜</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -142,7 +140,7 @@
             <th data-i18n="colChg">Chg%</th>
             <th data-i18n="colSignal">Signal</th>
             <th data-i18n="colConf">Conf</th>
-            <th data-i18n="colScore" title="Xmore Score (0–100): Bull×0.30 + Agreement×0.25 + Confidence×0.20 + Bear×0.25. ≥75=Very High, ≥60=High, ≥40=Moderate">Score ⓘ</th>
+            <th data-i18n="colScore" title="Xmore Score (0â€“100): BullÃ—0.30 + AgreementÃ—0.25 + ConfidenceÃ—0.20 + BearÃ—0.25. â‰¥75=Very High, â‰¥60=High, â‰¥40=Moderate">Score â“˜</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -154,7 +152,7 @@
   <div class="pro-sector-panel">
     <div class="pro-panel-title" data-i18n="sectorPerf">Sector Performance</div>
     <div class="pro-sector-grid" id="sectorGrid">
-      <div class="pro-loading" data-i18n="loading">Loading…</div>
+      <div class="pro-loading" data-i18n="loading">Loadingâ€¦</div>
     </div>
   </div>
 
@@ -176,26 +174,26 @@
     <!-- State: not logged in -->
     <div class="pro-pf-state" id="pfStateLogin">
       <div class="pro-pf-cta">
-        <div class="pro-pf-cta-icon">📊</div>
+        <div class="pro-pf-cta-icon">ðŸ“Š</div>
         <div class="pro-pf-cta-title" data-i18n="pfLoginTitle">Track Your Forecast Performance</div>
         <div class="pro-pf-cta-desc" data-i18n="pfLoginDesc">
-          Sign in to see how your AI-generated stock portfolios are performing in real time —
+          Sign in to see how your system-generated stock portfolios are performing in real time â€”
           forecast vs actual return per stock, progress to target date, and agent signals.
         </div>
-        <button class="pro-pf-cta-btn" onclick="showProModal()" data-i18n="signInArrow">Sign In ↗</button>
+        <button class="pro-pf-cta-btn" onclick="showProModal()" data-i18n="signInArrow">Sign In â†—</button>
       </div>
     </div>
 
     <!-- State: logged in, no portfolios -->
     <div class="pro-pf-state" id="pfStateEmpty" style="display:none">
       <div class="pro-pf-cta">
-        <div class="pro-pf-cta-icon">📈</div>
+        <div class="pro-pf-cta-icon">ðŸ“ˆ</div>
         <div class="pro-pf-cta-title" data-i18n="pfEmptyTitle">No Forecast Portfolios Yet</div>
         <div class="pro-pf-cta-desc" data-i18n="pfEmptyDesc">
-          Create a forecast portfolio on the main dashboard to start tracking AI prediction
+          Create a forecast portfolio on the main dashboard to start tracking forecast
           accuracy against live EGX price movements.
         </div>
-        <a href="/" class="pro-pf-cta-btn" data-i18n="createPortfolio">Create Portfolio ↗</a>
+        <a href="/" class="pro-pf-cta-btn" data-i18n="createPortfolio">Create Portfolio â†—</a>
       </div>
     </div>
 
@@ -263,10 +261,10 @@
   <div class="pro-backtest-panel">
     <div class="pro-panel-title">
       <span data-i18n="backtestTitle">Walk-Forward Backtest Results</span>
-      <span class="pro-panel-note" data-i18n="backtestNote">Updated weekly · ML agent only</span>
+      <span class="pro-panel-note" data-i18n="backtestNote">Updated weekly Â· ML agent only</span>
     </div>
     <div class="pro-backtest-body" id="backtestBody">
-      <div class="pro-loading" data-i18n="loading">Loading…</div>
+      <div class="pro-loading" data-i18n="loading">Loadingâ€¦</div>
     </div>
   </div>
 
@@ -274,14 +272,15 @@
   <div class="pro-macro-panel">
     <div class="pro-panel-title">
       <span data-i18n="macroTitle">Macro Brief</span>
-      <button class="pro-macro-btn" id="macroBtn" onclick="loadMacroBrief()" data-i18n="macroRefresh">↺ Refresh</button>
+      <button class="pro-macro-btn" id="macroBtn" onclick="loadMacroBrief()" data-i18n="macroRefresh">â†º Refresh</button>
     </div>
     <div class="pro-macro-content" id="macroContent"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="xmore-toast.js"></script>
-  <script src="pro.js"></script>
-  <script src="assistant-widget.js?v=20260318a"></script>
-</body>
+  <script src="pro.js"></script></body>
 </html>
+
+
+
