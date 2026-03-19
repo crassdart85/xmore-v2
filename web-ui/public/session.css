@@ -565,6 +565,8 @@ html[dir="rtl"] .s-footer-note { text-align: right; }
 
 .mobile-menu-dropdown.active,
 .mobile-menu-dropdown.visible {
+  display: flex;
+  flex-direction: column;
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -596,6 +598,50 @@ html[dir="rtl"] .s-footer-note { text-align: right; }
 @media (max-width: 640px) {
   .mobile-menu-btn {
     display: flex !important;
+  }
+
+  /* Keep Session header controls compact on mobile, regardless of shared base overrides. */
+  .s-header {
+    padding: 10px 12px;
+    gap: 10px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .s-logo {
+    font-size: 14px;
+    letter-spacing: 2px;
+  }
+
+  .s-session-label,
+  .s-auth-user {
+    display: none !important;
+  }
+
+  .s-header .s-auth-area {
+    width: auto;
+    margin-left: auto;
+    margin-top: 0;
+    order: 0;
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .s-header .s-auth-btn {
+    min-height: 32px;
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  .s-header .s-lang-btn {
+    width: auto;
+    min-width: 48px;
+    margin-left: 0;
+    margin-top: 0;
+    order: 0;
+    padding: 6px 10px;
+    min-height: 32px;
+    font-size: 12px;
   }
 }
 

@@ -27,14 +27,16 @@ body {
 .pro-header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-wrap: nowrap;
   padding: 10px 20px;
   background: #0d0d0d;
   border-bottom: 1px solid var(--pro-border);
   position: sticky;
   top: 0;
   z-index: 10;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .pro-back {
@@ -46,7 +48,7 @@ body {
 .pro-back:hover { color: var(--pro-text); }
 
 .pro-logo {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: 3px;
   color: var(--pro-text);
@@ -113,10 +115,10 @@ body {
   background: none;
   border: 1px solid var(--pro-border);
   color: var(--pro-muted);
-  font-size: 11px;
+  font-size: 12px;
   padding: 6px 12px;
   min-height: 36px;
-  border-radius: 3px;
+  border-radius: 4px;
   cursor: pointer;
   letter-spacing: 0.5px;
   transition: color 0.15s, border-color 0.15s;
@@ -125,7 +127,6 @@ body {
 .pro-lang-btn:hover { color: var(--pro-text); border-color: var(--pro-muted); }
 
 .pro-date {
-  margin-left: auto;
   color: var(--pro-muted);
   font-size: 12px;
   font-family: 'Courier New', monospace;
@@ -144,8 +145,22 @@ body {
 
 /* ─── TradingView ticker ─────────────────────────────────────────────────── */
 #proTicker {
+  position: relative;
+  min-height: 52px;
+  height: 52px;
+  overflow: hidden;
   border-bottom: 1px solid var(--pro-border);
   background: #0d0d0d;
+}
+
+#proTicker .tradingview-widget-container,
+#proTicker .tradingview-widget-container__widget {
+  width: 100%;
+  height: 100% !important;
+}
+
+#proTicker iframe {
+  height: 100% !important;
 }
 
 /* ─── Stat pills row ─────────────────────────────────────────────────────── */
@@ -540,7 +555,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: 4px;
+  margin-left: auto;
 }
 .pro-auth-user {
   font-size: 11px;
@@ -772,14 +787,13 @@ body {
 @media (max-width: 640px) {
   /* Header */
   .pro-header {
-    padding: 8px 14px;
+    padding: 10px 12px;
     gap: 10px;
-    flex-wrap: wrap;
   }
   .pro-logo { font-size: 14px; letter-spacing: 2px; }
   .pro-market-label { display: none; }
   .pro-fx-link { display: none; }
-  .pro-date { font-size: 11px; margin-left: auto; }
+  .pro-date { display: none; }
 
   /* Stat pills: 2 per row */
   .pro-stat-row { flex-wrap: wrap; }
@@ -873,8 +887,8 @@ body {
   display: none !important;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   background: transparent;
   border: 1px solid #444;
@@ -911,6 +925,8 @@ body {
 
 .mobile-menu-dropdown.active,
 .mobile-menu-dropdown.visible {
+  display: flex;
+  flex-direction: column;
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
@@ -942,6 +958,11 @@ body {
 }
 
 @media (max-width: 640px) {
+  #proTicker {
+    min-height: 46px;
+    height: 46px;
+  }
+
   .mobile-menu-btn {
     display: flex !important;
   }

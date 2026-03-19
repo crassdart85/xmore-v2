@@ -102,24 +102,25 @@
 
 @media (max-width: 640px) {
   .x-topbar { 
-    padding: 8px 10px !important;
+    padding: 10px 12px !important;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
     min-height: auto;
   }
   .x-brand {
-    font-size: 1em;
+    font-size: 14px;
     white-space: nowrap;
     flex: 0 0 auto;
+    letter-spacing: 2px;
   }
   .x-actions { 
     width: 100%;
     justify-content: flex-start;
-    gap: 6px;
+    gap: 8px;
     flex-wrap: wrap;
     margin-left: 0;
-    margin-top: 8px;
+    margin-top: 6px;
   }
   .x-nav-links {
     display: none;
@@ -137,6 +138,43 @@
   }
   .x-back {
     white-space: nowrap;
+  }
+
+  /* Keep top-level page-specific controls aligned across mobile headers */
+  .x-topbar .s-auth-area,
+  .x-topbar .tr-header-controls,
+  .x-topbar .l-nav-actions,
+  .x-topbar .pro-auth-area {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 6px;
+    order: 2;
+  }
+
+  .x-topbar > .x-back,
+  .x-topbar > .x-brand,
+  .x-topbar > .l-logo,
+  .x-topbar > .s-logo,
+  .x-topbar > .pro-logo,
+  .x-topbar > .tr-header-brand,
+  .x-topbar > .pro-market-label {
+    order: 1;
+  }
+
+  .x-topbar > .x-actions,
+  .x-topbar > .pro-fx-strip,
+  .x-topbar > .s-lang-btn {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 6px;
+    order: 2;
+  }
+
+  .x-topbar .mobile-menu-btn {
+    width: 38px;
+    height: 38px;
+    margin-left: auto;
+    order: 1;
   }
 }
 
@@ -183,6 +221,8 @@
 
 .mobile-menu-dropdown.active,
 .mobile-menu-dropdown.visible {
+  display: flex;
+  flex-direction: column;
   opacity: 1;
   visibility: visible;
   transform: translateY(0);

@@ -297,11 +297,19 @@
     }
 
     function setOpen(nextOpen) {
+        const root = document.getElementById(ROOT_ID);
+        const fab = document.getElementById('xAssistantFab');
         const panel = document.getElementById('xAssistantPanel');
         const input = document.getElementById('xAssistantInput');
         if (!panel) return;
         state.open = nextOpen;
         panel.classList.toggle('x-assistant-hidden', !nextOpen);
+        if (root) root.classList.toggle('x-assistant-open', nextOpen);
+        if (fab) {
+            fab.classList.toggle('x-assistant-fab-hidden', nextOpen);
+            fab.setAttribute('aria-hidden', nextOpen ? 'true' : 'false');
+            fab.style.display = nextOpen ? 'none' : 'inline-flex';
+        }
         if (nextOpen && input) {
             setTimeout(function () { input.focus(); }, 50);
         }
@@ -336,7 +344,11 @@
             state.typingEl = null;
 
             if (!res.ok || data.error) {
-                appendMessage('ai', (data && data.error) ? data.error : t('fallbackError'));
+                let errMsg = (data && data.error) ? data.error : t('fallbackError');
+                if (res.status === 503 && /GOOGLE_API_KEY/i.test(errMsg)) {
+                    errMsg = 'Assistant is not configured yet. Set GOOGLE_API_KEY on the server to enable chat.';
+                }
+                appendMessage('ai', errMsg);
                 return;
             }
             appendMessage('ai', data.answer || '', data.sources || []);

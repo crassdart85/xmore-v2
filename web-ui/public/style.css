@@ -4516,6 +4516,85 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 /* ============================================================
+   FINAL MOBILE HEADER NORMALIZATION
+   Keeps index and admin aligned with shared two-row topbar rhythm.
+   ============================================================ */
+@media (max-width: 640px) {
+    header.x-topbar {
+        padding: 10px 12px !important;
+        gap: 8px !important;
+        align-items: center !important;
+        min-height: auto !important;
+        height: auto !important;
+    }
+
+    header.x-topbar .x-brand {
+        font-size: 14px !important;
+        letter-spacing: 2px !important;
+        line-height: 1.1;
+    }
+
+    header.x-topbar .header-buttons {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        order: 2;
+        margin-left: 0 !important;
+        margin-top: 6px;
+    }
+
+    header.x-topbar .pro-link-btn,
+    header.x-topbar .lang-btn,
+    header.x-topbar .theme-btn,
+    header.x-topbar .mobile-menu-btn,
+    header.x-topbar .auth-trigger-btn,
+    header.x-topbar .logout-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    header.x-topbar .theme-btn,
+    header.x-topbar .mobile-menu-btn {
+        width: 38px !important;
+        height: 38px !important;
+        padding: 0 !important;
+    }
+
+    header.x-topbar .mobile-menu-btn {
+        margin-left: auto;
+    }
+
+    .admin-header {
+        padding: 10px 12px 10px !important;
+    }
+
+    .admin-header .x-brand {
+        font-size: 14px !important;
+        letter-spacing: 2px !important;
+    }
+
+    .admin-header .subtitle {
+        display: none !important;
+    }
+
+    .admin-header-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .admin-header .admin-btn {
+        width: 100%;
+        min-height: 38px;
+        padding: 8px 12px;
+    }
+}
+
+/* ============================================================
    SAVED FORECAST PORTFOLIOS â€” #pfSection
    ============================================================ */
 

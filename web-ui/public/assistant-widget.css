@@ -2,7 +2,7 @@
     position: fixed;
     right: 24px;
     bottom: 24px;
-    z-index: 1200;
+    z-index: 1299;
     width: 62px;
     height: 62px;
     border: none;
@@ -17,6 +17,16 @@
         linear-gradient(135deg, #2563eb 0%, #0891b2 48%, #16a34a 100%);
     box-shadow: 0 14px 30px rgba(2, 6, 23, 0.35);
     transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.x-assistant-fab-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px) scale(0.92);
+}
+
+#xAssistantRoot.x-assistant-open .x-assistant-fab {
+    display: none !important;
 }
 
 .x-assistant-fab:hover {
@@ -56,7 +66,7 @@
     position: fixed;
     right: 24px;
     bottom: 98px;
-    z-index: 1199;
+    z-index: 1300;
     width: 372px;
     max-width: calc(100vw - 30px);
     height: 500px;
