@@ -380,8 +380,8 @@ router.get('/by-stock', async (req, res) => {
                 ${isPostgres ? 'ROUND(AVG(tr.alpha_1d)::numeric, 3)' : 'ROUND(AVG(tr.alpha_1d), 3)'} AS avg_alpha,
                 ${isPostgres
                 ? `ROUND((SUM(CASE WHEN tr.was_correct = TRUE THEN 1 ELSE 0 END))::numeric / NULLIF(COUNT(*), 0) * 100, 1)`
-                : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 1)`
-            }, AS win_rate
+                : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0) * 100, 1)`
+            } AS win_rate
             FROM trade_recommendations tr
             ${isPostgres ? 'JOIN egx30_stocks s ON tr.symbol = s.symbol' : ''}
             WHERE tr.was_correct IS NOT NULL
