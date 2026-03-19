@@ -330,16 +330,43 @@
         state.typingEl = showTyping();
 
         try {
-            const res = await fetch('/api/rag/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    question: question,
-                    language: state.lang,
-                    source_mode: 'hybrid'
-                })
-            });
-            const data = await res.json().catch(function () { return {}; });
+            let res = null;
+            let data = {};
+
+            // Retry once for transient network/server hiccups.
+            for (let attempt = 0; attempt < 2; attempt++) {
+                try {
+                    res = await fetch('/api/rag/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            question: question,
+                            language: state.lang,
+                            source_mode: 'hybrid'
+                        })
+                    });
+
+                    const raw = await res.text();
+                    try {
+                        data = raw ? JSON.parse(raw) : {};
+                    } catch (_) {
+                        data = {};
+                    }
+
+                    if (attempt === 0 && (!res.ok && res.status >= 500)) {
+                        await new Promise(function (resolve) { setTimeout(resolve, 350); });
+                        continue;
+                    }
+                    break;
+                } catch (err) {
+                    if (attempt === 0) {
+                        await new Promise(function (resolve) { setTimeout(resolve, 350); });
+                        continue;
+                    }
+                    throw err;
+                }
+            }
+
             if (state.typingEl) state.typingEl.remove();
             state.typingEl = null;
 
