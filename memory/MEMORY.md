@@ -218,3 +218,34 @@
 - Added robust language resolver: query param -> global localStorage('lang') -> docs fallback.
 - Arabic mode now consistently applies RTL on /docs.
 - Docs toggle now updates global language preference too for cross-page consistency.
+
+## Adaptive Weighting + Change Intelligence (Mar 19, 2026)
+- `run_agents.py`
+  - upgraded adaptive agent weighting beyond simple 30d accuracy scaling.
+  - weights now blend 30d/90d live win rate, recent alpha, sample-size shrinkage, and drift penalties.
+  - added Consensus confidence calibration from evaluated historical outcomes.
+  - added expected-edge estimation and ranking score for each latest consensus result.
+- `database.py` and `web-ui/init-db.js`
+  - added safe consensus columns:
+    - `calibrated_confidence`
+    - `expected_edge_pct`
+    - `ranking_score`
+    - `weight_profile_json`
+    - `calibration_meta_json`
+- `web-ui/server.js`
+  - `/api/consensus` and `/api/consensus/:symbol` now enrich latest rows with calibrated confidence and expected edge.
+  - added `/api/intelligence/changes` for:
+    - signal changes vs previous consensus date
+    - authenticated forecast deltas vs previous run
+    - macro change markers from FX/regime history
+  - added `/api/intelligence/quality` for:
+    - freshness checks across prices/predictions/consensus/news/sentiment/FX/forecasts
+    - drift monitoring from `agent_performance_daily`
+- `web-ui/routes/rag.js`
+  - added bilingual entity resolution for EGX stocks and ETFs via `egx30_stocks`, `instrument`, and `instrument_alias`.
+  - chat retrieval now prioritizes resolved symbol/entity context and symbol-specific news before generic RAG excerpts.
+  - `retrieval_meta` now includes resolved entities.
+- Dashboard UI
+  - `web-ui/public/index.html`, `web-ui/public/app.js`, `web-ui/public/style.css`
+  - added “What Changed Today” and “Freshness & Drift” section below the performance snapshot bar.
+  - consensus cards now display calibrated confidence and expected edge.

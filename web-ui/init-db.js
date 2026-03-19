@@ -243,6 +243,11 @@ async function initializeDatabase() {
       await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS xmore_score REAL');
       console.log('✅ Added xmore_score column to consensus_results');
     } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibrated_confidence REAL'); } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_edge_pct REAL'); } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS ranking_score REAL'); } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS weight_profile_json TEXT'); } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibration_meta_json TEXT'); } catch (err) { /* already exists */ }
 
     // Table: Backtest Results (walk-forward ML performance per symbol)
     await pool.query(`

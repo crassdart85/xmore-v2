@@ -283,6 +283,320 @@ def _load_dynamic_weights(conn) -> dict:
         return base_weights
 
 
+def _load_dynamic_weight_state(conn) -> dict:
+    """
+    Build a more stable live-performance weight profile.
+
+    The score blends:
+      - recent win rate (30d)
+      - medium window win rate (90d)
+      - recent alpha
+      - sample-size shrinkage
+      - recent drift penalty when 30d deteriorates materially vs 90d
+
+    Returns:
+        {
+            "weights": {agent: normalized_weight},
+            "profiles": {agent: diagnostics...}
+        }
+    """
+    base_weights = dict(getattr(config, 'AGENT_WEIGHTS', {
+        "ML_RandomForest":    0.28,
+        "MA_Crossover_Agent": 0.20,
+        "RSI_Agent":          0.17,
+        "Volume_Spike_Agent": 0.15,
+        "Gemini_LLM_Agent":   0.20,
+    }))
+
+    profiles = {
+        agent: {
+            "base_weight": round(weight, 4),
+            "sample_factor": 0.0,
+            "skill_multiplier": 1.0,
+            "alpha_multiplier": 1.0,
+            "drift_multiplier": 1.0,
+            "raw_weight": round(weight, 4),
+        }
+        for agent, weight in base_weights.items()
+    }
+
+    if not os.getenv('DATABASE_URL'):
+        return {"weights": base_weights, "profiles": profiles}
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT DISTINCT ON (agent_name)
+                agent_name,
+                snapshot_date,
+                win_rate_30d,
+                win_rate_90d,
+                predictions_30d,
+                predictions_90d,
+                avg_alpha_30d,
+                avg_alpha_90d
+            FROM agent_performance_daily
+            ORDER BY agent_name, snapshot_date DESC
+        """)
+        cols = [d[0] for d in cursor.description]
+        rows = cursor.fetchall()
+        if not rows:
+            return {"weights": base_weights, "profiles": profiles}
+
+        snapshots = {}
+        for row in rows:
+            rec = row if isinstance(row, dict) else dict(zip(cols, row))
+            snapshots[rec['agent_name']] = rec
+
+        adjusted = {}
+        for agent, base_w in base_weights.items():
+            snap = snapshots.get(agent) or {}
+            preds30 = int(snap.get('predictions_30d') or 0)
+            preds90 = int(snap.get('predictions_90d') or 0)
+            win30 = float(snap.get('win_rate_30d') or 0.0)
+            win90 = float(snap.get('win_rate_90d') or 0.0)
+            alpha30 = float(snap.get('avg_alpha_30d') or 0.0)
+            alpha90 = float(snap.get('avg_alpha_90d') or 0.0)
+
+            sample_factor = min(1.0, preds30 / 25.0) if preds30 > 0 else 0.0
+            skill_ratio = ((0.7 * win30) + (0.3 * win90)) / 50.0 if (win30 or win90) else 1.0
+            skill_multiplier = max(0.55, min(1.80, skill_ratio))
+
+            alpha_blend = (0.7 * alpha30) + (0.3 * alpha90)
+            alpha_multiplier = max(0.85, min(1.20, 1.0 + (alpha_blend * 12.0)))
+
+            drift_gap = win30 - win90
+            if drift_gap <= -10:
+                drift_multiplier = 0.88
+            elif drift_gap <= -5:
+                drift_multiplier = 0.94
+            elif drift_gap >= 8:
+                drift_multiplier = 1.06
+            else:
+                drift_multiplier = 1.0
+
+            live_multiplier = skill_multiplier * alpha_multiplier * drift_multiplier
+            shrunk_multiplier = 1.0 + ((live_multiplier - 1.0) * sample_factor)
+            adjusted_weight = base_w * shrunk_multiplier
+
+            adjusted[agent] = adjusted_weight
+            profiles[agent] = {
+                "snapshot_date": snap.get('snapshot_date'),
+                "base_weight": round(base_w, 4),
+                "predictions_30d": preds30,
+                "predictions_90d": preds90,
+                "win_rate_30d": round(win30, 2),
+                "win_rate_90d": round(win90, 2),
+                "avg_alpha_30d": round(alpha30, 4),
+                "avg_alpha_90d": round(alpha90, 4),
+                "sample_factor": round(sample_factor, 3),
+                "skill_multiplier": round(skill_multiplier, 3),
+                "alpha_multiplier": round(alpha_multiplier, 3),
+                "drift_multiplier": round(drift_multiplier, 3),
+                "raw_weight": round(adjusted_weight, 4),
+            }
+
+        total = sum(adjusted.values())
+        if total > 0:
+            adjusted = {k: round(v / total, 4) for k, v in adjusted.items()}
+            for agent in profiles:
+                profiles[agent]["normalized_weight"] = adjusted.get(agent, profiles[agent]["base_weight"])
+
+        return {"weights": adjusted or base_weights, "profiles": profiles}
+    except Exception as e:
+        logger.warning(f"Could not load adaptive weight state: {e}")
+        return {"weights": _load_dynamic_weights(conn), "profiles": profiles}
+
+
+def _load_confidence_calibration(conn) -> dict:
+    """
+    Build a lightweight empirical calibration map for Consensus confidence.
+    """
+    profile = {
+        "overall_accuracy": 0.5,
+        "bins": {},
+        "samples": 0,
+    }
+    try:
+        cursor = conn.cursor()
+        if os.getenv('DATABASE_URL'):
+            cursor.execute("""
+                SELECT p.confidence, e.was_correct
+                FROM evaluations e
+                JOIN predictions p ON p.id = e.prediction_id
+                WHERE e.agent_name = 'Consensus'
+                  AND p.confidence IS NOT NULL
+                ORDER BY e.evaluated_at DESC
+                LIMIT 1200
+            """)
+        else:
+            cursor.execute("""
+                SELECT p.confidence, e.was_correct
+                FROM evaluations e
+                JOIN predictions p ON p.id = e.prediction_id
+                WHERE e.agent_name = 'Consensus'
+                  AND p.confidence IS NOT NULL
+                ORDER BY e.evaluated_at DESC
+                LIMIT 1200
+            """)
+        rows = cursor.fetchall() or []
+        if not rows:
+            return profile
+
+        overall_hits = 0
+        bins = {}
+        for confidence, was_correct in rows:
+            raw_conf = float(confidence or 0.0)
+            bucket = int(max(0, min(90, (raw_conf // 10) * 10)))
+            hit = 1 if was_correct in (True, 1, 't', 'true') else 0
+            entry = bins.setdefault(bucket, {"count": 0, "hits": 0})
+            entry["count"] += 1
+            entry["hits"] += hit
+            overall_hits += hit
+
+        profile["samples"] = len(rows)
+        profile["overall_accuracy"] = overall_hits / len(rows)
+        profile["bins"] = {
+            bucket: {
+                "count": entry["count"],
+                "empirical_accuracy": round(entry["hits"] / entry["count"], 4),
+            }
+            for bucket, entry in bins.items()
+        }
+        return profile
+    except Exception as e:
+        logger.debug(f"Confidence calibration unavailable: {e}")
+        return profile
+
+
+def _apply_confidence_calibration(raw_confidence: float, calibration_profile: dict) -> dict:
+    raw_confidence = float(raw_confidence or 0.0)
+    bucket = int(max(0, min(90, (raw_confidence // 10) * 10)))
+    overall = float((calibration_profile or {}).get("overall_accuracy", 0.5))
+    bucket_meta = ((calibration_profile or {}).get("bins") or {}).get(bucket) or {}
+    sample_count = int(bucket_meta.get("count") or 0)
+    empirical = float(bucket_meta.get("empirical_accuracy") or overall)
+    smoothed_empirical = ((empirical * sample_count) + (overall * 20.0)) / (sample_count + 20.0)
+    calibrated = (raw_confidence * 0.45) + (smoothed_empirical * 100.0 * 0.55)
+    calibrated = max(0.0, min(100.0, calibrated))
+    return {
+        "raw_confidence": round(raw_confidence, 2),
+        "calibrated_confidence": round(calibrated, 2),
+        "bucket": bucket,
+        "bucket_samples": sample_count,
+        "empirical_accuracy": round(empirical, 4),
+        "overall_accuracy": round(overall, 4),
+    }
+
+
+def _load_expected_edge_profiles(conn) -> dict:
+    """
+    Build symbol+direction and global direction profiles from resolved Consensus evaluations.
+    """
+    profiles = {}
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT e.symbol, e.prediction, e.actual_change_pct, e.was_correct
+            FROM evaluations e
+            WHERE e.agent_name = 'Consensus'
+              AND e.actual_change_pct IS NOT NULL
+            ORDER BY e.evaluated_at DESC
+            LIMIT 2500
+        """)
+        rows = cursor.fetchall() or []
+        if not rows:
+            return profiles
+
+        def _update(key, realized_edge, was_correct):
+            entry = profiles.setdefault(key, {
+                "count": 0,
+                "wins": 0,
+                "win_sum": 0.0,
+                "loss_sum": 0.0,
+                "loss_count": 0,
+            })
+            entry["count"] += 1
+            if realized_edge > 0:
+                entry["wins"] += 1
+                entry["win_sum"] += realized_edge
+            elif realized_edge < 0:
+                entry["loss_sum"] += abs(realized_edge)
+                entry["loss_count"] += 1
+            elif was_correct in (True, 1, 't', 'true'):
+                entry["wins"] += 1
+
+        for row in rows:
+            if isinstance(row, dict):
+                symbol = row.get('symbol')
+                prediction = row.get('prediction')
+                actual_change = row.get('actual_change_pct')
+                was_correct = row.get('was_correct')
+            else:
+                symbol, prediction, actual_change, was_correct = row
+
+            prediction = (prediction or '').upper()
+            if prediction not in ('UP', 'DOWN', 'BUY', 'SELL'):
+                continue
+
+            actual_change = float(actual_change or 0.0)
+            realized_edge = actual_change if prediction in ('UP', 'BUY') else -actual_change
+            _update((symbol, prediction), realized_edge, was_correct)
+            _update(('_GLOBAL_', prediction), realized_edge, was_correct)
+
+        normalized = {}
+        for key, entry in profiles.items():
+            count = entry["count"] or 1
+            avg_win = entry["win_sum"] / max(entry["wins"], 1)
+            avg_loss = entry["loss_sum"] / max(entry["loss_count"], 1) if entry["loss_count"] else 0.7
+            win_rate = entry["wins"] / count
+            normalized[key] = {
+                "count": count,
+                "win_rate": round(win_rate, 4),
+                "avg_win": round(avg_win, 4),
+                "avg_loss": round(avg_loss, 4),
+            }
+        return normalized
+    except Exception as e:
+        logger.debug(f"Expected-edge profiles unavailable: {e}")
+        return {}
+
+
+def _estimate_expected_edge(symbol: str, prediction: str,
+                            calibration_meta: dict,
+                            edge_profiles: dict) -> dict:
+    prediction = (prediction or '').upper()
+    calibrated = float((calibration_meta or {}).get("calibrated_confidence", 0.0)) / 100.0
+    if prediction not in ('UP', 'DOWN', 'BUY', 'SELL'):
+        return {
+            "expected_edge_pct": 0.0,
+            "ranking_score": 0.0,
+            "profile_scope": "neutral",
+            "profile_samples": 0,
+        }
+
+    profile = edge_profiles.get((symbol, prediction)) or edge_profiles.get(('_GLOBAL_', prediction)) or {}
+    sample_count = int(profile.get("count") or 0)
+    hist_win_rate = float(profile.get("win_rate") or calibrated or 0.5)
+    avg_win = float(profile.get("avg_win") or 1.5)
+    avg_loss = float(profile.get("avg_loss") or 1.0)
+    blended_win = (hist_win_rate * 0.45) + (calibrated * 0.55)
+    estimated_cost = 0.70
+    expected_edge = (blended_win * avg_win) - ((1.0 - blended_win) * avg_loss) - estimated_cost
+    ranking_score = expected_edge * (0.75 + calibrated)
+
+    return {
+        "expected_edge_pct": round(expected_edge, 3),
+        "ranking_score": round(ranking_score, 3),
+        "profile_scope": "symbol" if (symbol, prediction) in edge_profiles else "global",
+        "profile_samples": sample_count,
+        "historical_win_rate": round(hist_win_rate, 4),
+        "avg_win_pct": round(avg_win, 4),
+        "avg_loss_pct": round(avg_loss, 4),
+        "estimated_cost_pct": estimated_cost,
+    }
+
+
 def _store_consensus(conn, stock, today, consensus_result):
     """Store consensus result in consensus_results table."""
     cursor = conn.cursor()
@@ -295,26 +609,35 @@ def _store_consensus(conn, stock, today, consensus_result):
     chain_json = json.dumps(consensus_result.get('reasoning_chain', []))
     display_json = json.dumps(consensus_result.get('display', {}))
     momentum_alignment = consensus_result.get('momentum_alignment', 50.0)
+    weight_profile_json = json.dumps(consensus_result.get('weight_profile', {}))
+    calibration_meta_json = json.dumps(consensus_result.get('calibration_meta', {}))
 
     if os.getenv('DATABASE_URL'):
         cursor.execute("""
             INSERT INTO consensus_results
             (symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
+             calibrated_confidence, expected_edge_pct, ranking_score,
              risk_adjusted, agent_agreement, agents_agreeing, agents_total,
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
-             agent_signals_json, reasoning_chain_json, display_json, momentum_alignment)
+             agent_signals_json, reasoning_chain_json, display_json,
+             momentum_alignment, weight_profile_json, calibration_meta_json)
             VALUES (%s, %s, %s, %s, %s, %s,
+                    %s, %s, %s,
                     %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s,
-                    %s, %s, %s, %s)
+                    %s, %s, %s,
+                    %s, %s, %s)
             ON CONFLICT (symbol, prediction_date)
             DO UPDATE SET
                 final_signal = EXCLUDED.final_signal,
                 conviction = EXCLUDED.conviction,
                 confidence = EXCLUDED.confidence,
                 xmore_score = EXCLUDED.xmore_score,
+                calibrated_confidence = EXCLUDED.calibrated_confidence,
+                expected_edge_pct = EXCLUDED.expected_edge_pct,
+                ranking_score = EXCLUDED.ranking_score,
                 risk_adjusted = EXCLUDED.risk_adjusted,
                 agent_agreement = EXCLUDED.agent_agreement,
                 agents_agreeing = EXCLUDED.agents_agreeing,
@@ -330,13 +653,18 @@ def _store_consensus(conn, stock, today, consensus_result):
                 agent_signals_json = EXCLUDED.agent_signals_json,
                 reasoning_chain_json = EXCLUDED.reasoning_chain_json,
                 display_json = EXCLUDED.display_json,
-                momentum_alignment = EXCLUDED.momentum_alignment
+                momentum_alignment = EXCLUDED.momentum_alignment,
+                weight_profile_json = EXCLUDED.weight_profile_json,
+                calibration_meta_json = EXCLUDED.calibration_meta_json
         """, (
             stock, today,
             consensus_result.get('final_signal', 'HOLD'),
             consensus_result.get('conviction', 'LOW'),
             consensus_result.get('confidence', 0),
             consensus_result.get('xmore_score', 0),
+            consensus_result.get('calibrated_confidence', 0),
+            consensus_result.get('expected_edge_pct', 0),
+            consensus_result.get('ranking_score', 0),
             consensus_result.get('risk_adjusted', False),
             consensus_result.get('agent_agreement', 0),
             consensus_result.get('agents_agreeing', 0),
@@ -348,27 +676,34 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('risk_score', 0),
             bull_json, bear_json, risk_json,
             signals_json, chain_json, display_json,
-            momentum_alignment
+            momentum_alignment, weight_profile_json, calibration_meta_json
         ))
     else:
         cursor.execute("""
             INSERT OR REPLACE INTO consensus_results
             (symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
+             calibrated_confidence, expected_edge_pct, ranking_score,
              risk_adjusted, agent_agreement, agents_agreeing, agents_total,
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
-             agent_signals_json, reasoning_chain_json, display_json, momentum_alignment)
+             agent_signals_json, reasoning_chain_json, display_json,
+             momentum_alignment, weight_profile_json, calibration_meta_json)
             VALUES (?, ?, ?, ?, ?, ?,
+                    ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?,
-                    ?, ?, ?, ?)
+                    ?, ?, ?,
+                    ?, ?, ?)
         """, (
             stock, today,
             consensus_result.get('final_signal', 'HOLD'),
             consensus_result.get('conviction', 'LOW'),
             consensus_result.get('confidence', 0),
             consensus_result.get('xmore_score', 0),
+            consensus_result.get('calibrated_confidence', 0),
+            consensus_result.get('expected_edge_pct', 0),
+            consensus_result.get('ranking_score', 0),
             1 if consensus_result.get('risk_adjusted', False) else 0,
             consensus_result.get('agent_agreement', 0),
             consensus_result.get('agents_agreeing', 0),
@@ -380,7 +715,7 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('risk_score', 0),
             bull_json, bear_json, risk_json,
             signals_json, chain_json, display_json,
-            momentum_alignment
+            momentum_alignment, weight_profile_json, calibration_meta_json
         ))
 
 
@@ -464,12 +799,17 @@ def execute():
             # ──────────────────────────────────────────────────────────────
 
             # Load accuracy-adjusted weights once for the entire run
-            dynamic_weights = _load_dynamic_weights(conn)
+            dynamic_weight_state = _load_dynamic_weight_state(conn)
+            dynamic_weights = dynamic_weight_state.get("weights") or _load_dynamic_weights(conn)
+            dynamic_weight_profiles = dynamic_weight_state.get("profiles") or {}
             base_weights = getattr(config, 'AGENT_WEIGHTS', {})
             if dynamic_weights != base_weights:
                 print(f"Dynamic agent weights (accuracy-adjusted): {dynamic_weights}")
             else:
                 print("Using base agent weights (no accuracy data yet)")
+
+            confidence_calibration = _load_confidence_calibration(conn)
+            expected_edge_profiles = _load_expected_edge_profiles(conn)
 
             # Detect market-wide regime once — applies as a filter across all stocks
             market_regime = _detect_market_regime(conn)
@@ -646,6 +986,28 @@ def execute():
                     dynamic_weights=dynamic_weights,
                     market_regime=market_regime,
                 )
+
+                calibration_meta = _apply_confidence_calibration(
+                    consensus_result.get('confidence', 0),
+                    confidence_calibration
+                )
+                edge_meta = _estimate_expected_edge(
+                    stock,
+                    consensus_result.get('final_signal', 'HOLD'),
+                    calibration_meta,
+                    expected_edge_profiles
+                )
+                consensus_result['calibrated_confidence'] = calibration_meta.get('calibrated_confidence', 0)
+                consensus_result['expected_edge_pct'] = edge_meta.get('expected_edge_pct', 0)
+                consensus_result['ranking_score'] = edge_meta.get('ranking_score', 0)
+                consensus_result['calibration_meta'] = {
+                    **calibration_meta,
+                    **edge_meta,
+                }
+                consensus_result['weight_profile'] = {
+                    "weights": dynamic_weights,
+                    "profiles": dynamic_weight_profiles,
+                }
 
                 # Track for portfolio-level risk checks on subsequent stocks
                 portfolio_signals.append({

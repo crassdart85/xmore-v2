@@ -418,6 +418,31 @@ const TRANSLATIONS = {
         tooltipMaxDd: 'Largest peak-to-trough decline in cumulative returns over 30 days.',
         tooltipWinRate: 'Share of correct resolved live predictions over the latest 30 days.',
         tooltipTrades: 'Resolved live predictions included in public metrics. Target: 100+.',
+        changesTodayTitle: 'What Changed Today',
+        changesTodayLive: 'Live',
+        qualityMonitorTitle: 'Freshness & Drift',
+        qualityMonitorMonitoring: 'Monitoring',
+        noChangesToday: 'No material changes detected yet.',
+        noQualityData: 'Monitoring data is not available yet.',
+        expectedEdgeLabel: 'Expected edge',
+        calibrationLabel: 'Calibrated',
+        signalsLabel: 'Signals',
+        forecastsLabel: 'Forecasts',
+        macroLabel: 'Macro',
+        fromLabel: 'from',
+        driftLabel: 'Drift',
+        freshnessLabel: 'Freshness',
+        qualityhealthy: 'Healthy',
+        qualitywatch: 'Watch',
+        qualityattention: 'Attention',
+        qualityfresh: 'Fresh',
+        qualitywarning: 'Warning',
+        qualitystale: 'Stale',
+        qualitystable: 'Stable',
+        qualitydegrading: 'Degrading',
+        qualityimproving: 'Improving',
+        qualityunknown: 'Unknown',
+        qualitymissing: 'Missing',
 
         // Language
         switchLang: 'عربي',
@@ -787,6 +812,31 @@ const TRANSLATIONS = {
         tooltipWinRate: 'نسبة الإشارات الحية الصحيحة خلال آخر 30 يوما.',
         tooltipTrades: 'التنبؤات الحية المحللة ضمن الإحصاءات العامة. الهدف: 100+.',
 
+        changesTodayTitle: 'Ù…Ø§ Ø§Ù„Ø°ÙŠ ØªØºÙŠØ± Ø§Ù„ÙŠÙˆÙ…',
+        changesTodayLive: 'Ù…Ø¨Ø§Ø´Ø±',
+        qualityMonitorTitle: 'Ø§Ù„Ø­Ø¯Ø§Ø«Ø© ÙˆØ§Ù„Ø§Ù†Ø­Ø±Ø§Ù',
+        qualityMonitorMonitoring: 'Ù…Ø±Ø§Ù‚Ø¨Ø©',
+        noChangesToday: 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªØºÙŠØ±Ø§Øª Ø¬ÙˆÙ‡Ø±ÙŠØ© Ø¨Ø¹Ø¯.',
+        noQualityData: 'Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø±Ø§Ù‚Ø¨Ø© ØºÙŠØ± Ù…ØªØ§Ø­Ø© Ø¨Ø¹Ø¯.',
+        expectedEdgeLabel: 'Ø§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹',
+        calibrationLabel: 'Ø§Ù„Ù…Ø¹Ø§ÙŠØ±Ø©',
+        signalsLabel: 'Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª',
+        forecastsLabel: 'Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª',
+        macroLabel: 'Ø§Ù„Ù…Ø§ÙƒØ±Ùˆ',
+        fromLabel: 'Ù…Ù†',
+        driftLabel: 'Ø§Ù„Ø§Ù†Ø­Ø±Ø§Ù',
+        freshnessLabel: 'Ø§Ù„Ø­Ø¯Ø§Ø«Ø©',
+        qualityhealthy: 'Ø³Ù„ÙŠÙ…',
+        qualitywatch: 'Ù…Ø±Ø§Ù‚Ø¨Ø©',
+        qualityattention: 'ÙŠØ­ØªØ§Ø¬ Ù…ØªØ§Ø¨Ø¹Ø©',
+        qualityfresh: 'Ø­Ø¯ÙŠØ«',
+        qualitywarning: 'ØªØ­Ø°ÙŠØ±',
+        qualitystale: 'Ù…ØªØ£Ø®Ø±',
+        qualitystable: 'Ù…Ø³ØªÙ‚Ø±',
+        qualitydegrading: 'Ù…ØªØ±Ø§Ø¬Ø¹',
+        qualityimproving: 'ÙŠØªØ­Ø³Ù†',
+        qualityunknown: 'ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙ',
+        qualitymissing: 'Ù…ÙÙ‚ÙˆØ¯',
         switchLang: 'English',
 
         lightMode: 'التبديل إلى الوضع الفاتح',
@@ -1138,6 +1188,7 @@ async function switchLanguage() {
     loadEvaluations();
     loadPrices();
     loadGlobalSnapshotBar();
+    loadIntelligencePulse();
     loadRegimeBanner();
 }
 
@@ -1859,6 +1910,114 @@ async function loadGlobalSnapshotBar() {
     }
 }
 
+function qualityTextLabel(status) {
+    return t(`quality${String(status || 'unknown').toLowerCase()}`);
+}
+
+async function loadIntelligencePulse() {
+    const changesEl = document.getElementById('changesTodayBody');
+    const qualityEl = document.getElementById('qualityMonitorBody');
+    const changesTitle = document.getElementById('changesTodayTitle');
+    const changesBadge = document.getElementById('changesTodayBadge');
+    const qualityTitle = document.getElementById('qualityMonitorTitle');
+    const qualityBadge = document.getElementById('qualityMonitorBadge');
+
+    if (changesTitle) changesTitle.textContent = t('changesTodayTitle');
+    if (changesBadge) changesBadge.textContent = t('changesTodayLive');
+    if (qualityTitle) qualityTitle.textContent = t('qualityMonitorTitle');
+    if (qualityBadge) qualityBadge.textContent = t('qualityMonitorMonitoring');
+    if (!changesEl || !qualityEl) return;
+
+    try {
+        const [changesRes, qualityRes] = await Promise.all([
+            fetch('/api/intelligence/changes'),
+            fetch('/api/intelligence/quality')
+        ]);
+        const changesData = changesRes.ok ? await changesRes.json() : {};
+        const qualityData = qualityRes.ok ? await qualityRes.json() : {};
+
+        const signalLines = (changesData.signal_changes || []).slice(0, 4).map(item => {
+            const signalText = item.signal_changed
+                ? `${item.current_signal} ${t('fromLabel')} ${item.previous_signal || '—'}`
+                : `${item.current_signal} | ${t('expectedEdgeLabel')} ${Number(item.current_expected_edge_pct || 0).toFixed(2)}%`;
+            const deltaClass = Number(item.edge_delta_pct || 0) >= 0 ? 'change-delta-pos' : 'change-delta-neg';
+            return `
+                <div class="change-line">
+                    <div class="change-line-top">
+                        <span class="change-line-symbol">${item.symbol}</span>
+                        <span class="quality-pill ${item.signal_changed ? 'quality-pill-watch' : 'quality-pill-fresh'}">${t('signalsLabel')}</span>
+                    </div>
+                    <div class="change-line-meta">${signalText}</div>
+                    <div class="change-line-meta ${deltaClass}">${t('expectedEdgeLabel')}: ${Number(item.current_expected_edge_pct || 0).toFixed(2)}% | Δ ${Number(item.edge_delta_pct || 0).toFixed(2)}%</div>
+                </div>
+            `;
+        });
+
+        const forecastLines = (changesData.forecast_changes || []).slice(0, 2).map(item => {
+            const deltaClass = Number(item.delta_expected_return_pct || 0) >= 0 ? 'change-delta-pos' : 'change-delta-neg';
+            return `
+                <div class="change-line">
+                    <div class="change-line-top">
+                        <span class="change-line-symbol">${item.symbol}</span>
+                        <span class="quality-pill quality-pill-unknown">${t('forecastsLabel')}</span>
+                    </div>
+                    <div class="change-line-meta">${item.portfolio_name}</div>
+                    <div class="change-line-meta ${deltaClass}">${Number(item.current_expected_return_pct || 0).toFixed(2)}% | Δ ${Number(item.delta_expected_return_pct || 0).toFixed(2)}%</div>
+                </div>
+            `;
+        });
+
+        const macroLines = (changesData.macro_changes || []).slice(0, 2).map(item => {
+            const deltaClass = Number(item.delta || 0) >= 0 ? 'change-delta-pos' : 'change-delta-neg';
+            return `
+                <div class="change-line">
+                    <div class="change-line-top">
+                        <span class="change-line-symbol">${item.label}</span>
+                        <span class="quality-pill quality-pill-unknown">${t('macroLabel')}</span>
+                    </div>
+                    <div class="change-line-meta">${item.previous == null ? `${item.current}` : `${item.current} ${t('fromLabel')} ${item.previous}`}</div>
+                    ${item.delta == null ? '' : `<div class="change-line-meta ${deltaClass}">Δ ${Number(item.delta).toFixed(2)}</div>`}
+                </div>
+            `;
+        });
+
+        const allChangeLines = [...signalLines, ...forecastLines, ...macroLines];
+        changesEl.innerHTML = allChangeLines.length ? allChangeLines.join('') : `<p class="global-snapshot-empty">${t('noChangesToday')}</p>`;
+
+        const freshness = qualityData.freshness || {};
+        const freshnessLines = Object.entries(freshness).slice(0, 4).map(([key, item]) => `
+            <div class="quality-line">
+                <div class="quality-line-top">
+                    <span class="quality-line-label">${key.replace(/_/g, ' ')}</span>
+                    <span class="quality-pill quality-pill-${String(item.status || 'unknown').toLowerCase()}">${qualityTextLabel(item.status)}</span>
+                </div>
+                <div class="quality-line-meta">${t('freshnessLabel')}: ${item.age_hours == null ? '—' : `${item.age_hours.toFixed(1)}h`}</div>
+            </div>
+        `);
+
+        const driftLines = (qualityData.drift || []).slice(0, 3).map(item => `
+            <div class="quality-line">
+                <div class="quality-line-top">
+                    <span class="quality-line-label">${getAgentDisplayName(item.agent_name)}</span>
+                    <span class="quality-pill quality-pill-${String(item.status || 'unknown').toLowerCase()}">${qualityTextLabel(item.status)}</span>
+                </div>
+                <div class="quality-line-meta">${t('driftLabel')}: ${Number(item.drift_gap || 0).toFixed(1)} pts | 30d ${Number(item.win_rate_30d || 0).toFixed(1)}%</div>
+            </div>
+        `);
+
+        const allQualityLines = [...freshnessLines, ...driftLines];
+        qualityEl.innerHTML = allQualityLines.length ? allQualityLines.join('') : `<p class="global-snapshot-empty">${t('noQualityData')}</p>`;
+        if (qualityBadge) {
+            qualityBadge.textContent = qualityTextLabel(qualityData.overall_status || 'unknown');
+            qualityBadge.className = `intelligence-pulse-badge quality-pill quality-pill-${String(qualityData.overall_status || 'unknown').toLowerCase()}`;
+        }
+    } catch (error) {
+        console.error('Error loading intelligence pulse:', error);
+        changesEl.innerHTML = `<p class="global-snapshot-empty">${t('noChangesToday')}</p>`;
+        qualityEl.innerHTML = `<p class="global-snapshot-empty">${t('noQualityData')}</p>`;
+    }
+}
+
 async function loadRegimeBanner() {
     try {
         const res = await fetch('/api/track-record/regime-stats');
@@ -1925,6 +2084,7 @@ window.addEventListener('load', async () => {
         initGlobalSearch();
         loadTradingViewTicker();
         loadGlobalSnapshotBar();
+        loadIntelligencePulse();
         loadRegimeBanner();
 
         // Show skeletons before data loads (Upgrade 4)
@@ -1990,6 +2150,7 @@ async function refreshData() {
         await Promise.all([
             loadStats(),
             loadGlobalSnapshotBar(),
+            loadIntelligencePulse(),
             loadPredictions(),
             loadConsensus(),
             loadPerformance(),
@@ -2928,6 +3089,8 @@ function renderConsensusCard(item) {
     const agreementPct = Math.round((item.agent_agreement || 0) * 100);
     const agentsAgreeing = item.agents_agreeing || 0;
     const agentsTotal = item.agents_total || 0;
+    const calibratedConfidence = Number(item.calibrated_confidence || item.confidence || 0);
+    const expectedEdge = Number(item.expected_edge_pct || 0);
 
     // Risk action badge class
     let riskBadgeClass = 'risk-badge-pass';
@@ -2967,6 +3130,11 @@ function renderConsensusCard(item) {
                     <span class="meta-label">${t('consensus')}:</span>
                     <span class="agreement-text">${agentsAgreeing}/${agentsTotal} (${agreementPct}%)</span>
                 </div>
+            </div>
+
+            <div class="consensus-edge-row">
+                <span class="consensus-edge-chip">${t('expectedEdgeLabel')}: ${expectedEdge.toFixed(2)}%</span>
+                <span class="consensus-calibration-text">${t('calibrationLabel')}: ${calibratedConfidence.toFixed(1)}%</span>
             </div>
 
             <!-- Bull/Bear Bars -->

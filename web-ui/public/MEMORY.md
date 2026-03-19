@@ -40,6 +40,26 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 ## Track Record Copy (Mar 16, 2026)
 - `track-record.html`: header badge shortened to ?Live pre-market signals?.
 
+## Adaptive Weighting + Change Intelligence (Mar 19, 2026)
+- `../server.js`
+  - `/api/consensus` and `/api/consensus/:symbol` now expose calibrated confidence, expected edge, ranking score, and stored calibration metadata.
+  - added `/api/intelligence/changes` for latest-vs-previous change detection across:
+    - consensus signal shifts
+    - authenticated portfolio forecast deltas
+    - macro moves from FX and market regime history
+  - added `/api/intelligence/quality` for freshness checks and agent drift monitoring.
+- `../routes/rag.js`
+  - assistant retrieval now resolves bilingual entities from `egx30_stocks`, `instrument`, and `instrument_alias`.
+  - symbol/entity-specific news and structured chunks are prioritized ahead of generic retrieval.
+  - `retrieval_meta` includes resolved entities.
+- `app.js`
+  - consensus cards display calibrated confidence and expected edge.
+  - added dashboard intelligence pulse rendering for:
+    - What Changed Today
+    - Freshness & Drift
+- `index.html` and `style.css`
+  - added a new dashboard section below the snapshot bar for change detection and quality monitoring.
+
 ## Environment Variables (Secrets)
 - `DATABASE_URL` - PostgreSQL connection string (Render)
 - `NEWS_API_KEY` - News API for news collection

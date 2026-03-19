@@ -253,6 +253,115 @@ function uniqSources(sources, max = 12) {
     return out;
 }
 
+function normalizeEntityText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[أإآ]/g, 'ا')
+        .replace(/ى/g, 'ي')
+        .replace(/ة/g, 'ه')
+        .replace(/ـ/g, '')
+        .replace(/[^\w\u0600-\u06FF]+/g, ' ')
+        .trim();
+}
+
+async function loadEntityCatalog() {
+    const catalog = [];
+    try {
+        const stockRows = await dbAll(
+            `SELECT symbol, name_en, name_ar, sector_en FROM egx30_stocks WHERE is_active ${_isPostgres ? '= TRUE' : '= 1'} ORDER BY symbol ASC`,
+            []
+        );
+        stockRows.forEach(row => {
+            const aliases = [row.symbol, String(row.symbol || '').replace(/\.CA$/i, ''), row.name_en, row.name_ar, row.sector_en]
+                .filter(Boolean)
+                .map(normalizeEntityText);
+            catalog.push({
+                type: 'stock',
+                symbol: row.symbol,
+                name_en: row.name_en,
+                name_ar: row.name_ar,
+                aliases: [...new Set(aliases)]
+            });
+        });
+    } catch (_) { /* optional */ }
+
+    try {
+        const instrumentId = _isPostgres ? 'instrument_id' : 'id';
+        const aliasRows = await dbAll(
+            `SELECT i.symbol, i.name, i.issuer, a.alias
+             FROM instrument i
+             LEFT JOIN instrument_alias a ON a.instrument_id = i.${instrumentId}
+             WHERE i.is_active ${_isPostgres ? '= TRUE' : '= 1'}
+             ORDER BY i.symbol ASC`,
+            []
+        );
+        const grouped = new Map();
+        aliasRows.forEach(row => {
+            const entry = grouped.get(row.symbol) || {
+                type: 'etf',
+                symbol: row.symbol,
+                name: row.name,
+                issuer: row.issuer,
+                aliases: []
+            };
+            [row.symbol, row.name, row.issuer, row.alias, String(row.symbol || '').replace(/\.CA$/i, ''), 'etf', 'etp']
+                .filter(Boolean)
+                .map(normalizeEntityText)
+                .forEach(alias => entry.aliases.push(alias));
+            grouped.set(row.symbol, entry);
+        });
+        grouped.forEach(entry => {
+            entry.aliases = [...new Set(entry.aliases)];
+            catalog.push(entry);
+        });
+    } catch (_) { /* optional */ }
+
+    return catalog;
+}
+
+function resolveEntities(question, catalog, explicitSymbol) {
+    const normalizedQuestion = normalizeEntityText(question);
+    const resolved = [];
+
+    if (explicitSymbol) {
+        resolved.push({
+            type: 'stock',
+            symbol: explicitSymbol.toUpperCase(),
+            score: 100
+        });
+    }
+
+    for (const entry of (catalog || [])) {
+        let score = 0;
+        for (const alias of (entry.aliases || [])) {
+            if (!alias) continue;
+            if (normalizedQuestion === alias) score = Math.max(score, 95);
+            else if (normalizedQuestion.includes(alias)) score = Math.max(score, Math.min(90, alias.length * 4));
+        }
+        if (score > 0) {
+            resolved.push({
+                type: entry.type,
+                symbol: entry.symbol,
+                name_en: entry.name_en || entry.name || entry.symbol,
+                name_ar: entry.name_ar || null,
+                score
+            });
+        }
+    }
+
+    const bestBySymbol = new Map();
+    resolved.forEach(item => {
+        const prev = bestBySymbol.get(item.symbol);
+        if (!prev || item.score > prev.score) bestBySymbol.set(item.symbol, item);
+    });
+
+    return [...bestBySymbol.values()]
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+}
+
 // ── POST /api/rag/ask — Q&A against market reports ──────────────────────────
 
 router.post('/ask', async (req, res) => {
@@ -379,6 +488,13 @@ router.post('/chat', optionalAuth, async (req, res) => {
         const sources = [];
         const lang = (language === 'ar' || language === 'en') ? language : 'en';
         const sourceMode = ['hybrid', 'news_only', 'knowledge_only'].includes(source_mode) ? source_mode : 'hybrid';
+        const entityCatalog = await loadEntityCatalog();
+        const resolvedEntities = resolveEntities(question.trim(), entityCatalog, symbol);
+        const resolvedSymbols = resolvedEntities
+            .filter(e => e.type === 'stock' || e.type === 'etf')
+            .map(e => String(e.symbol || '').toUpperCase())
+            .filter(Boolean);
+        const focusSymbol = String(symbol || resolvedSymbols[0] || '').toUpperCase() || null;
 
         // 1. Load EGX stock reference from DB
         let stockReferenceBlock = '';
@@ -401,13 +517,28 @@ router.post('/chat', optionalAuth, async (req, res) => {
         // Use Unicode-aware word extraction (handles Arabic + Latin)
         const words = question.trim().toLowerCase().match(/[\w\u0600-\u06FF]{3,}/g) || [];
         let newsRows = [];
-        if (sourceMode !== 'knowledge_only' && symbol) {
-            // Symbol-specific first
+        if (sourceMode !== 'knowledge_only' && focusSymbol) {
             newsRows = await dbAll(
-                `SELECT headline, source, date, url FROM news
+                `SELECT headline, source, date, url, symbol FROM news
                  WHERE symbol = ${ph(1)} ORDER BY date DESC LIMIT 10`,
-                [symbol.toUpperCase()]
+                [focusSymbol]
             );
+        }
+        if (sourceMode !== 'knowledge_only' && newsRows.length < 5 && resolvedSymbols.length > 1) {
+            const extraSymbolRows = await dbAll(
+                `SELECT headline, source, date, url, symbol FROM news
+                 WHERE symbol IN (${resolvedSymbols.map((_, idx) => ph(idx + 1)).join(',')})
+                 ORDER BY date DESC LIMIT 12`,
+                resolvedSymbols
+            );
+            const seen = new Set(newsRows.map(r => `${r.symbol || ''}|${r.headline}`));
+            for (const r of extraSymbolRows) {
+                const key = `${r.symbol || ''}|${r.headline}`;
+                if (!seen.has(key)) {
+                    newsRows.push(r);
+                    seen.add(key);
+                }
+            }
         }
         if (sourceMode !== 'knowledge_only' && newsRows.length < 5 && words.length > 0) {
             // Keyword search in headlines (Arabic + English)
@@ -420,24 +551,25 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 ).join(' OR ');
                 const likeParams = terms.map(w => `%${w}%`);
                 const extraRows = await dbAll(
-                    `SELECT headline, source, date, url FROM news WHERE ${likeClause} ORDER BY date DESC LIMIT 10`,
+                    `SELECT headline, source, date, url, symbol FROM news WHERE ${likeClause} ORDER BY date DESC LIMIT 10`,
                     likeParams
                 );
-                const seen = new Set(newsRows.map(r => r.headline));
+                const seen = new Set(newsRows.map(r => `${r.symbol || ''}|${r.headline}`));
                 for (const r of extraRows) {
-                    if (!seen.has(r.headline)) { newsRows.push(r); seen.add(r.headline); }
+                    const key = `${r.symbol || ''}|${r.headline}`;
+                    if (!seen.has(key)) { newsRows.push(r); seen.add(key); }
                 }
             }
         }
         // Fallback: for general news questions (no symbol, nothing matched), return latest headlines
-        if (sourceMode !== 'knowledge_only' && newsRows.length === 0 && !symbol) {
+        if (sourceMode !== 'knowledge_only' && newsRows.length === 0 && !focusSymbol) {
             newsRows = await dbAll(
-                `SELECT headline, source, date, url FROM news ORDER BY date DESC LIMIT 10`,
+                `SELECT headline, source, date, url, symbol FROM news ORDER BY date DESC LIMIT 10`,
                 []
             );
         }
-        const newsContext = newsRows.slice(0, 8).map(r =>
-            `- [${r.date}] ${r.headline} (${r.source})`
+        let newsContext = newsRows.slice(0, 8).map(r =>
+            `- [${r.date}] ${r.headline} (${r.source}${r.symbol ? ` · ${r.symbol}` : ''})`
         ).join('\n');
 
         if (newsRows.length > 0) {
@@ -451,10 +583,17 @@ router.post('/chat', optionalAuth, async (req, res) => {
         let qEmbedding = null;
         if (sourceMode !== 'news_only') try {
             qEmbedding = await embedText(question.trim());
-            const chunks = await retrieveTopChunks(qEmbedding, 6, null);
+            const chunks = await retrieveTopChunks(qEmbedding, 8, null);
+            const entityHints = resolvedEntities.map(e => normalizeEntityText(`${e.symbol} ${e.name_en || ''} ${e.name_ar || ''}`));
             const topChunks = chunks
-                .map(c => ({ ...c, sim: c.similarity ?? 0 }))
+                .map(c => {
+                    const text = normalizeEntityText(`${c.chunk_text || ''} ${(c.source_meta || {}).title || ''} ${(c.source_meta || {}).headline || ''}`);
+                    const entityBoost = entityHints.some(h => h && text.includes(h)) ? 0.08 : 0;
+                    const sourcePenalty = c.source_type === 'news_rag' ? 0.02 : 0;
+                    return { ...c, sim: (c.similarity ?? 0) + entityBoost - sourcePenalty };
+                })
                 .filter(c => c.sim > 0.4)
+                .sort((a, b) => b.sim - a.sim)
                 .slice(0, 4);
 
             if (topChunks.length > 0) {
@@ -539,9 +678,9 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 if (gainers.length) lines.push(`  Top Gainers: ${gainers.map(p => `${p.symbol} +${p.change_pct}%`).join(', ')}`);
                 if (losers.length)  lines.push(`  Top Losers:  ${losers.map(p => `${p.symbol} ${p.change_pct}%`).join(', ')}`);
                 if (byVol.length)   lines.push(`  Most Active: ${byVol.map(p => p.symbol).join(', ')}`);
-                if (symbol) {
-                    const sp = priceRows.find(p => p.symbol === symbol.toUpperCase());
-                    if (sp) lines.push(`  ${symbol}: Close=${sp.close}, Change=${sp.change_pct}%, Vol=${sp.volume}`);
+                if (focusSymbol) {
+                    const sp = priceRows.find(p => p.symbol === focusSymbol);
+                    if (sp) lines.push(`  ${focusSymbol}: Close=${sp.close}, Change=${sp.change_pct}%, Vol=${sp.volume}`);
                 }
                 marketDataBlock += lines.join('\n');
             }
@@ -740,6 +879,22 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 }
             } catch (_e) { /* agent_performance_daily missing */ }
 
+            if (focusSymbol) {
+                try {
+                    const focusSignal = await dbGet(
+                        `SELECT symbol, final_signal, confidence, calibrated_confidence, expected_edge_pct, prediction_date
+                         FROM consensus_results
+                         WHERE symbol = ${ph(1)}
+                         ORDER BY prediction_date DESC
+                         LIMIT 1`,
+                        [focusSymbol]
+                    );
+                    if (focusSignal) {
+                        marketDataBlock += `\n  Focus Signal (${focusSignal.prediction_date}): ${focusSignal.symbol} ${focusSignal.final_signal} | raw conf ${focusSignal.confidence || 0}% | calibrated ${focusSignal.calibrated_confidence || focusSignal.confidence || 0}% | expected edge ${focusSignal.expected_edge_pct || 0}%`;
+                    }
+                } catch (_focusErr) { /* optional */ }
+            }
+
         } catch (_e) { /* silently skip if tables missing */ }
 
         // 5. Portfolio context for logged-in user
@@ -817,13 +972,17 @@ router.post('/chat', optionalAuth, async (req, res) => {
         } catch (_e) { /* tables optional */ }
 
         // 6. Build prompt and generate
-        const symbolNote = symbol ? `\nFocus on: ${symbol}` : '';
+        const symbolNote = focusSymbol ? `\nFocus on: ${focusSymbol}` : '';
+        const entityNote = resolvedEntities.length
+            ? `\nResolved entities: ${resolvedEntities.map(e => `${e.symbol} (${e.type})`).join(', ')}`
+            : '';
         const prompt = `You are an expert EGX financial research assistant with access to live market data.
 Use the live market data, stock reference, EGX knowledge, and knowledge base excerpts to answer questions.
 When discussing the user's portfolios, use the portfolio data provided — show actual vs forecast performance.
 Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
 Answer language must be ${lang === 'ar' ? 'Arabic' : 'English'}.
 ${symbolNote}
+${entityNote}
 
 ${EGX_MARKET_KNOWLEDGE}
 ${stockReferenceBlock}
@@ -844,7 +1003,8 @@ User question: ${question}`;
             retrieval_meta: {
                 language: lang,
                 source_mode: sourceMode,
-                news_hits: newsRows.length
+                news_hits: newsRows.length,
+                resolved_entities: resolvedEntities
             }
         });
 

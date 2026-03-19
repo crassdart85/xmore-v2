@@ -276,6 +276,11 @@ def create_tables():
 
         # Add xmore_score to consensus_results if it doesn't exist
         _safe_add_column(cursor, "consensus_results", "xmore_score", "REAL")
+        _safe_add_column(cursor, "consensus_results", "calibrated_confidence", "REAL")
+        _safe_add_column(cursor, "consensus_results", "expected_edge_pct", "REAL")
+        _safe_add_column(cursor, "consensus_results", "ranking_score", "REAL")
+        _safe_add_column(cursor, "consensus_results", "weight_profile_json", "TEXT")
+        _safe_add_column(cursor, "consensus_results", "calibration_meta_json", "TEXT")
 
         # Table: Backtest Results (walk-forward ML performance per symbol)
         cursor.execute(f"""

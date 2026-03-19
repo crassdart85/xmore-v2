@@ -2657,6 +2657,29 @@ footer {
     font-weight: 600;
 }
 
+.consensus-edge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.consensus-edge-chip {
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(14, 165, 233, 0.12);
+    color: #0284c7;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.consensus-calibration-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
 /* Conviction Badges */
 .conviction-badge {
     padding: 3px 10px;
@@ -3422,6 +3445,128 @@ footer {
     font-size: 0.9em;
 }
 
+.intelligence-pulse-section {
+    margin: 0 0 24px;
+}
+
+.intelligence-pulse-grid {
+    display: grid;
+    grid-template-columns: 1.45fr 1fr;
+    gap: 12px;
+}
+
+.intelligence-pulse-card {
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(14, 165, 233, 0.05), transparent 40%), var(--card-bg);
+    padding: 14px;
+}
+
+.intelligence-pulse-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.intelligence-pulse-head h2 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.intelligence-pulse-badge {
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(14, 165, 233, 0.14);
+    color: #0284c7;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.intelligence-pulse-badge-muted {
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--text-secondary);
+}
+
+.intelligence-pulse-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.change-line,
+.quality-line {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: var(--container-bg);
+}
+
+.change-line-top,
+.quality-line-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.change-line-symbol,
+.quality-line-label {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.change-line-meta,
+.quality-line-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.change-delta-pos {
+    color: #16a34a;
+}
+
+.change-delta-neg {
+    color: #dc2626;
+}
+
+.quality-pill {
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.quality-pill-fresh,
+.quality-pill-healthy,
+.quality-pill-stable,
+.quality-pill-improving {
+    background: rgba(22, 163, 74, 0.12);
+    color: #16a34a;
+}
+
+.quality-pill-warning,
+.quality-pill-watch {
+    background: rgba(245, 158, 11, 0.14);
+    color: #d97706;
+}
+
+.quality-pill-stale,
+.quality-pill-attention,
+.quality-pill-degrading {
+    background: rgba(220, 38, 38, 0.14);
+    color: #dc2626;
+}
+
+.quality-pill-unknown,
+.quality-pill-missing {
+    background: rgba(148, 163, 184, 0.12);
+    color: var(--text-secondary);
+}
+
 /* ============================================
    PREDICTIONS V2
    ============================================ */
@@ -3489,6 +3634,9 @@ footer {
 @media (max-width: 640px) {
     .global-snapshot-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+    .intelligence-pulse-grid {
+        grid-template-columns: 1fr;
     }
     .signal-why-grid {
         grid-template-columns: repeat(2, 1fr);

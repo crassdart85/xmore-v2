@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const { optionalAuth } = require('./middleware/auth');
 
 // Route modules
 const { router: authRouter, attachDb: attachAuthDb } = require('./routes/auth');
@@ -120,6 +121,202 @@ if (DATABASE_URL) {
 }
 
 // ... existing endpoints ...
+
+function dbAllAsync(query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.all(query, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+  });
+}
+
+function dbGetAsync(query, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(query, params, (err, row) => err ? reject(err) : resolve(row || null));
+  });
+}
+
+function isTableMissing(err) {
+  return err && err.message && (
+    err.message.includes('does not exist') ||
+    err.message.includes('no such table') ||
+    err.message.includes('no such column')
+  );
+}
+
+function normalizeBool(value) {
+  return value === true || value === 1 || value === 't' || value === 'true';
+}
+
+async function buildConsensusCalibrationState() {
+  const state = { overallAccuracy: 0.5, bins: {}, samples: 0 };
+  try {
+    const rows = await dbAllAsync(`
+      SELECT p.confidence, e.was_correct
+      FROM evaluations e
+      JOIN predictions p ON p.id = e.prediction_id
+      WHERE e.agent_name = 'Consensus'
+        AND p.confidence IS NOT NULL
+      ORDER BY e.evaluated_at DESC
+      LIMIT 1200
+    `, []);
+    if (!rows.length) return state;
+
+    let hits = 0;
+    const bins = {};
+    rows.forEach(row => {
+      const confidence = Number(row.confidence || 0);
+      const bucket = Math.max(0, Math.min(90, Math.floor(confidence / 10) * 10));
+      const entry = bins[bucket] || { count: 0, hits: 0 };
+      const ok = normalizeBool(row.was_correct) ? 1 : 0;
+      entry.count += 1;
+      entry.hits += ok;
+      hits += ok;
+      bins[bucket] = entry;
+    });
+
+    state.samples = rows.length;
+    state.overallAccuracy = hits / rows.length;
+    Object.keys(bins).forEach(bucket => {
+      const entry = bins[bucket];
+      state.bins[bucket] = {
+        count: entry.count,
+        empiricalAccuracy: entry.hits / entry.count
+      };
+    });
+    return state;
+  } catch (err) {
+    if (!isTableMissing(err)) console.warn('[consensus calibration]', err.message);
+    return state;
+  }
+}
+
+function applyConsensusCalibration(rawConfidence, calibrationState) {
+  const raw = Number(rawConfidence || 0);
+  const bucket = Math.max(0, Math.min(90, Math.floor(raw / 10) * 10));
+  const overall = Number(calibrationState?.overallAccuracy || 0.5);
+  const bucketMeta = calibrationState?.bins?.[bucket] || null;
+  const bucketCount = Number(bucketMeta?.count || 0);
+  const empirical = Number(bucketMeta?.empiricalAccuracy ?? overall);
+  const smoothed = ((empirical * bucketCount) + (overall * 20)) / (bucketCount + 20);
+  const calibrated = Math.max(0, Math.min(100, (raw * 0.45) + (smoothed * 100 * 0.55)));
+  return {
+    rawConfidence: Number(raw.toFixed(2)),
+    calibratedConfidence: Number(calibrated.toFixed(2)),
+    bucket,
+    bucketSamples: bucketCount,
+    empiricalAccuracy: Number(empirical.toFixed(4)),
+    overallAccuracy: Number(overall.toFixed(4))
+  };
+}
+
+async function buildExpectedEdgeState() {
+  const state = {};
+  try {
+    const rows = await dbAllAsync(`
+      SELECT symbol, prediction, actual_change_pct, was_correct
+      FROM evaluations
+      WHERE agent_name = 'Consensus'
+        AND actual_change_pct IS NOT NULL
+      ORDER BY evaluated_at DESC
+      LIMIT 2500
+    `, []);
+    rows.forEach(row => {
+      const prediction = String(row.prediction || '').toUpperCase();
+      if (!['UP', 'DOWN', 'BUY', 'SELL'].includes(prediction)) return;
+      const actualChange = Number(row.actual_change_pct || 0);
+      const realizedEdge = (prediction === 'UP' || prediction === 'BUY') ? actualChange : -actualChange;
+
+      const keys = [`${row.symbol}|${prediction}`, `_GLOBAL_|${prediction}`];
+      keys.forEach(key => {
+        const entry = state[key] || { count: 0, wins: 0, winSum: 0, lossSum: 0, lossCount: 0 };
+        entry.count += 1;
+        if (realizedEdge > 0) {
+          entry.wins += 1;
+          entry.winSum += realizedEdge;
+        } else if (realizedEdge < 0) {
+          entry.lossSum += Math.abs(realizedEdge);
+          entry.lossCount += 1;
+        } else if (normalizeBool(row.was_correct)) {
+          entry.wins += 1;
+        }
+        state[key] = entry;
+      });
+    });
+
+    Object.keys(state).forEach(key => {
+      const entry = state[key];
+      entry.winRate = entry.count ? entry.wins / entry.count : 0.5;
+      entry.avgWin = entry.wins ? entry.winSum / entry.wins : 1.5;
+      entry.avgLoss = entry.lossCount ? entry.lossSum / entry.lossCount : 1.0;
+    });
+    return state;
+  } catch (err) {
+    if (!isTableMissing(err)) console.warn('[expected edge]', err.message);
+    return state;
+  }
+}
+
+function estimateExpectedEdge(symbol, prediction, calibrationMeta, edgeState) {
+  const direction = String(prediction || '').toUpperCase();
+  if (!['UP', 'DOWN', 'BUY', 'SELL'].includes(direction)) {
+    return { expectedEdgePct: 0, rankingScore: 0, profileScope: 'neutral', profileSamples: 0 };
+  }
+
+  const entry = edgeState[`${symbol}|${direction}`] || edgeState[`_GLOBAL_|${direction}`] || null;
+  const calibrated = Number(calibrationMeta?.calibratedConfidence || 0) / 100;
+  const histWinRate = Number(entry?.winRate ?? calibrated ?? 0.5);
+  const avgWin = Number(entry?.avgWin ?? 1.5);
+  const avgLoss = Number(entry?.avgLoss ?? 1.0);
+  const blendedWin = (histWinRate * 0.45) + (calibrated * 0.55);
+  const estimatedCost = 0.70;
+  const expectedEdge = (blendedWin * avgWin) - ((1 - blendedWin) * avgLoss) - estimatedCost;
+  const rankingScore = expectedEdge * (0.75 + calibrated);
+
+  return {
+    expectedEdgePct: Number(expectedEdge.toFixed(3)),
+    rankingScore: Number(rankingScore.toFixed(3)),
+    profileScope: edgeState[`${symbol}|${direction}`] ? 'symbol' : 'global',
+    profileSamples: Number(entry?.count || 0),
+    historicalWinRate: Number(histWinRate.toFixed(4)),
+    avgWinPct: Number(avgWin.toFixed(4)),
+    avgLossPct: Number(avgLoss.toFixed(4)),
+    estimatedCostPct: estimatedCost
+  };
+}
+
+function enrichConsensusRow(row, calibrationState, edgeState) {
+  const calibrationMeta = applyConsensusCalibration(row.calibrated_confidence ?? row.confidence, calibrationState);
+  const edgeMeta = estimateExpectedEdge(row.symbol, row.final_signal, calibrationMeta, edgeState);
+  return {
+    ...row,
+    calibrated_confidence: row.calibrated_confidence != null
+      ? Number(row.calibrated_confidence)
+      : calibrationMeta.calibratedConfidence,
+    expected_edge_pct: row.expected_edge_pct != null
+      ? Number(row.expected_edge_pct)
+      : edgeMeta.expectedEdgePct,
+    ranking_score: row.ranking_score != null
+      ? Number(row.ranking_score)
+      : edgeMeta.rankingScore,
+    calibration_meta: {
+      ...calibrationMeta,
+      ...edgeMeta
+    }
+  };
+}
+
+function ageHoursFromDate(value) {
+  if (!value) return null;
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return null;
+  return (Date.now() - dt.getTime()) / 3600000;
+}
+
+function freshnessStatus(ageHours, thresholdHours) {
+  if (ageHours == null) return 'unknown';
+  if (ageHours <= thresholdHours) return 'fresh';
+  if (ageHours <= thresholdHours * 2) return 'warning';
+  return 'stale';
+}
 
 // ============================================
 // AUTH, STOCKS, WATCHLIST & TRADES ROUTES
@@ -440,6 +637,287 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+app.get('/api/intelligence/changes', optionalAuth, async (req, res) => {
+  try {
+    const calibrationState = await buildConsensusCalibrationState();
+    const edgeState = await buildExpectedEdgeState();
+    const limit = Math.min(parseInt(req.query.limit, 10) || 8, 20);
+
+    const latestDates = await dbAllAsync(
+      `SELECT DISTINCT prediction_date FROM consensus_results ORDER BY prediction_date DESC LIMIT 2`,
+      []
+    ).catch(err => isTableMissing(err) ? [] : Promise.reject(err));
+
+    const currentDate = latestDates[0]?.prediction_date || null;
+    const previousDate = latestDates[1]?.prediction_date || null;
+    let signalChanges = [];
+
+    if (currentDate) {
+      const datePh = DATABASE_URL ? '$1' : '?';
+      const currentRows = await dbAllAsync(
+        `SELECT symbol, prediction_date, final_signal, conviction, confidence,
+                calibrated_confidence, expected_edge_pct, ranking_score, xmore_score
+         FROM consensus_results
+         WHERE prediction_date = ${datePh}`,
+        [currentDate]
+      ).catch(err => isTableMissing(err) ? [] : Promise.reject(err));
+      const previousRows = previousDate ? await dbAllAsync(
+        `SELECT symbol, prediction_date, final_signal, conviction, confidence,
+                calibrated_confidence, expected_edge_pct, ranking_score, xmore_score
+         FROM consensus_results
+         WHERE prediction_date = ${datePh}`,
+        [previousDate]
+      ).catch(err => isTableMissing(err) ? [] : Promise.reject(err)) : [];
+
+      const previousMap = new Map(previousRows.map(row => [row.symbol, row]));
+      signalChanges = currentRows.map(row => {
+        const enriched = enrichConsensusRow(row, calibrationState, edgeState);
+        const prev = previousMap.get(row.symbol);
+        const prevEnriched = prev ? enrichConsensusRow(prev, calibrationState, edgeState) : null;
+        const signalChanged = !!prevEnriched && prevEnriched.final_signal !== enriched.final_signal;
+        const convictionChanged = !!prevEnriched && prevEnriched.conviction !== enriched.conviction;
+        const edgeDelta = Number((enriched.expected_edge_pct || 0) - Number(prevEnriched?.expected_edge_pct || 0));
+        const confDelta = Number((enriched.calibrated_confidence || 0) - Number(prevEnriched?.calibrated_confidence || 0));
+        return {
+          symbol: enriched.symbol,
+          current_signal: enriched.final_signal,
+          previous_signal: prevEnriched?.final_signal || null,
+          current_conviction: enriched.conviction,
+          previous_conviction: prevEnriched?.conviction || null,
+          current_expected_edge_pct: enriched.expected_edge_pct || 0,
+          previous_expected_edge_pct: prevEnriched?.expected_edge_pct ?? null,
+          current_calibrated_confidence: enriched.calibrated_confidence || 0,
+          previous_calibrated_confidence: prevEnriched?.calibrated_confidence ?? null,
+          edge_delta_pct: Number(edgeDelta.toFixed(3)),
+          confidence_delta: Number(confDelta.toFixed(2)),
+          signal_changed: signalChanged,
+          conviction_changed: convictionChanged,
+          ranking_score: enriched.ranking_score || 0,
+          changed: signalChanged || convictionChanged || Math.abs(edgeDelta) >= 0.25 || Math.abs(confDelta) >= 4
+        };
+      })
+      .filter(item => item.changed)
+      .sort((a, b) => {
+        if (a.signal_changed !== b.signal_changed) return a.signal_changed ? -1 : 1;
+        return Math.abs(b.edge_delta_pct) - Math.abs(a.edge_delta_pct);
+      })
+      .slice(0, limit);
+    }
+
+    let forecastChanges = [];
+    if (req.userId) {
+      const portfolioIdPh = DATABASE_URL ? '$1' : '?';
+      const portfolioRunPh = DATABASE_URL ? '$2' : '?';
+      const latestRuns = await dbAllAsync(
+        `SELECT DISTINCT r.run_date
+         FROM portfolio_forecast_results r
+         JOIN forecast_portfolios fp ON fp.id = r.portfolio_id
+         WHERE fp.user_id = ${portfolioIdPh}
+         ORDER BY r.run_date DESC
+         LIMIT 2`,
+        [req.userId]
+      ).catch(err => isTableMissing(err) ? [] : Promise.reject(err));
+
+      const currentRun = latestRuns[0]?.run_date || null;
+      const previousRun = latestRuns[1]?.run_date || null;
+      if (currentRun && previousRun) {
+        const currentRows = await dbAllAsync(
+          `SELECT fp.name AS portfolio_name, r.portfolio_id, r.symbol, r.expected_return_pct
+           FROM portfolio_forecast_results r
+           JOIN forecast_portfolios fp ON fp.id = r.portfolio_id
+           WHERE fp.user_id = ${portfolioIdPh}
+             AND r.run_date = ${portfolioRunPh}`,
+          [req.userId, currentRun]
+        );
+        const previousRows = await dbAllAsync(
+          `SELECT r.portfolio_id, r.symbol, r.expected_return_pct
+           FROM portfolio_forecast_results r
+           JOIN forecast_portfolios fp ON fp.id = r.portfolio_id
+           WHERE fp.user_id = ${portfolioIdPh}
+             AND r.run_date = ${portfolioRunPh}`,
+          [req.userId, previousRun]
+        );
+        const prevMap = new Map(previousRows.map(row => [`${row.portfolio_id}|${row.symbol}`, row]));
+        forecastChanges = currentRows.map(row => {
+          const prev = prevMap.get(`${row.portfolio_id}|${row.symbol}`);
+          const currentVal = Number(row.expected_return_pct || 0);
+          const previousVal = Number(prev?.expected_return_pct || 0);
+          return {
+            portfolio_name: row.portfolio_name,
+            symbol: row.symbol,
+            current_expected_return_pct: currentVal,
+            previous_expected_return_pct: prev ? previousVal : null,
+            delta_expected_return_pct: Number((currentVal - previousVal).toFixed(2))
+          };
+        })
+        .filter(item => item.previous_expected_return_pct != null && Math.abs(item.delta_expected_return_pct) >= 1)
+        .sort((a, b) => Math.abs(b.delta_expected_return_pct) - Math.abs(a.delta_expected_return_pct))
+        .slice(0, 6);
+      }
+    }
+
+    const macroChanges = [];
+    try {
+      const fxRows = await dbAllAsync(
+        `SELECT date, usd_egp, gold_21k_egp_g
+         FROM fx_rates_history
+         ORDER BY date DESC
+         LIMIT 2`,
+        []
+      );
+      if (fxRows.length >= 2) {
+        const latest = fxRows[0];
+        const previous = fxRows[1];
+        macroChanges.push({
+          label: 'USD/EGP',
+          current: Number(latest.usd_egp || 0),
+          previous: Number(previous.usd_egp || 0),
+          delta: Number((Number(latest.usd_egp || 0) - Number(previous.usd_egp || 0)).toFixed(4))
+        });
+        macroChanges.push({
+          label: 'Gold 21K',
+          current: Number(latest.gold_21k_egp_g || 0),
+          previous: Number(previous.gold_21k_egp_g || 0),
+          delta: Number((Number(latest.gold_21k_egp_g || 0) - Number(previous.gold_21k_egp_g || 0)).toFixed(2))
+        });
+      }
+    } catch (err) {
+      if (!isTableMissing(err)) throw err;
+    }
+
+    try {
+      const regimes = await dbAllAsync(
+        `SELECT date, regime FROM regime_log ORDER BY date DESC LIMIT 2`,
+        []
+      );
+      if (regimes.length >= 1) {
+        macroChanges.push({
+          label: 'Market Regime',
+          current: regimes[0].regime,
+          previous: regimes[1]?.regime || null,
+          delta: regimes[1] ? (regimes[0].regime === regimes[1].regime ? 0 : 1) : null
+        });
+      }
+    } catch (err) {
+      if (!isTableMissing(err)) throw err;
+    }
+
+    res.json({
+      as_of: currentDate,
+      signal_changes: signalChanges,
+      forecast_changes: forecastChanges,
+      macro_changes: macroChanges
+    });
+  } catch (err) {
+    console.error('Error executing /api/intelligence/changes:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/intelligence/quality', optionalAuth, async (req, res) => {
+  try {
+    const freshness = {};
+    const sources = [
+      { key: 'prices', sql: `SELECT MAX(date) AS latest_value FROM prices`, thresholdHours: 36 },
+      { key: 'predictions', sql: `SELECT MAX(prediction_date) AS latest_value FROM predictions`, thresholdHours: 36 },
+      { key: 'consensus', sql: `SELECT MAX(prediction_date) AS latest_value FROM consensus_results`, thresholdHours: 36 },
+      { key: 'news', sql: `SELECT MAX(date) AS latest_value FROM news`, thresholdHours: 24 },
+      { key: 'sentiment', sql: `SELECT MAX(date) AS latest_value FROM sentiment_scores`, thresholdHours: 36 },
+      { key: 'fx_rates', sql: `SELECT MAX(date) AS latest_value FROM fx_rates_history`, thresholdHours: 36 }
+    ];
+
+    for (const source of sources) {
+      try {
+        const row = await dbGetAsync(source.sql, []);
+        const latestValue = row?.latest_value || null;
+        const ageHours = ageHoursFromDate(latestValue);
+        freshness[source.key] = {
+          latest_value: latestValue,
+          age_hours: ageHours == null ? null : Number(ageHours.toFixed(2)),
+          status: freshnessStatus(ageHours, source.thresholdHours)
+        };
+      } catch (err) {
+        freshness[source.key] = { latest_value: null, age_hours: null, status: isTableMissing(err) ? 'missing' : 'error' };
+      }
+    }
+
+    if (req.userId) {
+      try {
+        const portfolioRow = await dbGetAsync(
+          `SELECT MAX(updated_at) AS latest_value FROM forecast_portfolios WHERE user_id = ${DATABASE_URL ? '$1' : '?'}`,
+          [req.userId]
+        );
+        const ageHours = ageHoursFromDate(portfolioRow?.latest_value || null);
+        freshness.forecasts = {
+          latest_value: portfolioRow?.latest_value || null,
+          age_hours: ageHours == null ? null : Number(ageHours.toFixed(2)),
+          status: freshnessStatus(ageHours, 72)
+        };
+      } catch (err) {
+        freshness.forecasts = { latest_value: null, age_hours: null, status: isTableMissing(err) ? 'missing' : 'error' };
+      }
+    }
+
+    const drift = [];
+    try {
+      const rows = await dbAllAsync(
+        `SELECT agent_name, snapshot_date, win_rate_30d, win_rate_90d
+         FROM agent_performance_daily
+         ORDER BY snapshot_date DESC, agent_name ASC`,
+        []
+      );
+      const latestByAgent = new Map();
+      const previousByAgent = new Map();
+      rows.forEach(row => {
+        if (!latestByAgent.has(row.agent_name)) {
+          latestByAgent.set(row.agent_name, row);
+        } else if (!previousByAgent.has(row.agent_name)) {
+          previousByAgent.set(row.agent_name, row);
+        }
+      });
+      latestByAgent.forEach((row, agentName) => {
+        const previous = previousByAgent.get(agentName);
+        const win30 = Number(row.win_rate_30d || 0);
+        const win90 = Number(row.win_rate_90d || 0);
+        const prev30 = Number(previous?.win_rate_30d || win30);
+        const driftGap = win30 - win90;
+        const snapshotDelta = win30 - prev30;
+        let status = 'stable';
+        if (driftGap <= -10 || snapshotDelta <= -8) status = 'degrading';
+        else if (driftGap >= 8 || snapshotDelta >= 8) status = 'improving';
+        drift.push({
+          agent_name: agentName,
+          snapshot_date: row.snapshot_date,
+          win_rate_30d: Number(win30.toFixed(2)),
+          win_rate_90d: Number(win90.toFixed(2)),
+          drift_gap: Number(driftGap.toFixed(2)),
+          snapshot_delta: Number(snapshotDelta.toFixed(2)),
+          status
+        });
+      });
+    } catch (err) {
+      if (!isTableMissing(err)) throw err;
+    }
+
+    const freshnessStatuses = Object.values(freshness).map(item => item.status);
+    const degradingAgents = drift.filter(item => item.status === 'degrading').length;
+    const overallStatus = freshnessStatuses.includes('stale') || freshnessStatuses.includes('error')
+      ? 'attention'
+      : degradingAgents > 0
+        ? 'watch'
+        : 'healthy';
+
+    res.json({
+      overall_status: overallStatus,
+      freshness,
+      drift
+    });
+  } catch (err) {
+    console.error('Error executing /api/intelligence/quality:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 6. Get prediction evaluations (for results comparison)
 app.get('/api/evaluations', (req, res) => {
   const boolTrue = DATABASE_URL ? 'true' : '1';
@@ -481,15 +959,17 @@ app.get('/api/consensus', (req, res) => {
   const query = DATABASE_URL
     ? `SELECT DISTINCT ON (symbol)
          symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
+         calibrated_confidence, expected_edge_pct, ranking_score,
          risk_adjusted, agent_agreement, agents_agreeing, agents_total,
          majority_direction, bull_score, bear_score, risk_action, risk_score,
-         display_json, risk_assessment_json
+         display_json, risk_assessment_json, calibration_meta_json, weight_profile_json
        FROM consensus_results
        ORDER BY symbol, prediction_date DESC`
     : `SELECT c.symbol, c.prediction_date, c.final_signal, c.conviction, c.confidence, c.xmore_score,
+         c.calibrated_confidence, c.expected_edge_pct, c.ranking_score,
          c.risk_adjusted, c.agent_agreement, c.agents_agreeing, c.agents_total,
          c.majority_direction, c.bull_score, c.bear_score, c.risk_action, c.risk_score,
-         c.display_json, c.risk_assessment_json
+         c.display_json, c.risk_assessment_json, c.calibration_meta_json, c.weight_profile_json
        FROM consensus_results c
        INNER JOIN (
          SELECT symbol, MAX(prediction_date) as max_date
@@ -498,7 +978,7 @@ app.get('/api/consensus', (req, res) => {
        ) latest ON c.symbol = latest.symbol AND c.prediction_date = latest.max_date
        ORDER BY c.symbol`;
 
-  db.all(query, [], (err, rows) => {
+  db.all(query, [], async (err, rows) => {
     if (err) {
       if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) {
         res.json([]);
@@ -506,18 +986,28 @@ app.get('/api/consensus', (req, res) => {
         res.status(500).json({ error: err.message });
       }
     } else {
-      // Parse JSON fields
+      const calibrationState = await buildConsensusCalibrationState();
+      const edgeState = await buildExpectedEdgeState();
       const parsed = (rows || []).map(row => {
         try {
           row.display = row.display_json ? JSON.parse(row.display_json) : {};
           row.risk_assessment = row.risk_assessment_json ? JSON.parse(row.risk_assessment_json) : {};
+          row.calibration_meta = row.calibration_meta_json ? JSON.parse(row.calibration_meta_json) : {};
+          row.weight_profile = row.weight_profile_json ? JSON.parse(row.weight_profile_json) : {};
         } catch (e) {
           row.display = {};
           row.risk_assessment = {};
+          row.calibration_meta = {};
+          row.weight_profile = {};
         }
         delete row.display_json;
         delete row.risk_assessment_json;
-        return row;
+        delete row.calibration_meta_json;
+        delete row.weight_profile_json;
+        return enrichConsensusRow(row, calibrationState, edgeState);
+      }).sort((a, b) => {
+        const diff = Number(b.ranking_score || 0) - Number(a.ranking_score || 0);
+        return diff !== 0 ? diff : String(a.symbol).localeCompare(String(b.symbol));
       });
       res.json(parsed);
     }
@@ -531,18 +1021,20 @@ app.get('/api/consensus/:symbol', (req, res) => {
 
   const query = `
     SELECT
-      symbol, prediction_date, final_signal, conviction, confidence,
+      symbol, prediction_date, final_signal, conviction, confidence, xmore_score,
+      calibrated_confidence, expected_edge_pct, ranking_score,
       risk_adjusted, agent_agreement, agents_agreeing, agents_total,
       majority_direction, bull_score, bear_score, risk_action, risk_score,
       bull_case_json, bear_case_json, risk_assessment_json,
-      agent_signals_json, reasoning_chain_json, display_json
+      agent_signals_json, reasoning_chain_json, display_json,
+      calibration_meta_json, weight_profile_json
     FROM consensus_results
     WHERE symbol = ${placeholder}
     ORDER BY prediction_date DESC
     LIMIT 1
   `;
 
-  db.get(query, [symbol], (err, row) => {
+  db.get(query, [symbol], async (err, row) => {
     if (err) {
       if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) {
         res.json(null);
@@ -560,6 +1052,8 @@ app.get('/api/consensus/:symbol', (req, res) => {
         row.agent_signals = row.agent_signals_json ? JSON.parse(row.agent_signals_json) : [];
         row.reasoning_chain = row.reasoning_chain_json ? JSON.parse(row.reasoning_chain_json) : [];
         row.display = row.display_json ? JSON.parse(row.display_json) : {};
+        row.calibration_meta = row.calibration_meta_json ? JSON.parse(row.calibration_meta_json) : {};
+        row.weight_profile = row.weight_profile_json ? JSON.parse(row.weight_profile_json) : {};
       } catch (e) {
         console.error('Error parsing consensus JSON:', e);
       }
@@ -570,7 +1064,11 @@ app.get('/api/consensus/:symbol', (req, res) => {
       delete row.agent_signals_json;
       delete row.reasoning_chain_json;
       delete row.display_json;
-      res.json(row);
+      delete row.calibration_meta_json;
+      delete row.weight_profile_json;
+      const calibrationState = await buildConsensusCalibrationState();
+      const edgeState = await buildExpectedEdgeState();
+      res.json(enrichConsensusRow(row, calibrationState, edgeState));
     }
   });
 });
