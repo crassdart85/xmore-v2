@@ -1,4 +1,4 @@
-﻿const PERF_TRANSLATIONS = {
+const PERF_TRANSLATIONS = {
     en: {
         perfTitle: 'Xmore Performance',
         proof: 'Proof of Edge',
@@ -66,70 +66,70 @@
         notRecovered:         'Not Recovered',
     },
     ar: {
-        perfTitle: 'Ø£Ø¯Ø§Ø¡ Ø¥ÙƒØ³Ù…ÙˆØ±',
-        proof: 'Ø¥Ø«Ø¨Ø§Øª Ø§Ù„ØªÙÙˆÙ‚',
-        stability: 'Ù…Ù‚Ø§ÙŠÙŠØ³ Ø§Ù„Ø§Ø³ØªÙ‚Ø±Ø§Ø±',
-        accountability: 'Ù…Ø³Ø§Ø¡Ù„Ø© Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡',
-        transparency: 'Ø§Ù„Ø´ÙØ§ÙÙŠØ© ÙˆØ§Ù„Ù†Ø²Ø§Ù‡Ø©',
-        equity: 'Ù…Ù†Ø­Ù†Ù‰ Ø§Ù„Ø£Ø¯Ø§Ø¡',
-        alpha: 'Ø£Ù„ÙØ§',
-        sharpe: 'Ø´Ø§Ø±Ø¨',
-        maxDd: 'Ø£Ù‚ØµÙ‰ ØªØ±Ø§Ø¬Ø¹',
-        volatility: 'Ø§Ù„ØªØ°Ø¨Ø°Ø¨',
-        profitFactor: 'Ù…Ø¹Ø§Ù…Ù„ Ø§Ù„Ø±Ø¨Ø­',
-        winRate: 'Ù†Ø³Ø¨Ø© Ø§Ù„ÙÙˆØ²',
-        trades: 'Ø§Ù„ØµÙÙ‚Ø§Øª',
-        systemHealth: 'Ø­Ø§Ù„Ø© Ø§Ù„Ù†Ø¸Ø§Ù…',
-        stable: 'Ù…Ø³ØªÙ‚Ø±',
-        watch: 'Ù…Ø±Ø§Ù‚Ø¨Ø©',
-        degraded: 'Ù…ØªØ±Ø§Ø¬Ø¹',
-        sinceInception: 'Ù…Ù†Ø° Ø§Ù„Ø§Ù†Ø·Ù„Ø§Ù‚',
-        liveOnly: 'Ø³Ø¬Ù„ Ø­ÙŠ ØºÙŠØ± Ù‚Ø§Ø¨Ù„ Ù„Ù„ØªØ¹Ø¯ÙŠÙ„',
-        showBenchmark: 'Ø¹Ø±Ø¶ EGX30',
-        showDrawdown: 'Ø§Ù„Ù‡Ø¨ÙˆØ·',
-        noData: 'Ø³ÙŠØ¸Ù‡Ø± ØªØªØ¨Ø¹ Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø¨Ø¹Ø¯ ØªÙˆÙØ± ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø­ÙŠØ©.',
-        openAudit: 'ÙØªØ­ Ø³Ø¬Ù„ Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚',
-        showMore: 'Ø¹Ø±Ø¶ Ø§Ù„Ù…Ø²ÙŠØ¯',
-        window: 'Ø§Ù„ÙØªØ±Ø©',
-        agent: 'Ø§Ù„ÙˆÙƒÙŠÙ„',
-        win30d: 'ÙÙˆØ² 30 ÙŠÙˆÙ…',
-        win90d: 'ÙÙˆØ² 90 ÙŠÙˆÙ…',
-        confidence: 'Ø§Ù„Ø«Ù‚Ø©',
-        predictions: 'Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        weight: 'Ø§Ù„ÙˆØ²Ù†',
-        date: 'Ø§Ù„ØªØ§Ø±ÙŠØ®',
-        symbol: 'Ø§Ù„Ø±Ù…Ø²',
-        signal: 'Ø§Ù„Ø¥Ø´Ø§Ø±Ø©',
-        noDataRow: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª',
-        loading: 'Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£Ø¯Ø§Ø¡...',
-        loadFailed: 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ù„ÙˆØ­Ø© Ø§Ù„Ø£Ø¯Ø§Ø¡.',
-        firstLive: 'Ø£ÙˆÙ„ ØªÙ†Ø¨Ø¤ Ø­ÙŠ',
-        totalLive: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ø§Ù„Ø­ÙŠØ©',
-        auditTitle: 'Ø³Ø¬Ù„ Ø§Ù„ØªØ¯Ù‚ÙŠÙ‚',
-        auditWhen: 'Ù…ØªÙ‰',
-        auditTable: 'Ø§Ù„Ø¬Ø¯ÙˆÙ„',
-        auditRecord: 'Ø§Ù„Ø³Ø¬Ù„',
-        auditField: 'Ø§Ù„Ø­Ù‚Ù„',
-        auditOld: 'Ø§Ù„Ù‚Ø¯ÙŠÙ…',
-        auditNew: 'Ø§Ù„Ø¬Ø¯ÙŠØ¯',
-        auditNoEntries: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø¯Ø®Ù„Ø§Øª',
-        sortino: 'Ø³ÙˆØ±ØªÙŠÙ†Ùˆ',
-        institutionalMetrics: 'Ù…Ù‚Ø§ÙŠÙŠØ³ Ù…Ø¤Ø³Ø³ÙŠØ©',
-        sharpeRatio:          'Ù†Ø³Ø¨Ø© Ø´Ø§Ø±Ø¨',
-        sortinoRatio:         'Ù†Ø³Ø¨Ø© Ø³ÙˆØ±ØªÙŠÙ†Ùˆ',
-        calmarRatio:          'Ù†Ø³Ø¨Ø© ÙƒØ§Ù„Ù…Ø§Ø±',
-        informationRatio:     'Ù†Ø³Ø¨Ø© Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª',
-        maxDrawdown:          'Ø£Ù‚ØµÙ‰ ØªØ±Ø§Ø¬Ø¹',
-        recoveryTime:         'ÙˆÙ‚Øª Ø§Ù„Ø§Ø³ØªØ±Ø¯Ø§Ø¯',
-        betaVsBenchmark:      'Ø¨ÙŠØªØ§ Ù…Ù‚Ø§Ø¨Ù„ EGX30',
-        downCapture:          'Ù…Ø¹Ø¯Ù„ Ø§Ù„ØªØ±Ø§Ø¬Ø¹',
-        benchmarkComparison:  'Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ù…Ø±Ø¬Ø¹',
-        riskFreeRateApplied:  'Ù…Ø¹Ø¯Ù„ Ø§Ù„Ø®Ø·Ø± Ø§Ù„Ù…Ø·Ø¨Ù‚',
-        rollingSharpe:        'Ø´Ø§Ø±Ø¨ Ø§Ù„Ù…ØªØ¬Ø¯Ø¯ 30 ÙŠÙˆÙ…',
-        notEnoughData:        'Ù…Ø·Ù„ÙˆØ¨ 30 ØµÙÙ‚Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„',
-        exportReport:         'ØªØµØ¯ÙŠØ± Ø§Ù„ØªÙ‚Ø±ÙŠØ±',
-        days:                 'ÙŠÙˆÙ…',
-        notRecovered:         'Ù„Ù… ÙŠÙØ³ØªØ±Ø¯',
+        perfTitle: 'أداء إكسمور',
+        proof: 'إثبات التفوق',
+        stability: 'مقاييس الاستقرار',
+        accountability: 'مساءلة الوكلاء',
+        transparency: 'الشفافية والنزاهة',
+        equity: 'منحنى الأداء',
+        alpha: 'ألفا',
+        sharpe: 'شارب',
+        maxDd: 'أقصى تراجع',
+        volatility: 'التذبذب',
+        profitFactor: 'معامل الربح',
+        winRate: 'نسبة الفوز',
+        trades: 'الصفقات',
+        systemHealth: 'حالة النظام',
+        stable: 'مستقر',
+        watch: 'مراقبة',
+        degraded: 'متراجع',
+        sinceInception: 'منذ الانطلاق',
+        liveOnly: 'سجل حي غير قابل للتعديل',
+        showBenchmark: 'عرض EGX30',
+        showDrawdown: 'الهبوط',
+        noData: 'سيظهر تتبع الأداء بعد توفر تقييمات حية.',
+        openAudit: 'فتح سجل التدقيق',
+        showMore: 'عرض المزيد',
+        window: 'الفترة',
+        agent: 'الوكيل',
+        win30d: 'فوز 30 يوم',
+        win90d: 'فوز 90 يوم',
+        confidence: 'الثقة',
+        predictions: 'التنبؤات',
+        weight: 'الوزن',
+        date: 'التاريخ',
+        symbol: 'الرمز',
+        signal: 'الإشارة',
+        noDataRow: 'لا توجد بيانات',
+        loading: 'جاري تحميل الأداء...',
+        loadFailed: 'فشل تحميل لوحة الأداء.',
+        firstLive: 'أول تنبؤ حي',
+        totalLive: 'إجمالي التنبؤات الحية',
+        auditTitle: 'سجل التدقيق',
+        auditWhen: 'متى',
+        auditTable: 'الجدول',
+        auditRecord: 'السجل',
+        auditField: 'الحقل',
+        auditOld: 'القديم',
+        auditNew: 'الجديد',
+        auditNoEntries: 'لا توجد مدخلات',
+        sortino: 'سورتينو',
+        institutionalMetrics: 'مقاييس مؤسسية',
+        sharpeRatio:          'نسبة شارب',
+        sortinoRatio:         'نسبة سورتينو',
+        calmarRatio:          'نسبة كالمار',
+        informationRatio:     'نسبة المعلومات',
+        maxDrawdown:          'أقصى تراجع',
+        recoveryTime:         'وقت الاسترداد',
+        betaVsBenchmark:      'بيتا مقابل EGX30',
+        downCapture:          'معدل التراجع',
+        benchmarkComparison:  'مقارنة المرجع',
+        riskFreeRateApplied:  'معدل الخطر المطبق',
+        rollingSharpe:        'شارب المتجدد 30 يوم',
+        notEnoughData:        'مطلوب 30 صفقة على الأقل',
+        exportReport:         'تصدير التقرير',
+        days:                 'يوم',
+        notRecovered:         'لم يُسترد',
     }
 };
 
@@ -324,7 +324,7 @@ function buildTransparency(summary, history) {
             <button class="perf-action-btn" onclick="loadMorePredictions()">${pt('showMore')}</button>
         </div>
         <div class="integrity-progress progress-fill"><span style="width:${progress}%"></span><em>${g.total_predictions || 0}/100</em></div>
-        <a href="/track-record#methodology" class="perf-methodology-link">View walk-forward backtest methodology â†’</a>
+        <a href="/track-record#methodology" class="perf-methodology-link">View walk-forward backtest methodology →</a>
     `);
 }
 
@@ -368,10 +368,10 @@ function buildInstitutionalMetrics(summary, fullReport) {
     const ir      = im.information_ratio != null ? Number(im.information_ratio).toFixed(2) : '—';
     const mdd     = im.max_drawdown_pct != null ? `${Number(im.max_drawdown_pct).toFixed(2)}%` : '—';
     const recDays = im.recovery_duration_days;
-    const recStr  = im.max_drawdown_recovered === false ? pt('notRecovered') : recDays != null ? `${recDays} ${pt('days')}` : 'â€”';
+    const recStr  = im.max_drawdown_recovered === false ? pt('notRecovered') : recDays != null ? `${recDays} ${pt('days')}` : '—';
     const beta    = im.beta_vs_benchmark != null ? Number(im.beta_vs_benchmark).toFixed(2) : '—';
     const downCap = im.down_capture_ratio != null ? Number(im.down_capture_ratio) : '—';
-    const downStr = downCap !== 'â€”' ? `${(Number(downCap) * 100).toFixed(0)}%` : 'â€”';
+    const downStr = downCap !== '—' ? `${(Number(downCap) * 100).toFixed(0)}%` : '—';
 
     // Rolling Sharpe sparkline
     const rsData = (fullReport?.rolling_sharpe_30d || []).map(d => d.sharpe);
@@ -394,27 +394,27 @@ function buildInstitutionalMetrics(summary, fullReport) {
     }
 
     // Benchmark comparison table
-    const benchTotalXmore = fullReport?.portfolio_returns ? fullReport.portfolio_returns.reduce((a, b) => a + b, 0).toFixed(2) : 'â€”';
-    const benchTotalEgx30 = fullReport?.benchmark_returns ? fullReport.benchmark_returns.reduce((a, b) => a + b, 0).toFixed(2) : 'â€”';
-    const alpha = (benchTotalXmore !== 'â€”' && benchTotalEgx30 !== 'â€”') ? (Number(benchTotalXmore) - Number(benchTotalEgx30)).toFixed(2) : 'â€”';
-    const fmtR = v => v === 'â€”' ? 'â€”' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`;
+    const benchTotalXmore = fullReport?.portfolio_returns ? fullReport.portfolio_returns.reduce((a, b) => a + b, 0).toFixed(2) : '—';
+    const benchTotalEgx30 = fullReport?.benchmark_returns ? fullReport.benchmark_returns.reduce((a, b) => a + b, 0).toFixed(2) : '—';
+    const alpha = (benchTotalXmore !== '—' && benchTotalEgx30 !== '—') ? (Number(benchTotalXmore) - Number(benchTotalEgx30)).toFixed(2) : '—';
+    const fmtR = v => v === '—' ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`;
     const benchTable = `
         <table class="inst-bench-table">
             <thead><tr><th></th><th>Xmore2</th><th>EGX30</th></tr></thead>
             <tbody>
                 <tr><td>Total Return</td><td class="${Number(benchTotalXmore) > Number(benchTotalEgx30) ? 'inst-highlight' : ''}">${fmtR(benchTotalXmore)}</td><td>${fmtR(benchTotalEgx30)}</td></tr>
-                <tr><td>Alpha</td><td class="inst-highlight">${fmtR(alpha)}</td><td>â€”</td></tr>
+                <tr><td>Alpha</td><td class="inst-highlight">${fmtR(alpha)}</td><td>—</td></tr>
                 <tr><td>Sharpe</td><td class="${Number(sharpe) > 0.43 ? 'inst-highlight' : ''}">${sharpe}</td><td>~0.43</td></tr>
                 <tr><td>Max Drawdown</td><td class="${parseFloat(mdd) > -19.8 ? 'inst-highlight' : ''}">${mdd}</td><td>~-19.8%</td></tr>
-                <tr><td>Up Capture</td><td class="inst-highlight">${im.up_capture_ratio != null ? `${(Number(im.up_capture_ratio) * 100).toFixed(0)}%` : 'â€”'}</td><td>â€”</td></tr>
-                <tr><td>Down Capture</td><td class="${Number(downCap) < 1 ? 'inst-highlight' : ''}">${downStr}</td><td>â€”</td></tr>
+                <tr><td>Up Capture</td><td class="inst-highlight">${im.up_capture_ratio != null ? `${(Number(im.up_capture_ratio) * 100).toFixed(0)}%` : '—'}</td><td>—</td></tr>
+                <tr><td>Down Capture</td><td class="${Number(downCap) < 1 ? 'inst-highlight' : ''}">${downStr}</td><td>—</td></tr>
             </tbody>
         </table>`;
 
     return createSection(`
         <div class="inst-header">
             <h3>${pt('institutionalMetrics')}</h3>
-            <a href="/api/performance-v2/export-summary" target="_blank" class="perf-action-btn inst-export-btn">${pt('exportReport')} â†—</a>
+            <a href="/api/performance-v2/export-summary" target="_blank" class="perf-action-btn inst-export-btn">${pt('exportReport')} ↗</a>
         </div>
         ${warnBanner}
         <div class="inst-grid">

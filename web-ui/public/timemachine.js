@@ -1,7 +1,7 @@
-﻿'use strict';
+'use strict';
 
 // ============================================
-// TIME MACHINE â€” Frontend Module
+// TIME MACHINE — Frontend Module
 // Past: ephemeral portfolio backtest (Yahoo Finance via Python)
 // Future: Monte Carlo / GBM probabilistic forecast (numpy via Python)
 // ============================================
@@ -11,19 +11,19 @@
     let fcBandChart = null;   // LW Charts instance (Future band chart)
     let fcStocksLoaded = false;
     let fcAllStocks = [];        // full stock list, cached after first load
-    let fcSelectedSymbols = []; // [{symbol, name}] â€” current selection
+    let fcSelectedSymbols = []; // [{symbol, name}] — current selection
     const FC_MAX_STOCKS = 20;
     let fcMode = 'auto';      // 'auto' | 'manual' | 'portfolio'
     let pfInitialized = false;
 
-    // â”€â”€â”€ Public entry point (called by switchToTab) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Public entry point (called by switchToTab) ───────────
     window.loadTimeMachine = function () {
         initSubTabs();
         initTimeMachineForm();
         initFutureForm();
     };
 
-    // â”€â”€â”€ Sub-tab switching (Past / Future) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Sub-tab switching (Past / Future) ───────────────────
     function initSubTabs() {
         const pastBtn   = document.getElementById('tmSubPast');
         const futureBtn = document.getElementById('tmSubFuture');
@@ -67,7 +67,7 @@
         if (brief && typeof t === 'function') brief.textContent = t('timemachineBrief');
     };
 
-    // â”€â”€â”€ Form initialisation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Form initialisation ─────────────────────────────────
     function initTimeMachineForm() {
         const dateInput = document.getElementById('tmStartDate');
         const amountInput = document.getElementById('tmAmount');
@@ -95,7 +95,7 @@
             dateInput.value = fmtLocal(sixMonths);
         }
 
-        // Amount â†” slider sync
+        // Amount ↔ slider sync
         function syncDisplay() {
             const val = parseInt(amountInput.value) || 50000;
             if (display) display.textContent = formatEGP(val) + ' EGP';
@@ -141,7 +141,7 @@
         }
     }
 
-    // â”€â”€â”€ Run simulation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Run simulation ──────────────────────────────────────
     async function runSimulation() {
         const amountInput = document.getElementById('tmAmount');
         const dateInput = document.getElementById('tmStartDate');
@@ -195,7 +195,7 @@
                 resultsDiv.style.display = 'block';
                 resultsDiv.innerHTML = `
                     <div class="tm-empty-state">
-                        <div class="tm-empty-icon">â³</div>
+                        <div class="tm-empty-icon">⏳</div>
                         <h3>${esc(err.message)}</h3>
                         <p class="tm-empty-hint">${esc(_t2('tmTryDifferent') || 'Try a different date range or amount.')}</p>
                     </div>`;
@@ -206,7 +206,7 @@
         }
     }
 
-    // â”€â”€â”€ Render results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Render results ──────────────────────────────────────
     function renderResults(sim) {
         const resultsDiv = document.getElementById('tmResults');
         if (!resultsDiv) return;
@@ -281,7 +281,7 @@
         resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // â”€â”€â”€ Equity Curve â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Equity Curve ────────────────────────────────────────
     function renderEquityCurve(curve) {
         if (!curve || curve.length < 2) return;
         const container = document.getElementById('tmEquityChart');
@@ -402,7 +402,7 @@
         }
     }
 
-    // â”€â”€â”€ Monthly table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Monthly table ───────────────────────────────────────
     function renderMonthlyTable(months, lang) {
         const container = document.getElementById('tmMonthlyTable');
         if (!container || !months || !months.length) return;
@@ -431,7 +431,7 @@
         container.innerHTML = html;
     }
 
-    // â”€â”€â”€ Trade cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Trade cards ─────────────────────────────────────────
     function renderTradeCards(containerId, trades, lang) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -469,7 +469,7 @@
         }).join('');
     }
 
-    // â”€â”€â”€ Timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Timeline ────────────────────────────────────────────
     function renderTimeline(events, lang) {
         const container = document.getElementById('tmTimeline');
         if (!container || !events || !events.length) return;
@@ -494,7 +494,7 @@
         }).join('');
     }
 
-    // â”€â”€â”€ Utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Utilities ───────────────────────────────────────────
     function formatEGP(n) {
         if (n === null || n === undefined) return '-';
         return new Intl.NumberFormat('en-EG', {
@@ -539,10 +539,10 @@
     }
 
     // ================================================================
-    // FUTURE TAB â€” Monte Carlo Forecast
+    // FUTURE TAB — Monte Carlo Forecast
     // ================================================================
 
-    // â”€â”€â”€ Load stock list into selector â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Load stock list into selector ───────────────────────
     async function loadForecastSymbols() {
         const search   = document.getElementById('fcSymbolSearch');
         const dropdown = document.getElementById('fcSymbolDropdown');
@@ -597,7 +597,7 @@
             const selected = fcSelectedSymbols.some(x => x.symbol === s.symbol);
             const name = escHtml(lang === 'ar' ? s.name_ar : s.name_en);
             return `<div class="fc-symbol-item${selected ? ' fc-item-selected' : ''}" data-symbol="${s.symbol}" data-name="${name}">
-                <span class="fc-item-check">${selected ? 'âœ“' : ''}</span>
+                <span class="fc-item-check">${selected ? '✓' : ''}</span>
                 <span class="fc-item-sym">${escHtml(s.display)}</span>
                 <span class="fc-item-name">${name}</span>
             </div>`;
@@ -632,7 +632,7 @@
         container.innerHTML = fcSelectedSymbols.map(s => {
             const display = escHtml(s.symbol.replace('.CA', ''));
             return `<span class="fc-tag" data-symbol="${s.symbol}">
-                ${display}<button class="fc-tag-remove" type="button" aria-label="Remove ${display}">Ã—</button>
+                ${display}<button class="fc-tag-remove" type="button" aria-label="Remove ${display}">×</button>
             </span>`;
         }).join('');
         container.querySelectorAll('.fc-tag-remove').forEach(btn => {
@@ -648,12 +648,12 @@
         if (counter) counter.textContent = fcSelectedSymbols.length;
     }
 
-    // â”€â”€â”€ Escape helper (local fallback) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Escape helper (local fallback) ──────────────────────
     function escHtml(v) {
         return typeof escapeHtml === 'function' ? escapeHtml(v) : String(v || '');
     }
 
-    // â”€â”€â”€ Initialise Future form bindings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Initialise Future form bindings ─────────────────────
     function initFutureForm() {
         const runBtn       = document.getElementById('fcRunBtn');
         const amountInput  = document.getElementById('fcAmount');
@@ -662,7 +662,7 @@
         const datePicker   = document.getElementById('fcEndDate');
         if (!runBtn) return;
 
-        // Amount â†” slider sync
+        // Amount ↔ slider sync
         function syncFcDisplay() {
             const val = parseInt(amountInput.value) || 50000;
             if (display) display.textContent = formatEGP(val) + ' EGP';
@@ -737,7 +737,7 @@
             });
         });
 
-        // Scenario radio buttons â€” highlight active
+        // Scenario radio buttons — highlight active
         document.querySelectorAll('input[name="fcScenario"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 document.querySelectorAll('.fc-scenario-opt').forEach(lbl => lbl.classList.remove('fc-scenario-active'));
@@ -761,7 +761,7 @@
         }
     }
 
-    // â”€â”€â”€ Staged loading animation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Staged loading animation ─────────────────────────────
     let _stageTimer = null;
 
     function startStages(isAuto) {
@@ -812,7 +812,7 @@
         });
     }
 
-    // â”€â”€â”€ Run Monte Carlo forecast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Run Monte Carlo forecast ─────────────────────────────
     async function runForecast() {
         const amount     = parseFloat(document.getElementById('fcAmount')?.value) || 0;
         const scenario   = document.querySelector('input[name="fcScenario"]:checked')?.value || 'base';
@@ -915,7 +915,7 @@
         }
     }
 
-    // â”€â”€â”€ Render forecast results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Render forecast results ──────────────────────────────
     function renderForecastResults(d) {
         const resultsDiv = document.getElementById('fcResults');
         if (!resultsDiv) return;
@@ -925,11 +925,11 @@
 
         const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
         const _t = typeof t === 'function' ? t : (k) => k;
-        const fmtEGP = (v) => v !== null && v !== undefined ? formatEGP(v) + ' EGP' : 'â€”';
+        const fmtEGP = (v) => v !== null && v !== undefined ? formatEGP(v) + ' EGP' : '—';
         const fmtPct = (v) => v !== null && v !== undefined
-            ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : 'â€”';
+            ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—';
 
-        // â”€â”€ Chosen stock banner â”€â”€
+        // ── Chosen stock banner ──
         const banner = document.getElementById('fcChosenBanner');
         const chosenName = document.getElementById('fcChosenName');
         const chosenSym  = document.getElementById('fcChosenSymbol');
@@ -942,7 +942,7 @@
             banner.style.display = 'none';
         }
 
-        // â”€â”€ Ranking collapsible â”€â”€
+        // ── Ranking collapsible ──
         const rankingDiv   = document.getElementById('fcRanking');
         const rankToggle   = document.getElementById('fcRankingToggle');
         if (rankingDiv && d.auto_ranking && d.auto_ranking.length) {
@@ -971,7 +971,7 @@
             }
         }
 
-        // Expected value â€” animated counter (CountUp with EGP suffix)
+        // Expected value — animated counter (CountUp with EGP suffix)
         const evEl = document.getElementById('fcExpectedValue');
         if (evEl) {
             evEl.className = 'fc-hero-value ' + (d.expected_return_pct >= 0 ? 'tm-pos' : 'tm-neg');
@@ -1025,18 +1025,18 @@
             const retPct = d.expected_return_pct >= 0
                 ? '+' + d.expected_return_pct.toFixed(1) + '%'
                 : d.expected_return_pct.toFixed(1) + '%';
-            const probWord = prob >= 70 ? (lang === 'ar' ? 'Ø§Ø­ØªÙ…Ø§Ù„ Ù‚ÙˆÙŠ' : 'strong chance')
-                           : prob >= 50 ? (lang === 'ar' ? 'Ø§Ø­ØªÙ…Ø§Ù„' : 'chance')
-                           : (lang === 'ar' ? 'Ø§Ø­ØªÙ…Ø§Ù„' : 'chance');
+            const probWord = prob >= 70 ? (lang === 'ar' ? 'احتمال قوي' : 'strong chance')
+                           : prob >= 50 ? (lang === 'ar' ? 'احتمال' : 'chance')
+                           : (lang === 'ar' ? 'احتمال' : 'chance');
             if (lang === 'ar') {
-                interpretEl.innerHTML = 'Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ 5\u060c000 Ù…Ø­Ø§ÙƒØ§Ø©ØŒ ÙŠÙØªÙˆÙ‚Ø¹ Ø£Ù† ÙŠØ­Ù‚Ù‚ <strong>' + escHtml(sym || d.symbol) + '</strong> Ø¹Ø§Ø¦Ø¯Ø§Ù‹ Ø¨Ù†Ø³Ø¨Ø© <strong>' + retPct + '</strong> Ø®Ù„Ø§Ù„ ' + horizon + ' ÙŠÙˆÙ… ØªØ¯Ø§ÙˆÙ„. Ù‡Ù†Ø§Ùƒ <strong>' + prob + '%</strong> ' + probWord + ' Ø£Ù† ÙŠÙƒÙˆÙ† Ø§Ø³ØªØ«Ù…Ø§Ø±Ùƒ Ù…Ø±Ø¨Ø­Ø§Ù‹.';
+                interpretEl.innerHTML = 'بناءً على 5\u060c000 محاكاة، يُتوقع أن يحقق <strong>' + escHtml(sym || d.symbol) + '</strong> عائداً بنسبة <strong>' + retPct + '</strong> خلال ' + horizon + ' يوم تداول. هناك <strong>' + prob + '%</strong> ' + probWord + ' أن يكون استثمارك مربحاً.';
             } else {
                 interpretEl.innerHTML = 'Based on 5,000 simulations, <strong>' + escHtml(sym || d.symbol) + '</strong> is expected to return <strong>' + retPct + '</strong> over ' + horizon + ' trading days. There is a <strong>' + prob + '%</strong> ' + probWord + ' your investment will be profitable.';
             }
             interpretEl.style.display = '';
         }
 
-        // Range row â€” with % return labels
+        // Range row — with % return labels
         const amount = d.investment_amount;
         setFcVal('fcWorstCase', fmtEGP(d.worst_case_value), false);
         setFcVal('fcMedian', fmtEGP(d.median_value), null);
@@ -1085,7 +1085,7 @@
         if (el) el.textContent = text;
     }
 
-    // â”€â”€â”€ Band chart (LW Charts) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Band chart (LW Charts) ───────────────────────────────
     function renderBandChart(bandData, initialAmount) {
         const container = document.getElementById('fcBandChart');
         if (!container || !bandData || bandData.length < 2) return;
@@ -1211,7 +1211,7 @@
         }
     }
 
-    // â”€â”€â”€ Multi-stock comparison results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Multi-stock comparison results ──────────────────────
     function renderMultiForecastResults(results, initialAmount) {
         const multiDiv  = document.getElementById('fcMultiResults');
         const singleDiv = document.getElementById('fcResults');
@@ -1226,8 +1226,8 @@
             return rb - ra;
         });
 
-        const fmtPct = (v) => v != null ? (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' : 'â€”';
-        const fmtEGP = (v) => v != null ? formatEGP(v) + ' EGP' : 'â€”';
+        const fmtPct = (v) => v != null ? (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' : '—';
+        const fmtEGP = (v) => v != null ? formatEGP(v) + ' EGP' : '—';
         const retCls = (v) => v != null && v >= 0 ? 'tm-pos' : 'tm-neg';
 
         const rows = sorted.map((d, i) => {
@@ -1248,7 +1248,7 @@
                 <td class="fc-multi-rank">${i + 1}</td>
                 <td class="fc-multi-sym">${escHtml(sym)}</td>
                 <td class="fc-multi-ret ${retCls(ret)}">${fmtPct(ret)}</td>
-                <td class="fc-multi-prob">${d.probability_positive ?? 'â€”'}%</td>
+                <td class="fc-multi-prob">${d.probability_positive ?? '—'}%</td>
                 <td class="fc-multi-val">${fmtEGP(d.worst_case_value)}</td>
                 <td class="fc-multi-val">${fmtEGP(d.median_value)}</td>
                 <td class="fc-multi-val fc-multi-best">${fmtEGP(d.best_case_value)}</td>
@@ -1257,8 +1257,8 @@
 
         multiDiv.innerHTML = `
             <div class="fc-multi-header">
-                <h4>Forecast Comparison â€” ${sorted.length} Stocks</h4>
-                <p class="fc-multi-sub">Investment: ${fmtEGP(initialAmount)} Â· Sorted by expected return</p>
+                <h4>Forecast Comparison — ${sorted.length} Stocks</h4>
+                <p class="fc-multi-sub">Investment: ${fmtEGP(initialAmount)} · Sorted by expected return</p>
             </div>
             <div class="fc-multi-table-wrap">
                 <table class="fc-multi-table">
@@ -1277,12 +1277,12 @@
                 </table>
             </div>
             <div class="tm-disclaimer">Multi-stock comparison runs one Monte Carlo simulation per stock.
-            Results are independent â€” no correlation or portfolio effects are modelled.
+            Results are independent — no correlation or portfolio effects are modelled.
             Not financial advice.</div>`;
         multiDiv.style.display = 'block';
     }
 
-    // â”€â”€â”€ Outcome distribution histogram â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ─── Outcome distribution histogram ──────────────────────
     function renderHistogram(canvas, hist, initialAmount) {
         if (!canvas || !hist || !hist.counts || !hist.edges) return;
         const ctx = canvas.getContext('2d');

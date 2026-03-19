@@ -1,9 +1,9 @@
-﻿// ============================================
-// Xmore â€” Market Intelligence Dashboard
+// ============================================
+// Xmore — Market Intelligence Dashboard
 // Phase 1 Upgrade: Performance Dashboard, TradingView, Consensus, Compliance
 // ============================================
 
-// Global error handler â€” surface JS errors visibly for debugging
+// Global error handler — surface JS errors visibly for debugging
 window.onerror = function (msg, url, line, col, error) {
     console.error('Global error:', msg, url, line, col, error);
     const el = document.getElementById('predictions');
@@ -21,7 +21,7 @@ const API_URL = '/api';
 // Shared HTML escaping utility
 function escapeHtml(value) {
     return String(value || '')
-        .replace(/&/g, '&amp;')
+        .replace(/&/g, '&')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
@@ -374,7 +374,7 @@ const TRANSLATIONS = {
         winRateSell: 'Win Rate (Sell)',
         avgReturnPerSignal: 'Avg Return/Signal',
         maxDrawdown: 'Max Drawdown',
-        accuracyDefinition: 'Directional Accuracy: Percentage of predictions where the predicted direction (UP/DOWN) matched the actual 5-day price movement exceeding Â±0.5% threshold.',
+        accuracyDefinition: 'Directional Accuracy: Percentage of predictions where the predicted direction (UP/DOWN) matched the actual 5-day price movement exceeding ±0.5% threshold.',
         agentHistoryBadge: 'correct historically',
 
         // Messages
@@ -401,7 +401,7 @@ const TRANSLATIONS = {
         snapshotTrades: 'Total Live Trades',
         marketRegime: 'Market Regime',
         signalMix30d: '30d signals',
-        viewFullAnalysis: 'Full Analysis â†’',
+        viewFullAnalysis: 'Full Analysis →',
         consensusSignal: 'Consensus Signal',
         agreement: 'Agreement',
         recentAccuracySymbol: 'Recent Accuracy',
@@ -445,7 +445,7 @@ const TRANSLATIONS = {
         qualitymissing: 'Missing',
 
         // Language
-        switchLang: 'Ø¹Ø±Ø¨ÙŠ',
+        switchLang: 'عربي',
 
         // Theme
         lightMode: 'Switch to light mode',
@@ -475,8 +475,8 @@ const TRANSLATIONS = {
         convictionLow: 'Low',
         convictionBlocked: 'Blocked',
         scoringModeLabel: 'Score Mode',
-        scoringModeXmoreNative: 'Xmore (0â€“1)',
-        scoringModeStandard100: 'Score (0â€“100)',
+        scoringModeXmoreNative: 'Xmore (0–1)',
+        scoringModeStandard100: 'Score (0–100)',
         scoringModeLetterGrade: 'Grade',
         scoringModeStars: 'Stars',
         scoringModeSignalTier: 'Tier',
@@ -532,8 +532,8 @@ const TRANSLATIONS = {
         // Alerts
         alertsTitle: 'Price Alerts',
         alertsHint: 'Get notified when a stock crosses your target price.',
-        alertAbove: 'Above â†‘',
-        alertBelow: 'Below â†“',
+        alertAbove: 'Above ↑',
+        alertBelow: 'Below ↓',
 
         // Comparison
         compModalTitle: 'Stock Comparison',
@@ -594,7 +594,7 @@ const TRANSLATIONS = {
         tmTimeline: 'Investment Timeline',
         tmCalculating: 'Traveling through time...',
         tmAnalyzing: 'Fetching live market data & running simulation',
-        tmLoadingWarning: 'This may take 30â€“60 seconds.',
+        tmLoadingWarning: 'This may take 30–60 seconds.',
         tmDisclaimer: "This simulation uses real EGX price data from Yahoo Finance and applies Xmore's signal logic retroactively. Past performance does not guarantee future results. This is not financial advice.",
         tmProfit: 'Profit',
         tmLoss: 'Loss',
@@ -627,17 +627,17 @@ const TRANSLATIONS = {
         etfHoldingsTitle: 'Holdings',
         etfNoHoldings: 'No holdings data available.',
         // Future tab
-        tmSubPastLabel: 'â® Past',
-        tmSubFutureLabel: 'â­ Future',
+        tmSubPastLabel: '⏮ Past',
+        tmSubFutureLabel: '⏭ Future',
         fcTitle: 'Future Forecast',
         fcSubtitle: 'System picks the best EGX30 stock for your horizon. 5,000 Monte Carlo paths.',
-        fcModeAuto: 'ðŸ¤– Automatic picks',
-        fcModeManual: 'ðŸ” I pick manually',
-        fcModePortfolio: 'ðŸ“ My Portfolios',
+        fcModeAuto: '🤖 Automatic picks',
+        fcModeManual: '🔍 I pick manually',
+        fcModePortfolio: '📁 My Portfolios',
         pf_title: 'My Forecast Portfolios',
         pf_create: '+ New Portfolio',
         fcEndDateLabel: 'Target Date',
-        fcEndDateHint: 'Up to 30 days from today â€” System picks the best EGX30 stock for you',
+        fcEndDateHint: 'Up to 30 days from today — System picks the best EGX30 stock for you',
         fcSymbolLabel: 'Stock Symbol',
         fcHorizonLabel: 'Time Horizon',
         fc1Month: '1 month',
@@ -657,7 +657,7 @@ const TRANSLATIONS = {
         fcBull: 'Bull',
         fcBullHint: '+2% drift boost',
         fcBear: 'Bear',
-        fcBearHint: 'âˆ’2% drift drag',
+        fcBearHint: '−2% drift drag',
         fcRunBtn: 'Find Best Stock & Forecast',
         fcSelectDate: 'Please pick a target date.',
         fcChosenBy: 'Top Pick',
@@ -676,8 +676,8 @@ const TRANSLATIONS = {
         fcScenarioUsed: 'Scenario Adj.',
         fcDataPoints: 'Data Points',
         fcSimCount: 'Simulations',
-        fcCalculating: 'Scanning EGX30 stocks & running 5,000 Monte Carlo pathsâ€¦',
-        fcAnalyzing: 'Computing GBM parameters â€” this takes ~30s',
+        fcCalculating: 'Scanning EGX30 stocks & running 5,000 Monte Carlo paths…',
+        fcAnalyzing: 'Computing GBM parameters — this takes ~30s',
         fcDisclaimer: 'This projection is model-based and does not constitute financial advice. Results depend on historical statistical assumptions and market conditions.',
         fcRerun: 'Modify & Re-run \u2191',
         fcModeAutoDesc: 'Auto-selects the best EGX30 stock for your date',
@@ -692,383 +692,383 @@ const TRANSLATIONS = {
         fcStage3Sub: 'Projecting probabilistic outcomes',
     },
     ar: {
-        title: 'Ø¥ÙƒØ³Ù…ÙˆØ±',
-        subtitle: 'Ù„ÙˆØ­Ø© Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ø§Ù„Ø°ÙƒÙŠØ© Ù„Ù„Ø£Ø³Ù‡Ù…',
+        title: 'إكسمور',
+        subtitle: 'لوحة التنبؤات الذكية للأسهم',
 
-        stocksTracked: 'Ø§Ù„Ø£Ø³Ù‡Ù… Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©',
-        totalPredictions: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        overallAccuracy: 'Ø§Ù„Ø¯Ù‚Ø©',
-        latestData: 'Ø¢Ø®Ø± ØªØ­Ø¯ÙŠØ«',
+        stocksTracked: 'الأسهم المتابعة',
+        totalPredictions: 'إجمالي التنبؤات',
+        overallAccuracy: 'الدقة',
+        latestData: 'آخر تحديث',
 
-        tabPredictions: 'Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        tabBriefing: 'Ø§Ù„Ù†Ø´Ø±Ø©',
-        tabTrades: 'Ø§Ù„ØªØ¯Ø§ÙˆÙ„',
-        tabPortfolio: 'Ø§Ù„Ù…Ø­ÙØ¸Ø©',
-        tabWatchlist: 'Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©',
-        tabPerformance: 'Ø§Ù„Ø£Ø¯Ø§Ø¡',
-        tabResults: 'Ø§Ù„Ù†ØªØ§Ø¦Ø¬',
-        tabPrices: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±',
-        predictionsBrief: 'Ø§Ø¨Ø¯Ø£ Ù…Ù† Ù‡Ù†Ø§: Ø±Ø§Ø¬Ø¹ Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ø§Ù„ÙŠÙˆÙ…ÙŠØ© Ù„ÙƒÙ„ Ø³Ù‡Ù… (ØµØ§Ø¹Ø¯/Ù‡Ø§Ø¨Ø·/Ù…Ø­Ø§ÙŠØ¯).',
-        watchlistBrief: 'ØªØ§Ø¨Ø¹ Ø§Ù„Ø£Ø³Ù‡Ù… Ø§Ù„ØªÙŠ ØªÙ‡Ù…Ùƒ Ù„ÙŠØ®ØµØµ Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª ÙˆØ§Ù„Ù†Ø´Ø±Ø© ÙˆØ§Ù„Ø£Ø¯Ø§Ø¡ Ù„Ùƒ.',
-        performanceBrief: 'ØªØ§Ø¨Ø¹ Ø¬ÙˆØ¯Ø© Ø§Ù„Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠØ© Ø¹Ø¨Ø± Ø§Ù„ÙˆÙ‚ØªØŒ Ø¨Ù…Ø§ ÙÙŠ Ø°Ù„Ùƒ Ù†Ø³Ø¨Ø© Ø§Ù„ÙÙˆØ² ÙˆØ§Ù„Ø³Ø­Ø¨ Ø§Ù„Ø£Ù‚ØµÙ‰ ÙˆØ§Ù„Ø£Ø¯Ø§Ø¡ Ù…Ù‚Ø§Ø¨Ù„ Ø§Ù„Ù…Ø¤Ø´Ø±.',
-        consensusBrief: 'Ø§Ø·Ù„Ø¹ Ø¹Ù„Ù‰ Ø§Ù„Ø£Ø³Ù‡Ù… Ø§Ù„ØªÙŠ ÙŠØªÙÙ‚ Ø¹Ù„ÙŠÙ‡Ø§ Ø¹Ø¯Ø© ÙˆÙƒÙ„Ø§Ø¡ Ù…Ø¹ ÙÙ„Ø§ØªØ± Ø§Ù„Ù…Ø®Ø§Ø·Ø± Ù„ØªØ­Ø¯ÙŠØ¯ Ø£Ù‚ÙˆÙ‰ Ø§Ù„ÙØ±Øµ.',
-        consensusDcfNote: 'ØªÙ‚ÙŠÙŠÙ… DCF Ù…Ø¶Ù…Ù‘Ù† ÙƒØ¥Ø´Ø§Ø±Ø© Ø£Ø³Ø¨ÙˆØ¹ÙŠØ© Ø¯Ø§Ø¹Ù…Ø© Ø¶Ù…Ù† Ø·Ø¨Ù‚Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹.',
-        globalSearchPlaceholder: 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ø³Ù‡Ù… Ø£Ùˆ ØªØ¨ÙˆÙŠØ¨ Ø£Ùˆ ØµÙØ­Ø©...',
-        globalSearchNoResults: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù…Ø·Ø§Ø¨Ù‚Ø©.',
-        globalSearchStocksLabel: 'Ø³Ù‡Ù…',
-        globalSearchTabLabel: 'ØªØ¨ÙˆÙŠØ¨',
-        globalSearchPageLabel: 'ØµÙØ­Ø©',
-        resultsBrief: 'Ù‚Ø§Ø±Ù† Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª Ø§Ù„Ø³Ø§Ø¨Ù‚Ø© Ø¨Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø§Ù„ÙØ¹Ù„ÙŠØ© Ù„ÙÙ‡Ù… Ù…Ø§ Ø£ØµØ§Ø¨Ù‡ Ø§Ù„Ù†Ø¸Ø§Ù… ÙˆÙ…Ø§ Ø£Ø®Ø·Ø£ ÙÙŠÙ‡.',
-        pricesBrief: 'Ø±Ø§Ø¬Ø¹ Ø£Ø­Ø¯Ø« Ø§Ù„Ø£Ø³Ø¹Ø§Ø± ÙˆØ£Ø­Ø¬Ø§Ù… Ø§Ù„ØªØ¯Ø§ÙˆÙ„ Ù„Ù„Ø£Ø³Ù‡Ù… Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© ÙÙŠ Ø¬Ø¯ÙˆÙ„ ÙˆØ§Ø­Ø¯.',
-        briefingBrief: 'Ø§Ø³ØªØ®Ø¯Ù…Ù‡Ø§ ÙƒÙ…Ù„Ø®Øµ ÙŠÙˆÙ…ÙŠ: Ø³ÙŠØ§Ù‚ Ø§Ù„Ø³ÙˆÙ‚ØŒ Ø£ÙˆÙ„ÙˆÙŠØ§Øª Ø§Ù„Ø¥Ø´Ø§Ø±Ø§ØªØŒ ÙˆØ§Ù„Ø®Ø·ÙˆØ§Øª Ø§Ù„Ù…Ù‚ØªØ±Ø­Ø©.',
-        tradesBrief: 'Ø§Ø·Ù„Ø¹ Ø¹Ù„Ù‰ Ø£ÙÙƒØ§Ø± ØªØ¯Ø§ÙˆÙ„ Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„ØªÙ†ÙÙŠØ° Ù…Ø¹ Ø§Ù„Ø§ØªØ¬Ø§Ù‡ ÙˆØ§Ù„Ù…Ø¨Ø±Ø± Ø®Ù„Ø§Ù„ Ø¬Ù„Ø³Ø© Ø§Ù„ÙŠÙˆÙ….',
-        portfolioBrief: 'Ø±Ø§Ù‚Ø¨ Ø§Ù„Ù…Ø±Ø§ÙƒØ² Ø§Ù„Ù…ÙØªÙˆØ­Ø© ÙˆØªØ§Ø±ÙŠØ® Ø§Ù„ØµÙÙ‚Ø§Øª ÙˆÙ…Ø¤Ø´Ø±Ø§Øª ØµØ­Ø© Ø§Ù„Ù…Ø­ÙØ¸Ø© ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.',
+        tabPredictions: 'التنبؤات',
+        tabBriefing: 'النشرة',
+        tabTrades: 'التداول',
+        tabPortfolio: 'المحفظة',
+        tabWatchlist: 'المتابعة',
+        tabPerformance: 'الأداء',
+        tabResults: 'النتائج',
+        tabPrices: 'الأسعار',
+        predictionsBrief: 'ابدأ من هنا: راجع إشارات الذكاء الاصطناعي اليومية لكل سهم (صاعد/هابط/محايد).',
+        watchlistBrief: 'تابع الأسهم التي تهمك ليخصص النظام الإشارات والنشرة والأداء لك.',
+        performanceBrief: 'تابع جودة الاستراتيجية عبر الوقت، بما في ذلك نسبة الفوز والسحب الأقصى والأداء مقابل المؤشر.',
+        consensusBrief: 'اطلع على الأسهم التي يتفق عليها عدة وكلاء مع فلاتر المخاطر لتحديد أقوى الفرص.',
+        consensusDcfNote: 'تقييم DCF مضمّن كإشارة أسبوعية داعمة ضمن طبقة الإجماع.',
+        globalSearchPlaceholder: 'ابحث عن سهم أو تبويب أو صفحة...',
+        globalSearchNoResults: 'لا توجد نتائج مطابقة.',
+        globalSearchStocksLabel: 'سهم',
+        globalSearchTabLabel: 'تبويب',
+        globalSearchPageLabel: 'صفحة',
+        resultsBrief: 'قارن التوقعات السابقة بالنتائج الفعلية لفهم ما أصابه النظام وما أخطأ فيه.',
+        pricesBrief: 'راجع أحدث الأسعار وأحجام التداول للأسهم المتابعة في جدول واحد.',
+        briefingBrief: 'استخدمها كملخص يومي: سياق السوق، أولويات الإشارات، والخطوات المقترحة.',
+        tradesBrief: 'اطلع على أفكار تداول قابلة للتنفيذ مع الاتجاه والمبرر خلال جلسة اليوم.',
+        portfolioBrief: 'راقب المراكز المفتوحة وتاريخ الصفقات ومؤشرات صحة المحفظة في مكان واحد.',
 
-        latestPredictions: 'Ø£Ø­Ø¯Ø« Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        agentPerformance: 'Ø£Ø¯Ø§Ø¡ Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡',
-        predictionResults: 'Ù†ØªØ§Ø¦Ø¬ Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        latestPrices: 'Ø£Ø­Ø¯Ø« Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø£Ø³Ù‡Ù…',
-        performanceOverview: 'Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø£Ø¯Ø§Ø¡',
-        agentAccuracy: 'Ø¯Ù‚Ø© Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡',
-        stockPerformance: 'Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø£Ø³Ù‡Ù…',
-        monthlyTrend: 'Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ø¯Ù‚Ø© Ø§Ù„Ø´Ù‡Ø±ÙŠ',
+        latestPredictions: 'أحدث التنبؤات',
+        agentPerformance: 'أداء الوكلاء',
+        predictionResults: 'نتائج التنبؤات',
+        latestPrices: 'أحدث أسعار الأسهم',
+        performanceOverview: 'نظرة عامة على الأداء',
+        agentAccuracy: 'دقة الوكلاء',
+        stockPerformance: 'أداء الأسهم',
+        monthlyTrend: 'اتجاه الدقة الشهري',
 
-        stock: 'Ø§Ù„Ø³Ù‡Ù…',
-        agent: 'Ø§Ù„ÙˆÙƒÙŠÙ„',
-        signal: 'Ø§Ù„Ø¥Ø´Ø§Ø±Ø©',
-        prediction: 'Ø§Ù„Ø¥Ø´Ø§Ø±Ø©',
-        date: 'Ø§Ù„ØªØ§Ø±ÙŠØ®',
-        totalPreds: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        correct: 'Ø§Ù„ØµØ­ÙŠØ­Ø©',
-        accuracy: 'Ø§Ù„Ø¯Ù‚Ø©',
-        closePrice: 'Ø³Ø¹Ø± Ø§Ù„Ø¥ØºÙ„Ø§Ù‚',
-        volume: 'Ø§Ù„Ø­Ø¬Ù…',
-        actualOutcome: 'Ø§Ù„ÙØ¹Ù„ÙŠ',
-        priceChange: 'Ø§Ù„ØªØºÙŠØ± %',
-        result: 'Ø§Ù„Ù†ØªÙŠØ¬Ø©',
-        targetDate: 'ØªØ§Ø±ÙŠØ® Ø§Ù„Ù‡Ø¯Ù',
-        avgReturn: 'Ù…ØªÙˆØ³Ø· Ø§Ù„Ø¹Ø§Ø¦Ø¯',
+        stock: 'السهم',
+        agent: 'الوكيل',
+        signal: 'الإشارة',
+        prediction: 'الإشارة',
+        date: 'التاريخ',
+        totalPreds: 'إجمالي التنبؤات',
+        correct: 'الصحيحة',
+        accuracy: 'الدقة',
+        closePrice: 'سعر الإغلاق',
+        volume: 'الحجم',
+        actualOutcome: 'الفعلي',
+        priceChange: 'التغير %',
+        result: 'النتيجة',
+        targetDate: 'تاريخ الهدف',
+        avgReturn: 'متوسط العائد',
 
-        up: 'ØµØ§Ø¹Ø¯',
-        down: 'Ù‡Ø§Ø¨Ø·',
-        hold: 'Ù…Ø­Ø§ÙŠØ¯',
-        flat: 'Ù…Ø­Ø§ÙŠØ¯',
+        up: 'صاعد',
+        down: 'هابط',
+        hold: 'محايد',
+        flat: 'محايد',
 
-        sentiment: 'Ø§Ù„Ù…Ø´Ø§Ø¹Ø±',
-        bullish: 'Ø¥ÙŠØ¬Ø§Ø¨ÙŠ',
-        neutral: 'Ù…Ø­Ø§ÙŠØ¯',
-        bearish: 'Ø³Ù„Ø¨ÙŠ',
-        noSentiment: 'Øº/Ù…',
+        sentiment: 'المشاعر',
+        bullish: 'إيجابي',
+        neutral: 'محايد',
+        bearish: 'سلبي',
+        noSentiment: 'غ/م',
 
-        consensus: 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹',
-        agentsAgree: 'ÙˆÙƒÙ„Ø§Ø¡ ÙŠØªÙÙ‚ÙˆÙ†',
-        unanimous: 'Ø¥Ø¬Ù…Ø§Ø¹ ØªØ§Ù…',
+        consensus: 'الإجماع',
+        agentsAgree: 'وكلاء يتفقون',
+        unanimous: 'إجماع تام',
 
-        directionalAccuracy: 'Ø§Ù„Ø¯Ù‚Ø© Ø§Ù„Ø§ØªØ¬Ø§Ù‡ÙŠØ©',
-        totalSignals: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª',
-        winRateBuy: 'Ù†Ø³Ø¨Ø© Ø§Ù„Ù†Ø¬Ø§Ø­ (Ø´Ø±Ø§Ø¡)',
-        winRateSell: 'Ù†Ø³Ø¨Ø© Ø§Ù„Ù†Ø¬Ø§Ø­ (Ø¨ÙŠØ¹)',
-        avgReturnPerSignal: 'Ù…ØªÙˆØ³Ø· Ø§Ù„Ø¹Ø§Ø¦Ø¯/Ø¥Ø´Ø§Ø±Ø©',
-        maxDrawdown: 'Ø£Ù‚ØµÙ‰ ØªØ±Ø§Ø¬Ø¹',
-        accuracyDefinition: 'Ø§Ù„Ø¯Ù‚Ø© Ø§Ù„Ø§ØªØ¬Ø§Ù‡ÙŠØ©: Ù†Ø³Ø¨Ø© Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ø§Ù„ØªÙŠ ØªØ·Ø§Ø¨Ù‚ ÙÙŠÙ‡Ø§ Ø§Ù„Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ (ØµØ¹ÙˆØ¯/Ù‡Ø¨ÙˆØ·) Ù…Ø¹ Ø­Ø±ÙƒØ© Ø§Ù„Ø³Ø¹Ø± Ø§Ù„ÙØ¹Ù„ÙŠØ© Ø®Ù„Ø§Ù„ 5 Ø£ÙŠØ§Ù… Ø¨ØªØ¬Ø§ÙˆØ² Ø¹ØªØ¨Ø© Â±0.5%.',
-        agentHistoryBadge: 'ØµØ­ÙŠØ­ ØªØ§Ø±ÙŠØ®ÙŠØ§Ù‹',
+        directionalAccuracy: 'الدقة الاتجاهية',
+        totalSignals: 'إجمالي الإشارات',
+        winRateBuy: 'نسبة النجاح (شراء)',
+        winRateSell: 'نسبة النجاح (بيع)',
+        avgReturnPerSignal: 'متوسط العائد/إشارة',
+        maxDrawdown: 'أقصى تراجع',
+        accuracyDefinition: 'الدقة الاتجاهية: نسبة التنبؤات التي تطابق فيها الاتجاه المتوقع (صعود/هبوط) مع حركة السعر الفعلية خلال 5 أيام بتجاوز عتبة ±0.5%.',
+        agentHistoryBadge: 'صحيح تاريخياً',
 
-        noPredictions: 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ†Ø¨Ø¤Ø§Øª Ù…ØªØ§Ø­Ø©. ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª ÙŠÙˆÙ…ÙŠØ§Ù‹ Ø¨Ø¹Ø¯ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø³ÙˆÙ‚.',
-        noPerformance: 'Ø³ÙŠØ¨Ø¯Ø£ ØªØªØ¨Ø¹ Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø¨Ù…Ø¬Ø±Ø¯ ØªÙ‚ÙŠÙŠÙ… Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª.',
-        noEvaluations: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ ØªÙ†Ø¨Ø¤Ø§Øª Ø¨Ø¹Ø¯.',
-        noPrices: 'Ø¬Ø§Ø±ÙŠ Ø¬Ù…Ø¹ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ø¹Ø§Ø±.',
-        errorPredictions: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª.',
-        errorPerformance: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø¯Ø§Ø¡.',
-        errorEvaluations: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù†ØªØ§Ø¦Ø¬.',
-        errorPrices: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£Ø³Ø¹Ø§Ø±.',
-        noDetailedPerformance: 'Ø³ØªØªÙˆÙØ± Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø§Ù„ØªÙØµÙŠÙ„ÙŠØ© Ø¨Ø¹Ø¯ ØªÙ‚ÙŠÙŠÙ… Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª.',
+        noPredictions: 'لا توجد تنبؤات متاحة. يتم إنشاء الإشارات يومياً بعد إغلاق السوق.',
+        noPerformance: 'سيبدأ تتبع الأداء بمجرد تقييم التنبؤات.',
+        noEvaluations: 'لا توجد نتائج تنبؤات بعد.',
+        noPrices: 'جاري جمع بيانات الأسعار.',
+        errorPredictions: 'تعذر تحميل التنبؤات.',
+        errorPerformance: 'تعذر تحميل بيانات الأداء.',
+        errorEvaluations: 'تعذر تحميل النتائج.',
+        errorPrices: 'تعذر تحميل الأسعار.',
+        noDetailedPerformance: 'ستتوفر بيانات الأداء التفصيلية بعد تقييم التنبؤات.',
 
-        refreshData: 'ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª',
-        refreshing: 'Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ø¯ÙŠØ«...',
+        refreshData: 'تحديث البيانات',
+        refreshing: 'جاري التحديث...',
 
-        searchPlaceholder: 'Ø§Ù„Ø¨Ø­Ø« Ø¨Ø±Ù…Ø² Ø§Ù„Ø³Ù‡Ù… Ø£Ùˆ Ø§Ø³Ù… Ø§Ù„Ø´Ø±ÙƒØ©...',
-        snapshotAlpha30d: 'Ø£Ù„ÙØ§ 30 ÙŠÙˆÙ… Ù…Ù‚Ø§Ø¨Ù„ EGX30',
-        snapshotSharpe30d: 'Ù†Ø³Ø¨Ø© Ø´Ø§Ø±Ø¨ (30 ÙŠÙˆÙ…)',
-        snapshotMaxDd30d: 'Ø£Ù‚ØµÙ‰ ØªØ±Ø§Ø¬Ø¹ (30 ÙŠÙˆÙ…)',
-        snapshotWinRate30d: 'Ù†Ø³Ø¨Ø© Ø§Ù„ÙÙˆØ² Ø§Ù„Ù…ØªØ­Ø±ÙƒØ© (30 ÙŠÙˆÙ…)',
-        snapshotTrades: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØµÙÙ‚Ø§Øª Ø§Ù„Ø­ÙŠØ©',
-        marketRegime: 'Ù†Ø¸Ø§Ù… Ø§Ù„Ø³ÙˆÙ‚',
-        signalMix30d: 'Ø¥Ø´Ø§Ø±Ø§Øª 30 ÙŠÙˆÙ…',
-        viewFullAnalysis: 'Ø§Ù„ØªØ­Ù„ÙŠÙ„ Ø§Ù„ÙƒØ§Ù…Ù„ â†’',
-        consensusSignal: 'Ø¥Ø´Ø§Ø±Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹',
-        agreement: 'Ù†Ø³Ø¨Ø© Ø§Ù„Ø§ØªÙØ§Ù‚',
-        recentAccuracySymbol: 'Ø§Ù„Ø¯Ù‚Ø© Ø§Ù„Ø­Ø¯ÙŠØ«Ø©',
-        whySignal: 'Ù„Ù…Ø§Ø°Ø§ Ù‡Ø°Ù‡ Ø§Ù„Ø¥Ø´Ø§Ø±Ø©ØŸ',
-        expandDetails: 'Ø§Ù„ØªÙØ§ØµÙŠÙ„',
-        conf: 'Ø§Ù„Ø«Ù‚Ø©',
-        trend: 'Ø§Ù„Ø§ØªØ¬Ø§Ù‡',
-        momentum: 'Ø§Ù„Ø²Ø®Ù…',
-        volumeState: 'Ø§Ù„Ø­Ø¬Ù…',
-        sentimentState: 'Ø§Ù„Ù…Ø´Ø§Ø¹Ø±',
-        agentAgreement: 'Ø§ØªÙØ§Ù‚ Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡',
-        tooltipAlpha: 'Ù…ØªÙˆØ³Ø· Ø£Ù„ÙØ§ ÙŠÙˆÙ…ÙŠ Ø®Ù„Ø§Ù„ Ø¢Ø®Ø± 30 ÙŠÙˆÙ…Ø§ Ø­ÙŠØ§ Ù…Ù‚Ø§Ø¨Ù„ EGX30.',
-        tooltipSharpe: 'Ø¬ÙˆØ¯Ø© Ø§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„Ù…Ø¹Ø¯Ù„ Ø¨Ø§Ù„Ù…Ø®Ø§Ø·Ø± Ø®Ù„Ø§Ù„ Ø¢Ø®Ø± 30 ÙŠÙˆÙ…Ø§ Ø­ÙŠØ§.',
-        tooltipMaxDd: 'Ø£ÙƒØ¨Ø± Ù‡Ø¨ÙˆØ· Ù…Ù† Ù‚Ù…Ø© Ø¥Ù„Ù‰ Ù‚Ø§Ø¹ ÙÙŠ Ø§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„ØªØ±Ø§ÙƒÙ…ÙŠ Ø®Ù„Ø§Ù„ 30 ÙŠÙˆÙ…Ø§.',
-        tooltipWinRate: 'Ù†Ø³Ø¨Ø© Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„Ø­ÙŠØ© Ø§Ù„ØµØ­ÙŠØ­Ø© Ø®Ù„Ø§Ù„ Ø¢Ø®Ø± 30 ÙŠÙˆÙ…Ø§.',
-        tooltipTrades: 'Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ø§Ù„Ø­ÙŠØ© Ø§Ù„Ù…Ø­Ù„Ù„Ø© Ø¶Ù…Ù† Ø§Ù„Ø¥Ø­ØµØ§Ø¡Ø§Øª Ø§Ù„Ø¹Ø§Ù…Ø©. Ø§Ù„Ù‡Ø¯Ù: 100+.',
+        searchPlaceholder: 'البحث برمز السهم أو اسم الشركة...',
+        snapshotAlpha30d: 'ألفا 30 يوم مقابل EGX30',
+        snapshotSharpe30d: 'نسبة شارب (30 يوم)',
+        snapshotMaxDd30d: 'أقصى تراجع (30 يوم)',
+        snapshotWinRate30d: 'نسبة الفوز المتحركة (30 يوم)',
+        snapshotTrades: 'إجمالي الصفقات الحية',
+        marketRegime: 'نظام السوق',
+        signalMix30d: 'إشارات 30 يوم',
+        viewFullAnalysis: 'التحليل الكامل →',
+        consensusSignal: 'إشارة الإجماع',
+        agreement: 'نسبة الاتفاق',
+        recentAccuracySymbol: 'الدقة الحديثة',
+        whySignal: 'لماذا هذه الإشارة؟',
+        expandDetails: 'التفاصيل',
+        conf: 'الثقة',
+        trend: 'الاتجاه',
+        momentum: 'الزخم',
+        volumeState: 'الحجم',
+        sentimentState: 'المشاعر',
+        agentAgreement: 'اتفاق الوكلاء',
+        tooltipAlpha: 'متوسط ألفا يومي خلال آخر 30 يوما حيا مقابل EGX30.',
+        tooltipSharpe: 'جودة العائد المعدل بالمخاطر خلال آخر 30 يوما حيا.',
+        tooltipMaxDd: 'أكبر هبوط من قمة إلى قاع في العائد التراكمي خلال 30 يوما.',
+        tooltipWinRate: 'نسبة الإشارات الحية الصحيحة خلال آخر 30 يوما.',
+        tooltipTrades: 'التنبؤات الحية المحللة ضمن الإحصاءات العامة. الهدف: 100+.',
 
-        changesTodayTitle: 'Ã™â€¦Ã˜Â§ Ã˜Â§Ã™â€žÃ˜Â°Ã™Å  Ã˜ÂªÃ˜ÂºÃ™Å Ã˜Â± Ã˜Â§Ã™â€žÃ™Å Ã™Ë†Ã™â€¦',
-        changesTodayLive: 'Ã™â€¦Ã˜Â¨Ã˜Â§Ã˜Â´Ã˜Â±',
-        qualityMonitorTitle: 'Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¯Ã˜Â§Ã˜Â«Ã˜Â© Ã™Ë†Ã˜Â§Ã™â€žÃ˜Â§Ã™â€ Ã˜Â­Ã˜Â±Ã˜Â§Ã™Â',
-        qualityMonitorMonitoring: 'Ã™â€¦Ã˜Â±Ã˜Â§Ã™â€šÃ˜Â¨Ã˜Â©',
-        noChangesToday: 'Ã™â€žÃ˜Â§ Ã˜ÂªÃ™Ë†Ã˜Â¬Ã˜Â¯ Ã˜ÂªÃ˜ÂºÃ™Å Ã˜Â±Ã˜Â§Ã˜Âª Ã˜Â¬Ã™Ë†Ã™â€¡Ã˜Â±Ã™Å Ã˜Â© Ã˜Â¨Ã˜Â¹Ã˜Â¯.',
-        noQualityData: 'Ã˜Â¨Ã™Å Ã˜Â§Ã™â€ Ã˜Â§Ã˜Âª Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â±Ã˜Â§Ã™â€šÃ˜Â¨Ã˜Â© Ã˜ÂºÃ™Å Ã˜Â± Ã™â€¦Ã˜ÂªÃ˜Â§Ã˜Â­Ã˜Â© Ã˜Â¨Ã˜Â¹Ã˜Â¯.',
-        expectedEdgeLabel: 'Ã˜Â§Ã™â€žÃ˜Â¹Ã˜Â§Ã˜Â¦Ã˜Â¯ Ã˜Â§Ã™â€žÃ™â€¦Ã˜ÂªÃ™Ë†Ã™â€šÃ˜Â¹',
-        calibrationLabel: 'Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â¹Ã˜Â§Ã™Å Ã˜Â±Ã˜Â©',
-        signalsLabel: 'Ã˜Â§Ã™â€žÃ˜Â¥Ã˜Â´Ã˜Â§Ã˜Â±Ã˜Â§Ã˜Âª',
-        forecastsLabel: 'Ã˜Â§Ã™â€žÃ˜ÂªÃ™Ë†Ã™â€šÃ˜Â¹Ã˜Â§Ã˜Âª',
-        macroLabel: 'Ã˜Â§Ã™â€žÃ™â€¦Ã˜Â§Ã™Æ’Ã˜Â±Ã™Ë†',
-        fromLabel: 'Ã™â€¦Ã™â€ ',
-        driftLabel: 'Ã˜Â§Ã™â€žÃ˜Â§Ã™â€ Ã˜Â­Ã˜Â±Ã˜Â§Ã™Â',
-        freshnessLabel: 'Ã˜Â§Ã™â€žÃ˜Â­Ã˜Â¯Ã˜Â§Ã˜Â«Ã˜Â©',
-        qualityhealthy: 'Ã˜Â³Ã™â€žÃ™Å Ã™â€¦',
-        qualitywatch: 'Ã™â€¦Ã˜Â±Ã˜Â§Ã™â€šÃ˜Â¨Ã˜Â©',
-        qualityattention: 'Ã™Å Ã˜Â­Ã˜ÂªÃ˜Â§Ã˜Â¬ Ã™â€¦Ã˜ÂªÃ˜Â§Ã˜Â¨Ã˜Â¹Ã˜Â©',
-        qualityfresh: 'Ã˜Â­Ã˜Â¯Ã™Å Ã˜Â«',
-        qualitywarning: 'Ã˜ÂªÃ˜Â­Ã˜Â°Ã™Å Ã˜Â±',
-        qualitystale: 'Ã™â€¦Ã˜ÂªÃ˜Â£Ã˜Â®Ã˜Â±',
-        qualitystable: 'Ã™â€¦Ã˜Â³Ã˜ÂªÃ™â€šÃ˜Â±',
-        qualitydegrading: 'Ã™â€¦Ã˜ÂªÃ˜Â±Ã˜Â§Ã˜Â¬Ã˜Â¹',
-        qualityimproving: 'Ã™Å Ã˜ÂªÃ˜Â­Ã˜Â³Ã™â€ ',
-        qualityunknown: 'Ã˜ÂºÃ™Å Ã˜Â± Ã™â€¦Ã˜Â¹Ã˜Â±Ã™Ë†Ã™Â',
-        qualitymissing: 'Ã™â€¦Ã™ÂÃ™â€šÃ™Ë†Ã˜Â¯',
+        changesTodayTitle: 'ما الذي تغير اليوم',
+        changesTodayLive: 'مباشر',
+        qualityMonitorTitle: 'الحداثة والانحراف',
+        qualityMonitorMonitoring: 'مراقبة',
+        noChangesToday: 'لا توجد تغيرات جوهرية بعد.',
+        noQualityData: 'بيانات المراقبة غير متاحة بعد.',
+        expectedEdgeLabel: 'العائد المتوقع',
+        calibrationLabel: 'المعايرة',
+        signalsLabel: 'الإشارات',
+        forecastsLabel: 'التوقعات',
+        macroLabel: 'الماكرو',
+        fromLabel: 'من',
+        driftLabel: 'الانحراف',
+        freshnessLabel: 'الحداثة',
+        qualityhealthy: 'سليم',
+        qualitywatch: 'مراقبة',
+        qualityattention: 'يحتاج متابعة',
+        qualityfresh: 'حديث',
+        qualitywarning: 'تحذير',
+        qualitystale: 'متأخر',
+        qualitystable: 'مستقر',
+        qualitydegrading: 'متراجع',
+        qualityimproving: 'يتحسن',
+        qualityunknown: 'غير معروف',
+        qualitymissing: 'مفقود',
         switchLang: 'English',
 
-        lightMode: 'Ø§Ù„ØªØ¨Ø¯ÙŠÙ„ Ø¥Ù„Ù‰ Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„ÙØ§ØªØ­',
-        darkMode: 'Ø§Ù„ØªØ¨Ø¯ÙŠÙ„ Ø¥Ù„Ù‰ Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ø¯Ø§ÙƒÙ†',
+        lightMode: 'التبديل إلى الوضع الفاتح',
+        darkMode: 'التبديل إلى الوضع الداكن',
 
-        termsOfService: 'Ø´Ø±ÙˆØ· Ø§Ù„Ø®Ø¯Ù…Ø©',
+        termsOfService: 'شروط الخدمة',
 
         // Consensus tab
-        tabConsensus: 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹',
-        consensusTitle: 'Ø¥Ø¬Ù…Ø§Ø¹ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª',
-        bullCase: 'Ø­Ø§Ù„Ø© Ø§Ù„Ø«ÙˆØ±',
-        bearCase: 'Ø­Ø§Ù„Ø© Ø§Ù„Ø¯Ø¨',
-        riskAction: 'Ø§Ù„Ù…Ø®Ø§Ø·Ø±',
-        conviction: 'Ø§Ù„Ù‚Ù†Ø§Ø¹Ø©',
-        riskPassed: 'Ø£ÙØ¬ÙŠØ²',
-        riskFlagged: 'Ù…ÙØ¹Ù„Ù‘Ù…',
-        riskBlocked: 'Ù…Ø­Ø¸ÙˆØ±',
-        riskDowngraded: 'Ù…ÙØ®ÙÙ‘Ø¶',
-        totalStocks: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£Ø³Ù‡Ù…',
-        avgRisk: 'Ù…ØªÙˆØ³Ø· Ø§Ù„Ù…Ø®Ø§Ø·Ø±',
-        noConsensus: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø¥Ø¬Ù…Ø§Ø¹ Ø¨Ø¹Ø¯. Ø´ØºÙ‘Ù„ Ø®Ø· Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ø£ÙˆÙ„Ø§Ù‹.',
-        errorConsensus: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹.',
-        convictionVeryHigh: 'Ø¹Ø§Ù„ÙŠØ© Ø¬Ø¯Ø§Ù‹',
-        convictionHigh: 'Ø¹Ø§Ù„ÙŠØ©',
-        convictionModerate: 'Ù…ØªÙˆØ³Ø·Ø©',
-        convictionLow: 'Ù…Ù†Ø®ÙØ¶Ø©',
-        convictionBlocked: 'Ù…Ø­Ø¸ÙˆØ±',
-        scoringModeLabel: 'ÙˆØ¶Ø¹ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…',
-        scoringModeXmoreNative: 'Xmore (0â€“1)',
-        scoringModeStandard100: 'Ø¯Ø±Ø¬Ø© (0â€“100)',
-        scoringModeLetterGrade: 'ØªÙ‚Ø¯ÙŠØ±',
-        scoringModeStars: 'Ù†Ø¬ÙˆÙ…',
-        scoringModeSignalTier: 'Ù…Ø³ØªÙˆÙ‰',
-        scoringModeConviction: 'Ø§Ù‚ØªÙ†Ø§Ø¹',
-        scoringPanelTitle: 'ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ù…Ø³ØªØ«Ù…Ø±ÙŠÙ†',
-        scoringComposite: 'Ø§Ù„Ø¯Ø±Ø¬Ø© Ø§Ù„Ù…Ø±ÙƒØ¨Ø©',
-        scoringComponents: 'Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª',
-        scoringConsensus: 'Ø¥Ø¬Ù…Ø§Ø¹',
-        scoringExecution: 'ØªÙ†ÙÙŠØ°',
-        scoringRegime: 'Ø§Ù„Ù†Ø¸Ø§Ù…',
-        scoringMomentum: 'Ø²Ø®Ù…',
-        scoringMeetsThreshold: 'Ù‚Ø§Ø¨Ù„ Ù„Ù„ØªÙ†ÙÙŠØ°',
-        scoringNoData: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¥Ø´Ø§Ø±Ø§Øª Ù…ÙÙ‚ÙŠÙŽÙ‘Ù…Ø© Ø¨Ø¹Ø¯.',
-        riskWarnings: 'ØªØ­Ø°ÙŠØ±Ø§Øª Ø§Ù„Ù…Ø®Ø§Ø·Ø±',
-        agentSignals: 'Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡',
-        yourWatchlist: 'Ø£Ø³Ù‡Ù…Ùƒ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©',
-        allPredictions: 'Ø¬Ù…ÙŠØ¹ ØªÙ†Ø¨Ø¤Ø§Øª Ø§Ù„Ø¨ÙˆØ±ØµØ©',
-        followStocksPrompt: 'ØªØ§Ø¨Ø¹ Ø£Ø³Ù‡Ù…Ùƒ Ù…Ù† ØªØ¨ÙˆÙŠØ¨ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ù„Ø¹Ø±Ø¶ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ø®ØµØµØ© Ù‡Ù†Ø§.',
-        noWatchlistLogin: 'Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„Ùƒ Ù„Ø¹Ø±Ø¶ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø£Ø³Ù‡Ù… Ø§Ù„ØªÙŠ ØªØªØ§Ø¨Ø¹Ù‡Ø§.',
+        tabConsensus: 'الإجماع',
+        consensusTitle: 'إجماع الإشارات',
+        bullCase: 'حالة الثور',
+        bearCase: 'حالة الدب',
+        riskAction: 'المخاطر',
+        conviction: 'القناعة',
+        riskPassed: 'أُجيز',
+        riskFlagged: 'مُعلّم',
+        riskBlocked: 'محظور',
+        riskDowngraded: 'مُخفّض',
+        totalStocks: 'إجمالي الأسهم',
+        avgRisk: 'متوسط المخاطر',
+        noConsensus: 'لا توجد بيانات إجماع بعد. شغّل خط التنبؤات أولاً.',
+        errorConsensus: 'تعذر تحميل بيانات الإجماع.',
+        convictionVeryHigh: 'عالية جداً',
+        convictionHigh: 'عالية',
+        convictionModerate: 'متوسطة',
+        convictionLow: 'منخفضة',
+        convictionBlocked: 'محظور',
+        scoringModeLabel: 'وضع التقييم',
+        scoringModeXmoreNative: 'Xmore (0–1)',
+        scoringModeStandard100: 'درجة (0–100)',
+        scoringModeLetterGrade: 'تقدير',
+        scoringModeStars: 'نجوم',
+        scoringModeSignalTier: 'مستوى',
+        scoringModeConviction: 'اقتناع',
+        scoringPanelTitle: 'تقييم المستثمرين',
+        scoringComposite: 'الدرجة المركبة',
+        scoringComponents: 'المكونات',
+        scoringConsensus: 'إجماع',
+        scoringExecution: 'تنفيذ',
+        scoringRegime: 'النظام',
+        scoringMomentum: 'زخم',
+        scoringMeetsThreshold: 'قابل للتنفيذ',
+        scoringNoData: 'لا توجد إشارات مُقيَّمة بعد.',
+        riskWarnings: 'تحذيرات المخاطر',
+        agentSignals: 'إشارات الوكلاء',
+        yourWatchlist: 'أسهمك المتابعة',
+        allPredictions: 'جميع تنبؤات البورصة',
+        followStocksPrompt: 'تابع أسهمك من تبويب المتابعة لعرض البيانات المخصصة هنا.',
+        noWatchlistLogin: 'سجّل دخولك لعرض بيانات الأسهم التي تتابعها.',
 
         // Toast notifications (Upgrade 2)
-        stockAdded: 'ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø³Ù‡Ù… Ù„Ù„Ù…ØªØ§Ø¨Ø¹Ø©',
-        stockRemoved: 'ØªÙ… Ø¥Ø²Ø§Ù„Ø© Ø§Ù„Ø³Ù‡Ù… Ù…Ù† Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©',
-        watchlistFull: 'Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ù…Ù…ØªÙ„Ø¦Ø© (Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ Ù£Ù  Ø³Ù‡Ù…)',
-        loadError: 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª. Ø­Ø§ÙˆÙ„ Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.',
-        dataRefreshed: 'ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ù†Ø¬Ø§Ø­',
-        minTradesWarning: 'ÙŠØ¨Ø¯Ø£ ØªØªØ¨Ø¹ Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø¨Ø¹Ø¯ Ù¡Ù Ù  ØªÙˆØµÙŠØ©',
-        langSwitched: 'ØªÙ… Ø§Ù„ØªØ¨Ø¯ÙŠÙ„ Ù„Ù„Ø¹Ø±Ø¨ÙŠØ©',
+        stockAdded: 'تمت إضافة السهم للمتابعة',
+        stockRemoved: 'تم إزالة السهم من المتابعة',
+        watchlistFull: 'قائمة المتابعة ممتلئة (الحد الأقصى ٣٠ سهم)',
+        loadError: 'فشل تحميل البيانات. حاول مرة أخرى.',
+        dataRefreshed: 'تم تحديث البيانات بنجاح',
+        minTradesWarning: 'يبدأ تتبع الأداء بعد ١٠٠ توصية',
+        langSwitched: 'تم التبديل للعربية',
 
         // Empty states (Upgrade 6)
-        emptyPredictions: 'Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ†Ø¨Ø¤Ø§Øª Ø¨Ø¹Ø¯',
-        emptyPredictionsDesc: 'ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª ÙŠÙˆÙ…ÙŠØ§Ù‹ Ø¨Ø¹Ø¯ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø³ÙˆÙ‚. ØªØ­Ù‚Ù‚ Ù…Ø¬Ø¯Ø¯Ø§Ù‹ Ù‚Ø±ÙŠØ¨Ø§Ù‹.',
-        emptyTrades: 'Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø³Ø¬Ù„ ØªØ¯Ø§ÙˆÙ„',
-        emptyTradesDesc: 'Ø³ØªØ¸Ù‡Ø± ØªÙˆØµÙŠØ§Øª Ø§Ù„ØªØ¯Ø§ÙˆÙ„ Ù‡Ù†Ø§ Ø¨Ø¹Ø¯ Ø¥Ù†Ø´Ø§Ø¦Ù‡Ø§ Ø¨ÙˆØ§Ø³Ø·Ø© Ø§Ù„Ù†Ø¸Ø§Ù….',
-        emptyPortfolio: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø±Ø§ÙƒØ² Ù…ÙØªÙˆØ­Ø©',
-        emptyPortfolioDesc: 'Ø³ØªØ¸Ù‡Ø± Ø§Ù„Ù…Ø±Ø§ÙƒØ² Ø§Ù„Ù…ÙØªÙˆØ­Ø© Ù‡Ù†Ø§ Ø¨Ø¹Ø¯ ØªÙ†ÙÙŠØ° ØªÙˆØµÙŠØ§Øª Ø§Ù„ØªØ¯Ø§ÙˆÙ„.',
-        viewTrades: 'Ø¹Ø±Ø¶ Ø§Ù„ØªÙˆØµÙŠØ§Øª',
-        emptyResults: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ø¨Ø¹Ø¯',
-        emptyResultsDesc: 'Ø³ØªØ¸Ù‡Ø± Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø¨Ø¹Ø¯ ØªÙ‚ÙŠÙŠÙ… Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ù…Ù‚Ø§Ø¨Ù„ Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø§Ù„ÙØ¹Ù„ÙŠØ©.',
+        emptyPredictions: 'لا توجد تنبؤات بعد',
+        emptyPredictionsDesc: 'يتم إنشاء الإشارات يومياً بعد إغلاق السوق. تحقق مجدداً قريباً.',
+        emptyTrades: 'لا يوجد سجل تداول',
+        emptyTradesDesc: 'ستظهر توصيات التداول هنا بعد إنشائها بواسطة النظام.',
+        emptyPortfolio: 'لا توجد مراكز مفتوحة',
+        emptyPortfolioDesc: 'ستظهر المراكز المفتوحة هنا بعد تنفيذ توصيات التداول.',
+        viewTrades: 'عرض التوصيات',
+        emptyResults: 'لا توجد نتائج بعد',
+        emptyResultsDesc: 'ستظهر النتائج بعد تقييم التنبؤات مقابل النتائج الفعلية.',
 
         // Accessibility (Upgrade 7)
-        skipToContent: 'Ø§Ù„Ø§Ù†ØªÙ‚Ø§Ù„ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø­ØªÙˆÙ‰',
+        skipToContent: 'الانتقال إلى المحتوى',
 
         // Forecasts
-        tabForecasts: 'Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª',
-        forecastsBrief: 'ØªØªØ¨Ø¹ Ù…Ø­Ø§ÙØ¸ Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø© ÙˆÙ‚Ø§Ø±Ù† Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø§Ù„ÙØ¹Ù„ÙŠ Ù…Ø¹ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹.',
+        tabForecasts: 'التوقعات',
+        forecastsBrief: 'تتبع محافظ التوقعات المحفوظة وقارن الأداء الفعلي مع المتوقع.',
 
         // Rates tab
-        tabRates: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±',
-        ratesBrief: 'Ø³Ø¹Ø± ØµØ±Ù Ø§Ù„Ø¯ÙˆÙ„Ø§Ø±/Ø§Ù„Ø¬Ù†ÙŠÙ‡ ÙˆØ£Ø³Ø¹Ø§Ø± Ø§Ù„Ø°Ù‡Ø¨ ÙˆØ±Ø³ÙˆÙ… Ø¨ÙŠØ§Ù†ÙŠØ© Ù„Ù€ 30 ÙŠÙˆÙ….',
-        ratesHistoryTitle: 'Ø§Ù„Ø³Ø¬Ù„ - 30 ÙŠÙˆÙ…',
+        tabRates: 'الأسعار',
+        ratesBrief: 'سعر صرف الدولار/الجنيه وأسعار الذهب ورسوم بيانية لـ 30 يوم.',
+        ratesHistoryTitle: 'السجل - 30 يوم',
 
         // Alerts
-        alertsTitle: 'ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„Ø£Ø³Ø¹Ø§Ø±',
-        alertsHint: 'Ø§Ø­ØµÙ„ Ø¹Ù„Ù‰ ØªÙ†Ø¨ÙŠÙ‡ Ø¹Ù†Ø¯Ù…Ø§ ÙŠØªØ¬Ø§ÙˆØ² Ø³Ù‡Ù… Ø³Ø¹Ø±Ùƒ Ø§Ù„Ù…Ø³ØªÙ‡Ø¯Ù.',
-        alertAbove: 'Ø£Ø¹Ù„Ù‰ Ù…Ù† â†‘',
-        alertBelow: 'Ø£Ù‚Ù„ Ù…Ù† â†“',
+        alertsTitle: 'تنبيهات الأسعار',
+        alertsHint: 'احصل على تنبيه عندما يتجاوز سهم سعرك المستهدف.',
+        alertAbove: 'أعلى من ↑',
+        alertBelow: 'أقل من ↓',
 
         // Comparison
-        compModalTitle: 'Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ø£Ø³Ù‡Ù…',
-        compMetric: 'Ø§Ù„Ù…Ø¹ÙŠØ§Ø±',
-        compSignal: 'Ø§Ù„Ø¥Ø´Ø§Ø±Ø©',
-        compScore: 'Ø¯Ø±Ø¬Ø© Xmore',
-        compConviction: 'Ø§Ù„Ù‚Ù†Ø§Ø¹Ø©',
-        compConfidence: 'Ø§Ù„Ø«Ù‚Ø©',
-        compAgentsAgree: 'ØªÙˆØ§ÙÙ‚ Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡',
-        compBullScore: 'Ù†Ù‚Ø§Ø· Ø§Ù„ØµØ¹ÙˆØ¯',
-        compBearScore: 'Ù†Ù‚Ø§Ø· Ø§Ù„Ù‡Ø¨ÙˆØ·',
-        compPrice: 'Ø§Ù„Ø³Ø¹Ø± (Ø¬Ù†ÙŠÙ‡)',
-        compDayChange: 'ØªØºÙŠØ± Ø§Ù„ÙŠÙˆÙ…',
-        compVolume: 'Ø§Ù„Ø­Ø¬Ù…',
-        compBrief: 'Ù…Ù„Ø®Øµ Ø°ÙƒÙŠ',
+        compModalTitle: 'مقارنة الأسهم',
+        compMetric: 'المعيار',
+        compSignal: 'الإشارة',
+        compScore: 'درجة Xmore',
+        compConviction: 'القناعة',
+        compConfidence: 'الثقة',
+        compAgentsAgree: 'توافق الوكلاء',
+        compBullScore: 'نقاط الصعود',
+        compBearScore: 'نقاط الهبوط',
+        compPrice: 'السعر (جنيه)',
+        compDayChange: 'تغير اليوم',
+        compVolume: 'الحجم',
+        compBrief: 'ملخص ذكي',
 
         // Portfolio totals
-        ptlCostLabel: 'Ø§Ù„Ù…Ø³ØªØ«Ù…Ø± (Ø¬Ù†ÙŠÙ‡)',
-        ptlValueLabel: 'Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ø³ÙˆÙ‚ÙŠØ© (Ø¬Ù†ÙŠÙ‡)',
-        ptlPnlLabel: 'Ø§Ù„Ø±Ø¨Ø­/Ø§Ù„Ø®Ø³Ø§Ø±Ø© (Ø¬Ù†ÙŠÙ‡)',
-        ptlRetLabel: 'Ø§Ù„Ø¹Ø§Ø¦Ø¯ %',
+        ptlCostLabel: 'المستثمر (جنيه)',
+        ptlValueLabel: 'القيمة السوقية (جنيه)',
+        ptlPnlLabel: 'الربح/الخسارة (جنيه)',
+        ptlRetLabel: 'العائد %',
 
         // Multi-horizon
-        multiHorizonTitle: 'Ø¯Ù‚Ø© Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª Ø­Ø³Ø¨ Ø§Ù„Ø£ÙÙ‚ Ø§Ù„Ø²Ù…Ù†ÙŠ',
-        mhSymbol: 'Ø§Ù„Ø±Ù…Ø²',
-        mhHorizon: 'Ø§Ù„Ø£ÙÙ‚',
-        mhPreds: 'Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª',
-        mhCorrect: 'Ø§Ù„ØµØ­ÙŠØ­',
-        mhAccuracy: 'Ø§Ù„Ø¯Ù‚Ø©',
-        mhAvgChange: 'Ù…ØªÙˆØ³Ø· Ø§Ù„ØªØºÙŠØ±',
+        multiHorizonTitle: 'دقة الإشارات حسب الأفق الزمني',
+        mhSymbol: 'الرمز',
+        mhHorizon: 'الأفق',
+        mhPreds: 'التنبؤات',
+        mhCorrect: 'الصحيح',
+        mhAccuracy: 'الدقة',
+        mhAvgChange: 'متوسط التغير',
 
         // Time Machine
-        tabTimeMachine: 'Ø¢Ù„Ø© Ø§Ù„Ø²Ù…Ù†',
-        timemachineBrief: 'Ø£Ø¯Ø®Ù„ Ù…Ø¨Ù„ØºØ§Ù‹ ÙˆØªØ§Ø±ÙŠØ®Ø§Ù‹ Ø³Ø§Ø¨Ù‚Ø§Ù‹ Ù„Ù…Ø¹Ø±ÙØ© Ù‚ÙŠÙ…Ø© Ø§Ø³ØªØ«Ù…Ø§Ø±Ùƒ Ø§Ù„ÙŠÙˆÙ… Ù„Ùˆ Ø§ØªØ¨Ø¹Øª ØªÙˆØµÙŠØ§Øª Xmore.',
-        tmTitle: 'Ù…Ø§Ø°Ø§ Ù„Ùˆ ÙƒÙ†Øª Ø§Ø³ØªØ«Ù…Ø±ØªØŸ',
-        tmSubtitle: 'Ø´Ø§Ù‡Ø¯ ÙƒÙ… Ø³ØªÙƒÙˆÙ† Ù‚ÙŠÙ…Ø© Ø£Ù…ÙˆØ§Ù„Ùƒ Ù„Ùˆ Ø§ØªØ¨Ø¹Øª Ø£ÙØ¶Ù„ ØªÙˆØµÙŠØ§Øª Xmore.',
-        tmAmountLabel: 'Ù…Ø¨Ù„Øº Ø§Ù„Ø§Ø³ØªØ«Ù…Ø§Ø± (Ø¬Ù†ÙŠÙ‡)',
-        tmDateLabel: 'Ø¨Ø¯Ø¡Ø§Ù‹ Ù…Ù†',
-        tm3Months: 'Ù…Ù†Ø° Ù£ Ø£Ø´Ù‡Ø±',
-        tm6Months: 'Ù…Ù†Ø° Ù¦ Ø£Ø´Ù‡Ø±',
-        tm12Months: 'Ù…Ù†Ø° Ø³Ù†Ø©',
-        tmMaxRange: 'Ø§Ù„Ø­Ø¯ Ø§Ù„Ø£Ù‚ØµÙ‰ (Ø³Ù†ØªØ§Ù†)',
-        tmSimulate: 'Ù…Ø­Ø§ÙƒØ§Ø©',
-        tmYouInvested: 'Ù„Ùˆ Ø§Ø³ØªØ«Ù…Ø±Øª',
-        tmWouldBeWorth: 'Ø³ØªØµØ¨Ø­ Ù‚ÙŠÙ…ØªÙ‡Ø§ Ø§Ù„ÙŠÙˆÙ…',
-        tmAlpha: 'Ø£Ù„ÙØ§ Ù…Ù‚Ø§Ø¨Ù„ EGX30',
-        tmVsEGX30: 'ØªÙÙˆÙ‚ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø¤Ø´Ø±',
-        tmAnnualized: 'Ø§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„Ø³Ù†ÙˆÙŠ',
-        tmTotalTrades: 'Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØµÙÙ‚Ø§Øª',
-        tmWinRate: 'Ù†Ø³Ø¨Ø© Ø§Ù„ÙÙˆØ²',
-        tmMaxDrawdown: 'Ø£Ù‚ØµÙ‰ ØªØ±Ø§Ø¬Ø¹',
-        tmSharpe: 'Ù†Ø³Ø¨Ø© Ø´Ø§Ø±Ø¨',
-        tmEquityCurve: 'Ø£Ù…ÙˆØ§Ù„Ùƒ Ø¹Ø¨Ø± Ø§Ù„Ø²Ù…Ù†',
-        tmMonthlyBreakdown: 'Ø§Ù„Ø¹ÙˆØ§Ø¦Ø¯ Ø§Ù„Ø´Ù‡Ø±ÙŠØ©',
-        tmMonth: 'Ø§Ù„Ø´Ù‡Ø±',
-        tmTopTrades: 'Ø£ÙØ¶Ù„ Ø§Ù„ØµÙÙ‚Ø§Øª',
-        tmWorstTrades: 'Ø£Ø³ÙˆØ£ Ø§Ù„ØµÙÙ‚Ø§Øª',
-        tmTimeline: 'Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø²Ù…Ù†ÙŠ Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±',
-        tmCalculating: '...Ù†Ø³Ø§ÙØ± Ø¹Ø¨Ø± Ø§Ù„Ø²Ù…Ù†',
-        tmAnalyzing: 'Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø³ÙˆÙ‚ Ø§Ù„Ø­ÙŠØ© ÙˆØªØ´ØºÙŠÙ„ Ø§Ù„Ù…Ø­Ø§ÙƒØ§Ø©',
-        tmLoadingWarning: 'Ù‚Ø¯ ÙŠØ³ØªØºØ±Ù‚ Ù‡Ø°Ø§ Ù£Ù  Ø¥Ù„Ù‰ Ù¦Ù  Ø«Ø§Ù†ÙŠØ©.',
-        tmDisclaimer: 'ØªØ³ØªØ®Ø¯Ù… Ù‡Ø°Ù‡ Ø§Ù„Ù…Ø­Ø§ÙƒØ§Ø© Ø¨ÙŠØ§Ù†Ø§Øª Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø¨ÙˆØ±ØµØ© Ø§Ù„Ù…ØµØ±ÙŠØ© Ø§Ù„Ø­Ù‚ÙŠÙ‚ÙŠØ© Ù…Ù† Yahoo Finance ÙˆØªØ·Ø¨Ù‚ Ù…Ù†Ø·Ù‚ Ø¥Ø´Ø§Ø±Ø§Øª Xmore Ø¨Ø£Ø«Ø± Ø±Ø¬Ø¹ÙŠ. Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø§Ù„Ø³Ø§Ø¨Ù‚ Ù„Ø§ ÙŠØ¶Ù…Ù† Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø§Ù„Ù…Ø³ØªÙ‚Ø¨Ù„ÙŠØ©. Ù‡Ø°Ø§ Ù„ÙŠØ³ Ù†ØµÙŠØ­Ø© Ù…Ø§Ù„ÙŠØ©.',
-        tmProfit: 'Ø±Ø¨Ø­',
-        tmLoss: 'Ø®Ø³Ø§Ø±Ø©',
-        tmBought: 'Ø´Ø±Ø§Ø¡',
-        tmSold: 'Ø¨ÙŠØ¹',
-        tmHeldFor: 'Ù…Ø¯Ø© Ø§Ù„Ø§Ø­ØªÙØ§Ø¸',
-        tmDays: 'ÙŠÙˆÙ…',
-        tmInvalidAmount: 'ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø§Ù„Ù…Ø¨Ù„Øº Ø¨ÙŠÙ† Ù¥Ù¬Ù Ù Ù  Ùˆ Ù¡Ù Ù¬Ù Ù Ù Ù¬Ù Ù Ù  Ø¬Ù†ÙŠÙ‡',
-        tmSelectDate: 'ÙŠØ±Ø¬Ù‰ ØªØ­Ø¯ÙŠØ¯ ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©',
-        tmErrorGeneric: 'ÙØ´Ù„Øª Ø§Ù„Ù…Ø­Ø§ÙƒØ§Ø©. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.',
-        tmTryDifferent: 'Ø¬Ø±Ù‘Ø¨ Ù†Ø·Ø§Ù‚ ØªØ§Ø±ÙŠØ® Ø£Ùˆ Ù…Ø¨Ù„Øº Ù…Ø®ØªÙ„Ù.',
-        tmNoDataHint: 'ØªØ¹Ø°Ù‘Ø± Ø¥ÙƒÙ…Ø§Ù„ Ø§Ù„Ù…Ø­Ø§ÙƒØ§Ø©. Ø¬Ø±Ù‘Ø¨ Ù†Ø·Ø§Ù‚ ØªØ§Ø±ÙŠØ® Ù…Ø®ØªÙ„Ù.',
+        tabTimeMachine: 'آلة الزمن',
+        timemachineBrief: 'أدخل مبلغاً وتاريخاً سابقاً لمعرفة قيمة استثمارك اليوم لو اتبعت توصيات Xmore.',
+        tmTitle: 'ماذا لو كنت استثمرت؟',
+        tmSubtitle: 'شاهد كم ستكون قيمة أموالك لو اتبعت أفضل توصيات Xmore.',
+        tmAmountLabel: 'مبلغ الاستثمار (جنيه)',
+        tmDateLabel: 'بدءاً من',
+        tm3Months: 'منذ ٣ أشهر',
+        tm6Months: 'منذ ٦ أشهر',
+        tm12Months: 'منذ سنة',
+        tmMaxRange: 'الحد الأقصى (سنتان)',
+        tmSimulate: 'محاكاة',
+        tmYouInvested: 'لو استثمرت',
+        tmWouldBeWorth: 'ستصبح قيمتها اليوم',
+        tmAlpha: 'ألفا مقابل EGX30',
+        tmVsEGX30: 'تفوق على المؤشر',
+        tmAnnualized: 'العائد السنوي',
+        tmTotalTrades: 'إجمالي الصفقات',
+        tmWinRate: 'نسبة الفوز',
+        tmMaxDrawdown: 'أقصى تراجع',
+        tmSharpe: 'نسبة شارب',
+        tmEquityCurve: 'أموالك عبر الزمن',
+        tmMonthlyBreakdown: 'العوائد الشهرية',
+        tmMonth: 'الشهر',
+        tmTopTrades: 'أفضل الصفقات',
+        tmWorstTrades: 'أسوأ الصفقات',
+        tmTimeline: 'الجدول الزمني للاستثمار',
+        tmCalculating: '...نسافر عبر الزمن',
+        tmAnalyzing: 'جلب بيانات السوق الحية وتشغيل المحاكاة',
+        tmLoadingWarning: 'قد يستغرق هذا ٣٠ إلى ٦٠ ثانية.',
+        tmDisclaimer: 'تستخدم هذه المحاكاة بيانات أسعار البورصة المصرية الحقيقية من Yahoo Finance وتطبق منطق إشارات Xmore بأثر رجعي. الأداء السابق لا يضمن النتائج المستقبلية. هذا ليس نصيحة مالية.',
+        tmProfit: 'ربح',
+        tmLoss: 'خسارة',
+        tmBought: 'شراء',
+        tmSold: 'بيع',
+        tmHeldFor: 'مدة الاحتفاظ',
+        tmDays: 'يوم',
+        tmInvalidAmount: 'يجب أن يكون المبلغ بين ٥٬٠٠٠ و ١٠٬٠٠٠٬٠٠٠ جنيه',
+        tmSelectDate: 'يرجى تحديد تاريخ البداية',
+        tmErrorGeneric: 'فشلت المحاكاة. يرجى المحاولة مرة أخرى.',
+        tmTryDifferent: 'جرّب نطاق تاريخ أو مبلغ مختلف.',
+        tmNoDataHint: 'تعذّر إكمال المحاكاة. جرّب نطاق تاريخ مختلف.',
         // ETF cards
-        etfEgyptExposure: 'ØªØ¹Ø±Ù‘Ø¶ Ù„Ù…ØµØ±',
-        etfName: 'Ø§Ù„Ø§Ø³Ù…',
-        etfExchange: 'Ø§Ù„Ø¨ÙˆØ±ØµØ©',
-        etfPrice: 'Ø§Ù„Ø³Ø¹Ø±',
-        etfChange: 'Ø§Ù„ØªØºÙŠØ±',
-        etfNav: 'Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„ØµØ§ÙÙŠØ©',
-        etfPremDisc: 'Ø¹Ù„Ø§ÙˆØ©/Ø®ØµÙ…',
-        etfHoldings: 'Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª',
-        etfIssuer: 'Ø§Ù„Ø¬Ù‡Ø© Ø§Ù„Ù…ØµØ¯Ø±Ø©',
-        etfRet3m: 'Ø¹Ø§Ø¦Ø¯ 3 Ø£Ø´Ù‡Ø±',
-        etfUnderlying: 'Ø§Ù„Ø£ØµÙ„ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ',
-        etfLiquidity: 'Ø§Ù„Ø³ÙŠÙˆÙ„Ø©',
-        etfNoData: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ø¨Ø¹Ø¯',
-        etfNoDataSub: 'ÙŠØªÙ… Ø¬Ù…Ø¹ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ø¨Ø¹Ø¯ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ø³ÙˆÙ‚',
-        etfNoResults: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù„Ù€',
-        etfLoadError: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØµÙ†Ø§Ø¯ÙŠÙ‚.',
-        etfHoldingsTitle: 'Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª',
-        etfNoHoldings: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù…ÙƒÙˆÙ†Ø§Øª.',
+        etfEgyptExposure: 'تعرّض لمصر',
+        etfName: 'الاسم',
+        etfExchange: 'البورصة',
+        etfPrice: 'السعر',
+        etfChange: 'التغير',
+        etfNav: 'القيمة الصافية',
+        etfPremDisc: 'علاوة/خصم',
+        etfHoldings: 'المكونات',
+        etfIssuer: 'الجهة المصدرة',
+        etfRet3m: 'عائد 3 أشهر',
+        etfUnderlying: 'الأصل الأساسي',
+        etfLiquidity: 'السيولة',
+        etfNoData: 'لا توجد بيانات بعد',
+        etfNoDataSub: 'يتم جمع البيانات تلقائياً بعد إغلاق السوق',
+        etfNoResults: 'لا توجد نتائج لـ',
+        etfLoadError: 'تعذر تحميل بيانات الصناديق.',
+        etfHoldingsTitle: 'المكونات',
+        etfNoHoldings: 'لا توجد بيانات مكونات.',
         // Future tab
-        tmSubPastLabel: 'â® Ø§Ù„Ù…Ø§Ø¶ÙŠ',
-        tmSubFutureLabel: 'â­ Ø§Ù„Ù…Ø³ØªÙ‚Ø¨Ù„',
-        fcTitle: 'Ø§Ù„ØªÙˆÙ‚Ø¹ Ø§Ù„Ù…Ø³ØªÙ‚Ø¨Ù„ÙŠ',
-        fcSubtitle: 'Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ ÙŠØ®ØªØ§Ø± Ø£ÙØ¶Ù„ Ø³Ù‡Ù… EGX30 Ù„Ø£ÙÙ‚Ùƒ Ø§Ù„Ø²Ù…Ù†ÙŠ. Ù¥Ù¬Ù Ù Ù  Ù…Ø³Ø§Ø± Ù…ÙˆÙ†ØªÙŠ ÙƒØ§Ø±Ù„Ùˆ.',
-        fcModeAuto: 'ðŸ¤– Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ ÙŠØ®ØªØ§Ø± Ù„ÙŠ',
-        fcModeManual: 'ðŸ” Ø£Ø®ØªØ§Ø± Ø¨Ù†ÙØ³ÙŠ',
-        fcModePortfolio: 'ðŸ“ Ù…Ø­Ø§ÙØ¸ÙŠ',
-        pf_title: 'Ù…Ø­Ø§ÙØ¸ Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª',
-        pf_create: '+ Ù…Ø­ÙØ¸Ø© Ø¬Ø¯ÙŠØ¯Ø©',
-        fcEndDateLabel: 'Ø§Ù„ØªØ§Ø±ÙŠØ® Ø§Ù„Ù…Ø³ØªÙ‡Ø¯Ù',
-        fcEndDateHint: 'Ø­ØªÙ‰ Ù£Ù  ÙŠÙˆÙ…Ø§Ù‹ Ù…Ù† Ø§Ù„ÙŠÙˆÙ… â€” Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ ÙŠØ®ØªØ§Ø± Ø£ÙØ¶Ù„ Ø³Ù‡Ù… Ù„Ùƒ',
-        fcSymbolLabel: 'Ø±Ù…Ø² Ø§Ù„Ø³Ù‡Ù…',
-        fcHorizonLabel: 'Ø§Ù„Ø£ÙÙ‚ Ø§Ù„Ø²Ù…Ù†ÙŠ',
-        fc1Month: 'Ø´Ù‡Ø±',
-        fc2Months: 'Ø´Ù‡Ø±Ø§Ù†',
-        fc3Months: 'Ù£ Ø£Ø´Ù‡Ø±',
-        fc6Months: 'Ù¦ Ø£Ø´Ù‡Ø±',
-        fc1Year: 'Ø³Ù†Ø©',
-        fc2Years: 'Ø³Ù†ØªØ§Ù†',
-        pf_name_label: 'Ø§Ø³Ù… Ø§Ù„Ù…Ø­ÙØ¸Ø©',
-        pf_save: 'Ø­ÙØ¸ Ø§Ù„Ù…Ø­ÙØ¸Ø©',
-        pf_cancel: 'Ø¥Ù„ØºØ§Ø¡',
-        fcRunBtnManual: 'ØªØ´ØºÙŠÙ„ Ø§Ù„ØªÙˆÙ‚Ø¹',
-        fcSelectSymbol: 'ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± Ø³Ù‡Ù….',
-        fcScenarioLabel: 'Ø§Ù„Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆ',
-        fcBase: 'Ù‚Ø§Ø¹Ø¯ÙŠ',
-        fcBaseHint: 'Ø§Ù„Ø§Ù†Ø¬Ø±Ø§Ù Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠ',
-        fcBull: 'ØµØ§Ø¹Ø¯',
-        fcBullHint: '+Ù¢Ùª ØªØ¹Ø²ÙŠØ²',
-        fcBear: 'Ù‡Ø§Ø¨Ø·',
-        fcBearHint: 'âˆ’Ù¢Ùª Ø¶ØºØ·',
-        fcRunBtn: 'Ø§Ø®ØªØ± Ø£ÙØ¶Ù„ Ø³Ù‡Ù… ÙˆØ§Ø¨Ø¯Ø£ Ø§Ù„ØªÙˆÙ‚Ø¹',
-        fcSelectDate: 'ÙŠØ±Ø¬Ù‰ Ø§Ø®ØªÙŠØ§Ø± ØªØ§Ø±ÙŠØ® Ù…Ø³ØªÙ‡Ø¯Ù.',
-        fcChosenBy: 'Ø§Ø®ØªÙŠØ§Ø± Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ',
-        fcSeeRanking: 'Ø±Ø¤ÙŠØ© Ø§Ù„ØªØ±ØªÙŠØ¨ â–¼',
-        fcHideRanking: 'Ø¥Ø®ÙØ§Ø¡ â–²',
-        fcExpectedValue: 'Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…ØªÙˆÙ‚Ø¹Ø©',
-        fcProbProfit: 'Ø§Ø­ØªÙ…Ø§Ù„ÙŠØ© Ø§Ù„Ø±Ø¨Ø­',
-        fcVolatility: 'Ø§Ù„ØªÙ‚Ù„Ø¨ Ø§Ù„Ø³Ù†ÙˆÙŠ',
-        fcWorstCase: 'Ø£Ø³ÙˆØ£ Ø­Ø§Ù„Ø© (Ø§Ù„Ø®Ø§Ù…Ø³Ùª)',
-        fcMedian: 'Ø§Ù„ÙˆØ³ÙŠØ·',
-        fcBestCase: 'Ø£ÙØ¶Ù„ Ø­Ø§Ù„Ø© (Ù©Ù¥Ùª)',
-        fcBandChartTitle: 'Ø§Ù„Ù‚ÙŠÙ…Ø© Ø§Ù„Ù…ØªÙˆÙ‚Ø¹Ø© Ù„Ù„Ù…Ø­ÙØ¸Ø©',
-        fcHistTitle: 'ØªÙˆØ²ÙŠØ¹ Ø§Ù„Ù‚ÙŠÙ… Ø§Ù„Ù†Ù‡Ø§Ø¦ÙŠØ©',
-        fcHistSub: 'Ù¥Ù¬Ù Ù Ù  Ù†ØªÙŠØ¬Ø© Ù…Ø­Ø§ÙƒØ§Ø©. Ø£Ø®Ø¶Ø± = Ø±Ø¨Ø­ØŒ Ø£Ø­Ù…Ø± = Ø®Ø³Ø§Ø±Ø©.',
-        fcDrift: 'Ø§Ù„Ø§Ù†Ø¬Ø±Ø§Ù Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠ',
-        fcScenarioUsed: 'ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆ',
-        fcDataPoints: 'Ù†Ù‚Ø§Ø· Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª',
-        fcSimCount: 'Ø¹Ø¯Ø¯ Ø§Ù„Ù…Ø­Ø§ÙƒØ§Ø©',
-        fcCalculating: '...ÙØ­Øµ Ø£Ø³Ù‡Ù… EGX30 ÙˆØªØ´ØºÙŠÙ„ Ù¥Ù¬Ù Ù Ù  Ù…Ø³Ø§Ø± Ù…ÙˆÙ†ØªÙŠ ÙƒØ§Ø±Ù„Ùˆ',
-        fcAnalyzing: 'Ø­Ø³Ø§Ø¨ Ù…Ø¹Ø§Ù…Ù„Ø§Øª GBM â€” Ù‚Ø¯ ÙŠØ³ØªØºØ±Ù‚ ~Ù£Ù  Ø«Ø§Ù†ÙŠØ©',
-        fcDisclaimer: 'Ù‡Ø°Ø§ Ø§Ù„ØªÙˆÙ‚Ø¹ Ù‚Ø§Ø¦Ù… Ø¹Ù„Ù‰ Ù†Ù…ÙˆØ°Ø¬ Ø±ÙŠØ§Ø¶ÙŠ ÙˆÙ„Ø§ ÙŠÙ…Ø«Ù„ Ù†ØµÙŠØ­Ø© Ù…Ø§Ù„ÙŠØ©. ØªØ¹ØªÙ…Ø¯ Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø¹Ù„Ù‰ Ø§ÙØªØ±Ø§Ø¶Ø§Øª Ø¥Ø­ØµØ§Ø¦ÙŠØ© ØªØ§Ø±ÙŠØ®ÙŠØ© ÙˆØ¸Ø±ÙˆÙ Ø§Ù„Ø³ÙˆÙ‚.',
+        tmSubPastLabel: '⏮ الماضي',
+        tmSubFutureLabel: '⏭ المستقبل',
+        fcTitle: 'التوقع المستقبلي',
+        fcSubtitle: 'الذكاء الاصطناعي يختار أفضل سهم EGX30 لأفقك الزمني. ٥٬٠٠٠ مسار مونتي كارلو.',
+        fcModeAuto: '🤖 الذكاء الاصطناعي يختار لي',
+        fcModeManual: '🔍 أختار بنفسي',
+        fcModePortfolio: '📁 محافظي',
+        pf_title: 'محافظ التوقعات',
+        pf_create: '+ محفظة جديدة',
+        fcEndDateLabel: 'التاريخ المستهدف',
+        fcEndDateHint: 'حتى ٣٠ يوماً من اليوم — الذكاء الاصطناعي يختار أفضل سهم لك',
+        fcSymbolLabel: 'رمز السهم',
+        fcHorizonLabel: 'الأفق الزمني',
+        fc1Month: 'شهر',
+        fc2Months: 'شهران',
+        fc3Months: '٣ أشهر',
+        fc6Months: '٦ أشهر',
+        fc1Year: 'سنة',
+        fc2Years: 'سنتان',
+        pf_name_label: 'اسم المحفظة',
+        pf_save: 'حفظ المحفظة',
+        pf_cancel: 'إلغاء',
+        fcRunBtnManual: 'تشغيل التوقع',
+        fcSelectSymbol: 'يرجى اختيار سهم.',
+        fcScenarioLabel: 'السيناريو',
+        fcBase: 'قاعدي',
+        fcBaseHint: 'الانجراف التاريخي',
+        fcBull: 'صاعد',
+        fcBullHint: '+٢٪ تعزيز',
+        fcBear: 'هابط',
+        fcBearHint: '−٢٪ ضغط',
+        fcRunBtn: 'اختر أفضل سهم وابدأ التوقع',
+        fcSelectDate: 'يرجى اختيار تاريخ مستهدف.',
+        fcChosenBy: 'اختيار الذكاء الاصطناعي',
+        fcSeeRanking: 'رؤية الترتيب ▼',
+        fcHideRanking: 'إخفاء ▲',
+        fcExpectedValue: 'القيمة المتوقعة',
+        fcProbProfit: 'احتمالية الربح',
+        fcVolatility: 'التقلب السنوي',
+        fcWorstCase: 'أسوأ حالة (الخامس٪)',
+        fcMedian: 'الوسيط',
+        fcBestCase: 'أفضل حالة (٩٥٪)',
+        fcBandChartTitle: 'القيمة المتوقعة للمحفظة',
+        fcHistTitle: 'توزيع القيم النهائية',
+        fcHistSub: '٥٬٠٠٠ نتيجة محاكاة. أخضر = ربح، أحمر = خسارة.',
+        fcDrift: 'الانجراف التاريخي',
+        fcScenarioUsed: 'تعديل السيناريو',
+        fcDataPoints: 'نقاط البيانات',
+        fcSimCount: 'عدد المحاكاة',
+        fcCalculating: '...فحص أسهم EGX30 وتشغيل ٥٬٠٠٠ مسار مونتي كارلو',
+        fcAnalyzing: 'حساب معاملات GBM — قد يستغرق ~٣٠ ثانية',
+        fcDisclaimer: 'هذا التوقع قائم على نموذج رياضي ولا يمثل نصيحة مالية. تعتمد النتائج على افتراضات إحصائية تاريخية وظروف السوق.',
         fcRerun: '\u062a\u0639\u062f\u064a\u0644 \u0648\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u062a\u0634\u063a\u064a\u0644 \u2191',
         fcModeAutoDesc: '\u064a\u062e\u062a\u0627\u0631 \u062a\u0644\u0642\u0627\u0626\u064a\u0627\u064b \u0623\u0641\u0636\u0644 \u0633\u0647\u0645 EGX30 \u0644\u062a\u0627\u0631\u064a\u062e\u0643',
         fcModeManualDesc: '\u0627\u062e\u062a\u0631 \u0645\u0646 \u0661 \u0625\u0644\u0649 \u0662\u0660 \u0633\u0647\u0645\u0627\u064b \u0648\u0642\u0627\u0631\u0646 \u0627\u0644\u062a\u0648\u0642\u0639\u0627\u062a',
@@ -1087,27 +1087,27 @@ const TRANSLATIONS = {
 const AGENT_INFO = {
     'MA_Crossover_Agent': {
         en: { name: 'Moving Average Trend', description: 'Analyzes short and long-term moving average crossovers to identify trend changes.' },
-        ar: { name: 'Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù…ØªÙˆØ³Ø· Ø§Ù„Ù…ØªØ­Ø±Ùƒ', description: 'ÙŠØ­Ù„Ù„ ØªÙ‚Ø§Ø·Ø¹Ø§Øª Ø§Ù„Ù…ØªÙˆØ³Ø·Ø§Øª Ø§Ù„Ù…ØªØ­Ø±ÙƒØ© Ù„ØªØ­Ø¯ÙŠØ¯ ØªØºÙŠØ±Ø§Øª Ø§Ù„Ø§ØªØ¬Ø§Ù‡.' }
+        ar: { name: 'اتجاه المتوسط المتحرك', description: 'يحلل تقاطعات المتوسطات المتحركة لتحديد تغيرات الاتجاه.' }
     },
     'ML_RandomForest': {
         en: { name: 'Price Predictor', description: 'Machine learning model using 40+ technical indicators to predict price movements.' },
-        ar: { name: 'Ù…ØªÙ†Ø¨Ø¦ Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø°ÙƒÙŠ', description: 'Ù†Ù…ÙˆØ°Ø¬ ØªØ¹Ù„Ù… Ø¢Ù„ÙŠ ÙŠØ³ØªØ®Ø¯Ù… 40+ Ù…Ø¤Ø´Ø± ÙÙ†ÙŠ Ù„Ù„ØªÙ†Ø¨Ø¤ Ø¨Ø­Ø±ÙƒØ§Øª Ø§Ù„Ø£Ø³Ø¹Ø§Ø±.' }
+        ar: { name: 'متنبئ الأسعار الذكي', description: 'نموذج تعلم آلي يستخدم 40+ مؤشر فني للتنبؤ بحركات الأسعار.' }
     },
     'RSI_Agent': {
         en: { name: 'Momentum Indicator', description: 'Uses Relative Strength Index to detect overbought/oversold conditions.' },
-        ar: { name: 'Ù…Ø¤Ø´Ø± Ø§Ù„Ø²Ø®Ù…', description: 'ÙŠØ³ØªØ®Ø¯Ù… Ù…Ø¤Ø´Ø± Ø§Ù„Ù‚ÙˆØ© Ø§Ù„Ù†Ø³Ø¨ÙŠØ© Ù„Ø§ÙƒØªØ´Ø§Ù Ø­Ø§Ù„Ø§Øª Ø§Ù„Ø´Ø±Ø§Ø¡/Ø§Ù„Ø¨ÙŠØ¹ Ø§Ù„Ù…ÙØ±Ø·.' }
+        ar: { name: 'مؤشر الزخم', description: 'يستخدم مؤشر القوة النسبية لاكتشاف حالات الشراء/البيع المفرط.' }
     },
     'Volume_Spike_Agent': {
         en: { name: 'Volume Analysis', description: 'Monitors unusual volume activity to predict potential price movements.' },
-        ar: { name: 'ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø­Ø¬Ù…', description: 'ÙŠØ±Ø§Ù‚Ø¨ Ù†Ø´Ø§Ø· Ø§Ù„Ø­Ø¬Ù… ØºÙŠØ± Ø§Ù„Ù…Ø¹ØªØ§Ø¯ Ù„Ù„ØªÙ†Ø¨Ø¤ Ø¨ØªØ­Ø±ÙƒØ§Øª Ø§Ù„Ø£Ø³Ø¹Ø§Ø±.' }
+        ar: { name: 'تحليل الحجم', description: 'يراقب نشاط الحجم غير المعتاد للتنبؤ بتحركات الأسعار.' }
     },
     'Consensus': {
         en: { name: 'Consensus Signal', description: 'Weighted vote across all agents based on historical accuracy.' },
-        ar: { name: 'Ø¥Ø´Ø§Ø±Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹', description: 'ØªØµÙˆÙŠØª Ù…Ø±Ø¬Ø­ Ø¹Ø¨Ø± Ø¬Ù…ÙŠØ¹ Ø§Ù„ÙˆÙƒÙ„Ø§Ø¡ Ø¨Ù†Ø§Ø¡Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ø¯Ù‚Ø© Ø§Ù„ØªØ§Ø±ÙŠØ®ÙŠØ©.' }
+        ar: { name: 'إشارة الإجماع', description: 'تصويت مرجح عبر جميع الوكلاء بناءً على الدقة التاريخية.' }
     },
     'DCF_Valuation_Agent': {
         en: { name: 'DCF Valuation', description: 'Supplementary weekly discounted cash flow valuation signal.' },
-        ar: { name: 'ØªÙ‚ÙŠÙŠÙ… DCF', description: 'Ø¥Ø´Ø§Ø±Ø© ØªÙ‚ÙŠÙŠÙ… Ø¯Ø§Ø¹Ù…Ø© Ø£Ø³Ø¨ÙˆØ¹ÙŠØ© ØªØ¹ØªÙ…Ø¯ Ø¹Ù„Ù‰ Ø§Ù„ØªØ¯ÙÙ‚Ø§Øª Ø§Ù„Ù†Ù‚Ø¯ÙŠØ© Ø§Ù„Ù…Ø®ØµÙˆÙ…Ø©.' }
+        ar: { name: 'تقييم DCF', description: 'إشارة تقييم داعمة أسبوعية تعتمد على التدفقات النقدية المخصومة.' }
     },
 };
 
@@ -1200,7 +1200,7 @@ function applyLanguage() {
     document.body.classList.toggle('rtl', isArabic);
 
     // Update page title
-    document.title = isArabic ? 'Ø¥ÙƒØ³Ù…ÙˆØ± â€” Ù„ÙˆØ­Ø© Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª Ø§Ù„Ø°ÙƒÙŠØ© Ù„Ù„Ø£Ø³Ù‡Ù…' : 'Xmore â€” Market Intelligence Dashboard';
+    document.title = isArabic ? 'إكسمور — لوحة التنبؤات الذكية للأسهم' : 'Xmore — Market Intelligence Dashboard';
 
     const title = document.querySelector('header h1');
     const subtitle = document.querySelector('.subtitle');
@@ -1295,19 +1295,19 @@ function normalizeSearchValue(v) {
 
 function getGlobalSearchItems() {
     const tabItems = [
-        { en: 'Predictions', ar: 'Ø§Ù„ØªÙ†Ø¨Ø¤Ø§Øª', target: 'predictions', aliases: 'signals signal stocks ideas opportunities bullish bearish neutral forecast calls scanner screener Ø¥Ø´Ø§Ø±Ø§Øª ÙØ±Øµ Ø£ÙÙƒØ§Ø± Ø§Ù„Ø£Ø³Ù‡Ù… ØµØ¹ÙˆØ¯ Ù‡Ø¨ÙˆØ· Ø­ÙŠØ§Ø¯' },
-        { en: 'Consensus', ar: 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹', target: 'consensus', aliases: 'ranked ranking score calibrated confidence expected edge conviction agreement edge alpha what changed today freshness drift ØªØ±ØªÙŠØ¨ Ø¯Ø±Ø¬Ø© Ø§Ù„Ø«Ù‚Ø© Ø§Ù„Ø­Ø§ÙØ© Ø§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ Ø¥Ø¬Ù…Ø§Ø¹ Ø§Ù†Ø­Ø±Ø§Ù Ø­Ø¯Ø§Ø«Ø©' },
-        { en: 'DCF Valuation', ar: 'ØªÙ‚ÙŠÙŠÙ… DCF', target: 'consensus', aliases: 'discounted cash flow intrinsic valuation Ø§Ù„ØªØ¯ÙÙ‚Ø§Øª Ø§Ù„Ù†Ù‚Ø¯ÙŠØ© Ø§Ù„Ù…Ø®ØµÙˆÙ…Ø© ØªÙ‚ÙŠÙŠÙ… Ø¬ÙˆÙ‡Ø±ÙŠ' },
-        { en: 'Performance', ar: 'Ø§Ù„Ø£Ø¯Ø§Ø¡', target: 'performance', aliases: 'accuracy win rate drawdown benchmark returns track quality alpha stability Ø¯Ù‚Ø© Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø¹Ø§Ø¦Ø¯ Ù…Ø¤Ø´Ø± ÙÙˆØ² ØªØ±Ø§Ø¬Ø¹' },
-        { en: 'Trades', ar: 'Ø§Ù„ØµÙÙ‚Ø§Øª', target: 'trades', aliases: 'recommendations trade ideas entry target stop risk execution session ØªÙˆØµÙŠØ§Øª ØµÙÙ‚Ø§Øª Ø¯Ø®ÙˆÙ„ Ù‡Ø¯Ù Ø¥ÙŠÙ‚Ø§Ù Ø®Ø³Ø§Ø±Ø© ØªÙ†ÙÙŠØ°' },
-        { en: 'Portfolio', ar: 'Ø§Ù„Ù…Ø­ÙØ¸Ø©', target: 'portfolio', aliases: 'positions pnl profit loss holdings allocation exposure alerts Ø§Ù„Ù…Ø±Ø§ÙƒØ² Ø§Ù„Ø£Ø±Ø¨Ø§Ø­ Ø§Ù„Ø®Ø³Ø§Ø¦Ø± Ø§Ù„Ø­ÙŠØ§Ø²Ø§Øª ØªÙˆØ²ÙŠØ¹ ØªØ¹Ø±Ø¶ ØªÙ†Ø¨ÙŠÙ‡Ø§Øª' },
-        { en: 'Forecasts', ar: 'Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª', target: 'forecasts', aliases: 'scenario scenarios projected future simulation monte carlo probabilistic portfolio forecast Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆ Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆÙ‡Ø§Øª Ù…Ø­Ø§ÙƒØ§Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ø¨Ù„ Ø§Ø­ØªÙ…Ø§Ù„ÙŠ ØªÙˆÙ‚Ø¹ Ù…Ø­ÙØ¸Ø©' },
-        { en: 'Watchlist', ar: 'Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©', target: 'watchlist', aliases: 'favorites favourite saved stocks monitor tracking Ø§Ù„Ù…ÙØ¶Ù„Ø© Ù…ÙØ¶Ù„Ø§Øª Ù…Ø±Ø§Ù‚Ø¨Ø© ØªØªØ¨Ø¹ Ø£Ø³Ù‡Ù… Ù…Ø­ÙÙˆØ¸Ø©' },
-        { en: 'Results', ar: 'Ø§Ù„Ù†ØªØ§Ø¦Ø¬', target: 'results', aliases: 'evaluations actual realized outcomes backtest validation compare predicted actual ØªÙ‚ÙŠÙŠÙ… ØªØ­Ù‚Ù‚ Ù†ØªØ§Ø¦Ø¬ ÙØ¹Ù„ÙŠØ© Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ Ø§Ù„ÙØ¹Ù„ÙŠ' },
-        { en: 'Prices', ar: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±', target: 'prices', aliases: 'market prices last price volume quote quotes tape feed Ø³Ø¹Ø± Ø£Ø³Ø¹Ø§Ø± Ø­Ø¬Ù… ØªØ¯Ø§ÙˆÙ„ Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø³ÙˆÙ‚' },
-        { en: 'Time Machine', ar: 'Ø¢Ù„Ø© Ø§Ù„Ø²Ù…Ù†', target: 'timemachine', aliases: 'what if back in time historical simulate past future path investment timeline Ù…Ø§Ø°Ø§ Ù„Ùˆ Ù…Ø§Ø¶ÙŠ ØªØ§Ø±ÙŠØ®ÙŠ Ù…Ø­Ø§ÙƒØ§Ø© Ø§Ù„Ø§Ø³ØªØ«Ù…Ø§Ø± Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø²Ù…Ù†ÙŠ' },
-        { en: 'Rates', ar: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø¹Ø§Ù„Ù…ÙŠØ©', target: 'rates', aliases: 'usd egp fx dollar gold 24k 21k 18k pound currency macro rates foreign exchange Ø¯ÙˆÙ„Ø§Ø± Ø¬Ù†ÙŠÙ‡ Ø°Ù‡Ø¨ 24 21 18 Ø¬Ù†ÙŠÙ‡ Ø°Ù‡Ø¨ Ø¹Ù…Ù„Ø§Øª ÙÙˆØ±ÙƒØ³ Ù…Ø§ÙƒØ±Ùˆ' },
-        { en: 'ETFs', ar: 'ØµÙ†Ø§Ø¯ÙŠÙ‚ Ø§Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±', target: 'etf', aliases: 'ETF ETP exchange traded fund exchange-traded fund fund ØµÙ†Ø¯ÙˆÙ‚ Ù…Ø¤Ø´Ø±Ø§Øª ØµÙ†Ø§Ø¯ÙŠÙ‚ Ø§Ù„Ù…Ø¤Ø´Ø±Ø§Øª ØµÙ†Ø§Ø¯ÙŠÙ‚ Ù…ØªØ¯Ø§ÙˆÙ„Ø©' },
+        { en: 'Predictions', ar: 'التنبؤات', target: 'predictions', aliases: 'signals signal stocks ideas opportunities bullish bearish neutral forecast calls scanner screener إشارات فرص أفكار الأسهم صعود هبوط حياد' },
+        { en: 'Consensus', ar: 'الإجماع', target: 'consensus', aliases: 'ranked ranking score calibrated confidence expected edge conviction agreement edge alpha what changed today freshness drift ترتيب درجة الثقة الحافة العائد المتوقع إجماع انحراف حداثة' },
+        { en: 'DCF Valuation', ar: 'تقييم DCF', target: 'consensus', aliases: 'discounted cash flow intrinsic valuation التدفقات النقدية المخصومة تقييم جوهري' },
+        { en: 'Performance', ar: 'الأداء', target: 'performance', aliases: 'accuracy win rate drawdown benchmark returns track quality alpha stability دقة الأداء عائد مؤشر فوز تراجع' },
+        { en: 'Trades', ar: 'الصفقات', target: 'trades', aliases: 'recommendations trade ideas entry target stop risk execution session توصيات صفقات دخول هدف إيقاف خسارة تنفيذ' },
+        { en: 'Portfolio', ar: 'المحفظة', target: 'portfolio', aliases: 'positions pnl profit loss holdings allocation exposure alerts المراكز الأرباح الخسائر الحيازات توزيع تعرض تنبيهات' },
+        { en: 'Forecasts', ar: 'التوقعات', target: 'forecasts', aliases: 'scenario scenarios projected future simulation monte carlo probabilistic portfolio forecast سيناريو سيناريوهات محاكاة المستقبل احتمالي توقع محفظة' },
+        { en: 'Watchlist', ar: 'المتابعة', target: 'watchlist', aliases: 'favorites favourite saved stocks monitor tracking المفضلة مفضلات مراقبة تتبع أسهم محفوظة' },
+        { en: 'Results', ar: 'النتائج', target: 'results', aliases: 'evaluations actual realized outcomes backtest validation compare predicted actual تقييم تحقق نتائج فعلية مقارنة المتوقع الفعلي' },
+        { en: 'Prices', ar: 'الأسعار', target: 'prices', aliases: 'market prices last price volume quote quotes tape feed سعر أسعار حجم تداول أسعار السوق' },
+        { en: 'Time Machine', ar: 'آلة الزمن', target: 'timemachine', aliases: 'what if back in time historical simulate past future path investment timeline ماذا لو ماضي تاريخي محاكاة الاستثمار الجدول الزمني' },
+        { en: 'Rates', ar: 'الأسعار العالمية', target: 'rates', aliases: 'usd egp fx dollar gold 24k 21k 18k pound currency macro rates foreign exchange دولار جنيه ذهب 24 21 18 جنيه ذهب عملات فوركس ماكرو' },
+        { en: 'ETFs', ar: 'صناديق الاستثمار', target: 'etf', aliases: 'ETF ETP exchange traded fund exchange-traded fund fund صندوق مؤشرات صناديق المؤشرات صناديق متداولة' },
     ].map(item => {
         const enLabel = item.en;
         const arLabel = item.ar;
@@ -1321,12 +1321,12 @@ function getGlobalSearchItems() {
     });
 
     const pageItems = [
-        { en: 'Home', ar: 'Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©', target: '/', aliases: 'dashboard xmore home main start Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ… Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© Ø¨Ø¯Ø§ÙŠØ©' },
-        { en: 'Docs', ar: 'Ø§Ù„ØªÙˆØ«ÙŠÙ‚', target: '/docs', aliases: 'features benefits product overview public docs documentation sales page capabilities Ù…Ù…ÙŠØ²Ø§Øª ÙÙˆØ§Ø¦Ø¯ Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„ØªÙˆØ«ÙŠÙ‚ Ø§Ù„Ø¹Ø§Ù…' },
-        { en: 'Track Record', ar: 'Ø³Ø¬Ù„ Ø§Ù„Ø£Ø¯Ø§Ø¡', target: '/track-record', aliases: 'verified record proof audit performance history returns transparency Ø³Ø¬Ù„ Ø§Ù„Ø£Ø¯Ø§Ø¡ ØªØ­Ù‚Ù‚ Ø³Ø¬Ù„ ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¹ÙˆØ§Ø¦Ø¯ Ø´ÙØ§ÙÙŠØ©' },
-        { en: 'Session', ar: 'ØµÙØ­Ø© Ø§Ù„Ø¬Ù„Ø³Ø©', target: '/session', aliases: 'market session live session daily pulse opening bell close intraday Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ø³ÙˆÙ‚ Ø§Ù„ÙŠÙˆÙ… Ø¯Ø§Ø®Ù„ Ø§Ù„Ø¬Ù„Ø³Ø© Ù„Ø­Ø¸ÙŠ' },
-        { en: 'Pro', ar: 'Ø¨Ø±Ùˆ', target: '/pro', aliases: 'premium professional advanced institutional workflow Ø§Ø­ØªØ±Ø§ÙÙŠ Ù…ØªÙ‚Ø¯Ù… Ù…Ø­ØªØ±Ù Ø³ÙŠØ± Ø¹Ù…Ù„' },
-        { en: 'Landing', ar: 'Ø§Ù„ØµÙØ­Ø© Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠØ©', target: '/landing', aliases: 'landing overview intro marketing product story value proposition ØµÙØ­Ø© ØªØ¹Ø±ÙŠÙÙŠØ© ØªØ¹Ø±Ù Ø§Ù„Ù…Ù†ØªØ¬ Ø§Ù„Ù‚ÙŠÙ…Ø©' },
+        { en: 'Home', ar: 'الرئيسية', target: '/', aliases: 'dashboard xmore home main start لوحة التحكم الرئيسية بداية' },
+        { en: 'Docs', ar: 'التوثيق', target: '/docs', aliases: 'features benefits product overview public docs documentation sales page capabilities مميزات فوائد نظرة عامة المنتج التوثيق العام' },
+        { en: 'Track Record', ar: 'سجل الأداء', target: '/track-record', aliases: 'verified record proof audit performance history returns transparency سجل الأداء تحقق سجل تاريخ العوائد شفافية' },
+        { en: 'Session', ar: 'صفحة الجلسة', target: '/session', aliases: 'market session live session daily pulse opening bell close intraday الجلسة السوق اليوم داخل الجلسة لحظي' },
+        { en: 'Pro', ar: 'برو', target: '/pro', aliases: 'premium professional advanced institutional workflow احترافي متقدم محترف سير عمل' },
+        { en: 'Landing', ar: 'الصفحة التعريفية', target: '/landing', aliases: 'landing overview intro marketing product story value proposition صفحة تعريفية تعرف المنتج القيمة' },
     ].map(item => ({
         type: 'page',
         target: item.target,
@@ -1341,7 +1341,7 @@ function getGlobalSearchItems() {
         return {
             type: 'stock',
             symbol,
-            label: `${symbol} â€” ${currentLang === 'ar' ? arName : enName}`,
+            label: `${symbol} — ${currentLang === 'ar' ? arName : enName}`,
             searchText: normalizeSearchValue(`${symbol} ${enName} ${arName}`)
         };
     });
@@ -1528,7 +1528,7 @@ function applyFrontendTabVisibility() {
     let hidden = new Set();
     try { hidden = new Set(JSON.parse(localStorage.getItem(FRONTEND_HIDDEN_TABS_KEY) || '[]')); }
     catch (_) {}
-    // 'predictions' is always visible â€” remove it from the hidden set as a safety guard
+    // 'predictions' is always visible — remove it from the hidden set as a safety guard
     hidden.delete('predictions');
     document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
         const tabId = btn.getAttribute('data-tab');
@@ -1580,44 +1580,44 @@ function initTabs() {
 
 const COMPANY_NAMES = {
     // US Stocks
-    'AAPL': { en: 'Apple Inc.', ar: 'Ø´Ø±ÙƒØ© Ø£Ø¨Ù„' },
-    'GOOGL': { en: 'Alphabet Inc. (Google)', ar: 'Ø£Ù„ÙØ§Ø¨Øª (Ø¬ÙˆØ¬Ù„)' },
-    'MSFT': { en: 'Microsoft Corporation', ar: 'Ø´Ø±ÙƒØ© Ù…Ø§ÙŠÙƒØ±ÙˆØ³ÙˆÙØª' },
-    'AMZN': { en: 'Amazon.com Inc.', ar: 'Ø´Ø±ÙƒØ© Ø£Ù…Ø§Ø²ÙˆÙ†' },
-    'META': { en: 'Meta Platforms Inc.', ar: 'Ø´Ø±ÙƒØ© Ù…ÙŠØªØ§' },
-    'TSLA': { en: 'Tesla Inc.', ar: 'Ø´Ø±ÙƒØ© ØªØ³Ù„Ø§' },
-    'NVDA': { en: 'NVIDIA Corporation', ar: 'Ø´Ø±ÙƒØ© Ø¥Ù†ÙÙŠØ¯ÙŠØ§' },
-    'JPM': { en: 'JPMorgan Chase & Co.', ar: 'Ø¬ÙŠ Ø¨ÙŠ Ù…ÙˆØ±ØºØ§Ù†' },
-    'V': { en: 'Visa Inc.', ar: 'Ø´Ø±ÙƒØ© ÙÙŠØ²Ø§' },
-    'JNJ': { en: 'Johnson & Johnson', ar: 'Ø¬ÙˆÙ†Ø³ÙˆÙ† Ø¢Ù†Ø¯ Ø¬ÙˆÙ†Ø³ÙˆÙ†' },
-    'WMT': { en: 'Walmart Inc.', ar: 'Ø´Ø±ÙƒØ© ÙˆÙˆÙ„Ù…Ø§Ø±Øª' },
-    'XOM': { en: 'Exxon Mobil Corporation', ar: 'Ø¥ÙƒØ³ÙˆÙ† Ù…ÙˆØ¨ÙŠÙ„' },
-    'BAC': { en: 'Bank of America Corp.', ar: 'Ø¨Ù†Ùƒ Ø£ÙˆÙ Ø£Ù…Ø±ÙŠÙƒØ§' },
-    'PG': { en: 'Procter & Gamble Co.', ar: 'Ø¨Ø±ÙˆÙƒØªØ± Ø¢Ù†Ø¯ ØºØ§Ù…Ø¨Ù„' },
-    'HD': { en: 'The Home Depot Inc.', ar: 'Ù‡ÙˆÙ… Ø¯ÙŠØ¨ÙˆØª' },
+    'AAPL': { en: 'Apple Inc.', ar: 'شركة أبل' },
+    'GOOGL': { en: 'Alphabet Inc. (Google)', ar: 'ألفابت (جوجل)' },
+    'MSFT': { en: 'Microsoft Corporation', ar: 'شركة مايكروسوفت' },
+    'AMZN': { en: 'Amazon.com Inc.', ar: 'شركة أمازون' },
+    'META': { en: 'Meta Platforms Inc.', ar: 'شركة ميتا' },
+    'TSLA': { en: 'Tesla Inc.', ar: 'شركة تسلا' },
+    'NVDA': { en: 'NVIDIA Corporation', ar: 'شركة إنفيديا' },
+    'JPM': { en: 'JPMorgan Chase & Co.', ar: 'جي بي مورغان' },
+    'V': { en: 'Visa Inc.', ar: 'شركة فيزا' },
+    'JNJ': { en: 'Johnson & Johnson', ar: 'جونسون آند جونسون' },
+    'WMT': { en: 'Walmart Inc.', ar: 'شركة وولمارت' },
+    'XOM': { en: 'Exxon Mobil Corporation', ar: 'إكسون موبيل' },
+    'BAC': { en: 'Bank of America Corp.', ar: 'بنك أوف أمريكا' },
+    'PG': { en: 'Procter & Gamble Co.', ar: 'بروكتر آند غامبل' },
+    'HD': { en: 'The Home Depot Inc.', ar: 'هوم ديبوت' },
     // EGX Stocks (Egyptian Exchange)
-    'COMI.CA': { en: 'Commercial International Bank CIB', ar: 'Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„ØªØ¬Ø§Ø±ÙŠ Ø§Ù„Ø¯ÙˆÙ„ÙŠ' },
-    'HRHO.CA': { en: 'EFG Holding Hermes', ar: 'Ù‡ÙŠØ±Ù…ÙŠØ³ Ø§Ù„Ù‚Ø§Ø¨Ø¶Ø©' },
-    'FWRY.CA': { en: 'Fawry Banking Technology', ar: 'ÙÙˆØ±ÙŠ Ù„ØªÙƒÙ†ÙˆÙ„ÙˆØ¬ÙŠØ§ Ø§Ù„Ø¨Ù†ÙˆÙƒ' },
-    'TMGH.CA': { en: 'Talaat Moustafa Group', ar: 'Ù…Ø¬Ù…ÙˆØ¹Ø© Ø·Ù„Ø¹Øª Ù…ØµØ·ÙÙ‰' },
-    'ORAS.CA': { en: 'Orascom Construction', ar: 'Ø£ÙˆØ±Ø§Ø³ÙƒÙˆÙ… Ù„Ù„Ø¥Ù†Ø´Ø§Ø¡Ø§Øª' },
-    'PHDC.CA': { en: 'Palm Hills Development', ar: 'Ø¨Ø§Ù„Ù… Ù‡ÙŠÙ„Ø² Ù„Ù„ØªØ¹Ù…ÙŠØ±' },
-    'MNHD.CA': { en: 'Madinet Nasr Housing', ar: 'Ù…Ø¯ÙŠÙ†Ø© Ù†ØµØ± Ù„Ù„Ø¥Ø³ÙƒØ§Ù†' },
-    'OCDI.CA': { en: 'Orascom Development', ar: 'Ø£ÙˆØ±Ø§Ø³ÙƒÙˆÙ… Ù„Ù„ØªÙ†Ù…ÙŠØ©' },
-    'SWDY.CA': { en: 'El Sewedy Electric', ar: 'Ø§Ù„Ø³ÙˆÙŠØ¯ÙŠ Ø¥Ù„ÙŠÙƒØªØ±ÙŠÙƒ' },
-    'EAST.CA': { en: 'Eastern Company Tobacco', ar: 'Ø§Ù„Ø´Ø±Ù‚ÙŠØ© Ù„Ù„Ø¯Ø®Ø§Ù†' },
-    'EFIH.CA': { en: 'Egyptian Financial Industrial', ar: 'Ø§Ù„Ù…ØµØ±ÙŠØ© Ø§Ù„Ù…Ø§Ù„ÙŠØ© Ø§Ù„ØµÙ†Ø§Ø¹ÙŠØ©' },
-    'ESRS.CA': { en: 'Ezz Steel', ar: 'Ø­Ø¯ÙŠØ¯ Ø¹Ø²' },
-    'ETEL.CA': { en: 'Telecom Egypt', ar: 'Ø§Ù„Ù…ØµØ±ÙŠØ© Ù„Ù„Ø§ØªØµØ§Ù„Ø§Øª' },
-    'EMFD.CA': { en: 'E-Finance Digital', ar: 'Ø¥ÙŠ ÙØ§ÙŠÙ†Ø§Ù†Ø³' },
-    'ALCN.CA': { en: 'Alexandria Container Cargo', ar: 'Ø§Ù„Ø¥Ø³ÙƒÙ†Ø¯Ø±ÙŠØ© Ù„Ù„Ø­Ø§ÙˆÙŠØ§Øª' },
-    'ABUK.CA': { en: 'Abu Qir Fertilizers', ar: 'Ø£Ø¨Ùˆ Ù‚ÙŠØ± Ù„Ù„Ø£Ø³Ù…Ø¯Ø©' },
-    'MFPC.CA': { en: 'Misr Fertilizers MOPCO', ar: 'Ù…ÙˆØ¨ÙƒÙˆ Ù„Ù„Ø£Ø³Ù…Ø¯Ø©' },
-    'SKPC.CA': { en: 'Sidi Kerir Petrochemicals', ar: 'Ø³ÙŠØ¯ÙŠ ÙƒØ±ÙŠØ± Ù„Ù„Ø¨ØªØ±ÙˆÙƒÙŠÙ…Ø§ÙˆÙŠØ§Øª' },
-    'JUFO.CA': { en: 'Juhayna Food Industries', ar: 'Ø¬Ù‡ÙŠÙ†Ø© Ù„Ù„ØµÙ†Ø§Ø¹Ø§Øª Ø§Ù„ØºØ°Ø§Ø¦ÙŠØ©' },
-    'CCAP.CA': { en: 'Cleopatra Hospital', ar: 'Ù…Ø³ØªØ´ÙÙ‰ ÙƒÙ„ÙŠÙˆØ¨Ø§ØªØ±Ø§' },
-    'ORWE.CA': { en: 'Oriental Weavers', ar: 'Ø§Ù„Ø³Ø¬Ø§Ø¯ Ø§Ù„Ø´Ø±Ù‚ÙŠ' },
-    'AMOC.CA': { en: 'Alexandria Mineral Oils', ar: 'Ø£Ù…ÙˆÙƒ Ù„Ù„Ø²ÙŠÙˆØª Ø§Ù„Ù…Ø¹Ø¯Ù†ÙŠØ©' },
+    'COMI.CA': { en: 'Commercial International Bank CIB', ar: 'البنك التجاري الدولي' },
+    'HRHO.CA': { en: 'EFG Holding Hermes', ar: 'هيرميس القابضة' },
+    'FWRY.CA': { en: 'Fawry Banking Technology', ar: 'فوري لتكنولوجيا البنوك' },
+    'TMGH.CA': { en: 'Talaat Moustafa Group', ar: 'مجموعة طلعت مصطفى' },
+    'ORAS.CA': { en: 'Orascom Construction', ar: 'أوراسكوم للإنشاءات' },
+    'PHDC.CA': { en: 'Palm Hills Development', ar: 'بالم هيلز للتعمير' },
+    'MNHD.CA': { en: 'Madinet Nasr Housing', ar: 'مدينة نصر للإسكان' },
+    'OCDI.CA': { en: 'Orascom Development', ar: 'أوراسكوم للتنمية' },
+    'SWDY.CA': { en: 'El Sewedy Electric', ar: 'السويدي إليكتريك' },
+    'EAST.CA': { en: 'Eastern Company Tobacco', ar: 'الشرقية للدخان' },
+    'EFIH.CA': { en: 'Egyptian Financial Industrial', ar: 'المصرية المالية الصناعية' },
+    'ESRS.CA': { en: 'Ezz Steel', ar: 'حديد عز' },
+    'ETEL.CA': { en: 'Telecom Egypt', ar: 'المصرية للاتصالات' },
+    'EMFD.CA': { en: 'E-Finance Digital', ar: 'إي فاينانس' },
+    'ALCN.CA': { en: 'Alexandria Container Cargo', ar: 'الإسكندرية للحاويات' },
+    'ABUK.CA': { en: 'Abu Qir Fertilizers', ar: 'أبو قير للأسمدة' },
+    'MFPC.CA': { en: 'Misr Fertilizers MOPCO', ar: 'موبكو للأسمدة' },
+    'SKPC.CA': { en: 'Sidi Kerir Petrochemicals', ar: 'سيدي كرير للبتروكيماويات' },
+    'JUFO.CA': { en: 'Juhayna Food Industries', ar: 'جهينة للصناعات الغذائية' },
+    'CCAP.CA': { en: 'Cleopatra Hospital', ar: 'مستشفى كليوباترا' },
+    'ORWE.CA': { en: 'Oriental Weavers', ar: 'السجاد الشرقي' },
+    'AMOC.CA': { en: 'Alexandria Mineral Oils', ar: 'أموك للزيوت المعدنية' },
 };
 
 function getCompanyName(symbol) {
@@ -1687,11 +1687,11 @@ function getSentimentBadge(symbol) {
     const displayLabel = t(label) || sentiment.sentiment_label;
     const score = sentiment.avg_sentiment ? sentiment.avg_sentiment.toFixed(2) : '0.00';
     return `<span class="sentiment-badge sentiment-${label} sentiment-badge-clickable"
-        title="Score: ${score} â€” Click for details"
+        title="Score: ${score} — Click for details"
         onclick="showSentimentEvidence('${symbol}')">${displayLabel}</span>`;
 }
 
-// â”€â”€ Sentiment Evidence Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Sentiment Evidence Modal ──────────────────────────────────────────────────
 
 async function showSentimentEvidence(symbol) {
     const modal = document.getElementById('sentimentModal');
@@ -1940,7 +1940,7 @@ async function loadIntelligencePulse() {
 
         const signalLines = (changesData.signal_changes || []).slice(0, 4).map(item => {
             const signalText = item.signal_changed
-                ? `${item.current_signal} ${t('fromLabel')} ${item.previous_signal || 'â€”'}`
+                ? `${item.current_signal} ${t('fromLabel')} ${item.previous_signal || '—'}`
                 : `${item.current_signal} | ${t('expectedEdgeLabel')} ${Number(item.current_expected_edge_pct || 0).toFixed(2)}%`;
             const deltaClass = Number(item.edge_delta_pct || 0) >= 0 ? 'change-delta-pos' : 'change-delta-neg';
             return `
@@ -1950,7 +1950,7 @@ async function loadIntelligencePulse() {
                         <span class="quality-pill ${item.signal_changed ? 'quality-pill-watch' : 'quality-pill-fresh'}">${t('signalsLabel')}</span>
                     </div>
                     <div class="change-line-meta">${signalText}</div>
-                    <div class="change-line-meta ${deltaClass}">${t('expectedEdgeLabel')}: ${Number(item.current_expected_edge_pct || 0).toFixed(2)}% | Î” ${Number(item.edge_delta_pct || 0).toFixed(2)}%</div>
+                    <div class="change-line-meta ${deltaClass}">${t('expectedEdgeLabel')}: ${Number(item.current_expected_edge_pct || 0).toFixed(2)}% | Δ ${Number(item.edge_delta_pct || 0).toFixed(2)}%</div>
                 </div>
             `;
         });
@@ -1964,7 +1964,7 @@ async function loadIntelligencePulse() {
                         <span class="quality-pill quality-pill-unknown">${t('forecastsLabel')}</span>
                     </div>
                     <div class="change-line-meta">${item.portfolio_name}</div>
-                    <div class="change-line-meta ${deltaClass}">${Number(item.current_expected_return_pct || 0).toFixed(2)}% | Î” ${Number(item.delta_expected_return_pct || 0).toFixed(2)}%</div>
+                    <div class="change-line-meta ${deltaClass}">${Number(item.current_expected_return_pct || 0).toFixed(2)}% | Δ ${Number(item.delta_expected_return_pct || 0).toFixed(2)}%</div>
                 </div>
             `;
         });
@@ -1978,7 +1978,7 @@ async function loadIntelligencePulse() {
                         <span class="quality-pill quality-pill-unknown">${t('macroLabel')}</span>
                     </div>
                     <div class="change-line-meta">${item.previous == null ? `${item.current}` : `${item.current} ${t('fromLabel')} ${item.previous}`}</div>
-                    ${item.delta == null ? '' : `<div class="change-line-meta ${deltaClass}">Î” ${Number(item.delta).toFixed(2)}</div>`}
+                    ${item.delta == null ? '' : `<div class="change-line-meta ${deltaClass}">Δ ${Number(item.delta).toFixed(2)}</div>`}
                 </div>
             `;
         });
@@ -1993,7 +1993,7 @@ async function loadIntelligencePulse() {
                     <span class="quality-line-label">${key.replace(/_/g, ' ')}</span>
                     <span class="quality-pill quality-pill-${String(item.status || 'unknown').toLowerCase()}">${qualityTextLabel(item.status)}</span>
                 </div>
-                <div class="quality-line-meta">${t('freshnessLabel')}: ${item.age_hours == null ? 'â€”' : `${item.age_hours.toFixed(1)}h`}</div>
+                <div class="quality-line-meta">${t('freshnessLabel')}: ${item.age_hours == null ? '—' : `${item.age_hours.toFixed(1)}h`}</div>
             </div>
         `);
 
@@ -2054,8 +2054,8 @@ async function loadRegimeBanner() {
                     distHtml = `
                         <span class="regime-sep">|</span>
                         <span class="regime-dist">
-                            <span class="regime-dist-buy">â†‘ ${buyPct}%</span>
-                            <span class="regime-dist-sell">â†“ ${sellPct}%</span>
+                            <span class="regime-dist-buy">↑ ${buyPct}%</span>
+                            <span class="regime-dist-sell">↓ ${sellPct}%</span>
                             <span class="regime-dist-label">${t('signalMix30d') || '30d signals'}</span>
                         </span>
                     `;
@@ -2068,7 +2068,7 @@ async function loadRegimeBanner() {
             <span class="regime-label">${t('marketRegime') || 'Market Regime'}:</span>
             <span class="regime-value ${regimeClass}">${currentRegime}</span>
             ${distHtml}
-            <a href="/track-record#regime" class="regime-link">${t('viewFullAnalysis') || 'Full Analysis â†’'}</a>
+            <a href="/track-record#regime" class="regime-link">${t('viewFullAnalysis') || 'Full Analysis →'}</a>
         `;
         el.style.display = 'flex';
     } catch (_) {}
@@ -2364,7 +2364,7 @@ function renderPredictionTable(grouped, symbols, tableId) {
                         `).join('')}
                     </div>
                     <div class="why-signal-btn-row">
-                        <button class="perf-action-btn why-signal-btn" onclick="showWhySignal('${symbol}','${consensusKey}')">ðŸ’¡ Insight</button>
+                        <button class="perf-action-btn why-signal-btn" onclick="showWhySignal('${symbol}','${consensusKey}')">💡 Insight</button>
                     </div>
                 </td>
             </tr>
@@ -2440,7 +2440,7 @@ function resetScreener() {
 }
 
 // ============================================
-// LOAD PERFORMANCE (basic â€” existing endpoint)
+// LOAD PERFORMANCE (basic — existing endpoint)
 // ============================================
 
 async function loadPerformance() {
@@ -2956,26 +2956,26 @@ async function loadConsensus() {
     }
 }
 
-// â”€â”€â”€ Universal Investor Scoring Panel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Universal Investor Scoring Panel ───────────────────────────────────────
 
 let _currentScoringMode = 'standard_100';
 
 const SCORING_MODE_LABELS = {
     en: {
-        xmore_native: 'Xmore (0â€“1)',
-        standard_100: 'Score (0â€“100)',
+        xmore_native: 'Xmore (0–1)',
+        standard_100: 'Score (0–100)',
         letter_grade: 'Grade',
         stars:        'Stars',
         signal_tier:  'Tier',
         conviction:   'Conviction',
     },
     ar: {
-        xmore_native: 'Xmore (0â€“1)',
-        standard_100: 'Ø¯Ø±Ø¬Ø© (0â€“100)',
-        letter_grade: 'ØªÙ‚Ø¯ÙŠØ±',
-        stars:        'Ù†Ø¬ÙˆÙ…',
-        signal_tier:  'Ù…Ø³ØªÙˆÙ‰',
-        conviction:   'Ø§Ù‚ØªÙ†Ø§Ø¹',
+        xmore_native: 'Xmore (0–1)',
+        standard_100: 'درجة (0–100)',
+        letter_grade: 'تقدير',
+        stars:        'نجوم',
+        signal_tier:  'مستوى',
+        conviction:   'اقتناع',
     },
 };
 
@@ -3020,8 +3020,8 @@ function buildScoringPanelHTML(data) {
 
     const rows = signals.map(sig => {
         const sc   = sig.scores || {};
-        const val  = sc[_currentScoringMode] !== undefined ? sc[_currentScoringMode] : 'â€”';
-        const disp = _currentScoringMode === 'stars' ? 'â˜…'.repeat(Math.round(val)) + ' ' + val : val;
+        const val  = sc[_currentScoringMode] !== undefined ? sc[_currentScoringMode] : '—';
+        const disp = _currentScoringMode === 'stars' ? '★'.repeat(Math.round(val)) + ' ' + val : val;
         const comp = sig.components || {};
         return `<tr class="scoring-row${sig.meets_threshold ? ' scoring-above-threshold' : ''}">
             <td data-label="${colLabels.stock}" class="scoring-symbol">${sig.symbol}</td>
@@ -3035,7 +3035,7 @@ function buildScoringPanelHTML(data) {
                     <span class="scoring-bar-seg scoring-bar-momentum"  style="width:${(comp.momentum||0)*100}%"></span>
                 </div>
             </td>
-            <td data-label="${colLabels.threshold}" class="scoring-threshold">${sig.meets_threshold ? 'âœ“' : ''}</td>
+            <td data-label="${colLabels.threshold}" class="scoring-threshold">${sig.meets_threshold ? '✓' : ''}</td>
         </tr>`;
     }).join('');
 
@@ -3096,16 +3096,16 @@ function renderConsensusCard(item) {
 
     // Risk action badge class
     let riskBadgeClass = 'risk-badge-pass';
-    let riskBadgeText = 'âœ“ PASS';
+    let riskBadgeText = '✓ PASS';
     if (riskAction === 'BLOCK') {
         riskBadgeClass = 'risk-badge-block';
-        riskBadgeText = 'ðŸš« BLOCK';
+        riskBadgeText = '🚫 BLOCK';
     } else if (riskAction === 'DOWNGRADE') {
         riskBadgeClass = 'risk-badge-downgrade';
-        riskBadgeText = 'â¬‡ DOWNGRADE';
+        riskBadgeText = '⬇ DOWNGRADE';
     } else if (riskAction === 'FLAG') {
         riskBadgeClass = 'risk-badge-flag';
-        riskBadgeText = 'âš ï¸ FLAG';
+        riskBadgeText = '⚠️ FLAG';
     }
 
     return `
@@ -3117,7 +3117,7 @@ function renderConsensusCard(item) {
             </div>
             <div class="consensus-card-signal">
                 <span class="consensus-signal-badge signal-${signalKey}">${signalText}</span>
-                ${riskAdjusted ? '<span class="risk-adjusted-badge" title="Risk-adjusted">âš ï¸</span>' : ''}
+                ${riskAdjusted ? '<span class="risk-adjusted-badge" title="Risk-adjusted">⚠️</span>' : ''}
             </div>
         </div>
 
@@ -3142,14 +3142,14 @@ function renderConsensusCard(item) {
             <!-- Bull/Bear Bars -->
             <div class="bull-bear-section">
                 <div class="bull-bear-row">
-                    <span class="bb-label">ðŸ‚ ${t('bullCase')}</span>
+                    <span class="bb-label">🐂 ${t('bullCase')}</span>
                     <div class="bb-bar-container">
                         <div class="bb-bar bb-bull" style="width: ${bullScore}%"></div>
                     </div>
                     <span class="bb-score">${bullScore}</span>
                 </div>
                 <div class="bull-bear-row">
-                    <span class="bb-label">ðŸ» ${t('bearCase')}</span>
+                    <span class="bb-label">🐻 ${t('bearCase')}</span>
                     <div class="bb-bar-container">
                         <div class="bb-bar bb-bear" style="width: ${bearScore}%"></div>
                     </div>
@@ -3177,7 +3177,7 @@ function renderConsensusCard(item) {
     </div>`;
 }
 
-// â”€â”€ Why This Signal? Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Why This Signal? Modal ────────────────────────────────────────────────────
 
 async function showWhySignal(symbol, signal) {
     const modal   = document.getElementById('whySignalModal');
@@ -3190,7 +3190,7 @@ async function showWhySignal(symbol, signal) {
     if (!modal) return;
 
     // Reset and show modal
-    title.textContent = `ðŸ’¡ Insight â€” ${symbol}`;
+    title.textContent = `💡 Insight — ${symbol}`;
     loading.style.display = '';
     content.style.display = 'none';
     expl.innerHTML = '';
@@ -3214,7 +3214,7 @@ async function showWhySignal(symbol, signal) {
                 data.sources.map(s => {
                     const meta    = s.source_meta || {};
                     const label   = meta.filename || meta.headline || `Chunk ${s.chunk_index || ''}`;
-                    const subline = meta.date ? ` Â· ${meta.date}` : '';
+                    const subline = meta.date ? ` · ${meta.date}` : '';
                     const pct     = s.similarity != null ? ` (${(s.similarity * 100).toFixed(0)}% match)` : '';
                     return `<div class="why-source-item"><span class="why-source-type">${s.source_type || ''}</span> ${label}${subline}${pct}</div>`;
                 }).join('');
@@ -3232,7 +3232,7 @@ function closeWhyModal() {
     if (modal) modal.style.display = 'none';
 }
 
-// â”€â”€ ETF Fund Intelligence Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── ETF Fund Intelligence Dashboard ────────────────────────────────────────────
 
 let etfLoaded = false;
 let _etfAllInstruments = [];
@@ -3243,21 +3243,21 @@ let _etfCurrentView = 'grid';
 const _ETP_TYPES = new Set(['GOLD_ETP','INDEX_TRACKER','STRUCTURED_NOTE','ETN','UNKNOWN_ETP','ETP','COMMODITY_ETP']);
 
 function _fmtPct(val) {
-    if (val == null) return 'â€”';
+    if (val == null) return '—';
     const n = parseFloat(val);
-    if (isNaN(n)) return 'â€”';
+    if (isNaN(n)) return '—';
     return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 }
 function _fmtNum(val, decimals = 2) {
-    if (val == null) return 'â€”';
+    if (val == null) return '—';
     const n = parseFloat(val);
-    if (isNaN(n)) return 'â€”';
+    if (isNaN(n)) return '—';
     return n.toFixed(decimals);
 }
 function _pdLabel(val) {
-    if (val == null) return 'â€”';
+    if (val == null) return '—';
     const n = parseFloat(val);
-    if (isNaN(n)) return 'â€”';
+    if (isNaN(n)) return '—';
     return (n >= 0 ? '+' : '') + (n * 100).toFixed(2) + '%';
 }
 function _pdClass(val) {
@@ -3368,7 +3368,7 @@ function _etfBuildCard(i, group) {
     const pctCls = _pctClass(i.pct_change);
 
     if (group === 'global-etfs') {
-        const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : 'â€”';
+        const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
         return `<div class="etf-card" onclick="showEtf${t('etfHoldings')}('${i.symbol}')">
             <div class="etf-card-header">
                 <div class="etf-card-symbol-row">
@@ -3388,8 +3388,8 @@ function _etfBuildCard(i, group) {
     }
 
     if (group === 'etps') {
-        const underlying = i.underlying_index || 'â€”';
-        const issuer = i.issuer || 'â€”';
+        const underlying = i.underlying_index || '—';
+        const issuer = i.issuer || '—';
         const navVal  = _fmtNum(i.nav_value);
         const ret3m   = _fmtPct(i.pct_change);   // stored as 3-month return from EGX data
         const ret3mCls = _pctClass(i.pct_change);
@@ -3437,11 +3437,11 @@ function _etfBuildTable(instruments, group) {
         rowFn = i => {
             const pct = _fmtPct(i.pct_change);
             const pctCls = _pctClass(i.pct_change);
-            const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : 'â€”';
+            const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
             return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
                 ${cell(headers[0], `<strong>${i.symbol}</strong>`)}
-                ${cell(headers[1], `<span style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'â€”'}</span>`)}
-                ${cell(headers[2], i.exchange||'â€”', 'cell-muted')}
+                ${cell(headers[1], `<span style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
+                ${cell(headers[2], i.exchange||'—', 'cell-muted')}
                 ${cell(headers[3], egyptPct)}
                 ${cell(headers[4], _fmtNum(i.close_price||i.last_price))}
                 ${cell(headers[5], pct, pctCls)}
@@ -3455,9 +3455,9 @@ function _etfBuildTable(instruments, group) {
             const pctCls = _pctClass(i.pct_change);
             return `<tr>
                 ${cell(headers[0], `<strong>${i.symbol}</strong> ${_typeBadge(i.type)}`)}
-                ${cell(headers[1], `<span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'â€”'}</span>`)}
-                ${cell(headers[2], i.issuer||'â€”', 'cell-muted')}
-                ${cell(headers[3], i.underlying_index||'â€”', 'cell-muted')}
+                ${cell(headers[1], `<span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
+                ${cell(headers[2], i.issuer||'—', 'cell-muted')}
+                ${cell(headers[3], i.underlying_index||'—', 'cell-muted')}
                 ${cell(headers[4], _fmtNum(i.close_price||i.last_price))}
                 ${cell(headers[5], _fmtPct(i.pct_change), pctCls)}
                 ${cell(headers[6], _liquidityLabel(i.value_traded))}
@@ -3469,8 +3469,8 @@ function _etfBuildTable(instruments, group) {
             const pctCls = _pctClass(i.pct_change);
             return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
                 ${cell(headers[0], `<strong>${i.symbol}</strong>`)}
-                ${cell(headers[1], `<span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'â€”'}</span>`)}
-                ${cell(headers[2], i.exchange||'â€”', 'cell-muted')}
+                ${cell(headers[1], `<span style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
+                ${cell(headers[2], i.exchange||'—', 'cell-muted')}
                 ${cell(headers[3], _fmtNum(i.close_price||i.last_price))}
                 ${cell(headers[4], _fmtPct(i.pct_change), pctCls)}
                 ${cell(headers[5], _fmtNum(i.nav_value))}
@@ -3547,7 +3547,7 @@ async function showEtfHoldings(symbol) {
     if (!modal) return;
 
     modal.style.display = 'flex';
-    if (title)   title.textContent = `${symbol} â€” ${t('etfHoldingsTitle')}`;
+    if (title)   title.textContent = `${symbol} — ${t('etfHoldingsTitle')}`;
     if (loading) loading.style.display = 'block';
     if (content) content.style.display = 'none';
 
@@ -3561,7 +3561,7 @@ async function showEtfHoldings(symbol) {
             return;
         }
         const snap = data.snapshot;
-        if (meta) meta.textContent = `As of ${snap.snapshot_date} Â· Source: ${snap.source} Â· ${snap.currency || ''} Â· Total weight: ${snap.total_weight != null ? parseFloat(snap.total_weight).toFixed(1) + '%' : 'â€”'}`;
+        if (meta) meta.textContent = `As of ${snap.snapshot_date} · Source: ${snap.source} · ${snap.currency || ''} · Total weight: ${snap.total_weight != null ? parseFloat(snap.total_weight).toFixed(1) + '%' : '—'}`;
         if (lines) {
             const labels = {
                 line: 'Line',
@@ -3574,11 +3574,11 @@ async function showEtfHoldings(symbol) {
             lines.innerHTML = (data.lines || []).map(l => `
                 <tr>
                     <td data-label="${labels.line}">${l.line_no}</td>
-                    <td data-label="${labels.holding}">${l.holding_name || l.holding_symbol || 'â€”'}</td>
+                    <td data-label="${labels.holding}">${l.holding_name || l.holding_symbol || '—'}</td>
                     <td data-label="${labels.isin}" style="font-size:11px;color:var(--text-muted);">${l.holding_isin || ''}</td>
-                    <td data-label="${labels.country}">${l.country || 'â€”'}</td>
-                    <td data-label="${labels.sector}">${l.sector || 'â€”'}</td>
-                    <td data-label="${labels.weight}"><strong>${l.weight_pct != null ? parseFloat(l.weight_pct).toFixed(2) + '%' : 'â€”'}</strong></td>
+                    <td data-label="${labels.country}">${l.country || '—'}</td>
+                    <td data-label="${labels.sector}">${l.sector || '—'}</td>
+                    <td data-label="${labels.weight}"><strong>${l.weight_pct != null ? parseFloat(l.weight_pct).toFixed(2) + '%' : '—'}</strong></td>
                 </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No holding lines.</td></tr>';
         }
         if (content) content.style.display = 'block';
@@ -3593,13 +3593,13 @@ function closeEtfModal() {
 }
 
 // ============================================================
-// PORTFOLIO â€” enhanced with EGP P&L + sector breakdown
+// PORTFOLIO — enhanced with EGP P&L + sector breakdown
 // ============================================================
 
 function renderPortfolioTotals(totals) {
     const strip = document.getElementById('portfolioTotals');
     if (!strip || !totals) return;
-    const fmt = n => n != null ? Number(n).toLocaleString('en-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : 'â€”';
+    const fmt = n => n != null ? Number(n).toLocaleString('en-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—';
     const pnl = totals.total_pnl_egp;
     const ret = totals.total_return_pct;
     document.getElementById('ptlCost').textContent = fmt(totals.total_cost_egp) + ' EGP';
@@ -3643,7 +3643,7 @@ async function loadAlerts() {
         const isAr = document.documentElement.lang === 'ar' || localStorage.getItem('lang') === 'ar';
         listEl.innerHTML = alerts.map(a => {
             const triggered = !a.active;
-            const condLabel = a.condition === 'above' ? (isAr ? 'Ø£Ø¹Ù„Ù‰ Ù…Ù†' : 'Above') : (isAr ? 'Ø£Ù‚Ù„ Ù…Ù†' : 'Below');
+            const condLabel = a.condition === 'above' ? (isAr ? 'أعلى من' : 'Above') : (isAr ? 'أقل من' : 'Below');
             const cur = parseFloat(a.current_price);
             const diff = cur && a.target_price ? ((cur - a.target_price) / a.target_price * 100).toFixed(1) : null;
             return `<div class="alert-row ${triggered ? 'alert-triggered' : ''}">
@@ -3651,8 +3651,8 @@ async function loadAlerts() {
                 <span class="alert-cond">${condLabel}</span>
                 <span class="alert-price">${parseFloat(a.target_price).toFixed(2)}</span>
                 ${cur ? `<span class="alert-cur" style="color:var(--text-muted)">Now: ${cur.toFixed(2)}${diff ? ` (${diff > 0 ? '+' : ''}${diff}%)` : ''}</span>` : ''}
-                ${triggered ? `<span class="alert-tag-triggered">${isAr ? 'Ù†ÙØ´ÙÙ‘Ø·' : 'Triggered'}</span>` : ''}
-                <button class="alert-del-btn" onclick="deleteAlert(${a.id})">âœ•</button>
+                ${triggered ? `<span class="alert-tag-triggered">${isAr ? 'نُشِّط' : 'Triggered'}</span>` : ''}
+                <button class="alert-del-btn" onclick="deleteAlert(${a.id})">✕</button>
             </div>`;
         }).join('');
     } catch {
@@ -3726,7 +3726,7 @@ async function runComparison() {
         });
 
         const signalBadge = (sig) => {
-            if (!sig) return '<span style="color:var(--text-muted)">â€”</span>';
+            if (!sig) return '<span style="color:var(--text-muted)">—</span>';
             const cls = sig === 'UP' ? 'bullish' : sig === 'DOWN' ? 'bearish' : 'neutral';
             return `<span class="signal-badge ${cls}">${sig}</span>`;
         };
@@ -3746,16 +3746,16 @@ async function runComparison() {
             </tr></thead>
             <tbody>
             ${rowCell(t('compSignal'), rows.map(r => signalBadge(r.c.final_signal)))}
-            ${rowCell(t('compScore'), rows.map(r => r.c.xmore_score != null ? Math.round(r.c.xmore_score) : 'â€”'))}
-            ${rowCell(t('compConviction'), rows.map(r => r.c.conviction || 'â€”'))}
-            ${rowCell(t('compConfidence'), rows.map(r => r.c.confidence != null ? r.c.confidence + '%' : 'â€”'))}
-            ${rowCell(t('compAgentsAgree'), rows.map(r => r.c.agents_agreeing != null ? r.c.agents_agreeing + '/' + r.c.agents_total : 'â€”'))}
-            ${rowCell(t('compBullScore'), rows.map(r => `<span style="color:var(--bullish)">${r.c.bull_score != null ? r.c.bull_score : 'â€”'}</span>`))}
-            ${rowCell(t('compBearScore'), rows.map(r => `<span style="color:var(--bearish)">${r.c.bear_score != null ? r.c.bear_score : 'â€”'}</span>`))}
-            ${rowCell(t('compPrice'), rows.map(r => r.p.close != null ? parseFloat(r.p.close).toFixed(2) : 'â€”'))}
-            ${rowCell(t('compDayChange'), rows.map(r => `<span style="color:${r.chg > 0 ? 'var(--bullish)' : r.chg < 0 ? 'var(--bearish)' : 'inherit'}">${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : 'â€”'}</span>`))}
-            ${rowCell(t('compVolume'), rows.map(r => r.p.volume != null ? Number(r.p.volume).toLocaleString() : 'â€”'))}
-            ${rowCell(t('compBrief'), rows.map(r => `<button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">${t('compBrief')} â†’</button>`))}
+            ${rowCell(t('compScore'), rows.map(r => r.c.xmore_score != null ? Math.round(r.c.xmore_score) : '—'))}
+            ${rowCell(t('compConviction'), rows.map(r => r.c.conviction || '—'))}
+            ${rowCell(t('compConfidence'), rows.map(r => r.c.confidence != null ? r.c.confidence + '%' : '—'))}
+            ${rowCell(t('compAgentsAgree'), rows.map(r => r.c.agents_agreeing != null ? r.c.agents_agreeing + '/' + r.c.agents_total : '—'))}
+            ${rowCell(t('compBullScore'), rows.map(r => `<span style="color:var(--bullish)">${r.c.bull_score != null ? r.c.bull_score : '—'}</span>`))}
+            ${rowCell(t('compBearScore'), rows.map(r => `<span style="color:var(--bearish)">${r.c.bear_score != null ? r.c.bear_score : '—'}</span>`))}
+            ${rowCell(t('compPrice'), rows.map(r => r.p.close != null ? parseFloat(r.p.close).toFixed(2) : '—'))}
+            ${rowCell(t('compDayChange'), rows.map(r => `<span style="color:${r.chg > 0 ? 'var(--bullish)' : r.chg < 0 ? 'var(--bearish)' : 'inherit'}">${r.chg != null ? (r.chg > 0 ? '+' : '') + r.chg + '%' : '—'}</span>`))}
+            ${rowCell(t('compVolume'), rows.map(r => r.p.volume != null ? Number(r.p.volume).toLocaleString() : '—'))}
+            ${rowCell(t('compBrief'), rows.map(r => `<button class="pf-btn-view" onclick="loadStockBrief('${r.sym}')">${t('compBrief')} →</button>`))}
             </tbody>
         </table>
         </div>
@@ -3774,7 +3774,7 @@ async function loadStockBrief(symbol) {
     const bodyEl = document.getElementById('briefModalBody');
     const titleEl = document.getElementById('briefModalSymbol');
     if (!modal) return;
-    titleEl.textContent = symbol + ' â€” Market Brief';
+    titleEl.textContent = symbol + ' — Market Brief';
     bodyEl.innerHTML = '<p class="loading">Loading brief...</p>';
     modal.style.display = 'flex';
     try {
@@ -3793,7 +3793,7 @@ function closeBriefModal() {
 }
 
 // ============================================================
-// RATES TAB â€” FX & Gold with history charts
+// RATES TAB — FX & Gold with history charts
 // ============================================================
 
 async function loadRatesTab() {
@@ -3809,13 +3809,13 @@ async function loadRatesTab() {
 
         // Live cards
         const rateItems = [
-            { label: 'USD / EGP', value: live.USD_EGP, key: 'usd_egp', icon: 'ðŸ’µ' },
-            { label: 'Gold 24K / gram', value: live.GOLD_24K_EGP_G, key: 'gold_24k_egp_g', icon: 'ðŸ¥‡', suffix: 'EGP' },
-            { label: 'Gold 21K / gram', value: live.GOLD_21K_EGP_G, key: 'gold_21k_egp_g', icon: 'ðŸ…', suffix: 'EGP' },
-            { label: 'Gold Pound', value: live.GOLD_POUND_EGP, key: 'gold_pound_egp', icon: 'ðŸ’°', suffix: 'EGP' },
-            { label: 'Gold 18K / gram', value: live.GOLD_18K_EGP_G, key: null, icon: 'ðŸ”¶', suffix: 'EGP' },
-            { label: 'USD / SAR', value: live.USD_SAR, key: null, icon: 'ðŸ‡¸ðŸ‡¦' },
-            { label: 'SAR / EGP', value: live.SAR_EGP, key: null, icon: 'â†”ï¸' },
+            { label: 'USD / EGP', value: live.USD_EGP, key: 'usd_egp', icon: '💵' },
+            { label: 'Gold 24K / gram', value: live.GOLD_24K_EGP_G, key: 'gold_24k_egp_g', icon: '🥇', suffix: 'EGP' },
+            { label: 'Gold 21K / gram', value: live.GOLD_21K_EGP_G, key: 'gold_21k_egp_g', icon: '🏅', suffix: 'EGP' },
+            { label: 'Gold Pound', value: live.GOLD_POUND_EGP, key: 'gold_pound_egp', icon: '💰', suffix: 'EGP' },
+            { label: 'Gold 18K / gram', value: live.GOLD_18K_EGP_G, key: null, icon: '🔶', suffix: 'EGP' },
+            { label: 'USD / SAR', value: live.USD_SAR, key: null, icon: '🇸🇦' },
+            { label: 'SAR / EGP', value: live.SAR_EGP, key: null, icon: '↔️' },
         ];
         cardsEl.innerHTML = rateItems.filter(r => r.value != null).map(r => `
             <div class="rate-card">
@@ -3901,7 +3901,7 @@ async function loadSignalAccuracy(horizon) {
     try {
         const data = await fetch(`/api/signal-accuracy?horizon=${horizon}`).then(r => r.json());
         if (!Array.isArray(data) || !data.length) {
-            el.innerHTML = `<p style="color:var(--text-muted)">No D+${horizon} data yet â€” runs after 10+ trading days of consensus signals.</p>`;
+            el.innerHTML = `<p style="color:var(--text-muted)">No D+${horizon} data yet — runs after 10+ trading days of consensus signals.</p>`;
             return;
         }
         const labels = {

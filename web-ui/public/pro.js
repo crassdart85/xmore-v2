@@ -1,16 +1,16 @@
-﻿/* â”€â”€â”€ Xmore Pro â€” Market Overview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Xmore Pro — Market Overview ────────────────────────────────────────── */
 
-// â”€â”€ Bilingual i18n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Bilingual i18n ────────────────────────────────────────────────────────────
 let _PRO_LANG = localStorage.getItem('lang') || 'en';
 
 const _PRO_I18N = {
   en: {
-    back: 'â† Dashboard', signIn: 'Sign In', signOut: 'Sign Out',
+    back: '← Dashboard', signIn: 'Sign In', signOut: 'Sign Out',
     modalTitle: 'Sign in to Xmore', login: 'Login', signUp: 'Sign Up',
     email: 'Email', password: 'Password',
     tracked: 'TRACKED', upToday: 'UP', downToday: 'DOWN',
     bestWinRate: 'BEST AGENT WIN RATE', lastData: 'LAST DATA', marketRegime: 'Market Regime',
-    egx30Title: 'EGX 30 â€” Intraday', egxBlueChips: 'EGX Blue Chips',
+    egx30Title: 'EGX 30 — Intraday', egxBlueChips: 'EGX Blue Chips',
     topGainers: 'Top Gainers', topLosers: 'Top Losers',
     colSymbol: 'Symbol', colClose: 'Close', colChg: 'Chg%',
     colSignal: 'Signal', colConf: 'Conf',
@@ -19,46 +19,46 @@ const _PRO_I18N = {
     sectorPerf: 'Sector Performance',
     myPortfolio: 'My Forecast Portfolio',
     pfLoginTitle: 'Track Your Forecast Performance',
-    pfLoginDesc: 'Sign in to see how your system-generated stock portfolios are performing in real time â€” forecast vs actual return per stock, progress to target date, and agent signals.',
-    signInArrow: 'Sign In â†—',
+    pfLoginDesc: 'Sign in to see how your system-generated stock portfolios are performing in real time — forecast vs actual return per stock, progress to target date, and agent signals.',
+    signInArrow: 'Sign In ↗',
     pfEmptyTitle: 'No Forecast Portfolios Yet',
     pfEmptyDesc: 'Create a forecast portfolio on the main dashboard to start tracking forecast accuracy against live EGX price movements.',
-    createPortfolio: 'Create Portfolio â†—',
+    createPortfolio: 'Create Portfolio ↗',
     legendForecast: 'Forecast', legendActualPos: 'Actual (positive)', legendActualNeg: 'Actual (negative)',
-    derivTitle: 'Derivatives Brief', derivBtn: 'Price â–¶', pricing: 'Pricingâ€¦',
-    macroTitle: 'Macro Brief', macroRefresh: 'â†º Refresh',
-    backtestTitle: 'Walk-Forward Backtest Results', backtestNote: 'Updated weekly Â· ML agent only',
+    derivTitle: 'Derivatives Brief', derivBtn: 'Price ▶', pricing: 'Pricing…',
+    macroTitle: 'Macro Brief', macroRefresh: '↺ Refresh',
+    backtestTitle: 'Walk-Forward Backtest Results', backtestNote: 'Updated weekly · ML agent only',
     colScore: 'Score', btSymbol: 'Symbol', btAcc: 'Accuracy', btDir: 'Directional', btPnl: 'Signal P&L', btRows: 'Rows',
-    loading: 'Loadingâ€¦',
+    loading: 'Loading…',
     etfSignalsTitle: 'ETF & ETP Signals',
   },
   ar: {
-    back: 'â† Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©', signIn: 'Ø¯Ø®ÙˆÙ„', signOut: 'Ø®Ø±ÙˆØ¬',
-    modalTitle: 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¥Ù„Ù‰ Xmore', login: 'Ø¯Ø®ÙˆÙ„', signUp: 'ØªØ³Ø¬ÙŠÙ„',
-    email: 'Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ', password: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±',
-    tracked: 'Ù…ØªØªØ¨Ø¹', upToday: 'ØµØ§Ø¹Ø¯', downToday: 'Ù‡Ø§Ø¨Ø·',
-    bestWinRate: 'Ø£ÙØ¶Ù„ Ù…Ø¹Ø¯Ù„ Ù†Ø¬Ø§Ø­', lastData: 'Ø¢Ø®Ø± Ø¨ÙŠØ§Ù†Ø§Øª', marketRegime: 'Ù†Ø¸Ø§Ù… Ø§Ù„Ø³ÙˆÙ‚',
-    egx30Title: 'EGX 30 â€” Ø®Ù„Ø§Ù„ Ø§Ù„ÙŠÙˆÙ…', egxBlueChips: 'Ø£Ø³Ù‡Ù… EGX Ø§Ù„ÙƒØ¨Ø±Ù‰',
-    topGainers: 'Ø£Ø¹Ù„Ù‰ Ø§Ù„Ø±Ø§Ø¨Ø­ÙŠÙ†', topLosers: 'Ø£Ø¹Ù„Ù‰ Ø§Ù„Ø®Ø§Ø³Ø±ÙŠÙ†',
-    colSymbol: 'Ø§Ù„Ø±Ù…Ø²', colClose: 'Ø§Ù„Ø¥ØºÙ„Ø§Ù‚', colChg: 'Ø§Ù„ØªØºÙŠØ±%',
-    colSignal: 'Ø§Ù„Ø¥Ø´Ø§Ø±Ø©', colConf: 'Ø§Ù„Ø«Ù‚Ø©',
-    colForecast: 'Ø§Ù„ØªÙˆÙ‚Ø¹', colActual: 'Ø§Ù„ÙØ¹Ù„ÙŠ', colGap: 'Ø§Ù„ÙØ¬ÙˆØ©',
-    colProgress: 'Ø§Ù„ØªÙ‚Ø¯Ù…', colTarget: 'Ø§Ù„ØªØ§Ø±ÙŠØ® Ø§Ù„Ù…Ø³ØªÙ‡Ø¯Ù',
-    sectorPerf: 'Ø£Ø¯Ø§Ø¡ Ø§Ù„Ù‚Ø·Ø§Ø¹Ø§Øª',
-    myPortfolio: 'Ù…Ø­ÙØ¸Ø© Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª',
-    pfLoginTitle: 'ØªØ§Ø¨Ø¹ Ø£Ø¯Ø§Ø¡ ØªÙˆÙ‚Ø¹Ø§ØªÙƒ',
-    pfLoginDesc: 'Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„Ùƒ Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ø£Ø¯Ø§Ø¡ Ù…Ø­Ø§ÙØ¸ Ø§Ù„Ø£Ø³Ù‡Ù… Ø§Ù„Ù…ÙˆÙ„Ù‘Ø¯Ø© Ø¨Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ â€” Ø§Ù„Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨ÙŠÙ† Ø§Ù„ØªÙˆÙ‚Ø¹ ÙˆØ§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„ÙØ¹Ù„ÙŠ Ù„ÙƒÙ„ Ø³Ù‡Ù….',
-    signInArrow: 'ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ â†—',
-    pfEmptyTitle: 'Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø­Ø§ÙØ¸ Ø¨Ø¹Ø¯',
-    pfEmptyDesc: 'Ø£Ù†Ø´Ø¦ Ù…Ø­ÙØ¸Ø© ØªÙˆÙ‚Ø¹Ø§Øª Ù…Ù† Ø§Ù„Ù„ÙˆØ­Ø© Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© Ù„Ø¨Ø¯Ø¡ ØªØªØ¨Ø¹ Ø¯Ù‚Ø© Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ù…Ù‚Ø§Ø±Ù†Ø©Ù‹ Ø¨ØªØ­Ø±ÙƒØ§Øª Ø³ÙˆÙ‚ Ø§Ù„Ø¨ÙˆØ±ØµØ©.',
-    createPortfolio: 'Ø¥Ù†Ø´Ø§Ø¡ Ù…Ø­ÙØ¸Ø© â†—',
-    legendForecast: 'Ø§Ù„ØªÙˆÙ‚Ø¹', legendActualPos: 'Ø§Ù„ÙØ¹Ù„ÙŠ (Ù…ÙˆØ¬Ø¨)', legendActualNeg: 'Ø§Ù„ÙØ¹Ù„ÙŠ (Ø³Ø§Ù„Ø¨)',
-    derivTitle: 'Ù…ÙˆØ¬Ø² Ø§Ù„Ù…Ø´ØªÙ‚Ø§Øª', derivBtn: 'ØªØ³Ø¹ÙŠØ± â–¶', pricing: 'Ø¬Ø§Ø±Ù Ø§Ù„ØªØ³Ø¹ÙŠØ±â€¦',
-    macroTitle: 'Ù…ÙˆØ¬Ø² Ø§Ù„Ø§Ù‚ØªØµØ§Ø¯ Ø§Ù„ÙƒÙ„ÙŠ', macroRefresh: 'â†º ØªØ­Ø¯ÙŠØ«',
-    backtestTitle: 'Ù†ØªØ§Ø¦Ø¬ Ø§Ù„Ø§Ø®ØªØ¨Ø§Ø± Ø§Ù„Ø²Ù…Ù†ÙŠ', backtestNote: 'ØªØ­Ø¯ÙŠØ« Ø£Ø³Ø¨ÙˆØ¹ÙŠ Â· Ù†Ù…ÙˆØ°Ø¬ ML ÙÙ‚Ø·',
-    colScore: 'Ù†Ù‚Ø§Ø·', btSymbol: 'Ø§Ù„Ø±Ù…Ø²', btAcc: 'Ø§Ù„Ø¯Ù‚Ø©', btDir: 'Ø§Ù„Ø§ØªØ¬Ø§Ù‡', btPnl: 'Ø±/Ø® Ø§Ù„Ø¥Ø´Ø§Ø±Ø©', btRows: 'Ø§Ù„ØµÙÙˆÙ',
-    loading: 'Ø¬Ø§Ø±Ù Ø§Ù„ØªØ­Ù…ÙŠÙ„â€¦',
-    etfSignalsTitle: 'Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„ØµÙ†Ø§Ø¯ÙŠÙ‚',
+    back: '← الرئيسية', signIn: 'دخول', signOut: 'خروج',
+    modalTitle: 'تسجيل الدخول إلى Xmore', login: 'دخول', signUp: 'تسجيل',
+    email: 'البريد الإلكتروني', password: 'كلمة المرور',
+    tracked: 'متتبع', upToday: 'صاعد', downToday: 'هابط',
+    bestWinRate: 'أفضل معدل نجاح', lastData: 'آخر بيانات', marketRegime: 'نظام السوق',
+    egx30Title: 'EGX 30 — خلال اليوم', egxBlueChips: 'أسهم EGX الكبرى',
+    topGainers: 'أعلى الرابحين', topLosers: 'أعلى الخاسرين',
+    colSymbol: 'الرمز', colClose: 'الإغلاق', colChg: 'التغير%',
+    colSignal: 'الإشارة', colConf: 'الثقة',
+    colForecast: 'التوقع', colActual: 'الفعلي', colGap: 'الفجوة',
+    colProgress: 'التقدم', colTarget: 'التاريخ المستهدف',
+    sectorPerf: 'أداء القطاعات',
+    myPortfolio: 'محفظة التوقعات',
+    pfLoginTitle: 'تابع أداء توقعاتك',
+    pfLoginDesc: 'سجّل دخولك لمتابعة أداء محافظ الأسهم المولّدة بالذكاء الاصطناعي — المقارنة بين التوقع والعائد الفعلي لكل سهم.',
+    signInArrow: 'تسجيل الدخول ↗',
+    pfEmptyTitle: 'لا توجد محافظ بعد',
+    pfEmptyDesc: 'أنشئ محفظة توقعات من اللوحة الرئيسية لبدء تتبع دقة الذكاء الاصطناعي مقارنةً بتحركات سوق البورصة.',
+    createPortfolio: 'إنشاء محفظة ↗',
+    legendForecast: 'التوقع', legendActualPos: 'الفعلي (موجب)', legendActualNeg: 'الفعلي (سالب)',
+    derivTitle: 'موجز المشتقات', derivBtn: 'تسعير ▶', pricing: 'جارٍ التسعير…',
+    macroTitle: 'موجز الاقتصاد الكلي', macroRefresh: '↺ تحديث',
+    backtestTitle: 'نتائج الاختبار الزمني', backtestNote: 'تحديث أسبوعي · نموذج ML فقط',
+    colScore: 'نقاط', btSymbol: 'الرمز', btAcc: 'الدقة', btDir: 'الاتجاه', btPnl: 'ر/خ الإشارة', btRows: 'الصفوف',
+    loading: 'جارٍ التحميل…',
+    etfSignalsTitle: 'إشارات الصناديق',
   },
 };
 
@@ -73,7 +73,7 @@ function proApplyLang() {
   document.documentElement.setAttribute('dir', _PRO_LANG === 'ar' ? 'rtl' : 'ltr');
   // Toggle button label
   const btn = document.getElementById('proLangBtn');
-  if (btn) btn.textContent = _PRO_LANG === 'ar' ? 'EN' : 'Ø¹Ø±';
+  if (btn) btn.textContent = _PRO_LANG === 'ar' ? 'EN' : 'عر';
 }
 
 function proToggleLang() {
@@ -84,7 +84,7 @@ function proToggleLang() {
 
 proApplyLang();
 
-// â”€â”€ Mobile Menu (640px and below) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Mobile Menu (640px and below) ────────────────────────────────────────────
 function initProMobileMenu() {
   const menuBtn = document.getElementById('proMobileMenuBtn');
   const menuDropdown = document.getElementById('proMobileMenuDropdown');
@@ -134,7 +134,7 @@ if (document.readyState === 'loading') {
   initProMobileMenu();
 }
 
-// â”€â”€ FX rates â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── FX rates ──────────────────────────────────────────────────────────────────
 async function loadFxRates() {
   const strip = document.getElementById('proFxStrip');
   if (!strip) return;
@@ -144,20 +144,20 @@ async function loadFxRates() {
     if (!data || data.error) throw new Error(data.error || 'no data');
 
     const fxItems = [
-      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  || 'â€”' },
-      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  || 'â€”' },
-      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  || 'â€”' },
+      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  || '—' },
+      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  || '—' },
+      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  || '—' },
     ];
     const goldItems = data.GOLD_24K_EGP_G ? [
-      { label: 'ðŸ¥‡ 24K/g',   val: data.GOLD_24K_EGP_G?.toFixed(0) + ' EGP' },
+      { label: '🥇 24K/g',   val: data.GOLD_24K_EGP_G?.toFixed(0) + ' EGP' },
       { label: '21K/g',      val: data.GOLD_21K_EGP_G?.toFixed(0) + ' EGP' },
       { label: '18K/g',      val: data.GOLD_18K_EGP_G?.toFixed(0) + ' EGP' },
-      { label: 'Ø¬Ù†ÙŠÙ‡ Ø°Ù‡Ø¨',  val: data.GOLD_POUND_EGP?.toFixed(0)  + ' EGP' },
+      { label: 'جنيه ذهب',  val: data.GOLD_POUND_EGP?.toFixed(0)  + ' EGP' },
     ] : [];
 
     const allItems = [...fxItems, ...goldItems];
     strip.innerHTML = allItems.map((item, i) =>
-      `${i > 0 ? '<span class="pro-fx-sep">Â·</span>' : ''}
+      `${i > 0 ? '<span class="pro-fx-sep">·</span>' : ''}
        <div class="pro-fx-item">
          <span class="pro-fx-pair">${item.label}</span>
          <span class="pro-fx-val">${item.val}</span>
@@ -171,7 +171,7 @@ async function loadFxRates() {
 loadFxRates();
 setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
 
-// â”€â”€ Date header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Date header ──────────────────────────────────────────────────────────────
 (function renderDate() {
   const el = document.getElementById('proDate');
   if (!el) return;
@@ -181,7 +181,7 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   });
 })();
 
-// â”€â”€ TradingView ticker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── TradingView ticker ────────────────────────────────────────────────────────
 (function loadTicker() {
   const container = document.getElementById('proTicker');
   if (!container) return;
@@ -219,7 +219,7 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   container.appendChild(wrapper);
 })();
 
-// â”€â”€ EGX 30 Intraday Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── EGX 30 Intraday Chart ────────────────────────────────────────────────────
 (function loadEGX30Chart() {
   const container = document.getElementById('egx30ChartWidget');
   if (!container) return;
@@ -257,7 +257,7 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   container.appendChild(wrapper);
 })();
 
-// â”€â”€ EGX Market Indices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── EGX Market Indices ────────────────────────────────────────────────────────
 (function loadEGXIndices() {
   const container = document.getElementById('egxIndicesWidget');
   if (!container) return;
@@ -306,31 +306,31 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   container.appendChild(wrapper);
 })();
 
-// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function fmtChg(val) {
-  if (val === null || val === undefined || isNaN(val)) return 'â€”';
+  if (val === null || val === undefined || isNaN(val)) return '—';
   const n = parseFloat(val);
   return (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
 }
 
 function fmtClose(val) {
-  if (!val) return 'â€”';
+  if (!val) return '—';
   return parseFloat(val).toFixed(2);
 }
 
 function fmtDate(dateStr) {
-  if (!dateStr) return 'â€”';
+  if (!dateStr) return '—';
   // Slice to YYYY-MM-DD to handle both "2026-03-03" and "2026-03-03T00:00:00.000Z"
   const d = new Date(String(dateStr).slice(0, 10) + 'T00:00:00');
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function signalBadge(prediction, confidence) {
-  if (!prediction) return '<span class="sig-none">â€”</span>';
+  if (!prediction) return '<span class="sig-none">—</span>';
   const p = prediction.toUpperCase();
-  if (p === 'UP')   return `<span class="sig-buy">â†‘ BUY</span>`;
-  if (p === 'DOWN') return `<span class="sig-sell">â†“ SELL</span>`;
-  if (p === 'HOLD') return `<span class="sig-hold">â†’ HOLD</span>`;
+  if (p === 'UP')   return `<span class="sig-buy">↑ BUY</span>`;
+  if (p === 'DOWN') return `<span class="sig-sell">↓ SELL</span>`;
+  if (p === 'HOLD') return `<span class="sig-hold">→ HOLD</span>`;
   return `<span class="sig-none">${p}</span>`;
 }
 
@@ -342,10 +342,10 @@ function escHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-// â”€â”€ Shared state (available to portfolio renderer) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-let _csMap = {};  // symbol â†’ {prediction, confidence}
+// ── Shared state (available to portfolio renderer) ────────────────────────────
+let _csMap = {};  // symbol → {prediction, confidence}
 
-// â”€â”€ Main data load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Main data load ────────────────────────────────────────────────────────────
 Promise.all([
   fetch('/api/prices').then(r => r.json()).catch(() => []),
   fetch('/api/stocks').then(r => r.json()).catch(() => ({ stocks: [] })),
@@ -374,7 +374,7 @@ Promise.all([
   renderEtfSignals(Array.isArray(etfSignals) ? etfSignals : (etfSignals.latest || []));
 });
 
-// â”€â”€ renderStats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── renderStats ───────────────────────────────────────────────────────────────
 function renderStats(prices, stats, perf) {
   const total = prices.length;
   const upCount   = prices.filter(p => parseFloat(p.change_pct) > 0).length;
@@ -382,12 +382,12 @@ function renderStats(prices, stats, perf) {
   const upPct     = total ? Math.round(upCount / total * 100) : 0;
   const downPct   = total ? Math.round(downCount / total * 100) : 0;
 
-  document.getElementById('statTracked').textContent  = total || stats.stocksTracked || 'â€”';
-  document.getElementById('statUp').textContent       = upCount || 'â€”';
+  document.getElementById('statTracked').textContent  = total || stats.stocksTracked || '—';
+  document.getElementById('statUp').textContent       = upCount || '—';
   document.getElementById('statUpPct').textContent    = total ? `${upPct}% of market` : '';
-  document.getElementById('statDown').textContent     = downCount || 'â€”';
+  document.getElementById('statDown').textContent     = downCount || '—';
   document.getElementById('statDownPct').textContent  = total ? `${downPct}% of market` : '';
-  document.getElementById('statLastData').textContent = stats.latestDate ? fmtDate(stats.latestDate) : 'â€”';
+  document.getElementById('statLastData').textContent = stats.latestDate ? fmtDate(stats.latestDate) : '—';
 
   // Best non-Consensus agent accuracy
   const agents = perf.filter(p => p.agent_name !== 'Consensus' && parseFloat(p.accuracy) > 0);
@@ -401,20 +401,20 @@ function renderStats(prices, stats, perf) {
     }
   }
 
-  // Regime pill â€” fetch asynchronously
+  // Regime pill — fetch asynchronously
   fetch('/api/track-record/regime-stats').then(r => r.ok ? r.json() : null).then(data => {
     const el = document.getElementById('statRegime');
     if (!el || !data?.regimes?.length) return;
     const top = data.regimes.sort((a, b) => (b.total_signals || 0) - (a.total_signals || 0))[0];
-    const regime = top?.regime || 'â€”';
+    const regime = top?.regime || '—';
     el.textContent = regime;
     el.className = 'pro-stat-val regime-val ' + (regime === 'Calm' ? 'green' : regime === 'Crisis' ? 'red' : 'amber');
   }).catch(() => {});
 }
 
-// â”€â”€ renderMovers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── renderMovers ──────────────────────────────────────────────────────────────
 function renderMovers(prices, stocks, consensus) {
-  // Build consensus map: symbol â†’ {prediction, confidence, xmore_score}
+  // Build consensus map: symbol → {prediction, confidence, xmore_score}
   const csMap = {};
   consensus.forEach(c => {
     csMap[c.symbol] = {
@@ -451,8 +451,8 @@ function fillMoversTable(tableId, rows, csMap) {
     const chg    = parseFloat(p.change_pct);
     const chgCls = chg > 0 ? 'green' : (chg < 0 ? 'red' : '');
     const cs     = csMap[sym] || {};
-    const conf   = cs.confidence ? parseFloat(cs.confidence).toFixed(0) + '%' : 'â€”';
-    const score  = cs.xmore_score != null ? parseFloat(cs.xmore_score).toFixed(0) : 'â€”';
+    const conf   = cs.confidence ? parseFloat(cs.confidence).toFixed(0) + '%' : '—';
+    const score  = cs.xmore_score != null ? parseFloat(cs.xmore_score).toFixed(0) : '—';
     const scoreCls = cs.xmore_score >= 70 ? 'green' : cs.xmore_score >= 45 ? '' : 'red';
 
     return `<tr>
@@ -466,12 +466,12 @@ function fillMoversTable(tableId, rows, csMap) {
   }).join('');
 }
 
-// â”€â”€ renderSectors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── renderSectors ─────────────────────────────────────────────────────────────
 function renderSectors(prices, stocks) {
   const grid = document.getElementById('sectorGrid');
   if (!grid) return;
 
-  // Build symbolâ†’sector map
+  // Build symbol→sector map
   const sectorMap = {};
   stocks.forEach(s => { if (s.symbol && s.sector_en) sectorMap[s.symbol] = s.sector_en; });
 
@@ -502,7 +502,7 @@ function renderSectors(prices, stocks) {
     const pct     = (Math.abs(s.avg) / maxAbs * 100).toFixed(1);
     const colour  = s.avg >= 0 ? 'var(--pro-green)' : 'var(--pro-red)';
     const valCls  = s.avg >= 0 ? 'green' : 'red';
-    const label   = s.name.length > 16 ? s.name.slice(0, 15) + 'â€¦' : s.name;
+    const label   = s.name.length > 16 ? s.name.slice(0, 15) + '…' : s.name;
 
     return `<div class="pro-sector-row">
       <span class="pro-sector-name" title="${escHtml(s.name)}">${escHtml(label)}</span>
@@ -514,18 +514,18 @@ function renderSectors(prices, stocks) {
   }).join('');
 }
 
-// â”€â”€ ETF Signals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── ETF Signals ───────────────────────────────────────────────────────────────
 function renderEtfSignals(signals) {
   const el = document.getElementById('proEtfSignals');
   if (!el) return;
   if (!signals || signals.length === 0) {
-    el.innerHTML = '<p class="pro-empty">No ETF signals yet â€” signals generate daily.</p>';
+    el.innerHTML = '<p class="pro-empty">No ETF signals yet — signals generate daily.</p>';
     return;
   }
   const rows = signals.map(s => {
     const cls   = s.signal === 'UP' ? 'sig-up' : s.signal === 'DOWN' ? 'sig-down' : 'sig-hold';
-    const arrow = s.signal === 'UP' ? 'â†‘' : s.signal === 'DOWN' ? 'â†“' : 'â€”';
-    const conf  = s.confidence ? (parseFloat(s.confidence) * 100).toFixed(0) + '%' : 'â€”';
+    const arrow = s.signal === 'UP' ? '↑' : s.signal === 'DOWN' ? '↓' : '—';
+    const conf  = s.confidence ? (parseFloat(s.confidence) * 100).toFixed(0) + '%' : '—';
     const prem  = s.nav_premium_pct != null
       ? `<span class="pro-etf-prem ${parseFloat(s.nav_premium_pct) < 0 ? 'disc' : 'prem'}">${parseFloat(s.nav_premium_pct) >= 0 ? '+' : ''}${parseFloat(s.nav_premium_pct).toFixed(1)}%</span>`
       : '';
@@ -546,7 +546,7 @@ function renderEtfSignals(signals) {
   el.innerHTML = rows;
 }
 
-// â”€â”€ Macro brief â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Macro brief ───────────────────────────────────────────────────────────────
 function simpleMarkdown(text) {
   return text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -563,8 +563,8 @@ async function loadMacroBrief() {
   if (!btn || !content) return;
 
   btn.disabled  = true;
-  btn.textContent = 'Loadingâ€¦';
-  content.innerHTML = '<div class="pro-macro-loading">Searching live macro data via Googleâ€¦</div>';
+  btn.textContent = 'Loading…';
+  content.innerHTML = '<div class="pro-macro-loading">Searching live macro data via Google…</div>';
 
   try {
     const res  = await fetch('/api/rag/macro', {
@@ -590,12 +590,12 @@ async function loadMacroBrief() {
     }
 
     content.innerHTML = html + sourcesHtml;
-    btn.textContent = 'â†º Refresh';
+    btn.textContent = '↺ Refresh';
     btn.disabled = false;
 
   } catch (err) {
     content.innerHTML = `<div style="color:var(--pro-red)">Error: ${escHtml(err.message)}</div>`;
-    btn.textContent = "ðŸ“Š Load Read";
+    btn.textContent = "📊 Load Read";
     btn.disabled = false;
   }
 }
@@ -604,7 +604,7 @@ async function loadMacroBrief() {
 loadMacroBrief();
 setInterval(loadMacroBrief, 60 * 60 * 1000);
 
-// â”€â”€ Backtest Results â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Backtest Results ─────────────────────────────────────────────────
 async function loadBacktestResults() {
   const body = document.getElementById('backtestBody');
   if (!body) return;
@@ -612,7 +612,7 @@ async function loadBacktestResults() {
     const res  = await fetch('/api/backtest/results');
     const data = await res.json();
     if (!data || !data.length) {
-      body.innerHTML = '<p style="color:#555;font-size:12px;padding:8px 0;">No backtest data yet â€” runs weekly on Sunday.</p>';
+      body.innerHTML = '<p style="color:#555;font-size:12px;padding:8px 0;">No backtest data yet — runs weekly on Sunday.</p>';
       return;
     }
     const t = k => (_PRO_I18N[_PRO_LANG] || _PRO_I18N.en)[k] || k;
@@ -620,9 +620,9 @@ async function loadBacktestResults() {
       .sort((a, b) => (b.directional_accuracy || 0) - (a.directional_accuracy || 0))
       .slice(0, 30)
       .map(r => {
-        const dir    = r.directional_accuracy != null ? (r.directional_accuracy * 100).toFixed(1) + '%' : 'â€”';
-        const acc    = r.accuracy            != null ? (r.accuracy * 100).toFixed(1) + '%' : 'â€”';
-        const pnl    = r.signal_pnl_pct      != null ? (r.signal_pnl_pct >= 0 ? '+' : '') + r.signal_pnl_pct.toFixed(1) + '%' : 'â€”';
+        const dir    = r.directional_accuracy != null ? (r.directional_accuracy * 100).toFixed(1) + '%' : '—';
+        const acc    = r.accuracy            != null ? (r.accuracy * 100).toFixed(1) + '%' : '—';
+        const pnl    = r.signal_pnl_pct      != null ? (r.signal_pnl_pct >= 0 ? '+' : '') + r.signal_pnl_pct.toFixed(1) + '%' : '—';
         const pnlCls = r.signal_pnl_pct >= 0 ? 'green' : 'red';
         const dirCls = (r.directional_accuracy || 0) >= 0.55 ? 'green' : (r.directional_accuracy || 0) >= 0.45 ? '' : 'red';
         return `<tr>
@@ -630,7 +630,7 @@ async function loadBacktestResults() {
           <td>${escHtml(acc)}</td>
           <td class="${dirCls}">${escHtml(dir)}</td>
           <td class="${pnlCls}">${escHtml(pnl)}</td>
-          <td style="color:#555">${r.n_rows || 'â€”'}</td>
+          <td style="color:#555">${r.n_rows || '—'}</td>
         </tr>`;
       }).join('');
     body.innerHTML = `
@@ -650,7 +650,7 @@ async function loadBacktestResults() {
 }
 loadBacktestResults();
 
-// â”€â”€ Derivatives Brief â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Derivatives Brief ────────────────────────────────────────────────
 async function loadDerivativesBrief() {
   const ticker   = document.getElementById('derivTicker').value.trim() || 'COMI.CA';
   const spotEl   = document.getElementById('derivSpot');
@@ -733,7 +733,7 @@ function pct1(v) { return v != null && !isNaN(v) ? (Number(v)*100).toFixed(1)+'%
 // Auto-load derivatives brief on page open
 loadDerivativesBrief();
 
-// â”€â”€ Portfolio Forecast Performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Portfolio Forecast Performance ───────────────────────────────────────────
 
 let _portfolios    = [];
 let _portfolioChart = null;
@@ -762,7 +762,7 @@ async function initPortfolios() {
     if (sel) {
       sel.style.display = '';
       sel.innerHTML = _portfolios.map(p =>
-        `<option value="${p.id}">${escHtml(p.name)} Â· ${p.horizon_days}d Â· ${escHtml(p.scenario || 'base')}</option>`
+        `<option value="${p.id}">${escHtml(p.name)} · ${p.horizon_days}d · ${escHtml(p.scenario || 'base')}</option>`
       ).join('');
     }
 
@@ -770,7 +770,7 @@ async function initPortfolios() {
   } catch (_) { pfShowState('pfStateLogin'); }
 }
 
-// â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Auth ─────────────────────────────────────────────────────────────────────
 
 let _proAuthMode = 'login';
 let _proModalPrevFocus = null;
@@ -932,13 +932,13 @@ function renderPortfolioChart(portfolio, results) {
     return v != null ? parseFloat(v) : null;
   });
 
-  // â”€â”€ KPI strip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── KPI strip ──────────────────────────────────────────────────────────────
   const avgForecast = rows.reduce((s, r) => s + parseFloat(r.expected_return_pct), 0) / rows.length;
   const actualKnown = actualVals.filter(v => v !== null);
   const avgActual   = actualKnown.length ? actualKnown.reduce((s, v) => s + v, 0) / actualKnown.length : null;
   const daysElapsed = rows[0] ? (rows[0].days_elapsed || 0) : 0;
   const progressPct = Math.min(Math.round(daysElapsed / horiz * 100), 100);
-  const targetDate  = rows[0] ? String(rows[0].target_date || '').slice(0, 10) : 'â€”';
+  const targetDate  = rows[0] ? String(rows[0].target_date || '').slice(0, 10) : '—';
 
   const kpiEl = document.getElementById('portfolioKPI');
   if (kpiEl) {
@@ -951,23 +951,23 @@ function renderPortfolioChart(portfolio, results) {
       </div>
       <div class="pro-pf-kpi">
         <span class="pro-stat-label">Avg Actual So Far</span>
-        <span class="pro-stat-val ${actualCls}">${avgActual !== null ? fmtKpi(avgActual) : 'â€”'}</span>
+        <span class="pro-stat-val ${actualCls}">${avgActual !== null ? fmtKpi(avgActual) : '—'}</span>
       </div>
       <div class="pro-pf-kpi">
         <span class="pro-stat-label">Portfolio Progress</span>
         <span class="pro-stat-val">${daysElapsed} <span style="font-size:13px;color:#555">/ ${horiz}d</span></span>
         <div class="pro-pf-prog-track"><div class="pro-pf-prog-fill" style="width:${progressPct}%"></div></div>
-        <span class="pro-stat-sub">${progressPct}% to target Â· ${targetDate}</span>
+        <span class="pro-stat-sub">${progressPct}% to target · ${targetDate}</span>
       </div>
       <div class="pro-pf-kpi">
         <span class="pro-stat-label">Investment</span>
-        <span class="pro-stat-val">${invest ? 'EGP ' + invest.toLocaleString() : 'â€”'}</span>
-        <span class="pro-stat-sub">${escHtml(portfolio.scenario || 'base')} scenario Â· ${rows.length} stocks</span>
+        <span class="pro-stat-val">${invest ? 'EGP ' + invest.toLocaleString() : '—'}</span>
+        <span class="pro-stat-sub">${escHtml(portfolio.scenario || 'base')} scenario · ${rows.length} stocks</span>
       </div>
     `;
   }
 
-  // â”€â”€ Business narrative â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Business narrative ─────────────────────────────────────────────────────
   const narEl = document.getElementById('portfolioNarrative');
   if (narEl) {
     const name     = escHtml(portfolio.name || 'Portfolio');
@@ -991,18 +991,18 @@ function renderPortfolioChart(portfolio, results) {
       const aheadCount = rows.filter((r, i) => actualVals[i] !== null && actualVals[i] >= parseFloat(r.expected_return_pct)).length;
       const knownCount = rows.filter((r, i) => actualVals[i] !== null).length;
       const scoreStr = knownCount > 0 ? ` ${aheadCount} of ${knownCount} positions with data are meeting or beating their individual portfolio targets.` : '';
-      perfSentence = `Across ${n} positions, the portfolio is averaging <span class="${actCls}"><strong>${fmtChg(avgActual)}</strong></span> actual return against an forecast of <span class="amber"><strong>${fmtChg(avgForecast)}</strong></span> â€” <strong>${gapAmt}pp ${aboveBelow} forecast</strong>.${scoreStr}`;
+      perfSentence = `Across ${n} positions, the portfolio is averaging <span class="${actCls}"><strong>${fmtChg(avgActual)}</strong></span> actual return against an forecast of <span class="amber"><strong>${fmtChg(avgForecast)}</strong></span> — <strong>${gapAmt}pp ${aboveBelow} forecast</strong>.${scoreStr}`;
     } else {
-      perfSentence = `Market price data is not yet available for this portfolio â€” actual vs. forecast comparison will appear once trading data is recorded.`;
+      perfSentence = `Market price data is not yet available for this portfolio — actual vs. forecast comparison will appear once trading data is recorded.`;
     }
 
-    narEl.innerHTML = `<strong>${name}</strong> is a <strong>${scenario}</strong>-scenario portfolio of <strong>${n} EGX stocks</strong> on a <strong>${horiz}-trading-day</strong> horizon, targeting <strong>${targetDate}</strong>. The forecast is <strong>${phase}</strong> â€” ${daysElapsed} of ${horiz} trading days elapsed (${progressPct}%). ${perfSentence}`;
+    narEl.innerHTML = `<strong>${name}</strong> is a <strong>${scenario}</strong>-scenario portfolio of <strong>${n} EGX stocks</strong> on a <strong>${horiz}-trading-day</strong> horizon, targeting <strong>${targetDate}</strong>. The forecast is <strong>${phase}</strong> — ${daysElapsed} of ${horiz} trading days elapsed (${progressPct}%). ${perfSentence}`;
   }
 
-  // â”€â”€ Meta row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Meta row ───────────────────────────────────────────────────────────────
   const meta = document.getElementById('portfolioMeta');
   if (meta) {
-    const runDate = rows[0] ? String(rows[0].run_date || '').slice(0, 10) : 'â€”';
+    const runDate = rows[0] ? String(rows[0].run_date || '').slice(0, 10) : '—';
     meta.innerHTML = `
       <span>Run: <strong>${runDate}</strong></span>
       <span>Horizon: <strong>${horiz}d</strong></span>
@@ -1010,7 +1010,7 @@ function renderPortfolioChart(portfolio, results) {
     `;
   }
 
-  // â”€â”€ Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Chart ──────────────────────────────────────────────────────────────────
   const labels       = rows.map(r => r.symbol.replace('.CA', ''));
   const expected     = rows.map(r => parseFloat(r.expected_return_pct).toFixed(2));
   const actualColors = actualVals.map(v => v === null ? 'transparent' :
@@ -1054,7 +1054,7 @@ function renderPortfolioChart(portfolio, results) {
     });
   }
 
-  // â”€â”€ Detail table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Detail table ───────────────────────────────────────────────────────────
   const tbody = document.querySelector('#portfolioDetailTable tbody');
   if (!tbody) return;
 
@@ -1075,8 +1075,8 @@ function renderPortfolioChart(portfolio, results) {
       <td class="sym-cell">${escHtml(label)}</td>
       <td class="sig-cell">${signalBadge(cs.prediction)}</td>
       <td class="chg-cell amber">${fmtChg(forecast)}</td>
-      <td class="chg-cell ${actCls}">${actVal !== null ? fmtChg(actVal) : 'â€”'}</td>
-      <td class="chg-cell ${gapCls}">${gap !== null ? fmtChg(gap) : 'â€”'}</td>
+      <td class="chg-cell ${actCls}">${actVal !== null ? fmtChg(actVal) : '—'}</td>
+      <td class="chg-cell ${gapCls}">${gap !== null ? fmtChg(gap) : '—'}</td>
       <td style="min-width:110px">
         <div style="display:flex;align-items:center;gap:6px">
           <div class="pro-pf-prog-track" style="flex:1">
@@ -1085,7 +1085,7 @@ function renderPortfolioChart(portfolio, results) {
           <span style="font-size:10px;color:#555;font-family:'Courier New',monospace;white-space:nowrap">${rowPct}%</span>
         </div>
       </td>
-      <td class="conf-cell">${escHtml(tgt || 'â€”')}</td>
+      <td class="conf-cell">${escHtml(tgt || '—')}</td>
     </tr>`;
   }).join('');
 }

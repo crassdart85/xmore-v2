@@ -1,5 +1,5 @@
-﻿/**
- * Xmore â€” Daily Market Briefing Module
+/**
+ * Xmore — Daily Market Briefing Module
  * Renders a consolidated morning briefing with 7 sections.
  */
 
@@ -35,7 +35,7 @@ const briefingText = {
         // Actions Today
         br_actions: "Your Actions Today",
         br_actions_sub: "Urgent BUY/SELL signals for your watchlist.",
-        br_no_actions: "No urgent actions today â€” your positions are steady.",
+        br_no_actions: "No urgent actions today — your positions are steady.",
         br_login_actions: "Login to see personalized trade actions.",
         br_login_btn: "Login",
         br_buy: "BUY",
@@ -67,7 +67,7 @@ const briefingText = {
 
         // Risk Alerts
         br_risk: "Risk Alerts",
-        br_no_risk: "No risk alerts today â€” all signals passed risk checks.",
+        br_no_risk: "No risk alerts today — all signals passed risk checks.",
         br_flagged: "Flagged",
         br_downgraded: "Downgraded",
         br_blocked: "Blocked",
@@ -89,80 +89,80 @@ const briefingText = {
         br_stale: "Data from",
     },
     ar: {
-        br_title: "Ù†Ø´Ø±Ø© Ø§Ù„Ø³ÙˆÙ‚ Ø§Ù„ÙŠÙˆÙ…ÙŠØ©",
-        br_subtitle: "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø³ÙˆÙ‚ Ù…ÙˆÙ„Ø¯Ø© Ø¨Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ.",
+        br_title: "نشرة السوق اليومية",
+        br_subtitle: "نظرة عامة على السوق مولدة بالذكاء الاصطناعي.",
 
         // Market Pulse
-        br_pulse: "Ù†Ø¨Ø¶ Ø§Ù„Ø³ÙˆÙ‚",
-        br_direction: "Ø§Ù„Ø§ØªØ¬Ø§Ù‡",
-        br_bullish: "ØµØ§Ø¹Ø¯",
-        br_bearish: "Ù‡Ø§Ø¨Ø·",
-        br_mixed: "Ù…Ø®ØªÙ„Ø·",
-        br_breadth: "Ù†Ø·Ø§Ù‚ Ø§Ù„Ø³ÙˆÙ‚",
-        br_advancing: "ØµØ§Ø¹Ø¯Ø©",
-        br_declining: "Ù‡Ø§Ø¨Ø·Ø©",
-        br_unchanged: "Ù…Ø³ØªÙ‚Ø±Ø©",
-        br_volume: "Ø§Ù„Ø­Ø¬Ù…",
-        br_vs_avg: "Ù…Ù‚Ø§Ø±Ù†Ø© Ø¨Ø§Ù„Ø£Ù…Ø³",
-        br_confidence: "Ù…ØªÙˆØ³Ø· Ø§Ù„Ø«Ù‚Ø©",
-        br_top_gainers: "Ø§Ù„Ø£ÙƒØ«Ø± ØµØ¹ÙˆØ¯Ø§Ù‹",
-        br_top_losers: "Ø§Ù„Ø£ÙƒØ«Ø± Ù‡Ø¨ÙˆØ·Ø§Ù‹",
+        br_pulse: "نبض السوق",
+        br_direction: "الاتجاه",
+        br_bullish: "صاعد",
+        br_bearish: "هابط",
+        br_mixed: "مختلط",
+        br_breadth: "نطاق السوق",
+        br_advancing: "صاعدة",
+        br_declining: "هابطة",
+        br_unchanged: "مستقرة",
+        br_volume: "الحجم",
+        br_vs_avg: "مقارنة بالأمس",
+        br_confidence: "متوسط الثقة",
+        br_top_gainers: "الأكثر صعوداً",
+        br_top_losers: "الأكثر هبوطاً",
 
         // Actions Today
-        br_actions: "Ø¥Ø¬Ø±Ø§Ø¡Ø§ØªÙƒ Ø§Ù„ÙŠÙˆÙ…",
-        br_actions_sub: "Ø¥Ø´Ø§Ø±Ø§Øª Ø´Ø±Ø§Ø¡/Ø¨ÙŠØ¹ Ø¹Ø§Ø¬Ù„Ø© Ù„Ø£Ø³Ù‡Ù…Ùƒ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©.",
-        br_no_actions: "Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¥Ø¬Ø±Ø§Ø¡Ø§Øª Ø¹Ø§Ø¬Ù„Ø© Ø§Ù„ÙŠÙˆÙ… â€” Ù…Ø±Ø§ÙƒØ²Ùƒ Ù…Ø³ØªÙ‚Ø±Ø©.",
-        br_login_actions: "Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„Ùƒ Ù„Ø¹Ø±Ø¶ Ø§Ù„ØªÙˆØµÙŠØ§Øª Ø§Ù„Ù…Ø®ØµØµØ©.",
-        br_login_btn: "ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„",
-        br_buy: "Ø´Ø±Ø§Ø¡",
-        br_sell: "Ø¨ÙŠØ¹",
+        br_actions: "إجراءاتك اليوم",
+        br_actions_sub: "إشارات شراء/بيع عاجلة لأسهمك المتابعة.",
+        br_no_actions: "لا توجد إجراءات عاجلة اليوم — مراكزك مستقرة.",
+        br_login_actions: "سجّل دخولك لعرض التوصيات المخصصة.",
+        br_login_btn: "تسجيل الدخول",
+        br_buy: "شراء",
+        br_sell: "بيع",
 
         // Portfolio Snapshot
-        br_portfolio: "Ù„Ù…Ø­Ø© Ø§Ù„Ù…Ø­ÙØ¸Ø©",
-        br_open_positions: "Ø§Ù„Ù…Ø±Ø§ÙƒØ² Ø§Ù„Ù…ÙØªÙˆØ­Ø©",
-        br_unrealized: "Ø§Ù„Ø±Ø¨Ø­/Ø§Ù„Ø®Ø³Ø§Ø±Ø© ØºÙŠØ± Ø§Ù„Ù…Ø­Ù‚Ù‚Ø©",
-        br_best: "Ø§Ù„Ø£ÙØ¶Ù„",
-        br_worst: "Ø§Ù„Ø£Ø³ÙˆØ£",
-        br_no_portfolio: "Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø±Ø§ÙƒØ² Ù…ÙØªÙˆØ­Ø©.",
-        br_symbol: "Ø§Ù„Ø±Ù…Ø²",
-        br_entry: "Ø§Ù„Ø¯Ø®ÙˆÙ„",
-        br_current: "Ø§Ù„Ø­Ø§Ù„ÙŠ",
-        br_pnl: "Ø§Ù„Ø±Ø¨Ø­",
-        br_days: "Ø£ÙŠØ§Ù…",
+        br_portfolio: "لمحة المحفظة",
+        br_open_positions: "المراكز المفتوحة",
+        br_unrealized: "الربح/الخسارة غير المحققة",
+        br_best: "الأفضل",
+        br_worst: "الأسوأ",
+        br_no_portfolio: "لا توجد مراكز مفتوحة.",
+        br_symbol: "الرمز",
+        br_entry: "الدخول",
+        br_current: "الحالي",
+        br_pnl: "الربح",
+        br_days: "أيام",
 
         // Watchlist Heatmap
-        br_heatmap: "Ø®Ø±ÙŠØ·Ø© Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©",
-        br_heatmap_sub: "Ø£Ø³Ù‡Ù…Ùƒ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ù…Ø±ØªØ¨Ø© Ø­Ø³Ø¨ Ù‚ÙˆØ© Ø§Ù„Ø¥Ø´Ø§Ø±Ø©.",
-        br_signal_strength: "Ø§Ù„Ù‚ÙˆØ©",
-        br_no_heatmap: "ØªØ§Ø¨Ø¹ Ø£Ø³Ù‡Ù…Ùƒ Ù…Ù† ØªØ¨ÙˆÙŠØ¨ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø© Ù„Ø¹Ø±Ø¶ Ø¥Ø´Ø§Ø±Ø§ØªÙ‡Ø§ Ù‡Ù†Ø§.",
+        br_heatmap: "خريطة إشارات المتابعة",
+        br_heatmap_sub: "أسهمك المتابعة مرتبة حسب قوة الإشارة.",
+        br_signal_strength: "القوة",
+        br_no_heatmap: "تابع أسهمك من تبويب المتابعة لعرض إشاراتها هنا.",
 
         // Sector Breakdown
-        br_sectors: "Ù†Ø¸Ø±Ø© Ø§Ù„Ù‚Ø·Ø§Ø¹Ø§Øª",
-        br_sector: "Ø§Ù„Ù‚Ø·Ø§Ø¹",
-        br_signals: "Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª",
+        br_sectors: "نظرة القطاعات",
+        br_sector: "القطاع",
+        br_signals: "الإشارات",
 
         // Risk Alerts
-        br_risk: "ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ø§Ù„Ù…Ø®Ø§Ø·Ø±",
-        br_no_risk: "Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ†Ø¨ÙŠÙ‡Ø§Øª Ù…Ø®Ø§Ø·Ø± Ø§Ù„ÙŠÙˆÙ… â€” Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ø¬ØªØ§Ø²Øª ÙØ­Øµ Ø§Ù„Ù…Ø®Ø§Ø·Ø±.",
-        br_flagged: "Ù…ÙØ¹Ù„ÙŽÙ‘Ù…",
-        br_downgraded: "Ù…ÙØ®ÙÙŽÙ‘Ø¶",
-        br_blocked: "Ù…Ø­Ø¸ÙˆØ±",
+        br_risk: "تنبيهات المخاطر",
+        br_no_risk: "لا توجد تنبيهات مخاطر اليوم — جميع الإشارات اجتازت فحص المخاطر.",
+        br_flagged: "مُعلَّم",
+        br_downgraded: "مُخفَّض",
+        br_blocked: "محظور",
 
         // Sentiment
-        br_sentiment: "Ù„Ù…Ø­Ø© Ø§Ù„Ù…Ø¹Ù†ÙˆÙŠØ§Øª",
-        br_overall: "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ",
-        br_positive: "Ø¥ÙŠØ¬Ø§Ø¨ÙŠ",
-        br_negative: "Ø³Ù„Ø¨ÙŠ",
-        br_neutral: "Ù…Ø­Ø§ÙŠØ¯",
-        br_articles: "Ù…Ù‚Ø§Ù„Ø§Øª",
-        br_notable: "Ø£Ø³Ù‡Ù… Ø¨Ø§Ø±Ø²Ø©",
+        br_sentiment: "لمحة المعنويات",
+        br_overall: "الإجمالي",
+        br_positive: "إيجابي",
+        br_negative: "سلبي",
+        br_neutral: "محايد",
+        br_articles: "مقالات",
+        br_notable: "أسهم بارزة",
 
         // General
-        br_loading: "Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù†Ø´Ø±Ø©...",
-        br_error: "Ø®Ø·Ø£ ÙÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù†Ø´Ø±Ø©",
-        br_retry: "Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©",
-        br_no_briefing: "Ù„Ø§ ØªØªÙˆÙØ± Ù†Ø´Ø±Ø© Ø¨Ø¹Ø¯. ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ù†Ø´Ø±Ø© ÙŠÙˆÙ…ÙŠØ§Ù‹ Ø¨Ø¹Ø¯ ØªØ­Ù„ÙŠÙ„ Ø§Ù„Ø³ÙˆÙ‚.",
-        br_stale: "Ø¨ÙŠØ§Ù†Ø§Øª Ù…Ù†",
+        br_loading: "جاري تحميل النشرة...",
+        br_error: "خطأ في تحميل النشرة",
+        br_retry: "إعادة المحاولة",
+        br_no_briefing: "لا تتوفر نشرة بعد. يتم إنشاء النشرة يومياً بعد تحليل السوق.",
+        br_stale: "بيانات من",
     }
 };
 
@@ -293,7 +293,7 @@ function renderMarketPulse(pulse) {
     return `
     <div class="briefing-section">
         <div class="briefing-section-header">
-            <h3>ðŸ“Š ${bt('br_pulse')}</h3>
+            <h3>📊 ${bt('br_pulse')}</h3>
             <span class="direction-badge ${dirClass}">${dirLabel}</span>
         </div>
         <div class="briefing-stats-row">
@@ -342,7 +342,7 @@ function renderActionsToday(actions) {
             <div class="briefing-section-header"><h3>âš¡ ${bt('br_actions')}</h3></div>
             <div class="login-wall">
                 <p>${bt('br_login_actions')}</p>
-                <button onclick="showAuthModal('login')" class="auth-trigger-btn">ðŸ” ${bt('br_login_btn')}</button>
+                <button onclick="showAuthModal('login')" class="auth-trigger-btn">🔐 ${bt('br_login_btn')}</button>
             </div>
         </div>`;
     }
@@ -369,8 +369,8 @@ function renderActionsToday(actions) {
                 <div class="action-card-symbol">${a.symbol}</div>
                 <div class="action-card-name">${name}</div>
                 <div class="action-card-meta">
-                    ${a.confidence}% Â· ${a.conviction || ''}
-                    ${a.close_price ? ` Â· EGP ${a.close_price.toFixed(2)}` : ''}
+                    ${a.confidence}% · ${a.conviction || ''}
+                    ${a.close_price ? ` · EGP ${a.close_price.toFixed(2)}` : ''}
                 </div>
                 ${reason ? `<div class="action-card-reason">${reason}</div>` : ''}
             </div>
@@ -393,7 +393,7 @@ function renderPortfolioSnapshot(portfolio) {
     if (!portfolio || portfolio.open_count === 0) {
         return `
         <div class="briefing-section">
-            <div class="briefing-section-header"><h3>ðŸ’¼ ${bt('br_portfolio')}</h3></div>
+            <div class="briefing-section-header"><h3>💼 ${bt('br_portfolio')}</h3></div>
             <p class="no-data">${bt('br_no_portfolio')}</p>
         </div>`;
     }
@@ -416,7 +416,7 @@ function renderPortfolioSnapshot(portfolio) {
 
     return `
     <div class="briefing-section">
-        <div class="briefing-section-header"><h3>ðŸ’¼ ${bt('br_portfolio')}</h3></div>
+        <div class="briefing-section-header"><h3>💼 ${bt('br_portfolio')}</h3></div>
         <div class="briefing-stats-row">
             <div class="briefing-stat">
                 <div class="briefing-stat-val">${portfolio.open_count}</div>
@@ -450,7 +450,7 @@ function renderWatchlistHeatmap(heatmap) {
     if (!heatmap || heatmap.length === 0) {
         return `
         <div class="briefing-section">
-            <div class="briefing-section-header"><h3>ðŸ—ºï¸ ${bt('br_heatmap')}</h3></div>
+            <div class="briefing-section-header"><h3>🗺️ ${bt('br_heatmap')}</h3></div>
             <p class="no-data">${bt('br_no_heatmap')}</p>
         </div>`;
     }
@@ -483,7 +483,7 @@ function renderWatchlistHeatmap(heatmap) {
 
     return `
     <div class="briefing-section">
-        <div class="briefing-section-header"><h3>ðŸ—ºï¸ ${bt('br_heatmap')}</h3></div>
+        <div class="briefing-section-header"><h3>🗺️ ${bt('br_heatmap')}</h3></div>
         <div class="heatmap-grid">${cards}</div>
     </div>`;
 }
@@ -521,7 +521,7 @@ function renderSectorBreakdown(sectors) {
 
     return `
     <div class="briefing-section">
-        <div class="briefing-section-header"><h3>ðŸ­ ${bt('br_sectors')}</h3></div>
+        <div class="briefing-section-header"><h3>🏭 ${bt('br_sectors')}</h3></div>
         ${rows}
     </div>`;
 }
@@ -531,7 +531,7 @@ function renderRiskAlerts(alerts) {
     if (!alerts || alerts.length === 0) {
         return `
         <div class="briefing-section">
-            <div class="briefing-section-header"><h3>âš ï¸ ${bt('br_risk')}</h3></div>
+            <div class="briefing-section-header"><h3>⚠️ ${bt('br_risk')}</h3></div>
             <p class="no-data" style="color: var(--accent-green, #10b981);">${bt('br_no_risk')}</p>
         </div>`;
     }
@@ -549,14 +549,14 @@ function renderRiskAlerts(alerts) {
         return `
         <div class="risk-alert-item">
             <span class="risk-badge ${badgeClass}">${label}</span>
-            <strong>${a.symbol}</strong> â€” ${name}
+            <strong>${a.symbol}</strong> — ${name}
             ${flags ? `<div class="risk-flags-text">${flags}</div>` : ''}
         </div>`;
     }).join('');
 
     return `
     <div class="briefing-section">
-        <div class="briefing-section-header"><h3>âš ï¸ ${bt('br_risk')}</h3></div>
+        <div class="briefing-section-header"><h3>⚠️ ${bt('br_risk')}</h3></div>
         ${items}
     </div>`;
 }
@@ -570,8 +570,8 @@ function renderSentimentSnapshot(sentiment) {
         : sentiment.direction === 'NEGATIVE' ? bt('br_negative') : bt('br_neutral');
     const dirClass = sentiment.direction === 'POSITIVE' ? 'pos'
         : sentiment.direction === 'NEGATIVE' ? 'neg' : '';
-    const emoji = sentiment.direction === 'POSITIVE' ? 'ðŸ˜Š'
-        : sentiment.direction === 'NEGATIVE' ? 'ðŸ˜Ÿ' : 'ðŸ˜';
+    const emoji = sentiment.direction === 'POSITIVE' ? '😊'
+        : sentiment.direction === 'NEGATIVE' ? '😟' : '😐';
 
     const notable = (sentiment.notable || []).slice(0, 5);
     const notableHtml = notable.map(n => {
@@ -585,7 +585,7 @@ function renderSentimentSnapshot(sentiment) {
 
     return `
     <div class="briefing-section">
-        <div class="briefing-section-header"><h3>ðŸ“° ${bt('br_sentiment')}</h3></div>
+        <div class="briefing-section-header"><h3>📰 ${bt('br_sentiment')}</h3></div>
         <div class="briefing-stats-row">
             <div class="briefing-stat">
                 <div class="briefing-stat-val ${dirClass}">${emoji} ${dirLabel}</div>

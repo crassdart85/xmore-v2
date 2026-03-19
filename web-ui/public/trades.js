@@ -1,5 +1,5 @@
-﻿/**
- * Xmore â€” Trades & Portfolio Module
+/**
+ * Xmore — Trades & Portfolio Module
  * Handles Today's Recommendations and User Portfolio display.
  */
 
@@ -66,53 +66,53 @@ const tradesText = {
     },
     ar: {
         // Today's Trades
-        tt_title: "ØªÙˆØµÙŠØ§Øª Ø§Ù„ÙŠÙˆÙ…",
-        tt_subtitle: "Ø¥Ø´Ø§Ø±Ø§Øª ØªØ¯Ø§ÙˆÙ„ Ù…ÙˆÙ„Ø¯Ø© Ø¨Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ Ù„Ø¬Ù„Ø³Ø© Ø§Ù„ÙŠÙˆÙ….",
-        tt_buy: "Ø´Ø±Ø§Ø¡",
-        tt_sell: "Ø¨ÙŠØ¹",
-        tt_hold: "Ø§Ø­ØªÙØ§Ø¸",
-        tt_watch: "Ù…Ø±Ø§Ù‚Ø¨Ø©",
-        tt_entry: "Ù…Ù†Ø·Ù‚Ø© Ø§Ù„Ø¯Ø®ÙˆÙ„",
-        tt_target: "Ø§Ù„Ù‡Ø¯Ù",
-        tt_stop: "ÙˆÙ‚Ù Ø§Ù„Ø®Ø³Ø§Ø±Ø©",
-        tt_risk_reward: "Ø§Ù„Ø¹Ø§Ø¦Ø¯/Ø§Ù„Ù…Ø®Ø§Ø·Ø±Ø©",
-        tt_conviction: "Ø§Ù„Ù‚Ù†Ø§Ø¹Ø©",
-        tt_reasoning: "Ø§Ù„ØªØ­Ù„ÙŠÙ„",
-        tt_execute: "ØªØ¯Ø§ÙˆÙ„",
-        tt_no_trades: "Ù„Ù… ÙŠØªÙ… Ø¥Ù†Ø´Ø§Ø¡ ØªÙˆØµÙŠØ§Øª Ù„Ù‡Ø°Ø§ Ø§Ù„ÙŠÙˆÙ… Ø¨Ø¹Ø¯.",
-        tt_login_required: "Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„Ùƒ Ù„Ø¹Ø±Ø¶ Ø§Ù„ØªÙˆØµÙŠØ§Øª Ø§Ù„Ù…Ø®ØµØµØ©.",
-        tt_login_btn: "ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„",
-        tt_retry: "Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©",
-        tt_conviction_very_high: "Ø¹Ø§Ù„ÙŠØ© Ø¬Ø¯Ø§Ù‹",
-        tt_conviction_high: "Ø¹Ø§Ù„ÙŠØ©",
-        tt_conviction_moderate: "Ù…ØªÙˆØ³Ø·Ø©",
-        tt_conviction_low: "Ù…Ù†Ø®ÙØ¶Ø©",
-        tt_conviction_blocked: "Ù…Ø­Ø¸ÙˆØ±",
-        tt_sector: "Ø§Ù„Ù‚Ø·Ø§Ø¹",
+        tt_title: "توصيات اليوم",
+        tt_subtitle: "إشارات تداول مولدة بالذكاء الاصطناعي لجلسة اليوم.",
+        tt_buy: "شراء",
+        tt_sell: "بيع",
+        tt_hold: "احتفاظ",
+        tt_watch: "مراقبة",
+        tt_entry: "منطقة الدخول",
+        tt_target: "الهدف",
+        tt_stop: "وقف الخسارة",
+        tt_risk_reward: "العائد/المخاطرة",
+        tt_conviction: "القناعة",
+        tt_reasoning: "التحليل",
+        tt_execute: "تداول",
+        tt_no_trades: "لم يتم إنشاء توصيات لهذا اليوم بعد.",
+        tt_login_required: "سجّل دخولك لعرض التوصيات المخصصة.",
+        tt_login_btn: "تسجيل الدخول",
+        tt_retry: "إعادة المحاولة",
+        tt_conviction_very_high: "عالية جداً",
+        tt_conviction_high: "عالية",
+        tt_conviction_moderate: "متوسطة",
+        tt_conviction_low: "منخفضة",
+        tt_conviction_blocked: "محظور",
+        tt_sector: "القطاع",
 
         // Portfolio
-        pt_title: "Ù…Ø­ÙØ¸ØªÙŠ",
-        pt_open: "Ø§Ù„Ù…Ø±Ø§ÙƒØ² Ø§Ù„Ù…ÙØªÙˆØ­Ø©",
-        pt_history: "Ø³Ø¬Ù„ Ø§Ù„ØªØ¯Ø§ÙˆÙ„",
-        pt_stats: "Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ø£Ø¯Ø§Ø¡",
-        pt_symbol: "Ø§Ù„Ø±Ù…Ø²",
-        pt_entry_date: "ØªØ§Ø±ÙŠØ® Ø§Ù„Ø¯Ø®ÙˆÙ„",
-        pt_entry_price: "Ø³Ø¹Ø± Ø§Ù„Ø¯Ø®ÙˆÙ„",
-        pt_current_price: "Ø§Ù„Ø³Ø¹Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ",
-        pt_pnl: "Ø§Ù„Ø±Ø¨Ø­/Ø§Ù„Ø®Ø³Ø§Ø±Ø© %",
-        pt_days_held: "Ø£ÙŠØ§Ù… Ø§Ù„Ø§Ø­ØªÙØ§Ø¸",
-        pt_exit_date: "ØªØ§Ø±ÙŠØ® Ø§Ù„Ø®Ø±ÙˆØ¬",
-        pt_exit_price: "Ø³Ø¹Ø± Ø§Ù„Ø®Ø±ÙˆØ¬",
-        pt_return: "Ø§Ù„Ø¹Ø§Ø¦Ø¯ %",
-        pt_win_rate: "Ù†Ø³Ø¨Ø© Ø§Ù„Ù†Ø¬Ø§Ø­",
-        pt_avg_return: "Ù…ØªÙˆØ³Ø· Ø§Ù„Ø¹Ø§Ø¦Ø¯",
-        pt_total_trades: "Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ØµÙÙ‚Ø§Øª",
-        pt_no_open: "Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø±Ø§ÙƒØ² Ù…ÙØªÙˆØ­Ø© Ø­Ø§Ù„ÙŠØ§Ù‹.",
-        pt_no_history: "Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø³Ø¬Ù„ ØªØ¯Ø§ÙˆÙ„ Ù…ØªØ§Ø­.",
+        pt_title: "محفظتي",
+        pt_open: "المراكز المفتوحة",
+        pt_history: "سجل التداول",
+        pt_stats: "إحصائيات الأداء",
+        pt_symbol: "الرمز",
+        pt_entry_date: "تاريخ الدخول",
+        pt_entry_price: "سعر الدخول",
+        pt_current_price: "السعر الحالي",
+        pt_pnl: "الربح/الخسارة %",
+        pt_days_held: "أيام الاحتفاظ",
+        pt_exit_date: "تاريخ الخروج",
+        pt_exit_price: "سعر الخروج",
+        pt_return: "العائد %",
+        pt_win_rate: "نسبة النجاح",
+        pt_avg_return: "متوسط العائد",
+        pt_total_trades: "إجمالي الصفقات",
+        pt_no_open: "لا توجد مراكز مفتوحة حالياً.",
+        pt_no_history: "لا يوجد سجل تداول متاح.",
 
         // General
-        loading: "Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...",
-        error: "Ø®Ø·Ø£ ÙÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª",
+        loading: "جاري التحميل...",
+        error: "خطأ في تحميل البيانات",
     }
 };
 
@@ -153,7 +153,7 @@ async function listTodayTrades() {
     if (typeof currentUser === 'undefined' || !currentUser) {
         container.innerHTML = `<div class="login-wall">
             <p>${tt('tt_login_required')}</p>
-            <button onclick="showAuthModal('login')" class="auth-trigger-btn">ðŸ” ${tt('tt_login_btn')}</button>
+            <button onclick="showAuthModal('login')" class="auth-trigger-btn">🔐 ${tt('tt_login_btn')}</button>
         </div>`;
         return;
     }
@@ -234,7 +234,7 @@ function renderTodayTrades() {
     if (todayTrades.length === 0) {
         // Empty state illustration (Upgrade 6)
         if (typeof renderEmptyState === 'function') {
-            renderEmptyState('todayTradesContainer', 'ðŸ“‹', 'emptyTrades', 'emptyTradesDesc', null, null);
+            renderEmptyState('todayTradesContainer', '📋', 'emptyTrades', 'emptyTradesDesc', null, null);
         } else {
             container.innerHTML = `<p class="no-data">${tt('tt_no_trades')}</p>`;
         }
@@ -254,7 +254,7 @@ function createTradeCard(trade) {
     const sector = isAr ? (trade.sector_ar || trade.sector_en || '') : (trade.sector_en || '');
 
     const reasonsList = Array.isArray(trade.reasons)
-        ? trade.reasons.map(r => `<li>â€¢ ${escapeHtml(r)}</li>`).join('')
+        ? trade.reasons.map(r => `<li>• ${escapeHtml(r)}</li>`).join('')
         : '';
 
     return `
@@ -330,7 +330,7 @@ function renderPortfolio() {
     const hasClosed = portfolioData.closed_positions && portfolioData.closed_positions.length > 0;
     if (!portfolioData.stats && !hasOpen && !hasClosed) {
         if (typeof renderEmptyState === 'function' && openContainer) {
-            renderEmptyState('portfolioOpen', 'ðŸ’¼', 'emptyPortfolio', 'emptyPortfolioDesc', 'viewTrades', "switchToTab('trades')");
+            renderEmptyState('portfolioOpen', '💼', 'emptyPortfolio', 'emptyPortfolioDesc', 'viewTrades', "switchToTab('trades')");
             if (closedContainer) closedContainer.innerHTML = '';
             if (statsContainer) statsContainer.innerHTML = '';
         }
