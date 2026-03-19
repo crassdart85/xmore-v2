@@ -1,4 +1,4 @@
-# Xmore Project Memory
+﻿# Xmore Project Memory
 
 ## Project Overview
 Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
@@ -123,3 +123,13 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - Dashboard auto-refreshes data on language switch
 - Prediction horizon: 1 day (changed from 7 days for faster evaluation)
 - See root `MEMORY.md` and `docs/PERFORMANCE_SYSTEM.md` for full details
+
+## Mar 19, 2026 - Live Validation + Deploy
+- Live smoke test passed against https://xmore-project.onrender.com after pushing main.
+- Verified HTTP 200 for: /, /docs, /landing, /pro, /session, /track-record, /admin.
+- Verified HTTP 200 for APIs: /api/consensus, /api/intelligence/changes, /api/intelligence/quality, /api/performance-v2/summary.
+- Verified /api/consensus now returns calibrated_confidence, expected_edge_pct, and ranking_score.
+- Verified /api/intelligence/changes returns signal, forecast, and macro change groups.
+- Verified /api/intelligence/quality returns overall_status, freshness, and drift.
+- Verified /api/rag/chat returns retrieval_meta.resolved_entities and sources on a live request.
+- Validation also found and fixed pre-existing syntax errors in web-ui/public/performance-dashboard.js; npm run check now passes locally.

@@ -1,4 +1,4 @@
-# Xmore Project Memory
+﻿# Xmore Project Memory
 
 ## Project Overview
 Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
@@ -19,7 +19,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `engines/portfolio_engine.py` - **NEW** Signal-to-allocation pipeline (5-step: collect ? filter ? score ? allocate ? publish)
 - `engines/circuit_breaker.py` - **NEW** Drawdown circuit breaker (increases cash when drawdown exceeds threshold)
 - `engines/generate_portfolios.py` - **NEW** Cron orchestrator for portfolio generation (runs after daily predictions)
-- `evaluate_trades.py` - Trade recommendation accuracy tracker (legacy — superseded by `evaluate_performance.py`)
+- `evaluate_trades.py` - Trade recommendation accuracy tracker (legacy â€” superseded by `evaluate_performance.py`)
 - `web-ui/routes/trades.js` - API routes for trades and portfolio
 - `web-ui/routes/performance.js` - **NEW** Investor-grade performance API routes (`/api/performance-v2/*`)
 - `web-ui/public/trades.js` - Frontend logic for trades dashboard
@@ -47,7 +47,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 ## GitHub Actions Schedule
 | Task | Schedule | Script |
 |------|----------|---------|
-| EGX Data Collection | Sun-Thu 12:30 PM EST | `collect_data.py` (EGX live → yfinance) |
+| EGX Data Collection | Sun-Thu 12:30 PM EST | `collect_data.py` (EGX live â†’ yfinance) |
 | US Data + Sentiment | Mon-Fri 4:30 PM EST | `collect_data.py` + `sentiment.py` |
 | Predictions | Sun-Fri 5:00 PM EST (daily, 1-day) | `run_agents.py` (incl. Consensus, Trades, Performance Eval) |
 | Portfolio Generation | Daily (after predictions) | `engines/generate_portfolios.py` (needs: daily-predictions) |
@@ -135,7 +135,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `/api/portfolio` - User portfolio (open positions, performance stats)
 - `/api/stats` - System statistics
 
-### Portfolio Endpoints (Phase 2 � Planned)
+### Portfolio Endpoints (Phase 2 — Planned)
 - `GET /api/portfolios` - List portfolio types with latest snapshot
 - `GET /api/portfolios/:type` - Full allocation detail for a portfolio type (preview: free / full: auth)
 - `GET /api/portfolios/:type/performance` - Historical performance + metrics
@@ -215,7 +215,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - Dashboard auto-refreshes data on language switch
 - Prediction horizon: 1 day (changed from 7 days for faster evaluation)
 
-\n\n## Mar 14, 2026 � UI/Deploy Fixes\n\n## Mar 14, 2026 � RAG Assistant Update\n- /api/rag/chat now pulls from all RAG sources: market reports, ETF documents, embedded news/event intel chunks.\n- Added semantic matching against 
+\n\n## Mar 14, 2026 — UI/Deploy Fixes\n\n## Mar 14, 2026 — RAG Assistant Update\n- /api/rag/chat now pulls from all RAG sources: market reports, ETF documents, embedded news/event intel chunks.\n- Added semantic matching against 
 ews_rag_chunks and included custom news sources in context when available.\n- Updated EGX knowledge block to list all internal data sources used by the assistant.\n\n- **Render boot crash**: fixed a duplicate catch block in web-ui/routes/performance.js that caused SyntaxError: missing ) after argument list on startup.\n- **Header cleanup**: removed absolute positioning from header controls and user info bar to prevent overlap; tightened small-screen behavior in web-ui/public/style.css + web-ui/public/auth.css.\n- **Snapshot bar**: removed \u201cLive-Only Data\u201d pill from the global performance snapshot bar (web-ui/public/app.js, web-ui/public/style.css).\n\n## Recent Changes (Feb 2026)
 - **Time Machine Short-Window No-Data Fix (Feb 18, 2026)**:
   - Increased Time Machine historical warmup window in `engines/timemachine_data.py` from 60 to 180 days so recent start dates still have enough context for indicators.
@@ -364,14 +364,14 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - **VADER Sentiment**: Dual-engine (VADER fast + FinBERT deep) with auto mode and source weighting
 - **Performance Dashboard**: Tabbed UI, per-agent/per-stock stats, monthly accuracy chart (canvas)
 - **TradingView Widgets**: Ticker tape + lazy-loaded mini charts, locale-aware
-- **Compliance**: Signal terminology → Bullish/Bearish, bilingual disclaimers, `TERMS.md`
-- **Consensus Agent**: `agents/agent_consensus.py` — accuracy-weighted voting across all agents
+- **Compliance**: Signal terminology â†’ Bullish/Bearish, bilingual disclaimers, `TERMS.md`
+- **Consensus Agent**: `agents/agent_consensus.py` â€” accuracy-weighted voting across all agents
 - **Dependencies Added**: `lxml`, `vaderSentiment`, `quantstats`, `TA-Lib`
 
 ## Phase 3 Upgrade: Performance System (Feb 12, 2026)
 - **Performance Evaluation Engine** (`engines/evaluate_performance.py`): Resolves 1d/5d outcomes, calculates EGX30 benchmark returns + alpha, updates agent accuracy snapshots, refreshes materialized views
 - **Performance Metrics Calculator** (`engines/performance_metrics.py`): Sharpe ratio, Sortino ratio, max drawdown, profit factor, rolling windows, equity curve data, agent comparison
-- **Investor-Grade API** (`web-ui/routes/performance.js`): 7 public endpoints under `/api/performance-v2/` — summary, by-agent, by-stock, equity-curve, predictions/open, predictions/history, audit
+- **Investor-Grade API** (`web-ui/routes/performance.js`): 7 public endpoints under `/api/performance-v2/` â€” summary, by-agent, by-stock, equity-curve, predictions/open, predictions/history, audit
 - **Performance Dashboard** (`web-ui/public/performance-dashboard.js` + `.css`): Premium dark/light dashboard with key metrics grid, canvas equity curve chart, agent accuracy table, stock chips, prediction history pagination, audit modal, integrity section, bilingual support
 - **Database Schema** (`007_performance_benchmark.sql`, `database.py`): Immutability triggers, audit trail table, benchmark columns, agent performance table, materialized view
 - **Pipeline Integration** (`run_agents.py`): Performance evaluation added as Step 8 after briefing generation
@@ -532,7 +532,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - Active users with no `user_watchlist` rows now receive a baseline set of 10 EGX30 symbols.
   - Recommendation generation then runs for all active users with watchlists.
 - Relaxed trades API behavior in `web-ui/routes/trades.js`:
-  - `GET /api/trades/today` now falls back to the user’s latest available recommendation date when today has no rows.
+  - `GET /api/trades/today` now falls back to the userâ€™s latest available recommendation date when today has no rows.
   - API response summary now includes `date` (effective date used) and `fallback_used` (boolean).
 - Verified historical GitHub Actions logs contained the exact failing messages before fix:
   - `Error generating trade recommendations: name 'database' is not defined`
@@ -572,3 +572,13 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - Added ?lang=ar/?lang=en query override on /docs.
 - Docs page now auto-applies dir='rtl' + right-aligned layout in Arabic without requiring a separate docs-only toggle state.
 - Docs language toggle now syncs both docs-lang and global lang in localStorage.
+
+## Mar 19, 2026 - Live Validation + Deploy
+- Live smoke test passed against https://xmore-project.onrender.com after pushing main.
+- Verified HTTP 200 for: /, /docs, /landing, /pro, /session, /track-record, /admin.
+- Verified HTTP 200 for APIs: /api/consensus, /api/intelligence/changes, /api/intelligence/quality, /api/performance-v2/summary.
+- Verified /api/consensus now returns calibrated_confidence, expected_edge_pct, and ranking_score.
+- Verified /api/intelligence/changes returns signal, forecast, and macro change groups.
+- Verified /api/intelligence/quality returns overall_status, freshness, and drift.
+- Verified /api/rag/chat returns retrieval_meta.resolved_entities and sources on a live request.
+- Validation also found and fixed pre-existing syntax errors in web-ui/public/performance-dashboard.js; npm run check now passes locally.
