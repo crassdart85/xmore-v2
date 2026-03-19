@@ -74,6 +74,25 @@ Stock trading prediction system with web dashboard. Uses multiple signal engines
 - `index.html` and `style.css`
   - added a new dashboard section below the snapshot bar for change detection and quality monitoring.
 
+## Assistant Widget Restoration + Full UI Stabilization (Mar 19, 2026)
+- **Widget Restored**: Recreated `assistant-widget.js` (424 lines) and `assistant-widget.css` without AI-themed icons
+  - FAB button: replaced chat bubble SVG with plain text "Ask" label
+  - Panel header: removed duplicate SVG icon (kept title text)
+  - Features intact: voice input, 3 quick-action chips, bilingual i18n, RAG chat integration (`/api/rag/chat`)
+  - Mic button SVG kept (functional, not aesthetic)
+  - Applied to: `admin.html`, `landing.html`, `pro.html`, `session.html`, `track-record.html`, `docs.html`
+- **Encoding Fixed**: Double-encoded UTF-8 artifacts resolved in all 6 pages
+  - PowerShell re-encoding: UTF-8 → windows-1252 bytes → UTF-8
+  - All emoji/Arabic text now rendering correctly
+- **Dark Mode Enabled** on `docs.html`
+  - Added dark theme CSS variables to inline `<style>` block
+  - Theme persists via `localStorage` with OS preference fallback
+- **Admin Links Removed** from `docs.html`
+  - Removed "Go to Admin" CTA from closing strip section
+  - Removed "Admin" nav link
+  - Removed "Admin" footer link
+- **Live Testing**: All routes operational (200 OK), `/api/rag/chat` responds with proper auth/config checks
+
 ## Environment Variables (Secrets)
 - `DATABASE_URL` - PostgreSQL connection string (Render)
 - `NEWS_API_KEY` - News API for news collection

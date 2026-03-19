@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="base.css">    <title>Xmore Admin Dashboard</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="assistant-widget.css">
 </head>
 <body>
     <div class="container">
@@ -19,7 +20,7 @@
         </header>
 
         <!-- ================================================ -->
-        <!-- LOGIN PANEL â€” shown when not authenticated       -->
+        <!-- LOGIN PANEL — shown when not authenticated       -->
         <!-- ================================================ -->
         <section class="section admin-login-panel" id="adminLoginPanel">
             <h2>Admin Login</h2>
@@ -40,7 +41,7 @@
         </section>
 
         <!-- ================================================ -->
-        <!-- MAIN CONTENT â€” hidden until logged in            -->
+        <!-- MAIN CONTENT — hidden until logged in            -->
         <!-- ================================================ -->
         <div id="adminMainContent" style="display:none;">
 
@@ -82,8 +83,8 @@
                 <div class="admin-info-body">
                     <strong>What is this?</strong> A live snapshot of the system's database and prediction engine.
                     <ul class="admin-info-list">
-                        <li><strong>Audit Log</strong> â€” records every data change automatically. No action needed.</li>
-                        <li><strong>Agent Snapshot</strong> â€” shows the latest win-rate for trading agents. Updates every Friday after predictions run via GitHub Actions.</li>
+                        <li><strong>Audit Log</strong> — records every data change automatically. No action needed.</li>
+                        <li><strong>Agent Snapshot</strong> — shows the latest win-rate for trading agents. Updates every Friday after predictions run via GitHub Actions.</li>
                         <li>If values show "No data", the first scheduled run hasn't completed yet.</li>
                     </ul>
                 </div>
@@ -108,9 +109,9 @@
                 <div class="admin-info-body">
                     <strong>What is this?</strong> Upload market reports, CBE circulars, research PDFs, or scanned images to enrich the trading intelligence pipeline.
                     <ul class="admin-info-list">
-                        <li>Supports <strong>PDF, PNG, JPG, WEBP, BMP, TIFF</strong> â€” up to 25 MB per file.</li>
+                        <li>Supports <strong>PDF, PNG, JPG, WEBP, BMP, TIFF</strong> — up to 25 MB per file.</li>
                         <li>Text is extracted automatically. Arabic and English are both recognised.</li>
-                        <li>Scanned images are processed with OCR â€” text quality depends on scan resolution.</li>
+                        <li>Scanned images are processed with OCR — text quality depends on scan resolution.</li>
                         <li>Uploaded files appear in the <strong>Reports</strong> tab once processed.</li>
                     </ul>
                 </div>
@@ -131,9 +132,9 @@
                 <div class="admin-info-body">
                     <strong>What is this?</strong> All documents uploaded to the knowledge base, with extracted metadata.
                     <ul class="admin-info-list">
-                        <li><strong>Status: Processed</strong> â€” text was extracted successfully and is searchable.</li>
-                        <li><strong>Status: Pending</strong> â€” extraction failed or the file was unreadable (e.g. image-only PDF with no OCR text).</li>
-                        <li><strong>Insight</strong> â€” an auto-generated summary of the document's key topics, tickers, and tone.</li>
+                        <li><strong>Status: Processed</strong> — text was extracted successfully and is searchable.</li>
+                        <li><strong>Status: Pending</strong> — extraction failed or the file was unreadable (e.g. image-only PDF with no OCR text).</li>
+                        <li><strong>Insight</strong> — an auto-generated summary of the document's key topics, tickers, and tone.</li>
                         <li>Language is detected automatically from the extracted text.</li>
                     </ul>
                 </div>
@@ -168,8 +169,8 @@
                 <div class="admin-info-body">
                     <strong>What is this?</strong> Register external sources that the system polls automatically for new articles.
                     <ul class="admin-info-list">
-                        <li><strong>RSS Feed</strong> â€” most news sites provide an RSS URL (e.g. <em>https://example.com/feed</em>). This is the most reliable source type.</li>
-                        <li><strong>Single URL</strong> â€” fetches one specific article page. Use for one-off items.</li>
+                        <li><strong>RSS Feed</strong> — most news sites provide an RSS URL (e.g. <em>https://example.com/feed</em>). This is the most reliable source type.</li>
+                        <li><strong>Single URL</strong> — fetches one specific article page. Use for one-off items.</li>
                         <li>Use <strong>Pause</strong> to stop fetching without deleting the source or its articles.</li>
                         <li>Use <strong>Fetch Now</strong> to pull new items immediately instead of waiting for the schedule.</li>
                     </ul>
@@ -247,7 +248,7 @@
                         </tr>
                     </thead>
                     <tbody id="sourceRows">
-                        <tr><td colspan="8" class="no-data">Loading sourcesâ€¦</td></tr>
+                        <tr><td colspan="8" class="no-data">Loading sources…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -264,7 +265,7 @@
                 <div class="admin-info-body">
                     <strong>What is this?</strong> The most recent closing price and volume for every tracked stock.
                     <ul class="admin-info-list">
-                        <li>Data is collected Mondayâ€“Friday at 4:30 PM EST via the GitHub Actions workflow.</li>
+                        <li>Data is collected Monday–Friday at 4:30 PM EST via the GitHub Actions workflow.</li>
                         <li>The <strong>Change</strong> column shows the daily move in EGP/USD and as a percentage.</li>
                         <li>Use the search box to filter by ticker or company name.</li>
                         <li>If no data appears, the daily collection job has not run yet today.</li>
@@ -274,7 +275,7 @@
             </div>
 
             <div class="admin-prices-toolbar">
-                <input id="pricesSearch" type="search" placeholder="Filter by ticker or nameâ€¦" class="admin-prices-search">
+                <input id="pricesSearch" type="search" placeholder="Filter by ticker or name…" class="admin-prices-search">
                 <span id="pricesDate" class="admin-muted"></span>
                 <button id="pricesRefreshBtn" class="admin-btn">&#8635; Refresh</button>
             </div>
@@ -296,7 +297,7 @@
                         </tr>
                     </thead>
                     <tbody id="priceRows">
-                        <tr><td colspan="10" class="no-data">Loading pricesâ€¦</td></tr>
+                        <tr><td colspan="10" class="no-data">Loading prices…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -313,10 +314,10 @@
                     <strong>What is this?</strong> A manual ingestion lane for content from any source that can't be auto-fetched.
                     <ul class="admin-info-list">
                         <li>Paste forwarded message text directly into the text box, or upload a screenshot / PDF.</li>
-                        <li>Set a <strong>Source Label</strong> to group these articles together in the sentiment dashboard (e.g. "EGX News â€” Manual").</li>
-                        <li>Arabic and English are both supported â€” language is detected automatically.</li>
+                        <li>Set a <strong>Source Label</strong> to group these articles together in the sentiment dashboard (e.g. "EGX News — Manual").</li>
+                        <li>Arabic and English are both supported — language is detected automatically.</li>
                         <li>Submitted content goes through the same sentiment pipeline as auto-fetched articles.</li>
-                        <li>You can submit text and a file at the same time â€” both will be processed.</li>
+                        <li>You can submit text and a file at the same time — both will be processed.</li>
                     </ul>
                 </div>
                 <button class="admin-info-dismiss" aria-label="Dismiss" data-dismiss="tab-telegram">&#10005;</button>
@@ -326,11 +327,11 @@
             <div class="admin-source-form">
                 <div class="admin-form-row">
                     <label for="waSourceName">Source Label</label>
-                    <input id="waSourceName" type="text" value="Manual Feed" placeholder="e.g. EGX News â€” Manual">
+                    <input id="waSourceName" type="text" value="Manual Feed" placeholder="e.g. EGX News — Manual">
                 </div>
                 <div class="admin-form-row">
                     <label for="waText">Paste text</label>
-                    <textarea id="waText" rows="5" placeholder="Paste forwarded message hereâ€¦" style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:var(--container-bg);color:var(--text-primary);"></textarea>
+                    <textarea id="waText" rows="5" placeholder="Paste forwarded message here…" style="width:100%;box-sizing:border-box;resize:vertical;font-family:inherit;padding:8px;border:1px solid var(--border-color);border-radius:6px;background:var(--container-bg);color:var(--text-primary);"></textarea>
                 </div>
                 <div id="waDropZone" class="admin-drop-zone" tabindex="0" role="button" aria-label="Upload image or PDF">
                     <p><strong>Drag & drop image or PDF</strong></p>
@@ -354,7 +355,7 @@
 
             <!-- Embed status + trigger -->
             <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
-                <span id="ragEmbedStatus" style="color:var(--text-muted);font-size:13px;">Checking embed statusâ€¦</span>
+                <span id="ragEmbedStatus" style="color:var(--text-muted);font-size:13px;">Checking embed status…</span>
                 <button class="refresh-btn" id="ragEmbedBtn" onclick="triggerEmbed()" style="font-size:13px;padding:8px 18px;">
                     &#128257; Embed Documents
                 </button>
@@ -379,7 +380,7 @@
                             </tr>
                         </thead>
                         <tbody id="ragDocsBody">
-                            <tr><td colspan="6" class="admin-muted" style="text-align:center;padding:20px;">Loadingâ€¦</td></tr>
+                            <tr><td colspan="6" class="admin-muted" style="text-align:center;padding:20px;">Loading…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -414,9 +415,9 @@
                 <div class="admin-info-body">
                     <strong>What is this?</strong> Control which tabs are visible in the main trading dashboard for all users on this browser.
                     <ul class="admin-info-list">
-                        <li>Toggle any tab off to hide it from the main navigation â€” it won't load or be accessible.</li>
+                        <li>Toggle any tab off to hide it from the main navigation — it won't load or be accessible.</li>
                         <li><strong>Predictions</strong> is always shown and cannot be hidden.</li>
-                        <li>Settings are saved in <code>localStorage</code> â€” they apply to this browser only.</li>
+                        <li>Settings are saved in <code>localStorage</code> — they apply to this browser only.</li>
                         <li>Changes take effect immediately the next time the dashboard is loaded or refreshed.</li>
                     </ul>
                 </div>
@@ -437,14 +438,14 @@
         <!-- ================================================ -->
         <section class="section admin-tab-panel" id="tab-forecast-accuracy" role="tabpanel">
             <h2>Forecast Accuracy</h2>
-            <p class="admin-muted">Tracks the accuracy of saved portfolio forecasts â€” comparing predicted vs actual returns after target dates are reached.</p>
+            <p class="admin-muted">Tracks the accuracy of saved portfolio forecasts — comparing predicted vs actual returns after target dates are reached.</p>
 
             <!-- Summary cards -->
             <div id="forecastAccuracySummary" class="admin-health-grid" style="margin-bottom:24px;">
-                <div class="admin-metric-card"><div class="admin-metric-label">Total Forecasts Run</div><div class="admin-metric-value" id="faStatTotal">â€”</div></div>
-                <div class="admin-metric-card"><div class="admin-metric-label">Evaluated</div><div class="admin-metric-value" id="faStatEvaluated">â€”</div></div>
-                <div class="admin-metric-card"><div class="admin-metric-label">Avg Error %</div><div class="admin-metric-value" id="faStatAvgError">â€”</div></div>
-                <div class="admin-metric-card"><div class="admin-metric-label">Within 10% Hit Rate</div><div class="admin-metric-value" id="faStatHitRate">â€”</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Total Forecasts Run</div><div class="admin-metric-value" id="faStatTotal">—</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Evaluated</div><div class="admin-metric-value" id="faStatEvaluated">—</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Avg Error %</div><div class="admin-metric-value" id="faStatAvgError">—</div></div>
+                <div class="admin-metric-card"><div class="admin-metric-label">Within 10% Hit Rate</div><div class="admin-metric-value" id="faStatHitRate">—</div></div>
             </div>
 
             <!-- Per-stock accuracy table -->
@@ -461,7 +462,7 @@
                             <th>Within 10% Rate</th>
                         </tr>
                     </thead>
-                    <tbody id="faStockTableBody"><tr><td colspan="6" class="admin-muted" style="text-align:center;padding:20px;">Loadingâ€¦</td></tr></tbody>
+                    <tbody id="faStockTableBody"><tr><td colspan="6" class="admin-muted" style="text-align:center;padding:20px;">Loading…</td></tr></tbody>
                 </table>
             </div>
 
@@ -480,7 +481,7 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="faRecentTableBody"><tr><td colspan="7" class="admin-muted" style="text-align:center;padding:20px;">Loadingâ€¦</td></tr></tbody>
+                    <tbody id="faRecentTableBody"><tr><td colspan="7" class="admin-muted" style="text-align:center;padding:20px;">Loading…</td></tr></tbody>
                 </table>
             </div>
         </section>
@@ -536,51 +537,51 @@
             <p class="admin-muted">All endpoints return JSON. Auth endpoints require a valid session cookie. Admin endpoints require <code>Authorization: Bearer &lt;token&gt;</code>.</p>
 
             <div style="background:var(--card-bg);border:1px solid var(--border-color);padding:16px;font-family:'Courier New',monospace;font-size:12.5px;color:var(--text-secondary);overflow-x:auto;margin-top:16px;line-height:1.9;">
-<span style="color:var(--text-muted)"># â”€â”€ Predictions &amp; Consensus â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/consensus                    <span style="color:var(--text-muted)">â†’ array of all stocks with signals</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/stocks/:symbol/brief         <span style="color:var(--text-muted)">â†’ {brief} 3-sentence market narrative</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/signal-accuracy?horizon=10   <span style="color:var(--text-muted)">â†’ per-stock accuracy at D+5/D+10/D+20</span>
+<span style="color:var(--text-muted)"># ── Predictions &amp; Consensus ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/consensus                    <span style="color:var(--text-muted)">→ array of all stocks with signals</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/stocks/:symbol/brief         <span style="color:var(--text-muted)">→ {brief} 3-sentence market narrative</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/signal-accuracy?horizon=10   <span style="color:var(--text-muted)">→ per-stock accuracy at D+5/D+10/D+20</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ Prices â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/prices                        <span style="color:var(--text-muted)">â†’ latest close price for all symbols</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/prices/:symbol                <span style="color:var(--text-muted)">â†’ price history for one symbol</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/sentiment                     <span style="color:var(--text-muted)">â†’ latest sentiment per stock</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/stats                         <span style="color:var(--text-muted)">â†’ {total_stocks, latestDate, â€¦}</span>
+<span style="color:var(--text-muted)"># ── Prices ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/prices                        <span style="color:var(--text-muted)">→ latest close price for all symbols</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/prices/:symbol                <span style="color:var(--text-muted)">→ price history for one symbol</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/sentiment                     <span style="color:var(--text-muted)">→ latest sentiment per stock</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/stats                         <span style="color:var(--text-muted)">→ {total_stocks, latestDate, …}</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ Portfolio &amp; Trades â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/trades/portfolio              <span style="color:var(--text-muted)">â†’ {open_positions, closed_positions, stats, totals, sector_breakdown}</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/trades/positions             <span style="color:var(--text-muted)">â†’ add position {symbol, entry_price, quantity, entry_date}</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/trades/alerts                 <span style="color:var(--text-muted)">â†’ list alerts (auto-triggers active ones)</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/trades/alerts                 <span style="color:var(--text-muted)">â†’ create alert {symbol, condition, target_price}</span>
-<span style="color:var(--accent);font-weight:700">DELETE</span> /api/trades/alerts/:id          <span style="color:var(--text-muted)">â†’ delete alert</span>
+<span style="color:var(--text-muted)"># ── Portfolio &amp; Trades ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/trades/portfolio              <span style="color:var(--text-muted)">→ {open_positions, closed_positions, stats, totals, sector_breakdown}</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/trades/positions             <span style="color:var(--text-muted)">→ add position {symbol, entry_price, quantity, entry_date}</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/trades/alerts                 <span style="color:var(--text-muted)">→ list alerts (auto-triggers active ones)</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/trades/alerts                 <span style="color:var(--text-muted)">→ create alert {symbol, condition, target_price}</span>
+<span style="color:var(--accent);font-weight:700">DELETE</span> /api/trades/alerts/:id          <span style="color:var(--text-muted)">→ delete alert</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ FX &amp; Rates â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/fx-rates                      <span style="color:var(--text-muted)">â†’ {USD_EGP, USD_SAR, SAR_EGP, XAU_USD, â€¦}</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/fx-rates/history?days=90      <span style="color:var(--text-muted)">â†’ array of daily rate rows (oldest first)</span>
+<span style="color:var(--text-muted)"># ── FX &amp; Rates ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/fx-rates                      <span style="color:var(--text-muted)">→ {USD_EGP, USD_SAR, SAR_EGP, XAU_USD, …}</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/fx-rates/history?days=90      <span style="color:var(--text-muted)">→ array of daily rate rows (oldest first)</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ Forecast Portfolios â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts           <span style="color:var(--text-muted)">â†’ list user portfolios</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/portfolio-forecasts           <span style="color:var(--text-muted)">â†’ create portfolio + run forecast</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts/:id/results  <span style="color:var(--text-muted)">â†’ per-stock forecast results</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts/:id/chart    <span style="color:var(--text-muted)">â†’ forecast vs actuals time series</span>
+<span style="color:var(--text-muted)"># ── Forecast Portfolios ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts           <span style="color:var(--text-muted)">→ list user portfolios</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/portfolio-forecasts           <span style="color:var(--text-muted)">→ create portfolio + run forecast</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts/:id/results  <span style="color:var(--text-muted)">→ per-stock forecast results</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/portfolio-forecasts/:id/chart    <span style="color:var(--text-muted)">→ forecast vs actuals time series</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ ETF â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/instruments               <span style="color:var(--text-muted)">â†’ all ETF instruments</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/prices/:symbol            <span style="color:var(--text-muted)">â†’ price history</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/nav/:symbol               <span style="color:var(--text-muted)">â†’ NAV history</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/holdings/:symbol          <span style="color:var(--text-muted)">â†’ holdings snapshot</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/country-exposure          <span style="color:var(--text-muted)">â†’ country weights</span>
+<span style="color:var(--text-muted)"># ── ETF ──</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/instruments               <span style="color:var(--text-muted)">→ all ETF instruments</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/prices/:symbol            <span style="color:var(--text-muted)">→ price history</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/nav/:symbol               <span style="color:var(--text-muted)">→ NAV history</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/holdings/:symbol          <span style="color:var(--text-muted)">→ holdings snapshot</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/etf/country-exposure          <span style="color:var(--text-muted)">→ country weights</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ RAG / Chat â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/chat                      <span style="color:var(--text-muted)">â†’ {message} â†’ {reply} market research</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/macro                     <span style="color:var(--text-muted)">â†’ {} â†’ {answer, sources[]} grounded macro brief</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/ask                       <span style="color:var(--text-muted)">â†’ {question} â†’ {answer} report RAG (admin)</span>
+<span style="color:var(--text-muted)"># ── RAG / Chat ──</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/chat                      <span style="color:var(--text-muted)">→ {message} → {reply} market research</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/macro                     <span style="color:var(--text-muted)">→ {} → {answer, sources[]} grounded macro brief</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/rag/ask                       <span style="color:var(--text-muted)">→ {question} → {answer} report RAG (admin)</span>
 
-<span style="color:var(--text-muted)"># â”€â”€ Auth â”€â”€</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/signup                   <span style="color:var(--text-muted)">â†’ {email, password} â†’ sets cookie</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/login                    <span style="color:var(--text-muted)">â†’ {email, password} â†’ sets cookie</span>
-<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/logout                   <span style="color:var(--text-muted)">â†’ clears cookie</span>
-<span style="color:var(--accent);font-weight:700">GET</span>  /api/auth/me                       <span style="color:var(--text-muted)">â†’ {id, email} if logged in</span>
+<span style="color:var(--text-muted)"># ── Auth ──</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/signup                   <span style="color:var(--text-muted)">→ {email, password} → sets cookie</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/login                    <span style="color:var(--text-muted)">→ {email, password} → sets cookie</span>
+<span style="color:var(--accent);font-weight:700">POST</span> /api/auth/logout                   <span style="color:var(--text-muted)">→ clears cookie</span>
+<span style="color:var(--accent);font-weight:700">GET</span>  /api/auth/me                       <span style="color:var(--text-muted)">→ {id, email} if logged in</span>
             </div>
 
             <div style="margin-top:16px;padding:12px 16px;background:var(--no-data-bg);border-left:3px solid var(--border-color);font-size:13px;color:var(--text-secondary);">
@@ -592,7 +593,8 @@
         </div><!-- /#adminMainContent -->
     </div><!-- /.container -->
 
-    <script src="admin.js"></script></body>
+    <script src="admin.js"></script>
+    <script src="assistant-widget.js"></script></body>
 </html>
 
 

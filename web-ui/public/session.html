@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="base.css">  <title>Xmore â€” Session Sheet</title>
+  <link rel="stylesheet" href="base.css">  <title>Xmore — Session Sheet</title>
   <link rel="stylesheet" href="session.css">
+  <link rel="stylesheet" href="assistant-widget.css">
 </head>
 <body>
 
   <!-- Header -->
   <header class="s-header x-topbar x-topbar--dark">
-    <a href="/" class="s-back x-back" id="sBack">â† Dashboard</a>
+    <a href="/" class="s-back x-back" id="sBack">← Dashboard</a>
     <span class="s-logo x-brand">XMORE <span class="s-logo-tag">SESSION</span></span>
     <span class="s-session-label" id="sSessionLabel">
-      Session <span class="s-session-date" id="sSessionDate">â€”</span>
+      Session <span class="s-session-date" id="sSessionDate">—</span>
     </span>
     <nav class="x-nav-links" aria-label="Primary">
       <a class="x-link" href="/">Home</a>
@@ -24,22 +25,22 @@
     </nav>
     <!-- Mobile menu button -->
     <button id="sMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="sMobileMenuDropdown">
-      <span class="hamburger-icon">â˜°</span>
+      <span class="hamburger-icon">☰</span>
     </button>
     <!-- Mobile menu dropdown -->
     <div id="sMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-      <a href="/" class="mobile-menu-item" role="menuitem">ðŸ  Home</a>
-      <a href="/track-record" class="mobile-menu-item" role="menuitem">ðŸ“Š Track Record</a>
-      <a href="/pro" class="mobile-menu-item" role="menuitem">â­ Pro</a>
-      <a href="/session" class="mobile-menu-item active" role="menuitem">ðŸ“Œ Session</a>
-      <a href="/docs" class="mobile-menu-item" role="menuitem">ðŸ“š Docs</a>
+      <a href="/" class="mobile-menu-item" role="menuitem">🏠 Home</a>
+      <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
+      <a href="/pro" class="mobile-menu-item" role="menuitem">⭐ Pro</a>
+      <a href="/session" class="mobile-menu-item active" role="menuitem">📌 Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
     </div>
     <div class="s-auth-area">
       <span class="s-auth-user" id="sAuthUser" style="display:none"></span>
       <button class="s-auth-btn" id="sLogoutBtn" style="display:none" onclick="sHandleLogout()">Sign Out</button>
       <button class="s-auth-btn s-auth-btn--primary" id="sLoginBtn" onclick="sShowModal()">Sign In</button>
     </div>
-    <button class="s-lang-btn" id="sLangBtn" onclick="toggleLang()">Ø¹Ø±</button>
+    <button class="s-lang-btn" id="sLangBtn" onclick="toggleLang()">عر</button>
   </header>
 
   <!-- Auth Modal -->
@@ -51,7 +52,7 @@
         <label class="s-modal-label">Email</label>
         <input class="s-modal-input" type="email" id="sAuthEmail" required autocomplete="email" placeholder="you@example.com">
         <label class="s-modal-label">Password</label>
-        <input class="s-modal-input" type="password" id="sAuthPassword" required minlength="8" autocomplete="current-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢">
+        <input class="s-modal-input" type="password" id="sAuthPassword" required minlength="8" autocomplete="current-password" placeholder="••••••••">
         <div class="s-modal-error" id="sAuthError" style="display:none"></div>
         <button class="s-modal-submit" id="sAuthSubmit" type="submit">Login</button>
       </form>
@@ -65,7 +66,7 @@
       <span>INDEX SUPPORT &amp; RESISTANCE</span>
     </div>
     <div class="s-index-wrap" id="sIndexWrap">
-      <div class="s-loading" id="sIdxLoading">Loading index levelsâ€¦</div>
+      <div class="s-loading" id="sIdxLoading">Loading index levels…</div>
     </div>
 
     <!-- Stock session sheet -->
@@ -77,7 +78,7 @@
       <table class="s-table" id="sTable">
         <thead id="sTableHead"></thead>
         <tbody id="sTableBody">
-          <tr><td colspan="12" class="s-loading">Loading session dataâ€¦</td></tr>
+          <tr><td colspan="12" class="s-loading">Loading session data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -102,16 +103,16 @@
   <footer class="s-footer">
     <span class="s-footer-logo">XMORE</span>
     <span class="s-footer-note" id="sFooterNote">
-      system-generated signals â€” not financial advice. EGX Â· Sunâ€“Thu 10:00â€“14:30 Cairo.
+      system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.
     </span>
   </footer>
 
 <script src="xmore-toast.js"></script>
 <script>
-/* â”€â”€â”€ i18n â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── i18n ────────────────────────────────────────────────────────────────── */
 const T = {
   en: {
-    back:        'â† Dashboard',
+    back:        '← Dashboard',
     sessionLabel:'Session',
     idxTitle:    'INDEX SUPPORT & RESISTANCE',
     stockTitle:  'STOCK SIGNALS',
@@ -137,44 +138,44 @@ const T = {
     simClose:    'Close',
     simNoOpen:   'No open positions.',
     simStats:    'Stats',
-    loading:     'Loading session dataâ€¦',
-    idxLoading:  'Loading index levelsâ€¦',
+    loading:     'Loading session data…',
+    idxLoading:  'Loading index levels…',
     empty:       'No session data available. Run the pipeline to generate signals.',
     noLogin:     'Sign in to view your personalised session sheet.',
-    footer:      'system-generated signals â€” not financial advice. EGX Â· Sunâ€“Thu 10:00â€“14:30 Cairo.',
+    footer:      'system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.',
   },
   ar: {
-    back:        'Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© â†’',
-    sessionLabel:'Ø¬Ù„Ø³Ø©',
-    idxTitle:    'Ù…Ø³ØªÙˆÙŠØ§Øª Ø§Ù„Ø¯Ø¹Ù… ÙˆØ§Ù„Ù…Ù‚Ø§ÙˆÙ…Ø© Ù„Ù„Ù…Ø¤Ø´Ø±Ø§Øª',
-    stockTitle:  'Ø¥Ø´Ø§Ø±Ø§Øª Ø§Ù„Ø£Ø³Ù‡Ù…',
+    back:        'الرئيسية →',
+    sessionLabel:'جلسة',
+    idxTitle:    'مستويات الدعم والمقاومة للمؤشرات',
+    stockTitle:  'إشارات الأسهم',
     colQ:        '#',
-    colCode:     'Ø§Ù„ÙƒÙˆØ¯',
-    colName:     'Ø§Ù„Ø§Ø³Ù…',
-    colTrend:    'Ø§Ù„Ø§ØªØ¬Ø§Ù‡',
-    colRecType:  'Ø§Ù„Ù†ÙˆØ¹',
-    colBuy:      'Ø³Ø¹Ø± Ø§Ù„Ø¯Ø®ÙˆÙ„',
-    colSL:       'ÙˆÙ‚Ù Ø§Ù„Ø®Ø³Ø§Ø±Ø©',
-    colTarget:   'Ø§Ù„Ù‡Ø¯Ù',
-    colProfit:   'Ø±Ø¨Ø­%',
-    colRisk:     'Ø®Ø·Ø±%',
-    colRR:       'Ø¹/Ø®',
-    colS2:       'Ø¯Ø¹Ù… 2',
-    colS1:       'Ø¯Ø¹Ù… 1',
-    colPivot:    'Ø§Ù„Ù…Ø­ÙˆØ±',
-    colR1:       'Ù…Ù‚Ø§ÙˆÙ…Ø© 1',
-    colR2:       'Ù…Ù‚Ø§ÙˆÙ…Ø© 2',
-    colPatterns: 'Ø§Ù„Ø£Ù†Ù…Ø§Ø·',
-    simTitle:    'Ù…Ø­Ø§ÙƒÙŠ Ø§Ù„Ù…Ø­ÙØ¸Ø© Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ©',
-    simOpen:     '+ ÙØªØ­ ØµÙÙ‚Ø©',
-    simClose:    'Ø¥ØºÙ„Ø§Ù‚',
-    simNoOpen:   'Ù„Ø§ ØªÙˆØ¬Ø¯ ØµÙÙ‚Ø§Øª Ù…ÙØªÙˆØ­Ø©.',
-    simStats:    'Ø¥Ø­ØµØ§Ø¡Ø§Øª',
-    loading:     'Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øªâ€¦',
-    idxLoading:  'Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ù…Ø³ØªÙˆÙŠØ§Øª Ø§Ù„Ù…Ø¤Ø´Ø±Ø§Øªâ€¦',
-    empty:       'Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¨ÙŠØ§Ù†Ø§Øª Ù„Ù„Ø¬Ù„Ø³Ø©. Ù‚Ù… Ø¨ØªØ´ØºÙŠÙ„ Ø§Ù„Ø®Ø· Ù„ØªÙˆÙ„ÙŠØ¯ Ø§Ù„Ø¥Ø´Ø§Ø±Ø§Øª.',
-    noLogin:     'Ø³Ø¬Ù‘Ù„ Ø¯Ø®ÙˆÙ„Ùƒ Ù„Ø¹Ø±Ø¶ ÙˆØ±Ù‚Ø© Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ø®Ø§ØµØ© Ø¨Ùƒ.',
-    footer:      'Ø¥Ø´Ø§Ø±Ø§Øª Ù…ÙˆÙ„Ù‘Ø¯Ø© Ø¨Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ â€” Ù„ÙŠØ³Øª Ù†ØµÙŠØ­Ø© Ù…Ø§Ù„ÙŠØ©. Ø¨ÙˆØ±ØµØ© Ù…ØµØ± Â· Ø§Ù„Ø£Ø­Ø¯â€“Ø§Ù„Ø®Ù…ÙŠØ³ 10:00â€“14:30 Ø§Ù„Ù‚Ø§Ù‡Ø±Ø©.',
+    colCode:     'الكود',
+    colName:     'الاسم',
+    colTrend:    'الاتجاه',
+    colRecType:  'النوع',
+    colBuy:      'سعر الدخول',
+    colSL:       'وقف الخسارة',
+    colTarget:   'الهدف',
+    colProfit:   'ربح%',
+    colRisk:     'خطر%',
+    colRR:       'ع/خ',
+    colS2:       'دعم 2',
+    colS1:       'دعم 1',
+    colPivot:    'المحور',
+    colR1:       'مقاومة 1',
+    colR2:       'مقاومة 2',
+    colPatterns: 'الأنماط',
+    simTitle:    'محاكي المحفظة الافتراضية',
+    simOpen:     '+ فتح صفقة',
+    simClose:    'إغلاق',
+    simNoOpen:   'لا توجد صفقات مفتوحة.',
+    simStats:    'إحصاءات',
+    loading:     'جاري تحميل البيانات…',
+    idxLoading:  'جاري تحميل مستويات المؤشرات…',
+    empty:       'لا توجد بيانات للجلسة. قم بتشغيل الخط لتوليد الإشارات.',
+    noLogin:     'سجّل دخولك لعرض ورقة الجلسة الخاصة بك.',
+    footer:      'إشارات مولّدة بالذكاء الاصطناعي — ليست نصيحة مالية. بورصة مصر · الأحد–الخميس 10:00–14:30 القاهرة.',
   }
 };
 
@@ -187,7 +188,7 @@ function toggleLang() {
   localStorage.setItem('lang', lang);
   document.documentElement.lang = lang;
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
-  document.getElementById('sLangBtn').textContent = lang === 'en' ? 'Ø¹Ø±' : 'EN';
+  document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
   applyLang();
   renderTable(window._sessionData || []);
   renderIndexCards(window._indexData || []);
@@ -201,12 +202,12 @@ function applyLang() {
   document.getElementById('sFooterNote').textContent = t('footer');
   const lbl    = document.getElementById('sSessionLabel');
   const dateEl = document.getElementById('sSessionDate');
-  const date   = dateEl ? dateEl.textContent : 'â€”';
+  const date   = dateEl ? dateEl.textContent : '—';
   // Preserve id="sSessionDate" so subsequent applyLang() calls can still find the span
   lbl.innerHTML = `${t('sessionLabel')} <span class="s-session-date" id="sSessionDate">${date}</span>`;
 }
 
-/* â”€â”€â”€ Trend class â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Trend class ─────────────────────────────────────────────────────────── */
 function trendClass(trendEn) {
   if (!trendEn) return 's-trend-side';
   const u = trendEn.toLowerCase();
@@ -216,11 +217,11 @@ function trendClass(trendEn) {
 }
 
 function trendLabel(row) {
-  return lang === 'ar' ? (row.trend_ar || 'â€”') : (row.trend_en || 'â€”');
+  return lang === 'ar' ? (row.trend_ar || '—') : (row.trend_en || '—');
 }
 
 function recTypeLabel(row) {
-  return lang === 'ar' ? (row.rec_type_ar || 'â€”') : (row.rec_type_en || 'â€”');
+  return lang === 'ar' ? (row.rec_type_ar || '—') : (row.rec_type_en || '—');
 }
 
 function nameLabel(row) {
@@ -228,18 +229,18 @@ function nameLabel(row) {
 }
 
 function fmt(v, decimals = 2) {
-  if (v == null || v === '' || isNaN(v)) return 'â€”';
+  if (v == null || v === '' || isNaN(v)) return '—';
   return Number(v).toFixed(decimals);
 }
 
 function fmtPct(v) {
-  if (v == null || isNaN(v)) return 'â€”';
+  if (v == null || isNaN(v)) return '—';
   const n = Number(v);
   const cls = n >= 0 ? 's-pct-pos' : 's-pct-neg';
   return `<span class="${cls}">${n.toFixed(1)}%</span>`;
 }
 
-/* â”€â”€â”€ Render table head â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Render table head ───────────────────────────────────────────────────── */
 function renderHead() {
   const cols = [
     t('colQ'), t('colCode'), t('colName'),
@@ -253,7 +254,7 @@ function renderHead() {
   head.innerHTML = `<tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr>`;
 }
 
-/* â”€â”€â”€ Render rows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Render rows ─────────────────────────────────────────────────────────── */
 function renderTable(data) {
   renderHead();
   const tbody = document.getElementById('sTableBody');
@@ -283,10 +284,10 @@ function renderTable(data) {
   }
 
   function renderPatterns(raw) {
-    if (!raw) return 'â€”';
+    if (!raw) return '—';
     let list;
-    try { list = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(_) { return 'â€”'; }
-    if (!list || list.length === 0) return 'â€”';
+    try { list = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(_) { return '—'; }
+    if (!list || list.length === 0) return '—';
     return list.map(p => {
       const cls = p.signal === 'bullish' ? 's-pat-bull' : p.signal === 'bearish' ? 's-pat-bear' : 's-pat-neu';
       const name = lang === 'ar' ? (p.name_ar || p.name_en) : p.name_en;
@@ -323,7 +324,7 @@ function renderTable(data) {
   tbody.innerHTML = rows;
 }
 
-/* â”€â”€â”€ Index cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Index cards ─────────────────────────────────────────────────────────── */
 function renderIndexCards(data) {
   const wrap = document.getElementById('sIndexWrap');
   if (!data || data.length === 0) {
@@ -366,7 +367,7 @@ function renderIndexCards(data) {
   }).join('');
 }
 
-/* â”€â”€â”€ Load data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Load data ───────────────────────────────────────────────────────────── */
 async function loadSession() {
   try {
     const res = await fetch('/api/trades/session-sheet', { credentials: 'include' });
@@ -385,7 +386,7 @@ async function loadSession() {
 
     // Set session date
     const dateEl = document.getElementById('sSessionDate');
-    dateEl.textContent = json.session_date || 'â€”';
+    dateEl.textContent = json.session_date || '—';
     applyLang();
 
     window._sessionData = json.stocks || [];
@@ -401,12 +402,12 @@ async function loadSession() {
   }
 }
 
-/* â”€â”€â”€ Virtual Portfolio Simulator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Virtual Portfolio Simulator ─────────────────────────────────────────── */
 async function simOpenPosition() {
   const symbol = document.getElementById('simSymbol').value;
   const price  = parseFloat(document.getElementById('simEntryPrice').value);
-  if (!symbol) { xToast(lang === 'ar' ? 'Ø§Ø®ØªØ± Ø±Ù…Ø² Ø§Ù„Ø³Ù‡Ù…' : 'Please select a symbol.', 'error'); return; }
-  if (!price || price <= 0) { xToast(lang === 'ar' ? 'Ø£Ø¯Ø®Ù„ Ø³Ø¹Ø± Ø¯Ø®ÙˆÙ„ ØµØ­ÙŠØ­' : 'Enter a valid entry price.', 'error'); return; }
+  if (!symbol) { xToast(lang === 'ar' ? 'اختر رمز السهم' : 'Please select a symbol.', 'error'); return; }
+  if (!price || price <= 0) { xToast(lang === 'ar' ? 'أدخل سعر دخول صحيح' : 'Enter a valid entry price.', 'error'); return; }
   try {
     const res = await fetch('/api/trades/positions', {
       method: 'POST', credentials: 'include',
@@ -416,20 +417,20 @@ async function simOpenPosition() {
     const data = await res.json();
     if (!res.ok) { xToast(data.error || 'Error opening position', 'error'); return; }
     document.getElementById('simEntryPrice').value = '';
-    xToast(lang === 'ar' ? 'ØªÙ… ÙØªØ­ Ø§Ù„ØµÙÙ‚Ø©' : 'Position opened.', 'success');
+    xToast(lang === 'ar' ? 'تم فتح الصفقة' : 'Position opened.', 'success');
     loadSimulator();
   } catch (e) { xToast('Error: ' + e.message, 'error'); }
 }
 
 async function simClosePosition(id, currentPrice) {
   const val = await xPrompt(
-    lang === 'ar' ? 'Ø³Ø¹Ø± Ø§Ù„Ø¥ØºÙ„Ø§Ù‚:' : 'Exit price:',
+    lang === 'ar' ? 'سعر الإغلاق:' : 'Exit price:',
     currentPrice || '',
-    lang === 'ar' ? 'Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØµÙÙ‚Ø©' : 'Close Position'
+    lang === 'ar' ? 'إغلاق الصفقة' : 'Close Position'
   );
   if (!val) return;
   const exitPrice = parseFloat(val);
-  if (!exitPrice || exitPrice <= 0) { xToast(lang === 'ar' ? 'Ø³Ø¹Ø± ØºÙŠØ± ØµØ­ÙŠØ­' : 'Invalid exit price.', 'error'); return; }
+  if (!exitPrice || exitPrice <= 0) { xToast(lang === 'ar' ? 'سعر غير صحيح' : 'Invalid exit price.', 'error'); return; }
   try {
     const res = await fetch(`/api/trades/positions/${id}`, {
       method: 'PATCH', credentials: 'include',
@@ -438,7 +439,7 @@ async function simClosePosition(id, currentPrice) {
     });
     const data = await res.json();
     if (!res.ok) { xToast(data.error || 'Error closing position', 'error'); return; }
-    xToast(data.message || (lang === 'ar' ? 'ØªÙ… Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØµÙÙ‚Ø©' : 'Position closed.'), 'success');
+    xToast(data.message || (lang === 'ar' ? 'تم إغلاق الصفقة' : 'Position closed.'), 'success');
     loadSimulator();
   } catch (e) { xToast('Error: ' + e.message, 'error'); }
 }
@@ -473,7 +474,7 @@ async function loadSimulator() {
 
     const s = data.stats || {};
     if (s.total_trades > 0) {
-      statsEl.innerHTML = `<span>${t('simStats')}: ${s.total_trades} closed Â· Win rate: ${s.win_rate}% Â· Avg return: ${s.avg_return > 0 ? '+' : ''}${s.avg_return}%</span>`;
+      statsEl.innerHTML = `<span>${t('simStats')}: ${s.total_trades} closed · Win rate: ${s.win_rate}% · Avg return: ${s.avg_return > 0 ? '+' : ''}${s.avg_return}%</span>`;
     } else {
       statsEl.innerHTML = '';
     }
@@ -486,7 +487,7 @@ function populateSimSymbols(data) {
   sel.innerHTML = data.map(r => `<option value="${r.symbol}">${r.symbol.replace('.CA', '')}</option>`).join('');
 }
 
-/* â”€â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Auth ────────────────────────────────────────────────────────────────── */
 let _sModalPrevFocus = null;
 
 function sShowModal() {
@@ -510,7 +511,7 @@ async function sHandleSubmit(e) {
   const btn = document.getElementById('sAuthSubmit');
   const errEl = document.getElementById('sAuthError');
   btn.disabled = true;
-  btn.textContent = 'â€¦';
+  btn.textContent = '…';
   errEl.style.display = 'none';
   try {
     const res = await fetch('/api/auth/login', {
@@ -568,7 +569,7 @@ async function sCheckAuth() {
   } catch (_) {}
 }
 
-/* â”€â”€â”€ Mobile Menu (640px and below) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Mobile Menu (640px and below) ────────────────────────────────────────── */
 function initSMobileMenu() {
   const menuBtn = document.getElementById('sMobileMenuBtn');
   const menuDropdown = document.getElementById('sMobileMenuDropdown');
@@ -612,18 +613,19 @@ function initSMobileMenu() {
   });
 }
 
-/* â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ─── Init ────────────────────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   initSMobileMenu();
   document.documentElement.lang = lang;
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
-  document.getElementById('sLangBtn').textContent = lang === 'en' ? 'Ø¹Ø±' : 'EN';
+  document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
   applyLang();
   sCheckAuth();
   loadSession();
   loadSimulator();
 });
-</script></body>
+</script>
+  <script src="assistant-widget.js"></script></body>
 </html>
 
 
