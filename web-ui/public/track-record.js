@@ -518,7 +518,8 @@ async function loadSummary() {
 
       const dr = document.getElementById('trDateRange');
       if (dr && since && last) {
-        dr.textContent = `Data range: ${fmtDate(since)} → ${fmtDate(last)} · ${total} live signals`;
+        const basisNote = isNetReportingBasis(data) ? ' | net metrics primary' : '';
+        dr.textContent = 'Data range: ' + fmtDate(since) + ' -> ' + fmtDate(last) + ' | ' + total + ' live signals' + basisNote;
       }
 
       // Rolling windows from kpi_windows
@@ -551,7 +552,8 @@ async function loadSummary() {
 
       const dr = document.getElementById('trDateRange');
       if (dr && g.first_prediction && g.last_prediction) {
-        dr.textContent = `Data range: ${fmtDate(g.first_prediction)} → ${fmtDate(g.last_prediction)} · ${g.total_predictions} signals`;
+        const basisNote = isNetReportingBasis(data) ? ' | net metrics primary' : '';
+        dr.textContent = 'Data range: ' + fmtDate(g.first_prediction) + ' -> ' + fmtDate(g.last_prediction) + ' | ' + g.total_predictions + ' signals' + basisNote;
       }
 
       renderRolling(data.rolling);
@@ -581,71 +583,95 @@ async function renderRolling(rolling) {
   const labels = t('rollingLabels');
   const container = document.getElementById('trRollingCards');
   const windows = [['30d','30D'],['60d','60D'],['90d','90D'],['180d','180D'],['365d','365D']];
+  const netPrimary = Object.values(rolling_).some(isNetReportingBasis) || isNetReportingBasis(summaryCache);
 
   container.innerHTML = windows.map(([key, label]) => {
     const w = rolling_[key];
     if (!w) return '';
-    // Normalise: new shape uses directional_accuracy+alpha_vs_egx30; old uses win_rate+alpha+trades
-    const trades  = w.trades      ?? w.total_signals ?? 0;
-    const winRate = w.win_rate    ?? (w.directional_accuracy != null ? parseFloat((w.directional_accuracy * 100).toFixed(1)) : null);
-    const alpha   = w.alpha       ?? w.alpha_vs_egx30 ?? null;
-    const sharpe  = w.sharpe_ratio ?? null;
+
+    const trades = w.trades ?? w.total_signals ?? 0;
+    const winRate = w.win_rate ?? (w.directional_accuracy != null ? parseFloat((w.directional_accuracy * 100).toFixed(1)) : null);
+    const alpha = w.alpha ?? w.alpha_vs_egx30 ?? null;
+    const alphaGross = w.alpha_gross ?? w.alpha_vs_egx30_gross ?? null;
+    const sharpe = w.sharpe_ratio ?? null;
+    const sharpeGross = w.sharpe_ratio_gross ?? null;
     const sortino = w.sortino_ratio ?? null;
-    const maxDD   = w.max_drawdown ?? null;
-    const pf      = w.profit_factor ?? null;
-    const beat    = w.beat_benchmark_pct ?? null;
+    const sortinoGross = w.sortino_ratio_gross ?? null;
+    const maxDD = w.max_drawdown ?? null;
+    const maxDDGross = w.max_drawdown_gross ?? null;
+    const pf = w.profit_factor ?? null;
+    const pfGross = w.profit_factor_gross ?? null;
+    const beat = w.beat_benchmark_pct ?? null;
+    const beatGross = w.beat_benchmark_pct_gross ?? null;
+
+    const alphaLabel = netPrimary ? withNetLabel(labels.alpha) : labels.alpha;
+    const sharpeLabel = netPrimary ? withNetLabel(labels.sharpe_ratio) : labels.sharpe_ratio;
+    const sortinoLabel = netPrimary ? withNetLabel(labels.sortino_ratio) : labels.sortino_ratio;
+    const maxDdLabel = netPrimary ? withNetLabel(labels.max_drawdown) : labels.max_drawdown;
+    const pfLabel = netPrimary ? withNetLabel(labels.profit_factor) : labels.profit_factor;
+    const beatLabel = netPrimary ? withNetLabel(labels.beat_benchmark) : labels.beat_benchmark;
+
     const rows = [
-      { label: labels.trades,        val: trades,   fmt: v => v },
-      { label: labels.win_rate,      val: winRate,  fmt: v => v != null ? v + '%' : '—',              cls: winRate == null ? '' : winRate >= 50 ? 'pos' : 'neg' },
-      { label: labels.beat_benchmark,val: beat,     fmt: v => v != null ? v + '%' : '—',              cls: beat == null ? '' : beat >= 50 ? 'pos' : 'neg' },
-      { label: labels.alpha,         val: alpha,    fmt: v => v != null ? fmtPct(v, 3) : '—',         cls: colorClass(alpha) },
-      { label: labels.sharpe_ratio,  val: sharpe,   fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(sharpe) },
-      { label: labels.sortino_ratio, val: sortino,  fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(sortino) },
-      { label: labels.max_drawdown,  val: maxDD,    fmt: v => v != null ? '-' + fmt(v, 2) + '%' : '—',cls: 'neg' },
-      { label: labels.profit_factor, val: pf,       fmt: v => v != null ? fmt(v, 2) : '—',            cls: colorClass(pf != null ? pf - 1 : null) },
+      { label: labels.trades, val: trades, fmt: v => v, cls: '' },
+      { label: labels.win_rate, val: winRate, fmt: v => v != null ? (v + '%') : '—', cls: winRate == null ? '' : winRate >= 50 ? 'pos' : 'neg' },
+      { label: beatLabel, val: beat, fmt: v => v != null ? (v + '%') : '—', cls: beat == null ? '' : beat >= 50 ? 'pos' : 'neg' },
+      { label: alphaLabel, val: alpha, fmt: v => v != null ? fmtPct(v, 3) : '—', cls: colorClass(alpha) },
+      { label: sharpeLabel, val: sharpe, fmt: v => v != null ? fmt(v, 2) : '—', cls: colorClass(sharpe) },
+      { label: sortinoLabel, val: sortino, fmt: v => v != null ? fmt(v, 2) : '—', cls: colorClass(sortino) },
+      { label: maxDdLabel, val: maxDD, fmt: v => v != null ? ('-' + fmt(v, 2) + '%') : '—', cls: 'neg' },
+      { label: pfLabel, val: pf, fmt: v => v != null ? fmt(v, 2) : '—', cls: colorClass(pf != null ? pf - 1 : null) },
     ];
-    return `<div class="tr-rolling-card">
-      <div class="tr-rolling-card-title">${label} — ${trades} signals</div>
-      ${rows.map(r => `<div class="tr-rolling-row">
-        <span class="tr-rolling-row-label">${r.label}</span>
-        <span class="tr-rolling-row-val ${r.cls||''}">${r.fmt(r.val)}</span>
-      </div>`).join('')}
-    </div>`;
+
+    if (alphaGross != null) rows.push({ label: withGrossLabel(labels.alpha), val: alphaGross, fmt: v => fmtPct(v, 3), cls: colorClass(alphaGross) });
+    if (sharpeGross != null) rows.push({ label: withGrossLabel(labels.sharpe_ratio), val: sharpeGross, fmt: v => fmt(v, 2), cls: colorClass(sharpeGross) });
+    if (sortinoGross != null) rows.push({ label: withGrossLabel(labels.sortino_ratio), val: sortinoGross, fmt: v => fmt(v, 2), cls: colorClass(sortinoGross) });
+    if (maxDDGross != null) rows.push({ label: withGrossLabel(labels.max_drawdown), val: maxDDGross, fmt: v => '-' + fmt(v, 2) + '%', cls: 'neg' });
+    if (pfGross != null) rows.push({ label: withGrossLabel(labels.profit_factor), val: pfGross, fmt: v => fmt(v, 2), cls: colorClass(pfGross != null ? pfGross - 1 : null) });
+    if (beatGross != null) rows.push({ label: withGrossLabel(labels.beat_benchmark), val: beatGross, fmt: v => v + '%', cls: beatGross >= 50 ? 'pos' : 'neg' });
+
+    return '<div class="tr-rolling-card">' +
+      '<div class="tr-rolling-card-title">' + label + ' | ' + trades + ' signals</div>' +
+      rows.map(r => '<div class="tr-rolling-row">' +
+        '<span class="tr-rolling-row-label">' + r.label + '</span>' +
+        '<span class="tr-rolling-row-val ' + (r.cls || '') + '">' + r.fmt(r.val) + '</span>' +
+      '</div>').join('') +
+      '</div>';
   }).join('');
 }
-
 // ── Risk rows ──────────────────────────────────────────────────
 let _globalData = null;
 
 function renderRiskRows(global_) {
   if (global_) _globalData = global_;
   if (!_globalData) return;
+
   const g = _globalData;
   const rows = t('riskRows');
   const container = document.getElementById('riskRows');
   if (!container) return;
 
+  const netPrimary = isNetReportingBasis(g) || isNetReportingBasis(summaryCache);
+  const metricKeys = new Set(['max_drawdown', 'volatility', 'sharpe_ratio', 'sortino_ratio', 'profit_factor', 'avg_return_1d', 'avg_alpha_1d']);
+
   container.innerHTML = rows.map(r => {
-    const raw = g[r.key];
-    const n = Number(raw);
-    const cls = r.negate
-      ? (n > 0 ? 'neg' : 'pos')
-      : (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
-    const display = r.key === 'max_drawdown'
-      ? '-' + fmt(Math.abs(n), 2) + '%'
-      : r.key === 'volatility'
-        ? fmt(n * 100, 2) + '%'
-        : r.key.includes('return') || r.key.includes('alpha')
-          ? fmtPct(n, 3)
-          : fmt(n, 2);
-    return `<div class="tr-risk-row">
-      <span class="tr-risk-label">${r.label}</span>
-      <span class="tr-risk-val ${cls}">${display}</span>
-      <span class="tr-risk-desc">${r.desc}</span>
-    </div>`;
+    const n = Number(g[r.key]);
+    const cls = r.negate ? (n > 0 ? 'neg' : 'pos') : (n > 0 ? 'pos' : n < 0 ? 'neg' : '');
+    const display = formatMetricValueForKey(r.key, n);
+    const grossKey = r.key + '_gross';
+    const grossVal = Number(g[grossKey]);
+    const hasGross = Number.isFinite(grossVal);
+    const grossDisplay = hasGross ? formatMetricValueForKey(r.key, grossVal) : '';
+    const baseLabel = netPrimary && metricKeys.has(r.key) ? withNetLabel(r.label) : r.label;
+    const desc = netPrimary && r.key === 'profit_factor' ? 'Net gains / net losses after transaction costs.' : r.desc;
+
+    return '<div class="tr-risk-row">' +
+      '<span class="tr-risk-label">' + baseLabel + '</span>' +
+      '<span class="tr-risk-val ' + cls + '">' + display + '</span>' +
+      '<span class="tr-risk-desc">' + desc + '</span>' +
+      (hasGross ? '<span class="tr-risk-desc">Gross (secondary): ' + grossDisplay + '</span>' : '') +
+      '</div>';
   }).join('');
 }
-
 // ── Equity Curve ───────────────────────────────────────────────
 async function loadEquityCurve() {
   try {
@@ -736,13 +762,19 @@ async function loadEquityCurve() {
     });
 
     if (footer) {
-      const totalAlpha = data.total_alpha;
+      const totalAlpha = Number(data.total_alpha) || 0;
       const cls = totalAlpha > 0 ? 'tr-alpha-pos' : totalAlpha < 0 ? 'tr-alpha-neg' : '';
-      footer.innerHTML = `
-        <span class="tr-chart-stat">Xmore cumulative: <strong>${data.total_xmore > 0 ? '+' : ''}${Number(data.total_xmore).toFixed(2)}%</strong></span>
-        <span class="tr-chart-stat">EGX30 benchmark: <strong>${data.total_egx30 > 0 ? '+' : ''}${Number(data.total_egx30).toFixed(2)}%</strong></span>
-        <span class="tr-chart-stat">Total alpha: <strong class="${cls}">${totalAlpha > 0 ? '+' : ''}${Number(totalAlpha).toFixed(2)}%</strong></span>
-      `;
+      const totalXmoreNet = Number(data.total_xmore) || 0;
+      const totalEgx = Number(data.total_egx30) || 0;
+      const totalXmoreGross = Number(data.total_xmore_gross);
+      const totalAlphaGross = Number(data.total_alpha_gross);
+      const hasGross = Number.isFinite(totalXmoreGross) && Number.isFinite(totalAlphaGross);
+
+      footer.innerHTML = '<span class="tr-chart-stat">Xmore cumulative (Net): <strong>' + (totalXmoreNet > 0 ? '+' : '') + totalXmoreNet.toFixed(2) + '%</strong></span>' +
+        '<span class="tr-chart-stat">EGX30 benchmark: <strong>' + (totalEgx > 0 ? '+' : '') + totalEgx.toFixed(2) + '%</strong></span>' +
+        '<span class="tr-chart-stat">Total alpha (Net): <strong class="' + cls + '">' + (totalAlpha > 0 ? '+' : '') + totalAlpha.toFixed(2) + '%</strong></span>' +
+        (hasGross ? '<span class="tr-chart-stat">Xmore cumulative (Gross, secondary): <strong>' + (totalXmoreGross > 0 ? '+' : '') + totalXmoreGross.toFixed(2) + '%</strong></span>' : '') +
+        (hasGross ? '<span class="tr-chart-stat">Total alpha (Gross, secondary): <strong>' + (totalAlphaGross > 0 ? '+' : '') + totalAlphaGross.toFixed(2) + '%</strong></span>' : '');
     }
 
   } catch (e) {
@@ -804,8 +836,8 @@ async function loadStocks() {
       sym: t('colSym'),
       trades: t('colTrades'),
       win: t('colWinRate'),
-      avgAlpha: t('colAvgAlpha'),
-      best: t('colBestReturn')
+      avgAlpha: withNetLabel(t('colAvgAlpha')),
+      best: withNetLabel(t('colBestReturn'))
     };
     if (!stocks.length) {
       tbody.innerHTML = `<tr><td colspan="4" class="tr-loading">${t('noData')}</td></tr>`;
@@ -1234,7 +1266,7 @@ async function loadSectorAccuracy() {
           <div class="tr-sector-bar ${accCls}" style="width:${barW}%"></div>
         </div>
         <span class="tr-sector-wr ${accCls}">${wrPct}%</span>
-        <span class="tr-sector-ret ${retCls}">${r.avg_return >= 0 ? '+' : ''}${(r.avg_return*100).toFixed(2)}%</span>
+        <span class="tr-sector-ret ${retCls}">${fmtPct(r.avg_return, 2)}</span>
         <span class="tr-sector-cnt">${r.signal_count}</span>
       </div>`;
     }).join('') + `</div>
@@ -1242,7 +1274,7 @@ async function loadSectorAccuracy() {
       <span class="acc-green">≥60% win</span>
       <span class="acc-amber">50–60%</span>
       <span class="acc-red">&lt;50%</span>
-      <span style="margin-left:12px;color:#888">· return = avg 1D pct</span>
+      <span style="margin-left:12px;color:#888">| return = avg 1D net pct (gross is secondary)</span>
     </div>`;
   } catch (e) { el.innerHTML = ''; console.warn('loadSectorAccuracy', e); }
 }
@@ -1260,8 +1292,8 @@ async function loadRegimeStats() {
       regime: t('colRegime'),
       signals: t('colSignals2'),
       win: t('colWinRate2'),
-      avgRet: t('colAvgReturn'),
-      alpha: t('kpiAlpha')
+      avgRet: withNetLabel(t('colAvgReturn')),
+      alpha: withNetLabel(t('kpiAlpha'))
     };
     el.innerHTML = `<table class="tr-table tr-table--cards">
       <thead><tr>
@@ -1281,8 +1313,8 @@ async function loadRegimeStats() {
           <td data-label="${labels.regime}"><span class="tr-regime-dot" style="background:${dot}"></span>${label}</td>
           <td data-label="${labels.signals}">${r.signal_count}</td>
           <td data-label="${labels.win}" class="${accCls}">${wrPct}%</td>
-          <td data-label="${labels.avgRet}" class="${retCls}">${r.avg_return >= 0 ? '+' : ''}${(r.avg_return*100).toFixed(2)}%</td>
-          <td data-label="${labels.alpha}" class="${r.avg_alpha >= 0 ? 'pos' : 'neg'}">${r.avg_alpha >= 0 ? '+' : ''}${(r.avg_alpha*100).toFixed(2)}%</td>
+          <td data-label="${labels.avgRet}" class="${retCls}">${fmtPct(r.avg_return, 2)}</td>
+          <td data-label="${labels.alpha}" class="${r.avg_alpha >= 0 ? 'pos' : 'neg'}">${fmtPct(r.avg_alpha, 2)}</td>
         </tr>`;
       }).join('')}</tbody>
     </table>
