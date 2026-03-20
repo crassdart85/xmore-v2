@@ -36,29 +36,61 @@ const corsAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .map(s => s.trim())
   .filter(Boolean);
 
+function normalizeOrigin(origin) {
+  try {
+    return new URL(origin).origin;
+  } catch (_err) {
+    return null;
+  }
+}
+
+function buildAllowedOrigins(req) {
+  const origins = new Set(corsAllowedOrigins.map(normalizeOrigin).filter(Boolean));
+  const host = req.get('x-forwarded-host') || req.get('host');
+  const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+
+  if (host) {
+    origins.add(`${proto}://${host}`);
+    origins.add(`https://${host}`);
+  }
+
+  origins.add('https://xmore-project.onrender.com');
+  origins.add('https://xmore-v2.onrender.com');
+
+  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+  if (vercelUrl) origins.add(vercelUrl);
+
+  const publicAppUrl = normalizeOrigin(process.env.PUBLIC_APP_URL || '');
+  if (publicAppUrl) origins.add(publicAppUrl);
+
+  return origins;
+}
+
 app.set('trust proxy', 1);
 app.use(helmet({
   contentSecurityPolicy: false
 }));
 
-app.use(cors({
-  origin: (origin, cb) => {
-    // No origin header (server-to-server, same-origin GET, etc.) â€” always allow
-    if (!origin) return cb(null, true);
-    // Explicit allowlist configured â€” use it
-    if (corsAllowedOrigins.length) {
-      return corsAllowedOrigins.includes(origin)
-        ? cb(null, true)
-        : cb(new Error('CORS origin not allowed'));
-    }
-    // Fail closed in production when no explicit CORS allowlist is configured.
-    if (IS_PROD) {
-      return cb(new Error('CORS is not configured for production'));
-    }
-    // Development fallback.
-    return cb(null, true);
-  },
-  credentials: true
+app.use(cors((req, cb) => {
+  const requestOrigin = req.get('origin');
+
+  // No origin header (server-to-server, health checks, direct same-origin navigations).
+  if (!requestOrigin) {
+    return cb(null, { origin: true, credentials: true });
+  }
+
+  const normalizedRequestOrigin = normalizeOrigin(requestOrigin);
+  const allowedOrigins = buildAllowedOrigins(req);
+
+  if (normalizedRequestOrigin && allowedOrigins.has(normalizedRequestOrigin)) {
+    return cb(null, { origin: true, credentials: true });
+  }
+
+  if (!IS_PROD) {
+    return cb(null, { origin: true, credentials: true });
+  }
+
+  return cb(new Error('CORS origin not allowed'));
 }));
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
