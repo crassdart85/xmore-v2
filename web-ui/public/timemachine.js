@@ -15,6 +15,7 @@
     const FC_MAX_STOCKS = 20;
     let fcMode = 'auto';      // 'auto' | 'manual' | 'portfolio'
     let pfInitialized = false;
+    let tmBootstrapped = false;
 
     async function parseApiResponse(res, fallbackMessage) {
         const contentType = (res.headers.get('content-type') || '').toLowerCase();
@@ -35,11 +36,25 @@
     }
 
     // ─── Public entry point (called by switchToTab) ───────────
-    window.loadTimeMachine = function () {
+    function bootstrapTimeMachine() {
+        if (tmBootstrapped) return;
+        const tab = document.getElementById('tab-timemachine');
+        if (!tab) return;
+        tmBootstrapped = true;
         initSubTabs();
         initTimeMachineForm();
         initFutureForm();
+    }
+
+    window.loadTimeMachine = function () {
+        bootstrapTimeMachine();
     };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootstrapTimeMachine, { once: true });
+    } else {
+        bootstrapTimeMachine();
+    }
 
     // ─── Sub-tab switching (Past / Future) ───────────────────
     function initSubTabs() {
