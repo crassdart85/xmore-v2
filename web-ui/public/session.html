@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="base.css">  <title>Xmore —Session Sheet</title>
-  <link rel="stylesheet" href="Session.css">
+  <link rel="stylesheet" href="base.css">
+  <title>Xmore - Session Sheet</title>
+  <link rel="stylesheet" href="session.css">
   <link rel="stylesheet" href="assistant-widget.css">
 </head>
 <body>
@@ -13,14 +14,14 @@
   <header class="s-header x-topbar x-topbar--dark">
     <a href="/" class="s-back x-back" id="sBack">← Dashboard</a>
     <span class="s-logo x-brand">XMORE <span class="s-logo-tag">Session</span></span>
-    <span class="s-Session-label" id="sSessionLabel">Session <span class="s-Session-date" id="sSessionDate">—</span>
+    <span class="s-session-label" id="sSessionLabel">Session <span class="s-session-date" id="sSessionDate">—</span>
     </span>
     <nav class="x-nav-links" aria-label="Primary">
       <a class="x-link" href="/">Home</a>
       <a class="x-link" href="/track-record">Track Record</a>
-      <a class="x-link" href="/Pro">Pro</a>
-      <a class="x-link active" href="/Session" aria-current="page">Session</a>
-      <a class="x-link" href="/Docs">Docs</a>
+      <a class="x-link" href="/pro">Pro</a>
+      <a class="x-link active" href="/session" aria-current="page">Session</a>
+      <a class="x-link" href="/docs">Docs</a>
     </nav>
     <!-- Mobile menu button -->
     <button id="sMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="sMobileMenuDropdown">
@@ -30,9 +31,9 @@
     <div id="sMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
       <a href="/" class="mobile-menu-item" role="menuitem">Home</a>
       <a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a>
-      <a href="/Pro" class="mobile-menu-item" role="menuitem">Pro</a>
-      <a href="/Session" class="mobile-menu-item active" role="menuitem">Session</a>
-      <a href="/Docs" class="mobile-menu-item" role="menuitem">Docs</a>
+      <a href="/pro" class="mobile-menu-item" role="menuitem">Pro</a>
+      <a href="/session" class="mobile-menu-item active" role="menuitem">Session</a>
+      <a href="/docs" class="mobile-menu-item" role="menuitem">Docs</a>
     </div>
     <div class="s-auth-area">
       <span class="s-auth-user" id="sAuthUser" style="display:none"></span>
@@ -77,7 +78,7 @@
       <table class="s-table" id="sTable">
         <thead id="sTableHead"></thead>
         <tbody id="sTableBody">
-          <tr><td colspan="12" class="s-loading">LoadingSession data…</td></tr>
+          <tr><td colspan="12" class="s-loading">Loading session data...</td></tr>
         </tbody>
       </table>
     </div>
@@ -111,7 +112,7 @@
 /* ─── i18n ────────────────────────────────────────────────────────────────── */
 const T = {
   en: {
-    back:        '← Dashboard',SessionLabel:'Session',
+    back:        '← Dashboard', SessionLabel:'Session',
     idxTitle:    'INDEX SUPPORT & RESISTANCE',
     stockTitle:  'STOCK SIGNALS',
     colQ:        '#',
@@ -136,14 +137,14 @@ const T = {
     simClose:    'Close',
     simNoOpen:   'No open positions.',
     simStats:    'Stats',
-    loading:     'LoadingSession data…',
+    loading:     'Loading session data...',
     idxLoading:  'Loading index levels…',
-    empty:       'NoSession data available. Run the pipeline to generate signals.',
-    noLogin:     'Sign in to view your personalisedSession sheet.',
+    empty:       'No session data available. Run the pipeline to generate signals.',
+    noLogin:     'Sign in to view your personalised session sheet.',
     footer:      'system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.',
   },
   ar: {
-    back:        'الرئيسية →',SessionLabel:'جلسة',
+    back:        'الرئيسية →', SessionLabel:'جلسة',
     idxTitle:    'مستويات الدعم والمقاومة للمؤشرات',
     stockTitle:  'إشارات الأسهم',
     colQ:        '#',
@@ -201,7 +202,7 @@ function applyLang() {
   const dateEl = document.getElementById('sSessionDate');
   const date   = dateEl ? dateEl.textContent : '—';
   // Preserve id="sSessionDate" so subsequent applyLang() calls can still find the span
-  lbl.innerHTML = `${t('SessionLabel')} <span class="s-Session-date" id="sSessionDate">${date}</span>`;
+  lbl.innerHTML = `${t('SessionLabel')} <span class="s-session-date" id="sSessionDate">${date}</span>`;
 }
 
 /* ─── Trend class ─────────────────────────────────────────────────────────── */
