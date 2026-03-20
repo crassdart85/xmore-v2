@@ -2,115 +2,898 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Xmore | Market Intelligence for EGX Investors</title>
-<meta name="description" content="Xmore is an market intelligence platform for the Egyptian market.">
-<link rel="stylesheet" href="base.css"><style>
-:root{--bg:#f4efe4;--ink:#112031;--muted:#5a6775;--card:rgba(255,255,255,.72);--line:rgba(17,32,49,.12);--accent:#0f766e;--glow:radial-gradient(circle at top left,rgba(15,118,110,.18),transparent 36%),radial-gradient(circle at 80% 20%,rgba(180,83,9,.16),transparent 30%),linear-gradient(180deg,#f8f3e8 0%,#f4efe4 100%)}[data-theme="dark"]{--bg:#0b1220;--ink:#e5e7eb;--muted:#94a3b8;--card:rgba(30,41,59,.72);--line:rgba(148,163,184,.18);--accent:#2dd4bf;--glow:#0b1220}[data-theme="dark"] body{background:var(--bg);color:var(--ink)}[data-theme="dark"] .top{background:rgba(11,18,32,.84)}[data-theme="dark"] .panel,.feature,.benefit,.Proof,.signal,.metric,.highlight{background:rgba(30,41,59,.72);border-color:rgba(148,163,184,.18)}[data-theme="dark"] .card{background:rgba(30,41,59,.72);border-color:rgba(148,163,184,.18)}[data-theme="dark"] .nav a,[data-theme="dark"] .lang,[data-theme="dark"] .cta,[data-theme="dark"] .theme-btn{background:rgba(30,41,59,.7);border-color:rgba(148,163,184,.24);color:var(--ink)}*{box-sizing:border-box}body{margin:0;font-family:Georgia,"Times New Roman",serif;color:var(--ink);background:var(--glow)}a{color:inherit}.top{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);background:rgba(244,239,228,.84);border-bottom:1px solid var(--line)}.inner,.section,.foot{width:min(1180px,calc(100% - 32px));margin:0 auto}.inner{display:flex;align-items:center;gap:16px;padding:16px 0}.brand{font-size:1.4rem;font-weight:700}.brand-sub,.lead,.copy,.section-head p,.foot-copy,.nav,.badge,.chip{font-family:"Segoe UI",Tahoma,sans-serif}.brand-sub{font-size:.83rem;color:var(--muted)}.nav{margin-inline-start:auto;display:flex;flex-wrap:wrap;gap:10px}.nav a,.lang,.cta{border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.5);padding:10px 14px;text-decoration:none;font-size:.92rem;transition:transform .18s ease,border-color .18s ease,background .18s ease}.theme-btn{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.5);cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease;font-size:1.1rem;padding:0}.theme-btn span{display:none}.theme-btn .icon-moon{display:block}.theme-btn:hover{transform:translateY(-1px);border-color:rgba(15,118,110,.4);background:rgba(255,255,255,.88)}[data-theme="dark"] .theme-btn .icon-sun{display:block}[data-theme="dark"] .theme-btn .icon-moon{display:none}.nav a:hover,.lang:hover,.cta:hover{transform:translateY(-1px);border-color:rgba(15,118,110,.4);background:rgba(255,255,255,.88)}.lang,.cta{cursor:pointer;color:var(--ink)}.hero{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;padding:42px 0 24px}.card{background:var(--card);border:1px solid var(--line);border-radius:28px;box-shadow:0 20px 44px rgba(17,32,49,.08);backdrop-filter:blur(10px)}.hero-copy{padding:40px}.eyebrow{display:inline-flex;align-items:center;padding:8px 14px;border-radius:999px;background:rgba(15,118,110,.1);color:var(--accent);font:700 .84rem "Segoe UI",Tahoma,sans-serif;letter-spacing:.04em;text-transform:uppercase}.hero h1{margin:20px 0 18px;font-size:clamp(2.5rem,5vw,4.8rem);line-height:.98;letter-spacing:-.05em;max-width:10.5ch}.lead{margin:0 0 24px;color:var(--muted);font-size:1.08rem;line-height:1.75;max-width:60ch}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}.primary{background:linear-gradient(135deg,var(--accent),#155e75);color:#fff;border-color:transparent}.grid3,.grid4,.hi,.metrics{display:grid;gap:16px}.hi,.metrics,.grid3{grid-template-columns:repeat(3,minmax(0,1fr))}.grid4{grid-template-columns:repeat(4,minmax(0,1fr))}.panel,.feature,.benefit,.Proof,.signal,.metric,.highlight{border-radius:20px;border:1px solid rgba(17,32,49,.08);background:rgba(255,255,255,.68)}.panel{padding:24px;display:flex;flex-direction:column;gap:16px}.feature,.benefit,.Proof,.metric,.highlight,.signal{padding:18px}.panel-head,.signal-head,.section-head,.strip,.foot{display:flex;gap:16px;font-family:"Segoe UI",Tahoma,sans-serif}.panel-head,.signal-head,.strip{justify-content:space-between;align-items:center}.panel-head{color:var(--muted)}.badge,.chip,.feature span,.benefit span,.Proof span{display:inline-flex;align-items:center;padding:6px 10px;border-radius:999px;font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}.badge,.chip{background:rgba(15,118,110,.12);color:var(--accent)}.feature span,.benefit span,.Proof span{margin-bottom:12px;background:rgba(17,32,49,.06)}.signal h3,.feature h3,.benefit h3,.Proof h3,.strip h3{margin:0 0 8px;line-height:1.2}.signal h3{font-size:1.3rem}.feature h3,.benefit h3,.Proof h3{font-size:1.18rem}.strip h3{font-size:1.6rem}.copy,.metric p,.feature p,.benefit p,.Proof p,.foot-copy,.section-head p{color:var(--muted);line-height:1.7;margin:0}.section{padding:28px 0}.section-head{justify-content:space-between;align-items:end;margin-bottom:18px}.section-head h2{margin:0;font-size:clamp(1.8rem,3vw,2.8rem);letter-spacing:-.04em}.section-head p{max-width:58ch}.strip{margin:18px 0 52px;padding:28px;background:linear-gradient(135deg,rgba(15,118,110,.12),rgba(180,83,9,.12))}.foot{justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:22px 0 48px}.foot-links{display:flex;gap:12px;flex-wrap:wrap;font-family:"Segoe UI",Tahoma,sans-serif}.foot-links a{text-decoration:none;color:var(--muted)}.rtl{direction:rtl;font-family:Tahoma,Arial,sans-serif}.rtl .nav{margin-inline-start:0;margin-inline-end:auto}.rtl .hero-copy,.rtl .panel,.rtl .feature,.rtl .benefit,.rtl .Proof,.rtl .section-head,.rtl .foot{text-align:right}@media (max-width:980px){.hero,.grid3,.grid4{grid-template-columns:1fr}.section-head,.strip,.foot{flex-direction:column;align-items:flex-start}}@media (max-width:640px){.inner,.section,.foot{width:min(100% - 20px,1180px)}.inner{flex-wrap:wrap}.nav{width:100%;margin-inline-start:0}.nav a,.lang,.cta{flex:1 1 calc(50% - 8px);text-align:center}.hero-copy,.panel,.strip{padding:20px}.hi,.metrics{grid-template-columns:1fr}}
-</style>
+<meta name="description" content="Xmore is a market intelligence platform for the Egyptian market.">
+<link rel="stylesheet" href="base.css">
 <style>
-@media (max-width:640px){
-	.top .inner{
-		display:grid;
-		grid-template-columns:1fr auto;
-		gap:8px;
-		align-items:center;
-		padding:10px 0;
+:root {
+	--bg: #f4efe4;
+	--ink: #112031;
+	--muted: #405063;
+	--card: rgba(255, 255, 255, 0.82);
+	--line: rgba(17, 32, 49, 0.14);
+	--accent: #0f766e;
+	--control-bg: rgba(255, 255, 255, 0.76);
+	--control-hover: rgba(255, 255, 255, 0.96);
+	--shadow: 0 20px 44px rgba(17, 32, 49, 0.08);
+	--glow: radial-gradient(circle at top left, rgba(15, 118, 110, 0.18), transparent 36%), radial-gradient(circle at 80% 20%, rgba(180, 83, 9, 0.16), transparent 30%), linear-gradient(180deg, #f8f3e8 0%, #f4efe4 100%);
+}
+
+[data-theme="dark"] {
+	--bg: #0b1220;
+	--ink: #f3f4f6;
+	--muted: #c3cfdf;
+	--card: rgba(20, 29, 45, 0.9);
+	--line: rgba(160, 174, 194, 0.24);
+	--accent: #49e3cf;
+	--control-bg: rgba(20, 29, 45, 0.86);
+	--control-hover: rgba(28, 40, 61, 0.98);
+	--shadow: 0 20px 44px rgba(0, 0, 0, 0.34);
+	--glow: linear-gradient(180deg, #08111f 0%, #0b1220 100%);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	font-family: Georgia, "Times New Roman", serif;
+	color: var(--ink);
+	background: var(--glow);
+}
+
+a {
+	color: inherit;
+}
+
+.top {
+	position: sticky;
+	top: 0;
+	z-index: 30;
+	backdrop-filter: blur(14px);
+	background: rgba(244, 239, 228, 0.9);
+	border-bottom: 1px solid var(--line);
+}
+
+[data-theme="dark"] .top {
+	background: rgba(8, 17, 31, 0.88);
+}
+
+.inner,
+.section,
+.foot {
+	width: min(1180px, calc(100% - 32px));
+	margin: 0 auto;
+}
+
+.inner {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 16px 0;
+}
+
+.brand {
+	font-size: 1.32rem;
+	font-weight: 700;
+}
+
+.brand-sub,
+.lead,
+.copy,
+.section-head p,
+.foot-copy,
+.nav,
+.badge,
+.chip,
+.metric p,
+.feature p,
+.benefit p,
+.proof p {
+	font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.brand-sub {
+	font-size: 0.84rem;
+	color: var(--muted);
+}
+
+.nav {
+	margin-inline-start: auto;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+}
+
+.nav a,
+.lang,
+.cta,
+.theme-btn {
+	border-radius: 999px;
+	border: 1px solid var(--line);
+	background: var(--control-bg);
+	color: var(--ink);
+	text-decoration: none;
+	transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.nav a,
+.lang,
+.cta {
+	padding: 10px 14px;
+	font-size: 0.92rem;
+}
+
+.theme-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	cursor: pointer;
+	font-size: 1.1rem;
+	padding: 0;
+}
+
+.theme-btn span {
+	display: none;
+}
+
+.theme-btn .icon-moon {
+	display: block;
+}
+
+[data-theme="dark"] .theme-btn .icon-sun {
+	display: block;
+}
+
+[data-theme="dark"] .theme-btn .icon-moon {
+	display: none;
+}
+
+.nav a:hover,
+.lang:hover,
+.cta:hover,
+.theme-btn:hover {
+	transform: translateY(-1px);
+	border-color: rgba(15, 118, 110, 0.42);
+	background: var(--control-hover);
+}
+
+.lang,
+.cta,
+.theme-btn {
+	cursor: pointer;
+}
+
+.hero {
+	display: grid;
+	grid-template-columns: 1.15fr 0.85fr;
+	gap: 28px;
+	padding: 42px 0 24px;
+}
+
+.card,
+.panel,
+.feature,
+.benefit,
+.proof,
+.signal,
+.metric,
+.highlight {
+	background: var(--card);
+	border: 1px solid var(--line);
+	border-radius: 24px;
+	box-shadow: var(--shadow);
+	backdrop-filter: blur(10px);
+}
+
+.hero-copy {
+	padding: 40px;
+}
+
+.eyebrow {
+	display: inline-flex;
+	align-items: center;
+	padding: 8px 14px;
+	border-radius: 999px;
+	background: rgba(15, 118, 110, 0.1);
+	color: var(--accent);
+	font: 700 0.84rem "Segoe UI", Tahoma, sans-serif;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.hero h1 {
+	margin: 18px 0 16px;
+	font-size: clamp(2rem, 4.2vw, 3.65rem);
+	line-height: 1.02;
+	letter-spacing: -0.045em;
+	max-width: 12ch;
+}
+
+.lead {
+	margin: 0 0 24px;
+	color: var(--muted);
+	font-size: 1.08rem;
+	line-height: 1.8;
+	max-width: 60ch;
+}
+
+.actions {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 26px;
+}
+
+.primary {
+	background: linear-gradient(135deg, var(--accent), #155e75);
+	color: #ffffff;
+	border-color: transparent;
+}
+
+.grid3,
+.grid4,
+.hi,
+.metrics {
+	display: grid;
+	gap: 16px;
+}
+
+.hi,
+.metrics,
+.grid3 {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.grid4 {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.panel {
+	padding: 24px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.feature,
+.benefit,
+.proof,
+.metric,
+.highlight,
+.signal {
+	padding: 18px;
+}
+
+.panel-head,
+.signal-head,
+.section-head,
+.strip,
+.foot {
+	display: flex;
+	gap: 16px;
+	font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.panel-head,
+.signal-head,
+.strip {
+	justify-content: space-between;
+	align-items: center;
+}
+
+.panel-head,
+.signal-head strong:first-child {
+	color: var(--ink);
+}
+
+.badge,
+.chip,
+.feature span,
+.benefit span,
+.proof span {
+	display: inline-flex;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 999px;
+	font-size: 0.8rem;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+}
+
+.badge,
+.chip {
+	background: rgba(15, 118, 110, 0.12);
+	color: var(--accent);
+}
+
+.feature span,
+.benefit span,
+.proof span {
+	margin-bottom: 12px;
+	background: rgba(17, 32, 49, 0.06);
+}
+
+[data-theme="dark"] .feature span,
+[data-theme="dark"] .benefit span,
+[data-theme="dark"] .proof span {
+	background: rgba(195, 207, 223, 0.08);
+}
+
+.signal h3,
+.feature h3,
+.benefit h3,
+.proof h3,
+.strip h3 {
+	margin: 0 0 8px;
+	line-height: 1.25;
+	color: var(--ink);
+}
+
+.signal h3 {
+	font-size: 1.3rem;
+}
+
+.feature h3,
+.benefit h3,
+.proof h3 {
+	font-size: 1.18rem;
+}
+
+.strip h3 {
+	font-size: 1.6rem;
+}
+
+.copy,
+.metric p,
+.feature p,
+.benefit p,
+.proof p,
+.foot-copy,
+.section-head p {
+	color: var(--muted);
+	line-height: 1.7;
+	margin: 0;
+}
+
+.section {
+	padding: 28px 0;
+}
+
+.section-head {
+	justify-content: space-between;
+	align-items: end;
+	margin-bottom: 18px;
+}
+
+.section-head h2 {
+	margin: 0;
+	font-size: clamp(1.8rem, 3vw, 2.8rem);
+	letter-spacing: -0.04em;
+}
+
+.section-head p {
+	max-width: 58ch;
+}
+
+.strip {
+	margin: 18px 0 52px;
+	padding: 28px;
+	background: linear-gradient(135deg, rgba(15, 118, 110, 0.12), rgba(180, 83, 9, 0.12));
+}
+
+.foot {
+	justify-content: space-between;
+	align-items: center;
+	border-top: 1px solid var(--line);
+	padding: 22px 0 48px;
+}
+
+.foot-links {
+	display: flex;
+	gap: 12px;
+	flex-wrap: wrap;
+	font-family: "Segoe UI", Tahoma, sans-serif;
+}
+
+.foot-links a {
+	text-decoration: none;
+	color: var(--muted);
+}
+
+.rtl {
+	direction: rtl;
+	font-family: Tahoma, Arial, sans-serif;
+}
+
+.rtl .nav {
+	margin-inline-start: 0;
+	margin-inline-end: auto;
+}
+
+.rtl .hero-copy,
+.rtl .panel,
+.rtl .feature,
+.rtl .benefit,
+.rtl .proof,
+.rtl .section-head,
+.rtl .foot {
+	text-align: right;
+}
+
+@media (max-width: 980px) {
+	.hero,
+	.grid3,
+	.grid4 {
+		grid-template-columns: 1fr;
 	}
-	.top .inner>div:first-child{min-width:0}
-	.top .brand{font-size:1.2rem;line-height:1.1}
-	.top .brand-sub{font-size:.78rem}
-	.top .nav{
-		grid-column:1 / -1;
-		margin-inline-start:0;
-		display:flex;
-		flex-wrap:wrap;
-		gap:8px;
-		width:100%;
-		position:relative;
+
+	.section-head,
+	.strip,
+	.foot {
+		flex-direction: column;
+		align-items: flex-start;
 	}
-	.top .nav a,.top .lang,.top .cta{
-		flex:1 1 calc(50% - 8px);
-		min-height:38px;
-		display:flex;
-		align-items:center;
-		justify-content:center;
-		text-align:center;
-		padding:8px 10px;
+}
+
+@media (max-width: 640px) {
+	.inner,
+	.section,
+	.foot {
+		width: min(100% - 20px, 1180px);
 	}
-	.top .nav > a{
-		display:none;
+
+	.top .inner {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 8px;
+		align-items: center;
+		padding: 10px 0;
 	}
-	.top .mobile-menu-btn{
-		display:flex !important;
-		width:38px !important;
-		height:38px !important;
-		min-height:38px;
-		padding:0 !important;
-		flex:0 0 38px;
-		margin-left:auto;
+
+	.top .inner > div:first-child {
+		min-width: 0;
 	}
-	.top .theme-btn{
-		width:38px;
-		height:38px;
-		min-height:38px;
-		flex:0 0 38px;
+
+	.top .brand {
+		font-size: 1.16rem;
+		line-height: 1.1;
 	}
-	.top .lang{
-		flex:0 0 auto;
-		min-width:92px;
+
+	.top .brand-sub {
+		font-size: 0.78rem;
 	}
-	.top .mobile-menu-dropdown{
-		top:calc(100% + 4px);
-		right:0;
-		min-width:190px;
-		max-width:calc(100vw - 24px);
+
+	.nav {
+		grid-column: 1 / -1;
+		margin-inline-start: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		width: 100%;
+		position: relative;
+	}
+
+	.nav a,
+	.lang,
+	.cta {
+		flex: 1 1 calc(50% - 8px);
+		min-height: 38px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 8px 10px;
+	}
+
+	.nav > a {
+		display: none;
+	}
+
+	.mobile-menu-btn {
+		display: flex !important;
+		width: 38px !important;
+		height: 38px !important;
+		min-height: 38px;
+		padding: 0 !important;
+		flex: 0 0 38px;
+		margin-left: auto;
+	}
+
+	.theme-btn {
+		width: 38px;
+		height: 38px;
+		min-height: 38px;
+		flex: 0 0 38px;
+	}
+
+	.lang {
+		flex: 0 0 auto;
+		min-width: 92px;
+	}
+
+	.mobile-menu-dropdown {
+		top: calc(100% + 4px);
+		right: 0;
+		min-width: 190px;
+		max-width: calc(100vw - 24px);
+	}
+
+	.hero-copy,
+	.panel,
+	.strip {
+		padding: 20px;
+	}
+
+	.hi,
+	.metrics {
+		grid-template-columns: 1fr;
+	}
+
+	.hero h1 {
+		font-size: clamp(1.85rem, 8vw, 2.7rem);
+		max-width: none;
 	}
 }
 </style>
 <link rel="stylesheet" href="assistant-widget.css">
 </head>
 <body>
-<header class="top"><div class="inner"><div><div class="brand">Xmore</div><div class="brand-sub" data-i18n="brandSub">Market intelligence for the Egyptian market</div></div><nav class="nav"><a href="/" data-i18n="navHome">Home</a><a href="/track-record" data-i18n="navTrack">Track Record</a><a href="/Pro" data-i18n="navPro">Pro</a><button id="DocsMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="DocsMobileMenuDropdown"><span class="hamburger-icon">☰</span></button><button id="themeBtn" class="theme-btn" type="button" title="Toggle dark mode"><span class="icon-sun">☀️</span><span class="icon-moon">🌙</span></button><button class="lang" id="langToggleBtn" type="button">العربية</button><div id="DocsMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true"><a href="/" class="mobile-menu-item" role="menuitem">Home</a><a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a><a href="/Pro" class="mobile-menu-item" role="menuitem">Pro</a><a href="/Session" class="mobile-menu-item" role="menuitem">Session</a><a href="/Docs" class="mobile-menu-item active" role="menuitem">Docs</a></div></nav></div></header>
+<header class="top">
+	<div class="inner">
+		<div>
+			<div class="brand">Xmore</div>
+			<div class="brand-sub" data-i18n="brandSub">Market intelligence for the Egyptian market</div>
+		</div>
+		<nav class="nav">
+			<a href="/" data-i18n="navHome">Home</a>
+			<a href="/track-record" data-i18n="navTrack">Track Record</a>
+			<a href="/Pro" data-i18n="navPro">Pro</a>
+			<button id="DocsMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="DocsMobileMenuDropdown"><span class="hamburger-icon">☰</span></button>
+			<button id="themeBtn" class="theme-btn" type="button" title="Toggle dark mode"><span class="icon-sun">☀️</span><span class="icon-moon">🌙</span></button>
+			<button class="lang" id="langToggleBtn" type="button">العربية</button>
+			<div id="DocsMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
+				<a href="/" class="mobile-menu-item" role="menuitem">Home</a>
+				<a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a>
+				<a href="/Pro" class="mobile-menu-item" role="menuitem">Pro</a>
+				<a href="/Session" class="mobile-menu-item" role="menuitem">Session</a>
+				<a href="/Docs" class="mobile-menu-item active" role="menuitem">Docs</a>
+			</div>
+		</nav>
+	</div>
+</header>
 <main>
-<section class="section hero"><article class="card hero-copy"><div class="eyebrow" data-i18n="eyebrow">Execution-aware market signals</div><h1 data-i18n="heroTitle">A decision layer for serious EGX investors.</h1><p class="lead" data-i18n="heroLead">Xmore combines multi-agent stock signals, adaptive ranking, valuation context, live macro monitoring, and a built-in research layer into one operating surface for the Egyptian market.</p><div class="actions"><a class="cta primary" href="/track-record" data-i18n="ctaPrimary">See the liveTrack Record</a><a class="cta" href="/" data-i18n="ctaSecondary">Open the dashboard</a></div><div class="hi"><div class="highlight"><strong data-i18n="highlight1Value">5 agents</strong><span data-i18n="highlight1Label">combined into one ranked consensus layer</span></div><div class="highlight"><strong data-i18n="highlight2Value">Bilingual</strong><span data-i18n="highlight2Label">Arabic and English workflows across theProduct</span></div><div class="highlight"><strong data-i18n="highlight3Value">Live context</strong><span data-i18n="highlight3Label">signals, macro, forecasts, and Research retrieval in one stack</span></div></div></article>
-<aside class="card panel"><div class="panel-head"><strong data-i18n="panelTitle">What Xmore surfaces</strong><span class="badge" data-i18n="panelBadge">Live stack</span></div><div class="signal"><div class="signal-head"><strong>COMI.CA</strong><span class="chip" data-i18n="signalBadge">Ranked signal</span></div><h3 data-i18n="signalTitle">Consensus, expected edge, and calibrated confidence in one card.</h3><p class="copy" data-i18n="signalCopy">The platform does not stop at direction. It estimates how strong the setup is, whether the edge covers friction, and how much confidence the system has earned historically.</p></div><div class="metrics"><div class="metric"><strong data-i18n="metric1Title">Signals</strong><p data-i18n="metric1Copy">Multi-agent consensus with execution-aware gating.</p></div><div class="metric"><strong data-i18n="metric2Title">Forecasts</strong><p data-i18n="metric2Copy">Portfolio scenarios with later accuracy evaluation.</p></div><div class="metric"><strong data-i18n="metric3Title">Research</strong><p data-i18n="metric3Copy">Research answers grounded in internalDocs, news, and market data.</p></div></div></aside></section>
-<section class="section"><div class="section-head"><div><h2 data-i18n="featuresTitle">What theProduct actually does</h2></div><p data-i18n="featuresLead">Xmore is built around operator usefulness: signal generation, ranking, monitoring, and research support for a market where context, liquidity, and timing matter.</p></div><div class="grid3"><article class="feature"><span data-i18n="feature1Tag">Signal Engine</span><h3 data-i18n="feature1Title">Adaptive consensus instead of a static vote</h3><p data-i18n="feature1Copy">Agent weights adapt from live evaluated results, recent alpha, sample quality, and drift. The system keeps learning which components are earning trust now.</p></article><article class="feature"><span data-i18n="feature2Tag">Research Layer</span><h3 data-i18n="feature2Title">Research grounded in real market context</h3><p data-i18n="feature2Copy">The Research resolves bilingual entities, prioritizes symbol-specific retrieval, and answers using internal documents, market news, pricing context, andProduct knowledge.</p></article><article class="feature"><span data-i18n="feature3Tag">Macro Layer</span><h3 data-i18n="feature3Title">Market context is part of the decision, not a side note</h3><p data-i18n="feature3Copy">Rates, gold, FX, regime shifts, and daily changes are surfaced alongside the signal layer so users can understand what changed and why it matters.</p></article><article class="feature"><span data-i18n="feature4Tag">Portfolio Tools</span><h3 data-i18n="feature4Title">Signals connect to portfolios and forecasts</h3><p data-i18n="feature4Copy">Users can move from ranked opportunities to scenario portfolios, monitor open ideas, and inspect forecast quality over time.</p></article><article class="feature"><span data-i18n="feature5Tag">Execution</span><h3 data-i18n="feature5Title">Built with cost and friction awareness</h3><p data-i18n="feature5Copy">Expected edge is evaluated against transaction costs, liquidity realities, and risk controls. That keeps theProduct closer to tradeable reality.</p></article><article class="feature"><span data-i18n="feature6Tag">Coverage</span><h3 data-i18n="feature6Title">One bilingual operating surface</h3><p data-i18n="feature6Copy">Arabic and English users can search, ask, and navigate the same system without losing entity resolution, context, or usability.</p></article></div></section>
-<section class="section"><div class="section-head"><div><h2 data-i18n="benefitsTitle">Why teams use it</h2></div><p data-i18n="benefitsLead">The value is not more data. The value is reducing the time between market information and a defensible decision.</p></div><div class="grid3"><article class="benefit"><span data-i18n="benefit1Tag">Speed</span><h3 data-i18n="benefit1Title">Find what changed today fast</h3><p data-i18n="benefit1Copy">The platform highlights meaningful signal shifts, portfolio forecast deltas, and macro moves so users can focus on changes, not re-read the whole market every morning.</p></article><article class="benefit"><span data-i18n="benefit2Tag">Discipline</span><h3 data-i18n="benefit2Title">Separate conviction from noise</h3><p data-i18n="benefit2Copy">Calibrated confidence, ranking score, and freshness monitoring help distinguish strong setups from stale or weak ones.</p></article><article class="benefit"><span data-i18n="benefit3Tag">Clarity</span><h3 data-i18n="benefit3Title">Make research conversational without losing rigor</h3><p data-i18n="benefit3Copy">Users can ask plain-language questions and still get structured answers tied to actual market entities, retrieval evidence, and current system context.</p></article></div></section>
-<section class="section"><div class="section-head"><div><h2 data-i18n="ProofTitle">High-levelProduct pillars</h2></div><p data-i18n="ProofLead">This is the external view of theProduct. Detailed implementationDocs, operator workflows, and internal references now live in the Admin module.</p></div><div class="grid4"><article class="Proof"><span data-i18n="Proof1Tag">Signals</span><h3 data-i18n="Proof1Title">Daily ranked opportunities</h3><p data-i18n="Proof1Copy">Consensus signals prioritized by confidence, edge, and current relevance.</p></article><article class="Proof"><span data-i18n="Proof2Tag">Valuation</span><h3 data-i18n="Proof2Title">DCF as supplementary context</h3><p data-i18n="Proof2Copy">Valuation is visible as a contextual layer that helps frame longer-horizon opportunity quality.</p></article><article class="Proof"><span data-i18n="Proof3Tag">Monitoring</span><h3 data-i18n="Proof3Title">Freshness and drift awareness</h3><p data-i18n="Proof3Copy">Operators can detect stale feeds and degrading agent behavior before trusting the outputs.</p></article><article class="Proof"><span data-i18n="Proof4Tag">Research</span><h3 data-i18n="Proof4Title">Bilingual research workflow</h3><p data-i18n="Proof4Copy">Research assistance is available across the publicProduct surfaces, not buried in one page.</p></article></div></section>
-<section class="section"><div class="card strip"><div><h3 data-i18n="closingTitle">Use the publicProduct. Keep the internalDocs internal.</h3><p class="foot-copy" data-i18n="closingCopy">Public visitors should seeProduct value, not operator detail. Internal teams can access the full documentation inside Admin.</p></div><div class="actions"><a class="cta primary" href="/" data-i18n="closingPrimary">Open Xmore</a></div></div></section>
+	<section class="section hero">
+		<article class="card hero-copy">
+			<div class="eyebrow" data-i18n="eyebrow">Execution-aware market signals</div>
+			<h1 data-i18n="heroTitle">A decision layer for serious EGX investors.</h1>
+			<p class="lead" data-i18n="heroLead">Xmore combines multi-agent stock signals, adaptive ranking, valuation context, live macro monitoring, and a built-in research layer into one operating surface for the Egyptian market.</p>
+			<div class="actions">
+				<a class="cta primary" href="/track-record" data-i18n="ctaPrimary">See the live Track Record</a>
+				<a class="cta" href="/" data-i18n="ctaSecondary">Open the dashboard</a>
+			</div>
+			<div class="hi">
+				<div class="highlight"><strong data-i18n="highlight1Value">5 agents</strong><span data-i18n="highlight1Label">combined into one ranked consensus layer</span></div>
+				<div class="highlight"><strong data-i18n="highlight2Value">Bilingual</strong><span data-i18n="highlight2Label">Arabic and English workflows across the product</span></div>
+				<div class="highlight"><strong data-i18n="highlight3Value">Live context</strong><span data-i18n="highlight3Label">signals, macro, forecasts, and research retrieval in one stack</span></div>
+			</div>
+		</article>
+		<aside class="card panel">
+			<div class="panel-head"><strong data-i18n="panelTitle">What Xmore surfaces</strong><span class="badge" data-i18n="panelBadge">Live stack</span></div>
+			<div class="signal">
+				<div class="signal-head"><strong data-i18n="signalSymbol">EGX opportunity</strong><span class="chip" data-i18n="signalBadge">Ranked signal</span></div>
+				<h3 data-i18n="signalTitle">Consensus, expected edge, and calibrated confidence in one card.</h3>
+				<p class="copy" data-i18n="signalCopy">The platform does not stop at direction. It estimates how strong the setup is, whether the edge covers friction, and how much confidence the system has earned historically.</p>
+			</div>
+			<div class="metrics">
+				<div class="metric"><strong data-i18n="metric1Title">Signals</strong><p data-i18n="metric1Copy">Multi-agent consensus with execution-aware gating.</p></div>
+				<div class="metric"><strong data-i18n="metric2Title">Forecasts</strong><p data-i18n="metric2Copy">Portfolio scenarios with later accuracy evaluation.</p></div>
+				<div class="metric"><strong data-i18n="metric3Title">Research</strong><p data-i18n="metric3Copy">Research answers grounded in internal docs, news, and market data.</p></div>
+			</div>
+		</aside>
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div><h2 data-i18n="featuresTitle">What the product actually does</h2></div>
+			<p data-i18n="featuresLead">Xmore is built around operator usefulness: signal generation, ranking, monitoring, and research support for a market where context, liquidity, and timing matter.</p>
+		</div>
+		<div class="grid3">
+			<article class="feature"><span data-i18n="feature1Tag">Signal Engine</span><h3 data-i18n="feature1Title">Adaptive consensus instead of a static vote</h3><p data-i18n="feature1Copy">Agent weights adapt from live evaluated results, recent alpha, sample quality, and drift. The system keeps learning which components are earning trust now.</p></article>
+			<article class="feature"><span data-i18n="feature2Tag">Research Layer</span><h3 data-i18n="feature2Title">Research grounded in real market context</h3><p data-i18n="feature2Copy">Research resolves bilingual entities, prioritizes symbol-specific retrieval, and answers using internal documents, market news, pricing context, and product knowledge.</p></article>
+			<article class="feature"><span data-i18n="feature3Tag">Macro Layer</span><h3 data-i18n="feature3Title">Market context is part of the decision, not a side note</h3><p data-i18n="feature3Copy">Rates, gold, FX, regime shifts, and daily changes are surfaced alongside the signal layer so users can understand what changed and why it matters.</p></article>
+			<article class="feature"><span data-i18n="feature4Tag">Portfolio Tools</span><h3 data-i18n="feature4Title">Signals connect to portfolios and forecasts</h3><p data-i18n="feature4Copy">Users can move from ranked opportunities to scenario portfolios, monitor open ideas, and inspect forecast quality over time.</p></article>
+			<article class="feature"><span data-i18n="feature5Tag">Execution</span><h3 data-i18n="feature5Title">Built with cost and friction awareness</h3><p data-i18n="feature5Copy">Expected edge is evaluated against transaction costs, liquidity realities, and risk controls. That keeps the product closer to tradeable reality.</p></article>
+			<article class="feature"><span data-i18n="feature6Tag">Coverage</span><h3 data-i18n="feature6Title">One bilingual operating surface</h3><p data-i18n="feature6Copy">Arabic and English users can search, ask, and navigate the same system without losing entity resolution, context, or usability.</p></article>
+		</div>
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div><h2 data-i18n="benefitsTitle">Why teams use it</h2></div>
+			<p data-i18n="benefitsLead">The value is not more data. The value is reducing the time between market information and a defensible decision.</p>
+		</div>
+		<div class="grid3">
+			<article class="benefit"><span data-i18n="benefit1Tag">Speed</span><h3 data-i18n="benefit1Title">Find what changed today fast</h3><p data-i18n="benefit1Copy">The platform highlights meaningful signal shifts, portfolio forecast deltas, and macro moves so users can focus on changes, not re-read the whole market every morning.</p></article>
+			<article class="benefit"><span data-i18n="benefit2Tag">Discipline</span><h3 data-i18n="benefit2Title">Separate conviction from noise</h3><p data-i18n="benefit2Copy">Calibrated confidence, ranking score, and freshness monitoring help distinguish strong setups from stale or weak ones.</p></article>
+			<article class="benefit"><span data-i18n="benefit3Tag">Clarity</span><h3 data-i18n="benefit3Title">Make research conversational without losing rigor</h3><p data-i18n="benefit3Copy">Users can ask plain-language questions and still get structured answers tied to actual market entities, retrieval evidence, and current system context.</p></article>
+		</div>
+	</section>
+	<section class="section">
+		<div class="section-head">
+			<div><h2 data-i18n="proofTitle">High-level product pillars</h2></div>
+			<p data-i18n="proofLead">This is the external view of the product. Detailed implementation docs, operator workflows, and internal references now live in the Admin module.</p>
+		</div>
+		<div class="grid4">
+			<article class="proof"><span data-i18n="proof1Tag">Signals</span><h3 data-i18n="proof1Title">Daily ranked opportunities</h3><p data-i18n="proof1Copy">Consensus signals prioritized by confidence, edge, and current relevance.</p></article>
+			<article class="proof"><span data-i18n="proof2Tag">Valuation</span><h3 data-i18n="proof2Title">DCF as supplementary context</h3><p data-i18n="proof2Copy">Valuation is visible as a contextual layer that helps frame longer-horizon opportunity quality.</p></article>
+			<article class="proof"><span data-i18n="proof3Tag">Monitoring</span><h3 data-i18n="proof3Title">Freshness and drift awareness</h3><p data-i18n="proof3Copy">Operators can detect stale feeds and degrading agent behavior before trusting the outputs.</p></article>
+			<article class="proof"><span data-i18n="proof4Tag">Research</span><h3 data-i18n="proof4Title">Bilingual research workflow</h3><p data-i18n="proof4Copy">Research assistance is available across public product surfaces, not buried in one page.</p></article>
+		</div>
+	</section>
+	<section class="section">
+		<div class="card strip">
+			<div>
+				<h3 data-i18n="closingTitle">Use the public product. Keep the internal docs internal.</h3>
+				<p class="foot-copy" data-i18n="closingCopy">Public visitors should see product value, not operator detail. Internal teams can access the full documentation inside Admin.</p>
+			</div>
+			<div class="actions"><a class="cta primary" href="/" data-i18n="closingPrimary">Open Xmore</a></div>
+		</div>
+	</section>
 </main>
-<footer class="foot"><p class="foot-copy" data-i18n="footerCopy">Xmore is built for live market workflows across signals, research, and portfolio context.</p><div class="foot-links"><a href="/track-record">Track Record</a><a href="/Session">Session</a><a href="/Pro">Pro</a></div></footer>
+<footer class="foot">
+	<p class="foot-copy" data-i18n="footerCopy">Xmore is built for live market workflows across signals, research, and portfolio context.</p>
+	<div class="foot-links"><a href="/track-record">Track Record</a><a href="/Session">Session</a><a href="/Pro">Pro</a></div>
+</footer>
 <script>
-const T={en:{brandSub:'Market intelligence for the Egyptian market',navHome:'Home',navTrack:'Track Record',navPro:'Pro',navAdmin:'Admin',eyebrow:'Execution-aware market signals',heroTitle:'A decision layer for serious EGX investors.',heroLead:'Xmore combines multi-agent stock signals, adaptive ranking, valuation context, live macro monitoring, and a built-in research layer into one operating surface for the Egyptian market.',ctaPrimary:'See the liveTrack Record',ctaSecondary:'Open the dashboard',highlight1Value:'5 agents',highlight1Label:'combined into one ranked consensus layer',highlight2Value:'Bilingual',highlight2Label:'Arabic and English workflows across theProduct',highlight3Value:'Live context',highlight3Label:'signals, macro, forecasts, and Research retrieval in one stack',panelTitle:'What Xmore surfaces',panelBadge:'Live stack',signalBadge:'Ranked signal',signalTitle:'Consensus, expected edge, and calibrated confidence in one card.',signalCopy:'The platform does not stop at direction. It estimates how strong the setup is, whether the edge covers friction, and how much confidence the system has earned historically.',metric1Title:'Signals',metric1Copy:'Multi-agent consensus with execution-aware gating.',metric2Title:'Forecasts',metric2Copy:'Portfolio scenarios with later accuracy evaluation.',metric3Title:'Research',metric3Copy:'Research answers grounded in internalDocs, news, and market data.',featuresTitle:'What theProduct actually does',featuresLead:'Xmore is built around operator usefulness: signal generation, ranking, monitoring, and research support for a market where context, liquidity, and timing matter.',feature1Tag:'Signal Engine',feature1Title:'Adaptive consensus instead of a static vote',feature1Copy:'Agent weights adapt from live evaluated results, recent alpha, sample quality, and drift. The system keeps learning which components are earning trust now.',feature2Tag:'Research Layer',feature2Title:'Research grounded in real market context',feature2Copy:'The Research resolves bilingual entities, prioritizes symbol-specific retrieval, and answers using internal documents, market news, pricing context, andProduct knowledge.',feature3Tag:'Macro Layer',feature3Title:'Market context is part of the decision, not a side note',feature3Copy:'Rates, gold, FX, regime shifts, and daily changes are surfaced alongside the signal layer so users can understand what changed and why it matters.',feature4Tag:'Portfolio Tools',feature4Title:'Signals connect to portfolios and forecasts',feature4Copy:'Users can move from ranked opportunities to scenario portfolios, monitor open ideas, and inspect forecast quality over time.',feature5Tag:'Execution',feature5Title:'Built with cost and friction awareness',feature5Copy:'Expected edge is evaluated against transaction costs, liquidity realities, and risk controls. That keeps theProduct closer to tradeable reality.',feature6Tag:'Coverage',feature6Title:'One bilingual operating surface',feature6Copy:'Arabic and English users can search, ask, and navigate the same system without losing entity resolution, context, or usability.',benefitsTitle:'Why teams use it',benefitsLead:'The value is not more data. The value is reducing the time between market information and a defensible decision.',benefit1Tag:'Speed',benefit1Title:'Find what changed today fast',benefit1Copy:'The platform highlights meaningful signal shifts, portfolio forecast deltas, and macro moves so users can focus on changes, not re-read the whole market every morning.',benefit2Tag:'Discipline',benefit2Title:'Separate conviction from noise',benefit2Copy:'Calibrated confidence, ranking score, and freshness monitoring help distinguish strong setups from stale or weak ones.',benefit3Tag:'Clarity',benefit3Title:'Make research conversational without losing rigor',benefit3Copy:'Users can ask plain-language questions and still get structured answers tied to actual market entities, retrieval evidence, and current system context.',ProofTitle:'High-levelProduct pillars',ProofLead:'This is the external view of theProduct. Detailed implementationDocs, operator workflows, and internal references now live in the Admin module.',Proof1Tag:'Signals',Proof1Title:'Daily ranked opportunities',Proof1Copy:'Consensus signals prioritized by confidence, edge, and current relevance.',Proof2Tag:'Valuation',Proof2Title:'DCF as supplementary context',Proof2Copy:'Valuation is visible as a contextual layer that helps frame longer-horizon opportunity quality.',Proof3Tag:'Monitoring',Proof3Title:'Freshness and drift awareness',Proof3Copy:'Operators can detect stale feeds and degrading agent behavior before trusting the outputs.',Proof4Tag:'Research',Proof4Title:'Bilingual research workflow',Proof4Copy:'Research assistance is available across the publicProduct surfaces, not buried in one page.',closingTitle:'Use the publicProduct. Keep the internalDocs internal.',closingCopy:'Public visitors should seeProduct value, not operator detail. Internal teams can access the full documentation inside Admin.',closingPrimary:'Open Xmore',closingSecondary:'Go to Admin',footerCopy:'Xmore is built for live market workflows across signals, research, and portfolio context.'},ar:{brandSub:'منصة ذكاء سوقي مدعومة بالتحليل السوقي للسوق المصري',navHome:'Home',navTrack:'Track Record',navPro:'Pro',navAdmin:'Admin',eyebrow:'إشارات سوقية تراعي التنفيذ',heroTitle:'اذكى ادوات المستثمر الجاد',heroLead:'يجمع إكسمور بين إشارات الأسهم متعددة الوكلاء، والترتيب التكيفي، وسياق التقييم، ومراقبة الماكرو المباشرة، وطبقة بحث ضمن سطح عمل واحد للسوق المصري.',ctaPrimary:'اعرض السجل الحي',ctaSecondary:'Open Dashboard',highlight1Value:'5 وكلاء',highlight1Label:'يتم دمجهم داخل طبقة إجماع مرتبة',highlight2Value:'ثنائي اللغة',highlight2Label:'تجربة عربية وإنجليزية عبر كامل المنتج',highlight3Value:'سياق حي',highlight3Label:'إشارات وماكرو وتوقعات واسترجاع ذكي في منظومة واحدة',panelTitle:'ما الذي يقدمه إكسمور',panelBadge:'منظومة مباشرة',signalBadge:'إشارة مرتبة',signalTitle:'الإجماع، والعائد المتوقع، والثقة المعايرة في بطاقة واحدة.',signalCopy:'المنصة لا تتوقف عند الاتجاه فقط. هي تقدّر قوة الفرصة، وما إذا كانت الحافة تغطي تكلفة التنفيذ، وكم من الثقة استحقها النظام تاريخياً.',metric1Title:'الإشارات',metric1Copy:'إجماع متعدد الوكلاء مع بوابة تراعي التنفيذ.',metric2Title:'التوقعات',metric2Copy:'سيناريوهات محافظ مع تقييم لاحق للدقة.',metric3Title:'البحث',metric3Copy:'إجابات بحثية مبنية على المستندات والأخبار وبيانات السوق.',featuresTitle:'ماذا يفعل المنتج فعلياً',featuresLead:'تم تصميم إكسمور ليفيد المشغل والمستخدم الجاد: توليد الإشارات، وترتيبها، ومراقبتها، ودعم البحث في سوق يتطلب سياقاً وسيولة وتوقيتاً.',feature1Tag:'محرك الإشارة',feature1Title:'إجماع تكيفي بدلاً من تصويت ثابت',feature1Copy:'تتغير أوزان الوكلاء بناءً على النتائج الحية، والألفا الحديثة، وجودة العينة، والانحراف. النظام يتعلم باستمرار من الذي يستحق الثقة الآن.',feature2Tag:'طبقة البحث',feature2Title:'طبقة بحث مرتبط بسياق السوق الحقيقي',feature2Copy:'البحث يحل الكيانات بالعربية والإنجليزية، ويعطي أولوية للاسترجاع الخاص بالرمز، ويجيب باستخدام المستندات الداخلية والأخبار وسياق الأسعار ومعرفة المنتج.',feature3Tag:'طبقة الماكرو',feature3Title:'سياق السوق جزء من القرار وليس هامشاً',feature3Copy:'يتم عرض الفائدة والذهب والعملات وتحولات النظام والتغيرات اليومية بجانب الإشارات لفهم ما الذي تغير ولماذا يهم.',feature4Tag:'أدوات المحافظ',feature4Title:'الإشارات مرتبطة بالمحافظ والتوقعات',feature4Copy:'يمكن للمستخدم الانتقال من الفرص المرتبة إلى محافظ سيناريو، ومراقبة الأفكار المفتوحة، وفحص جودة التوقعات بمرور الوقت.',feature5Tag:'التنفيذ',feature5Title:'مبني مع وعي بالتكاليف والاحتكاك',feature5Copy:'يتم تقييم العائد المتوقع مقابل تكاليف التداول والسيولة وإدارة المخاطر، ما يجعل المنتج أقرب للواقع القابل للتنفيذ.',feature6Tag:'التغطية',feature6Title:'سطح تشغيل ثنائي اللغة',feature6Copy:'يمكن للمستخدم العربي والإنجليزي البحث والسؤال والتنقل دون فقدان حل الكيانات أو السياق أو سهولة الاستخدام.',benefitsTitle:'لماذا تستخدمه الفرق',benefitsLead:'القيمة ليست في المزيد من البيانات، بل في تقليل الزمن بين المعلومة السوقية والقرار القابل للدفاع.',benefit1Tag:'السرعة',benefit1Title:'اعرف ما الذي تغير اليوم بسرعة',benefit1Copy:'المنصة تبرز تغيرات الإشارات المهمة، وفروقات توقعات المحافظ، وتحركات الماكرو حتى يركز المستخدم على التغيرات لا على إعادة قراءة السوق كله.',benefit2Tag:'الانضباط',benefit2Title:'افصل بين القناعة والضوضاء',benefit2Copy:'الثقة المعايرة، ودرجة الترتيب، ومراقبة الحداثة تساعد على التمييز بين الفرص القوية والفرص الضعيفة أو القديمة.',benefit3Tag:'الوضوح',benefit3Title:'اجعل البحث حوارياً دون فقدان الصرامة',benefit3Copy:'يمكن للمستخدم طرح أسئلة بلغة طبيعية والحصول على إجابات منظمة مرتبطة بكيانات السوق الفعلية ومصادر الاسترجاع والسياق الحالي.',ProofTitle:'أعمدة المنتج على المستوى العالي',ProofLead:'هذه هي الرؤية الخارجية للمنتج. أما تفاصيل التنفيذ وسير العمل التشغيلي والمرجعيات الداخلية فأصبحت داخل وحدة الإدارة.',Proof1Tag:'الإشارات',Proof1Title:'فرص يومية مرتبة',Proof1Copy:'إشارات إجماع يتم ترتيبها حسب الثقة والحافة والملاءمة الحالية.',Proof2Tag:'التقييم',Proof2Title:'DCF كسياق داعم',Proof2Copy:'يظهر التقييم كطبقة سياقية تساعد في فهم جودة الفرصة على الأفق الأطول.',Proof3Tag:'المراقبة',Proof3Title:'وعي بالحداثة والانحراف',Proof3Copy:'يمكن للمشغل اكتشاف البيانات القديمة أو تدهور أداء الوكلاء قبل الوثوق بالمخرجات.',Proof4Tag:'البحث',Proof4Title:'سير عمل بحثي ذكي ثنائي اللغة',Proof4Copy:'البحثة البحثية متاحة عبر صفحات المنتج العامة وليست مدفونة في صفحة واحدة.',closingTitle:'دع الصفحة العامة تبيع القيمة، واترك التوثيق الداخلي للإدارة.',closingCopy:'الزائر العام يجب أن يرى قيمة المنتج لا تفاصيل التشغيل. أما الفريق الداخلي فيستطيع الوصول إلى التوثيق الكامل من داخل الإدارة.',closingPrimary:'Open Xmore',closingSecondary:'Go to Admin',footerCopy:'تم بناء إكسمور لعمليات السوق الحية عبر الإشارات والبحث وسياق المحافظ.'}};
-function lang(){const q=new URLSearchParams(location.search).get('lang');if(q==='ar'||q==='en')return q;return localStorage.getItem('lang')==='ar'?'ar':'en'}
-function apply(l){const d=T[l]||T.en;document.documentElement.lang=l;document.documentElement.dir=l==='ar'?'rtl':'ltr';document.body.classList.toggle('rtl',l==='ar');document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(d[k])el.textContent=d[k]});document.getElementById('langToggleBtn').textContent=l==='ar'?'English':'العربية';localStorage.setItem('lang',l)}
-(function(){var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)})();apply(lang());
-let currentTheme=localStorage.getItem('theme')||'light';
-function applyTheme(){document.documentElement.setAttribute('data-theme',currentTheme);try{updateThemeButton()}catch(e){}}
-function updateThemeButton(){const btn=document.getElementById('themeBtn');if(btn){if(currentTheme==='dark'){btn.title='Switch to light mode'}else{btn.title='Switch to dark mode'}}}
-function toggleTheme(){currentTheme=currentTheme==='light'?'dark':'light';localStorage.setItem('theme',currentTheme);applyTheme()}
-document.getElementById('langToggleBtn').addEventListener('click',()=>apply((document.documentElement.lang||'en')==='ar'?'en':'ar'));
-document.getElementById('themeBtn')?.addEventListener('click',toggleTheme);
+const T = {
+	en: {
+		brandSub: 'Market intelligence for the Egyptian market',
+		navHome: 'Home',
+		navTrack: 'Track Record',
+		navPro: 'Pro',
+		eyebrow: 'Execution-aware market signals',
+		heroTitle: 'A decision layer for serious EGX investors.',
+		heroLead: 'Xmore combines multi-agent stock signals, adaptive ranking, valuation context, live macro monitoring, and a built-in research layer into one operating surface for the Egyptian market.',
+		ctaPrimary: 'See the live Track Record',
+		ctaSecondary: 'Open the dashboard',
+		highlight1Value: '5 agents',
+		highlight1Label: 'combined into one ranked consensus layer',
+		highlight2Value: 'Bilingual',
+		highlight2Label: 'Arabic and English workflows across the product',
+		highlight3Value: 'Live context',
+		highlight3Label: 'signals, macro, forecasts, and research retrieval in one stack',
+		panelTitle: 'What Xmore surfaces',
+		panelBadge: 'Live stack',
+		signalSymbol: 'EGX opportunity',
+		signalBadge: 'Ranked signal',
+		signalTitle: 'Consensus, expected edge, and calibrated confidence in one card.',
+		signalCopy: 'The platform does not stop at direction. It estimates how strong the setup is, whether the edge covers friction, and how much confidence the system has earned historically.',
+		metric1Title: 'Signals',
+		metric1Copy: 'Multi-agent consensus with execution-aware gating.',
+		metric2Title: 'Forecasts',
+		metric2Copy: 'Portfolio scenarios with later accuracy evaluation.',
+		metric3Title: 'Research',
+		metric3Copy: 'Research answers grounded in internal docs, news, and market data.',
+		featuresTitle: 'What the product actually does',
+		featuresLead: 'Xmore is built around operator usefulness: signal generation, ranking, monitoring, and research support for a market where context, liquidity, and timing matter.',
+		feature1Tag: 'Signal Engine',
+		feature1Title: 'Adaptive consensus instead of a static vote',
+		feature1Copy: 'Agent weights adapt from live evaluated results, recent alpha, sample quality, and drift. The system keeps learning which components are earning trust now.',
+		feature2Tag: 'Research Layer',
+		feature2Title: 'Research grounded in real market context',
+		feature2Copy: 'Research resolves bilingual entities, prioritizes symbol-specific retrieval, and answers using internal documents, market news, pricing context, and product knowledge.',
+		feature3Tag: 'Macro Layer',
+		feature3Title: 'Market context is part of the decision, not a side note',
+		feature3Copy: 'Rates, gold, FX, regime shifts, and daily changes are surfaced alongside the signal layer so users can understand what changed and why it matters.',
+		feature4Tag: 'Portfolio Tools',
+		feature4Title: 'Signals connect to portfolios and forecasts',
+		feature4Copy: 'Users can move from ranked opportunities to scenario portfolios, monitor open ideas, and inspect forecast quality over time.',
+		feature5Tag: 'Execution',
+		feature5Title: 'Built with cost and friction awareness',
+		feature5Copy: 'Expected edge is evaluated against transaction costs, liquidity realities, and risk controls. That keeps the product closer to tradeable reality.',
+		feature6Tag: 'Coverage',
+		feature6Title: 'One bilingual operating surface',
+		feature6Copy: 'Arabic and English users can search, ask, and navigate the same system without losing entity resolution, context, or usability.',
+		benefitsTitle: 'Why teams use it',
+		benefitsLead: 'The value is not more data. The value is reducing the time between market information and a defensible decision.',
+		benefit1Tag: 'Speed',
+		benefit1Title: 'Find what changed today fast',
+		benefit1Copy: 'The platform highlights meaningful signal shifts, portfolio forecast deltas, and macro moves so users can focus on changes, not re-read the whole market every morning.',
+		benefit2Tag: 'Discipline',
+		benefit2Title: 'Separate conviction from noise',
+		benefit2Copy: 'Calibrated confidence, ranking score, and freshness monitoring help distinguish strong setups from stale or weak ones.',
+		benefit3Tag: 'Clarity',
+		benefit3Title: 'Make research conversational without losing rigor',
+		benefit3Copy: 'Users can ask plain-language questions and still get structured answers tied to actual market entities, retrieval evidence, and current system context.',
+		proofTitle: 'High-level product pillars',
+		proofLead: 'This is the external view of the product. Detailed implementation docs, operator workflows, and internal references now live in the Admin module.',
+		proof1Tag: 'Signals',
+		proof1Title: 'Daily ranked opportunities',
+		proof1Copy: 'Consensus signals prioritized by confidence, edge, and current relevance.',
+		proof2Tag: 'Valuation',
+		proof2Title: 'DCF as supplementary context',
+		proof2Copy: 'Valuation is visible as a contextual layer that helps frame longer-horizon opportunity quality.',
+		proof3Tag: 'Monitoring',
+		proof3Title: 'Freshness and drift awareness',
+		proof3Copy: 'Operators can detect stale feeds and degrading agent behavior before trusting the outputs.',
+		proof4Tag: 'Research',
+		proof4Title: 'Bilingual research workflow',
+		proof4Copy: 'Research assistance is available across public product surfaces, not buried in one page.',
+		closingTitle: 'Use the public product. Keep the internal docs internal.',
+		closingCopy: 'Public visitors should see product value, not operator detail. Internal teams can access the full documentation inside Admin.',
+		closingPrimary: 'Open Xmore',
+		footerCopy: 'Xmore is built for live market workflows across signals, research, and portfolio context.'
+	},
+	ar: {
+		brandSub: 'منصة ذكاء سوقي للسوق المصري',
+		navHome: 'الرئيسية',
+		navTrack: 'السجل',
+		navPro: 'برو',
+		eyebrow: 'إشارات سوقية تراعي التنفيذ',
+		heroTitle: 'اذكى ادوات المستثمر الجاد',
+		heroLead: 'يجمع إكسمور بين إشارات الأسهم متعددة الوكلاء، والترتيب التكيفي، وسياق التقييم، ومراقبة الماكرو المباشرة، وطبقة بحث ضمن سطح عمل واحد للسوق المصري.',
+		ctaPrimary: 'اعرض السجل الحي',
+		ctaSecondary: 'افتح لوحة التحكم',
+		highlight1Value: '5 وكلاء',
+		highlight1Label: 'يتم دمجهم داخل طبقة إجماع مرتبة',
+		highlight2Value: 'ثنائي اللغة',
+		highlight2Label: 'تجربة عربية وإنجليزية عبر كامل المنتج',
+		highlight3Value: 'سياق حي',
+		highlight3Label: 'إشارات وماكرو وتوقعات واسترجاع ذكي في منظومة واحدة',
+		panelTitle: 'ما الذي يقدمه إكسمور',
+		panelBadge: 'منظومة مباشرة',
+		signalSymbol: 'فرصة من السوق المصري',
+		signalBadge: 'إشارة مرتبة',
+		signalTitle: 'الإجماع، والعائد المتوقع، والثقة المعايرة في بطاقة واحدة.',
+		signalCopy: 'المنصة لا تتوقف عند الاتجاه فقط. هي تقدّر قوة الفرصة، وما إذا كانت الحافة تغطي تكلفة التنفيذ، وكم من الثقة استحقها النظام تاريخياً.',
+		metric1Title: 'الإشارات',
+		metric1Copy: 'إجماع متعدد الوكلاء مع بوابة تراعي التنفيذ.',
+		metric2Title: 'التوقعات',
+		metric2Copy: 'سيناريوهات محافظ مع تقييم لاحق للدقة.',
+		metric3Title: 'البحث',
+		metric3Copy: 'إجابات بحثية مبنية على المستندات والأخبار وبيانات السوق.',
+		featuresTitle: 'ماذا يفعل المنتج فعلياً',
+		featuresLead: 'تم تصميم إكسمور ليفيد المشغل والمستخدم الجاد: توليد الإشارات، وترتيبها، ومراقبتها، ودعم البحث في سوق يتطلب سياقاً وسيولة وتوقيتاً.',
+		feature1Tag: 'محرك الإشارة',
+		feature1Title: 'إجماع تكيفي بدلاً من تصويت ثابت',
+		feature1Copy: 'تتغير أوزان الوكلاء بناءً على النتائج الحية، والألفا الحديثة، وجودة العينة، والانحراف. النظام يتعلم باستمرار من الذي يستحق الثقة الآن.',
+		feature2Tag: 'طبقة البحث',
+		feature2Title: 'بحث مرتبط بسياق السوق الحقيقي',
+		feature2Copy: 'البحث يحل الكيانات بالعربية والإنجليزية، ويعطي أولوية للاسترجاع الخاص بالرمز، ويجيب باستخدام المستندات الداخلية والأخبار وسياق الأسعار ومعرفة المنتج.',
+		feature3Tag: 'طبقة الماكرو',
+		feature3Title: 'سياق السوق جزء من القرار وليس هامشاً',
+		feature3Copy: 'يتم عرض الفائدة والذهب والعملات وتحولات النظام والتغيرات اليومية بجانب الإشارات لفهم ما الذي تغير ولماذا يهم.',
+		feature4Tag: 'أدوات المحافظ',
+		feature4Title: 'الإشارات مرتبطة بالمحافظ والتوقعات',
+		feature4Copy: 'يمكن للمستخدم الانتقال من الفرص المرتبة إلى محافظ سيناريو، ومراقبة الأفكار المفتوحة، وفحص جودة التوقعات بمرور الوقت.',
+		feature5Tag: 'التنفيذ',
+		feature5Title: 'مبني مع وعي بالتكاليف والاحتكاك',
+		feature5Copy: 'يتم تقييم العائد المتوقع مقابل تكاليف التداول والسيولة وإدارة المخاطر، ما يجعل المنتج أقرب للواقع القابل للتنفيذ.',
+		feature6Tag: 'التغطية',
+		feature6Title: 'سطح تشغيل ثنائي اللغة',
+		feature6Copy: 'يمكن للمستخدم العربي والإنجليزي البحث والسؤال والتنقل دون فقدان حل الكيانات أو السياق أو سهولة الاستخدام.',
+		benefitsTitle: 'لماذا تستخدمه الفرق',
+		benefitsLead: 'القيمة ليست في المزيد من البيانات، بل في تقليل الزمن بين المعلومة السوقية والقرار القابل للدفاع.',
+		benefit1Tag: 'السرعة',
+		benefit1Title: 'اعرف ما الذي تغير اليوم بسرعة',
+		benefit1Copy: 'المنصة تبرز تغيرات الإشارات المهمة، وفروقات توقعات المحافظ، وتحركات الماكرو حتى يركز المستخدم على التغيرات لا على إعادة قراءة السوق كله.',
+		benefit2Tag: 'الانضباط',
+		benefit2Title: 'افصل بين القناعة والضوضاء',
+		benefit2Copy: 'الثقة المعايرة، ودرجة الترتيب، ومراقبة الحداثة تساعد على التمييز بين الفرص القوية والفرص الضعيفة أو القديمة.',
+		benefit3Tag: 'الوضوح',
+		benefit3Title: 'اجعل البحث حوارياً دون فقدان الصرامة',
+		benefit3Copy: 'يمكن للمستخدم طرح أسئلة بلغة طبيعية والحصول على إجابات منظمة مرتبطة بكيانات السوق الفعلية ومصادر الاسترجاع والسياق الحالي.',
+		proofTitle: 'أعمدة المنتج على المستوى العالي',
+		proofLead: 'هذه هي الرؤية الخارجية للمنتج. أما تفاصيل التنفيذ وسير العمل التشغيلي والمرجعيات الداخلية فأصبحت داخل وحدة الإدارة.',
+		proof1Tag: 'الإشارات',
+		proof1Title: 'فرص يومية مرتبة',
+		proof1Copy: 'إشارات إجماع يتم ترتيبها حسب الثقة والحافة والملاءمة الحالية.',
+		proof2Tag: 'التقييم',
+		proof2Title: 'DCF كسياق داعم',
+		proof2Copy: 'يظهر التقييم كطبقة سياقية تساعد في فهم جودة الفرصة على الأفق الأطول.',
+		proof3Tag: 'المراقبة',
+		proof3Title: 'وعي بالحداثة والانحراف',
+		proof3Copy: 'يمكن للمشغل اكتشاف البيانات القديمة أو تدهور أداء الوكلاء قبل الوثوق بالمخرجات.',
+		proof4Tag: 'البحث',
+		proof4Title: 'سير عمل بحثي ذكي ثنائي اللغة',
+		proof4Copy: 'المساعدة البحثية متاحة عبر صفحات المنتج العامة وليست مدفونة في صفحة واحدة.',
+		closingTitle: 'دع الصفحة العامة تبيع القيمة، واترك التوثيق الداخلي للإدارة.',
+		closingCopy: 'الزائر العام يجب أن يرى قيمة المنتج لا تفاصيل التشغيل. أما الفريق الداخلي فيستطيع الوصول إلى التوثيق الكامل من داخل الإدارة.',
+		closingPrimary: 'افتح إكسمور',
+		footerCopy: 'تم بناء إكسمور لعمليات السوق الحية عبر الإشارات والبحث وسياق المحافظ.'
+	}
+};
 
-const DocsMenuBtn=document.getElementById('DocsMobileMenuBtn');
-const DocsMenuDropdown=document.getElementById('DocsMobileMenuDropdown');
-function DocsCloseMenu(){
-if(!DocsMenuBtn||!DocsMenuDropdown)return;DocsMenuBtn.setAttribute('aria-expanded','false');DocsMenuDropdown.classList.remove('active');DocsMenuDropdown.setAttribute('aria-hidden','true');
+function lang() {
+	const queryLang = new URLSearchParams(location.search).get('lang');
+	if (queryLang === 'ar' || queryLang === 'en') return queryLang;
+	return localStorage.getItem('lang') === 'ar' ? 'ar' : 'en';
 }
-if(DocsMenuBtn&&DocsMenuDropdown){DocsMenuBtn.addEventListener('click',()=>{
-const isOpen=DocsMenuDropdown.classList.contains('active');
-if(isOpen){DocsCloseMenu();return;}DocsMenuBtn.setAttribute('aria-expanded','true');DocsMenuDropdown.classList.add('active');DocsMenuDropdown.setAttribute('aria-hidden','false');
+
+function apply(language) {
+	const dict = T[language] || T.en;
+	document.documentElement.lang = language;
+	document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+	document.body.classList.toggle('rtl', language === 'ar');
+	document.querySelectorAll('[data-i18n]').forEach((element) => {
+		const key = element.dataset.i18n;
+		if (dict[key]) element.textContent = dict[key];
+	});
+	const langBtn = document.getElementById('langToggleBtn');
+	if (langBtn) langBtn.textContent = language === 'ar' ? 'English' : 'العربية';
+	localStorage.setItem('lang', language);
+}
+
+(function initTheme() {
+	const theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+	document.documentElement.setAttribute('data-theme', theme);
+})();
+
+apply(lang());
+
+let currentTheme = localStorage.getItem('theme') || 'light';
+
+function updateThemeButton() {
+	const button = document.getElementById('themeBtn');
+	if (!button) return;
+	button.title = currentTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+}
+
+function applyTheme() {
+	document.documentElement.setAttribute('data-theme', currentTheme);
+	updateThemeButton();
+}
+
+function toggleTheme() {
+	currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+	localStorage.setItem('theme', currentTheme);
+	applyTheme();
+}
+
+document.getElementById('langToggleBtn')?.addEventListener('click', () => {
+	apply((document.documentElement.lang || 'en') === 'ar' ? 'en' : 'ar');
 });
-document.addEventListener('click',(e)=>{
-if(!DocsMenuDropdown.contains(e.target)&&!DocsMenuBtn.contains(e.target))DocsCloseMenu();
-});
-window.addEventListener('resize',()=>{
-if(window.innerWidth>640)DocsCloseMenu();
-});
+document.getElementById('themeBtn')?.addEventListener('click', toggleTheme);
+applyTheme();
+
+const docsMenuBtn = document.getElementById('DocsMobileMenuBtn');
+const docsMenuDropdown = document.getElementById('DocsMobileMenuDropdown');
+
+function docsCloseMenu() {
+	if (!docsMenuBtn || !docsMenuDropdown) return;
+	docsMenuBtn.setAttribute('aria-expanded', 'false');
+	docsMenuDropdown.classList.remove('active');
+	docsMenuDropdown.setAttribute('aria-hidden', 'true');
+}
+
+if (docsMenuBtn && docsMenuDropdown) {
+	docsMenuBtn.addEventListener('click', () => {
+		const isOpen = docsMenuDropdown.classList.contains('active');
+		if (isOpen) {
+			docsCloseMenu();
+			return;
+		}
+		docsMenuBtn.setAttribute('aria-expanded', 'true');
+		docsMenuDropdown.classList.add('active');
+		docsMenuDropdown.setAttribute('aria-hidden', 'false');
+	});
+
+	document.addEventListener('click', (event) => {
+		if (!docsMenuDropdown.contains(event.target) && !docsMenuBtn.contains(event.target)) docsCloseMenu();
+	});
+
+	window.addEventListener('resize', () => {
+		if (window.innerWidth > 640) docsCloseMenu();
+	});
 }
 </script>
-<script src="assistant-widget.js"></script></body>
+<script src="assistant-widget.js"></script>
+</body>
 </html>
 
 

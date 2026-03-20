@@ -345,7 +345,7 @@ function buildInstitutionalMetrics(summary, fullReport) {
     const im = summary.institutional_metrics || {};
     const warn = im.data_quality_warning;
     const warnBanner = warn
-        ? `<div class="perf-quality-warning">âš  ${warn}</div>` : '';
+        ? `<div class="perf-quality-warning">⚠ ${warn}</div>` : '';
 
     const colorSharpe = (v) => v >= 1.5 ? 'inst-green' : v >= 0.8 ? 'inst-amber' : 'inst-red';
     const colorSortino = (v) => v >= 2 ? 'inst-green' : v >= 1 ? 'inst-amber' : 'inst-red';

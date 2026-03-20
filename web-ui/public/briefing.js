@@ -311,9 +311,9 @@ function renderMarketPulse(pulse) {
             </div>
         </div>
         <div class="breadth-bar">
-            <div class="breadth-segment breadth-advancing" style="width:${upPct}%">${pulse.stocks_up || 0} â–²</div>
+            <div class="breadth-segment breadth-advancing" style="width:${upPct}%">${pulse.stocks_up || 0} ▲</div>
             <div class="breadth-segment breadth-unchanged" style="width:${flatPct}%">${pulse.stocks_flat || 0}</div>
-            <div class="breadth-segment breadth-declining" style="width:${downPct}%">${pulse.stocks_down || 0} â–¼</div>
+            <div class="breadth-segment breadth-declining" style="width:${downPct}%">${pulse.stocks_down || 0} ▼</div>
         </div>
         <div class="breadth-labels">
             <span class="lbl-advancing">${bt('br_advancing')}</span>
@@ -339,7 +339,7 @@ function renderActionsToday(actions) {
     if (!brIsLoggedIn()) {
         return `
         <div class="briefing-section">
-            <div class="briefing-section-header"><h3>âš¡ ${bt('br_actions')}</h3></div>
+            <div class="briefing-section-header"><h3>⚡ ${bt('br_actions')}</h3></div>
             <div class="login-wall">
                 <p>${bt('br_login_actions')}</p>
                 <button onclick="showAuthModal('login')" class="auth-trigger-btn">🔐 ${bt('br_login_btn')}</button>
@@ -350,7 +350,7 @@ function renderActionsToday(actions) {
     if (!actions || actions.length === 0) {
         return `
         <div class="briefing-section">
-            <div class="briefing-section-header"><h3>âš¡ ${bt('br_actions')}</h3></div>
+            <div class="briefing-section-header"><h3>⚡ ${bt('br_actions')}</h3></div>
             <p class="no-data">${bt('br_no_actions')}</p>
         </div>`;
     }
@@ -379,7 +379,7 @@ function renderActionsToday(actions) {
 
     return `
     <div class="briefing-section">
-        <div class="briefing-section-header"><h3>âš¡ ${bt('br_actions')}</h3></div>
+        <div class="briefing-section-header"><h3>⚡ ${bt('br_actions')}</h3></div>
         <div class="actions-grid">${cards}</div>
     </div>`;
 }
