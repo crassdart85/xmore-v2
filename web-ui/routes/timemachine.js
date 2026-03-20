@@ -53,6 +53,46 @@ function sendForecastError(res, status, message) {
     });
 }
 
+function normalizeSimulationDateInput(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return null;
+
+    let year;
+    let month;
+    let day;
+    let match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (match) {
+        [, year, month, day] = match;
+    } else {
+        match = raw.match(/^(\d{2})[\/.-](\d{2})[\/.-](\d{4})$/);
+        if (match) {
+            [, day, month, year] = match;
+        } else {
+            match = raw.match(/^(\d{4})[\/](\d{2})[\/](\d{2})$/);
+            if (match) {
+                [, year, month, day] = match;
+            } else {
+                const parsed = new Date(raw);
+                if (Number.isNaN(parsed.getTime())) return null;
+                const iso = parsed.toISOString().slice(0, 10);
+                return {
+                    iso,
+                    date: new Date(`${iso}T00:00:00Z`),
+                };
+            }
+        }
+    }
+
+    const iso = `${year}-${month}-${day}`;
+    const parsed = new Date(`${iso}T00:00:00Z`);
+    if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== iso) {
+        return null;
+    }
+
+    return { iso, date: parsed };
+}
+
 // POST /api/timemachine/simulate  (past simulation — Python engine)
 router.post('/simulate', async (req, res) => {
     try {
@@ -66,27 +106,31 @@ router.post('/simulate', async (req, res) => {
         if (isNaN(numAmount) || numAmount < 5000 || numAmount > 10000000) {
             return sendSimulationError(res, 400, 'Amount must be between 5,000 and 10,000,000 EGP.', 'المبلغ يجب أن يكون بين ٥٬٠٠٠ و ١٠٬٠٠٠٬٠٠٠ جنيه.');
         }
-        const startDate = new Date(start_date);
-        const now = new Date();
-        if (isNaN(startDate.getTime()) || startDate >= now) {
+        const normalizedStart = normalizeSimulationDateInput(start_date);
+        const todayUtc = new Date();
+        todayUtc.setUTCHours(0, 0, 0, 0);
+        if (!normalizedStart || normalizedStart.date >= todayUtc) {
             return sendSimulationError(res, 400, 'Start date must be a valid past date.', 'تاريخ البداية يجب أن يكون في الماضي.');
         }
+
+        const normalizedStartDate = normalizedStart.iso;
+        const startDate = normalizedStart.date;
         // Reject dates more than 2 years ago
-        const twoYearsAgo = new Date();
-        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+        const twoYearsAgo = new Date(todayUtc);
+        twoYearsAgo.setUTCFullYear(twoYearsAgo.getUTCFullYear() - 2);
         if (startDate < twoYearsAgo) {
             return sendSimulationError(res, 400, 'Start date cannot be more than 2 years ago.', 'تاريخ البداية لا يمكن أن يكون أكثر من سنتين في الماضي.');
         }
 
         // Check in-memory cache
-        const cacheKey = getCacheKey(numAmount, start_date);
+        const cacheKey = getCacheKey(numAmount, normalizedStartDate);
         const cached = cache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
             return res.json(cached.data);
         }
 
         // Run Python simulation via child_process
-        const inputJson = JSON.stringify({ amount: numAmount, start_date });
+        const inputJson = JSON.stringify({ amount: numAmount, start_date: normalizedStartDate });
         const pythonScript = path.resolve(__dirname, '../../engines/timemachine.py');
         const projectRoot = path.resolve(__dirname, '../../');
 

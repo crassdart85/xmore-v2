@@ -35,6 +35,30 @@
         return data;
     }
 
+    function normalizeDateInput(raw) {
+        const value = String(raw || '').trim();
+        if (!value) return '';
+
+        let match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (match) return value;
+
+        match = value.match(/^(\d{2})[\/.-](\d{2})[\/.-](\d{4})$/);
+        if (match) {
+            const [, day, month, year] = match;
+            return `${year}-${month}-${day}`;
+        }
+
+        match = value.match(/^(\d{4})[\/](\d{2})[\/](\d{2})$/);
+        if (match) {
+            const [, year, month, day] = match;
+            return `${year}-${month}-${day}`;
+        }
+
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return '';
+        return parsed.toISOString().slice(0, 10);
+    }
+
     // ─── Public entry point (called by switchToTab) ───────────
     function bootstrapTimeMachine() {
         if (tmBootstrapped) return;
@@ -183,7 +207,7 @@
         const simulateBtn = document.getElementById('tmSimulateBtn');
 
         const amount = parseFloat(amountInput.value);
-        const startDate = dateInput.value;
+        const startDate = normalizeDateInput(dateInput.value);
         const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
         const _t = typeof t === 'function' ? t : (k) => k;
 
@@ -195,6 +219,10 @@
         if (!startDate) {
             if (typeof showToast === 'function') showToast('error', _t('tmSelectDate') || 'Please select a start date');
             return;
+        }
+
+        if (dateInput.value !== startDate) {
+            dateInput.value = startDate;
         }
 
         // Show loading, hide previous results
