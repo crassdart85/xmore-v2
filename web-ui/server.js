@@ -1493,6 +1493,20 @@ app.get('/track-record', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'track-record.html'));
 });
 
+app.use((err, req, res, next) => {
+  if (!err) return next();
+
+  const isApiRequest = req.path.startsWith('/api/');
+  if (!isApiRequest) return next(err);
+
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+
+  console.error('API error middleware:', err.stack || err.message || err);
+  return res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+});
+
 app.get('*', (req, res) => {
   // Don't serve index.html for /api routes that weren't matched
   if (req.path.startsWith('/api/')) {

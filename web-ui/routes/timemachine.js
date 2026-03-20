@@ -14,6 +14,11 @@ const MAX_CACHE_SIZE = 50;
 let _db = null;
 let _isPostgres = false;
 
+router.use((req, res, next) => {
+    res.type('application/json');
+    next();
+});
+
 function attachDb(db, isPostgres) {
     _db = db;
     _isPostgres = !!isPostgres;
@@ -33,6 +38,21 @@ function evictCache() {
     }
 }
 
+function sendSimulationError(res, status, messageEn, messageAr) {
+    return res.status(status).json({
+        error: true,
+        message_en: messageEn,
+        message_ar: messageAr,
+    });
+}
+
+function sendForecastError(res, status, message) {
+    return res.status(status).json({
+        ok: false,
+        error: message,
+    });
+}
+
 // POST /api/timemachine/simulate  (past simulation — Python engine)
 router.post('/simulate', async (req, res) => {
     try {
@@ -40,38 +60,22 @@ router.post('/simulate', async (req, res) => {
 
         // Validation
         if (!amount || !start_date) {
-            return res.status(400).json({
-                error: true,
-                message_en: 'Amount and start date are required.',
-                message_ar: 'المبلغ وتاريخ البداية مطلوبان.'
-            });
+            return sendSimulationError(res, 400, 'Amount and start date are required.', 'المبلغ وتاريخ البداية مطلوبان.');
         }
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount < 5000 || numAmount > 10000000) {
-            return res.status(400).json({
-                error: true,
-                message_en: 'Amount must be between 5,000 and 10,000,000 EGP.',
-                message_ar: 'المبلغ يجب أن يكون بين ٥٬٠٠٠ و ١٠٬٠٠٠٬٠٠٠ جنيه.'
-            });
+            return sendSimulationError(res, 400, 'Amount must be between 5,000 and 10,000,000 EGP.', 'المبلغ يجب أن يكون بين ٥٬٠٠٠ و ١٠٬٠٠٠٬٠٠٠ جنيه.');
         }
         const startDate = new Date(start_date);
         const now = new Date();
         if (isNaN(startDate.getTime()) || startDate >= now) {
-            return res.status(400).json({
-                error: true,
-                message_en: 'Start date must be a valid past date.',
-                message_ar: 'تاريخ البداية يجب أن يكون في الماضي.'
-            });
+            return sendSimulationError(res, 400, 'Start date must be a valid past date.', 'تاريخ البداية يجب أن يكون في الماضي.');
         }
         // Reject dates more than 2 years ago
         const twoYearsAgo = new Date();
         twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
         if (startDate < twoYearsAgo) {
-            return res.status(400).json({
-                error: true,
-                message_en: 'Start date cannot be more than 2 years ago.',
-                message_ar: 'تاريخ البداية لا يمكن أن يكون أكثر من سنتين في الماضي.'
-            });
+            return sendSimulationError(res, 400, 'Start date cannot be more than 2 years ago.', 'تاريخ البداية لا يمكن أن يكون أكثر من سنتين في الماضي.');
         }
 
         // Check in-memory cache
@@ -136,12 +140,12 @@ router.post('/simulate', async (req, res) => {
 
     } catch (err) {
         console.error('Time Machine error:', err.message);
-        return res.status(500).json({
-            error: true,
-            message_en: 'Simulation failed. The market data might be temporarily unavailable. Please try again.',
-            message_ar: 'فشلت المحاكاة. بيانات السوق قد تكون غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى.'
-        });
+        return sendSimulationError(res, 500, 'Simulation failed. The market data might be temporarily unavailable. Please try again.', 'فشلت المحاكاة. بيانات السوق قد تكون غير متاحة مؤقتاً. يرجى المحاولة مرة أخرى.');
     }
+});
+
+router.all('/simulate', (req, res) => {
+    return sendSimulationError(res, 405, 'Method not allowed. Use POST for /api/timemachine/simulate.', 'الطريقة غير مدعومة. استخدم POST للمسار /api/timemachine/simulate.');
 });
 
 // POST /api/timemachine/forecast
@@ -156,17 +160,17 @@ router.post('/forecast', async (req, res) => {
 
         const amount = parseFloat(investment_amount);
         if (isNaN(amount) || amount < 1000 || amount > 100_000_000) {
-            return res.status(400).json({ ok: false, error: 'investment_amount must be between 1,000 and 100,000,000' });
+            return sendForecastError(res, 400, 'investment_amount must be between 1,000 and 100,000,000');
         }
 
         const horizonDays = parseInt(horizon, 10);
         if (isNaN(horizonDays) || horizonDays < 5 || horizonDays > 1825) {
-            return res.status(400).json({ ok: false, error: 'horizon must be between 5 and 1825 days' });
+            return sendForecastError(res, 400, 'horizon must be between 5 and 1825 days');
         }
 
         const sc = (scenario || 'base').toLowerCase();
         if (!['base', 'bull', 'bear'].includes(sc)) {
-            return res.status(400).json({ ok: false, error: 'scenario must be base, bull, or bear' });
+            return sendForecastError(res, 400, 'scenario must be base, bull, or bear');
         }
 
         // Cache check
@@ -193,11 +197,12 @@ router.post('/forecast', async (req, res) => {
 
     } catch (err) {
         console.error('Forecast error:', err.stack || err.message);
-        return res.status(500).json({
-            ok: false,
-            error: 'Forecast simulation failed. Please try again.',
-        });
+        return sendForecastError(res, 500, 'Forecast simulation failed. Please try again.');
     }
+});
+
+router.all('/forecast', (req, res) => {
+    return sendForecastError(res, 405, 'Method not allowed. Use POST for /api/timemachine/forecast.');
 });
 
 module.exports = { router, attachDb };

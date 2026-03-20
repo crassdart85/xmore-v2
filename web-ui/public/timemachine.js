@@ -16,6 +16,24 @@
     let fcMode = 'auto';      // 'auto' | 'manual' | 'portfolio'
     let pfInitialized = false;
 
+    async function parseApiResponse(res, fallbackMessage) {
+        const contentType = (res.headers.get('content-type') || '').toLowerCase();
+        const raw = await res.text();
+
+        if (!contentType.includes('application/json')) {
+            throw new Error(fallbackMessage);
+        }
+
+        let data;
+        try {
+            data = raw ? JSON.parse(raw) : {};
+        } catch (_err) {
+            throw new Error(fallbackMessage);
+        }
+
+        return data;
+    }
+
     // ─── Public entry point (called by switchToTab) ───────────
     window.loadTimeMachine = function () {
         initSubTabs();
@@ -176,7 +194,7 @@
                 body: JSON.stringify({ amount, start_date: startDate })
             });
 
-            const data = await res.json();
+            const data = await parseApiResponse(res, _t('tmErrorGeneric'));
 
             if (!res.ok || data.error) {
                 // Use bilingual message from Python/server
@@ -550,7 +568,7 @@
         try {
             const res = await fetch('/api/stocks', { credentials: 'include' });
             if (!res.ok) throw new Error('Failed to load stocks');
-            const data = await res.json();
+            const data = await parseApiResponse(res, 'Failed to load stocks');
             fcAllStocks = (data.stocks || data || []).map(s => ({
                 symbol:  s.symbol,
                 name_en: s.name_en || s.name_ar || s.symbol,
@@ -850,7 +868,12 @@
                                 headers: { 'Content-Type': 'application/json' },
                                 credentials: 'include',
                                 body: JSON.stringify({ investment_amount: amount, scenario, symbol: s.symbol, horizon }),
-                            }).then(r => r.json()).catch(() => ({ ok: false, symbol: s.symbol }))
+                            })
+                                .then(async (r) => {
+                                    const data = await parseApiResponse(r, _t('tmErrorGeneric') || 'Forecast failed.');
+                                    return { symbol: s.symbol, ...data };
+                                })
+                                .catch(() => ({ ok: false, symbol: s.symbol, error: _t('tmErrorGeneric') || 'Forecast failed.' }))
                         )
                     );
                     renderMultiForecastResults(multiResults, amount);
@@ -892,7 +915,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
             });
-            const data = await res.json();
+            const data = await parseApiResponse(res, _t('tmErrorGeneric') || 'Forecast failed.');
 
             if (!res.ok || !data.ok) {
                 throw new Error(data.error || _t('tmErrorGeneric') || 'Forecast failed.');
