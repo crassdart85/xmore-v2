@@ -3,7 +3,20 @@
 ## Project Overview
 Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
 
-**Last Updated**: March 19, 2026
+**Last Updated**: March 20, 2026
+
+## Mar 20, 2026 — Hamburger Menu Cleanup + Time Machine Validation
+- **Hamburger menu icon removal**: Stripped all emoji icon prefixes from mobile menu items across all 6 pages (`landing.html`, `session.html`, `pro.html`, `track-record.html`, `index.html`, `docs.html`)
+- **pro.html ID case bug fixed**: HTML had `ProMobileMenuBtn`/`ProMobileMenuDropdown` (capital P) but `Pro.js` queries `proMobileMenuBtn`/`proMobileMenuDropdown` (lowercase p) — menu was silently broken; fixed HTML IDs to match JS
+- **index.html encoding fixed**: Hamburger `☰` was stored as mojibake `â˜°`; fixed via Unicode codepoint replacement. All menu item emoji prefixes stripped with targeted regex
+- **docs.html active-class variant**: Required `class="mobile-menu-item[^"]*"` regex pattern (instead of exact match) to handle `mobile-menu-item active` class on the current-page item
+- **Time Machine fully validated (live)**:
+  - `POST /api/timemachine/simulate` → 200 OK (equity_curve 295 pts, `total_return_pct=8.18`)
+  - `POST /api/timemachine/forecast` (COMI, 30d base) → 200 OK (+11.48%, 76.5% prob positive)
+  - `POST /api/timemachine/forecast` (auto) → 200 OK (ABUK.CA auto-selected, +32.01%, 93.6%)
+- **Known issues (not fixed this session)**:
+  - `web-ui/routes/track-record.js`: `SQLITE_ERROR: no such column: round_trip_cost_egp` — local SQLite schema outdated
+  - `yahoo-finance2` CJS fallback broken on Node v22 (forecast uses DB data, not live feed — non-blocking)
 
 ## Deployment Architecture
 - **Render.com** - Hosts web dashboard + PostgreSQL database

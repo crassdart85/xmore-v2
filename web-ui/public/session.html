@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="base.css">  <title>Xmore — Session Sheet</title>
-  <link rel="stylesheet" href="session.css">
+  <link rel="stylesheet" href="base.css">  <title>Xmore —Session Sheet</title>
+  <link rel="stylesheet" href="Session.css">
   <link rel="stylesheet" href="assistant-widget.css">
 </head>
 <body>
@@ -12,16 +12,15 @@
   <!-- Header -->
   <header class="s-header x-topbar x-topbar--dark">
     <a href="/" class="s-back x-back" id="sBack">← Dashboard</a>
-    <span class="s-logo x-brand">XMORE <span class="s-logo-tag">SESSION</span></span>
-    <span class="s-session-label" id="sSessionLabel">
-      Session <span class="s-session-date" id="sSessionDate">—</span>
+    <span class="s-logo x-brand">XMORE <span class="s-logo-tag">Session</span></span>
+    <span class="s-Session-label" id="sSessionLabel">Session <span class="s-Session-date" id="sSessionDate">—</span>
     </span>
     <nav class="x-nav-links" aria-label="Primary">
       <a class="x-link" href="/">Home</a>
       <a class="x-link" href="/track-record">Track Record</a>
-      <a class="x-link" href="/pro">Pro</a>
-      <a class="x-link active" href="/session" aria-current="page">Session</a>
-      <a class="x-link" href="/docs">Docs</a>
+      <a class="x-link" href="/Pro">Pro</a>
+      <a class="x-link active" href="/Session" aria-current="page">Session</a>
+      <a class="x-link" href="/Docs">Docs</a>
     </nav>
     <!-- Mobile menu button -->
     <button id="sMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="sMobileMenuDropdown">
@@ -29,11 +28,11 @@
     </button>
     <!-- Mobile menu dropdown -->
     <div id="sMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-      <a href="/" class="mobile-menu-item" role="menuitem">🏠 Home</a>
-      <a href="/track-record" class="mobile-menu-item" role="menuitem">📊 Track Record</a>
-      <a href="/pro" class="mobile-menu-item" role="menuitem">⭐ Pro</a>
-      <a href="/session" class="mobile-menu-item active" role="menuitem">📌 Session</a>
-      <a href="/docs" class="mobile-menu-item" role="menuitem">📚 Docs</a>
+      <a href="/" class="mobile-menu-item" role="menuitem">Home</a>
+      <a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a>
+      <a href="/Pro" class="mobile-menu-item" role="menuitem">Pro</a>
+      <a href="/Session" class="mobile-menu-item active" role="menuitem">Session</a>
+      <a href="/Docs" class="mobile-menu-item" role="menuitem">Docs</a>
     </div>
     <div class="s-auth-area">
       <span class="s-auth-user" id="sAuthUser" style="display:none"></span>
@@ -69,7 +68,7 @@
       <div class="s-loading" id="sIdxLoading">Loading index levels…</div>
     </div>
 
-    <!-- Stock session sheet -->
+    <!-- StockSession sheet -->
     <div class="s-section-title" id="sStocksTitle">
       <span>STOCK SIGNALS</span>
     </div>
@@ -78,7 +77,7 @@
       <table class="s-table" id="sTable">
         <thead id="sTableHead"></thead>
         <tbody id="sTableBody">
-          <tr><td colspan="12" class="s-loading">Loading session data…</td></tr>
+          <tr><td colspan="12" class="s-loading">LoadingSession data…</td></tr>
         </tbody>
       </table>
     </div>
@@ -112,8 +111,7 @@
 /* ─── i18n ────────────────────────────────────────────────────────────────── */
 const T = {
   en: {
-    back:        '← Dashboard',
-    sessionLabel:'Session',
+    back:        '← Dashboard',SessionLabel:'Session',
     idxTitle:    'INDEX SUPPORT & RESISTANCE',
     stockTitle:  'STOCK SIGNALS',
     colQ:        '#',
@@ -138,15 +136,14 @@ const T = {
     simClose:    'Close',
     simNoOpen:   'No open positions.',
     simStats:    'Stats',
-    loading:     'Loading session data…',
+    loading:     'LoadingSession data…',
     idxLoading:  'Loading index levels…',
-    empty:       'No session data available. Run the pipeline to generate signals.',
-    noLogin:     'Sign in to view your personalised session sheet.',
+    empty:       'NoSession data available. Run the pipeline to generate signals.',
+    noLogin:     'Sign in to view your personalisedSession sheet.',
     footer:      'system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.',
   },
   ar: {
-    back:        'الرئيسية →',
-    sessionLabel:'جلسة',
+    back:        'الرئيسية →',SessionLabel:'جلسة',
     idxTitle:    'مستويات الدعم والمقاومة للمؤشرات',
     stockTitle:  'إشارات الأسهم',
     colQ:        '#',
@@ -190,7 +187,7 @@ function toggleLang() {
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
   document.getElementById('sLangBtn').textContent = lang === 'en' ? 'عر' : 'EN';
   applyLang();
-  renderTable(window._sessionData || []);
+  renderTable(window._SessionData || []);
   renderIndexCards(window._indexData || []);
 }
 
@@ -204,7 +201,7 @@ function applyLang() {
   const dateEl = document.getElementById('sSessionDate');
   const date   = dateEl ? dateEl.textContent : '—';
   // Preserve id="sSessionDate" so subsequent applyLang() calls can still find the span
-  lbl.innerHTML = `${t('sessionLabel')} <span class="s-session-date" id="sSessionDate">${date}</span>`;
+  lbl.innerHTML = `${t('SessionLabel')} <span class="s-Session-date" id="sSessionDate">${date}</span>`;
 }
 
 /* ─── Trend class ─────────────────────────────────────────────────────────── */
@@ -266,8 +263,7 @@ function renderTable(data) {
     rec: t('colRecType'),
     buy: t('colBuy'),
     sl: t('colSL'),
-    tgt: t('colTarget'),
-    profit: t('colProfit'),
+    tgt: t('colTarget'),Profit: t('colProfit'),
     risk: t('colRisk'),
     rr: t('colRR'),
     s2: t('colS2'),
@@ -309,7 +305,7 @@ function renderTable(data) {
       <td data-label="${labels.buy}" class="s-num-buy">${fmt(row.buy_guide, 3)}</td>
       <td data-label="${labels.sl}" class="s-num-sl">${fmt(row.stop_loss_price, 3)}</td>
       <td data-label="${labels.tgt}" class="s-num-tgt">${fmt(row.target_price, 3)}</td>
-      <td data-label="${labels.profit}">${fmtPct(row.target_pct)}</td>
+      <td data-label="${labels.Profit}">${fmtPct(row.target_pct)}</td>
       <td data-label="${labels.risk}">${fmtPct(row.stop_loss_pct)}</td>
       <td data-label="${labels.rr}" class="s-num">${fmt(row.risk_reward_ratio, 2)}</td>
       <td data-label="${labels.s2}" class="s-pivot-val">${fmt(row.s2, 3)}</td>
@@ -370,7 +366,7 @@ function renderIndexCards(data) {
 /* ─── Load data ───────────────────────────────────────────────────────────── */
 async function loadSession() {
   try {
-    const res = await fetch('/api/trades/session-sheet', { credentials: 'include' });
+    const res = await fetch('/api/trades/Session-sheet', { credentials: 'include' });
     if (!res.ok) {
       if (res.status === 401) {
         const msg = `<span>${t('noLogin')}</span> <button class="s-auth-btn s-auth-btn--primary" style="margin-left:12px" onclick="sShowModal()">Sign In</button>`;
@@ -384,17 +380,17 @@ async function loadSession() {
     }
     const json = await res.json();
 
-    // Set session date
+    // SetSession date
     const dateEl = document.getElementById('sSessionDate');
-    dateEl.textContent = json.session_date || '—';
+    dateEl.textContent = json.Session_date || '—';
     applyLang();
 
-    window._sessionData = json.stocks || [];
+    window._SessionData = json.stocks || [];
     window._indexData   = json.indices || [];
 
-    renderTable(window._sessionData);
+    renderTable(window._SessionData);
     renderIndexCards(window._indexData);
-    populateSimSymbols(window._sessionData);
+    populateSimSymbols(window._SessionData);
   } catch (e) {
     document.getElementById('sTableBody').innerHTML =
       `<tr><td colspan="17" class="s-empty">Error loading data: ${e.message}</td></tr>`;
@@ -627,5 +623,6 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
   <script src="assistant-widget.js"></script></body>
 </html>
+
 
 
