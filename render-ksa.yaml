@@ -5,7 +5,7 @@ services:
     env: node
     rootDir: web-ui
     buildCommand: npm install
-    startCommand: node init-db.js && node server.js
+    startCommand: node init-db-ksa.js && node server.js
     envVars:
       - key: DATABASE_URL
         fromDatabase:
