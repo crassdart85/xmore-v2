@@ -1,6 +1,6 @@
 """
-Execution Realism Configuration — EGX-specific friction parameters.
-All monetary values in Egyptian Pounds (EGP).
+Execution Realism Configuration — market friction parameters.
+EGX values in Egyptian Pounds (EGP). Tadawul values in SAR.
 """
 
 # ─── EGX TRANSACTION COST STRUCTURE ────────────────────────────────────────
@@ -98,3 +98,89 @@ REGIME_MA_PERIOD       = 20         # EGX30 20-day moving average
 REGIME_TICKER          = "^CASE30"  # Yahoo Finance ticker for EGX30
 REGIME_BEARISH_BUFFER  = 0.02       # Index must be ≥ 2% above MA to allow new longs
                                     # Prevents buying into corrections/peaks
+
+# ============================================================
+# TADAWUL (Saudi Exchange) — KSA Configuration
+# ============================================================
+
+TADAWUL_CONFIG = {
+    # Identity
+    "market_id":              "KSA",
+    "market_name":            "Saudi Exchange (Tadawul)",
+    "market_name_ar":         "تداول",
+    "market_name_display":    "Tadawul",
+    "mic_code":               "XSAU",
+    "currency":               "SAR",
+    "currency_symbol":        "ر.س",
+
+    # Yahoo Finance / yfinance
+    "ticker_suffix":          ".SR",
+    "index_ticker":           "^TASI.SR",
+    "regime_index":           "^TASI.SR",
+    "bluechip_index":         "^MT30.SR",
+
+    # Schedule (Sun-Thu, UTC+3, NO daylight saving EVER)
+    "timezone":               "Asia/Riyadh",
+    "trading_days":           [6, 0, 1, 2, 3],  # Sun=6, Mon=0, Thu=3
+    "pre_open_utc":           "06:30",
+    "market_open_utc":        "07:00",
+    "market_close_utc":       "12:00",
+    "closing_auction_end_utc":"12:10",
+    "github_cron":            "15 12 * * 0,1,2,3,4",  # 12:15 UTC after close
+
+    # Transaction costs (per side, decimal, all-in including 15% VAT)
+    "broker_commission":      0.00120,   # 12.0 bps typical
+    "cma_fee":                0.00030,   # 3.0 bps VAT EXEMPT
+    "exchange_fee":           0.00009,   # 0.9 bps
+    "settlement_fee":         0.00005,   # 0.5 bps (Edaa)
+    "safekeeping_fee":        0.00001,   # 0.1 bps (Edaa)
+    "clearing_fee":           0.00005,   # 0.5 bps (Muqassa)
+    "vat_rate":               0.15,      # 15% on all except CMA fee
+    "total_cost_per_side":    0.00191,   # ~19.1 bps all-in
+    "round_trip_cost":        0.00382,   # ~38.2 bps round-trip
+
+    # Price limits
+    "daily_price_limit":      0.10,      # +/-10% standard
+    "ipo_price_limit":        0.30,      # +/-30% first 3 sessions
+    "nomu_price_limit":       0.30,      # Nomu parallel market
+
+    # Risk metrics
+    "risk_free_rate":         0.0425,    # SAMA repo rate — update quarterly
+    "saibor_3m":              0.0489,    # 3-month SAIBOR for Sharpe
+    "trading_days_per_year":  250,
+
+    # Execution gate thresholds
+    "min_edge_multiple":      3.0,
+    "min_edge_threshold":     0.01146,   # 3x 38.2bps round-trip
+    "slippage_high_adv_sar":  0.00100,   # 10bps ADV > SAR 5M
+    "slippage_mid_adv_sar":   0.00250,   # 25bps ADV SAR 1-5M
+    "slippage_low_adv_sar":   0.00600,   # 60bps ADV < SAR 1M
+    "adv_high_threshold_sar": 5_000_000,
+    "adv_mid_threshold_sar":  1_000_000,
+
+    # Holding manager
+    "trailing_stop_day":      20,
+    "trailing_stop_pct":      0.06,
+    "hard_exit_day":          45,
+
+    # Settlement
+    "settlement_cycle":       "T+2",
+    "stop_loss_native":       False,     # Broker-level only, NOT exchange-native
+    "short_selling":          True,      # Covered only via SBL framework
+
+    # Tick sizes (updated June 29, 2025)
+    "tick_sizes": [
+        (0.01,   24.99,  0.01),
+        (25.00,  49.98,  0.02),
+        (50.00,  99.95,  0.05),
+        (100.00, 249.90, 0.10),
+        (250.00, 499.80, 0.20),
+        (500.00, float('inf'), 0.50),
+    ],
+
+    # Regulatory (for dashboard display)
+    "regulator":              "CMA Saudi Arabia",
+    "disclaimer_ar":          "هذه الإشارات للأغراض المعلوماتية فقط وليست نصيحة استثمارية",
+    "disclaimer_en":          "Signals are for informational purposes only and do not constitute investment advice",
+    "shariah_screening":      True,
+}

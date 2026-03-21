@@ -262,21 +262,27 @@ def derive_components_from_rec(rec: dict, regime: str = "NEUTRAL") -> dict:
     Used when components are not individually tracked — infers from
     the existing fields available in rec.
     """
-    # consensus_score: raw BUY vote fraction from agent consensus (preferred),
-    # fall back to confidence percentage. Do NOT use xmore_score — that is a
-    # separate bullishness index, not the consensus component of the composite score.
+    # consensus_score: prefer empirically calibrated confidence, then raw BUY vote
+    # fraction, then raw confidence. Do NOT use xmore_score — that is a separate
+    # bullishness index, not the consensus component of the composite score.
+    calibrated_conf = rec.get("calibrated_confidence")
     raw_bull = rec.get("bull")  # 0–100: % of agents that voted BUY
     raw_conf = rec.get("confidence")  # 0–100: consensus confidence
-    if raw_bull is not None:
+    if calibrated_conf is not None:
+        consensus_score = max(0.0, min(1.0, float(calibrated_conf) / 100.0))
+    elif raw_bull is not None:
         consensus_score = max(0.0, min(1.0, float(raw_bull) / 100.0))
     elif raw_conf is not None:
         consensus_score = max(0.0, min(1.0, float(raw_conf) / 100.0))
     else:
         consensus_score = 0.5  # neutral default when no agent data available
 
-    # execution_score: from edge_ratio if available (target: 3× = 0.6, >10× = 1.0)
+    # execution_score: prefer expected edge after costs, then edge_ratio.
+    expected_edge_pct = rec.get("expected_edge_pct")
     edge = rec.get("edge_ratio")
-    if edge is not None:
+    if expected_edge_pct is not None:
+        execution_score = max(0.0, min(1.0, 0.5 + (float(expected_edge_pct) / 5.0)))
+    elif edge is not None:
         execution_score = min(1.0, float(edge) / 15.0)
     elif rec.get("execution_approved") is True:
         execution_score = 0.7
@@ -288,9 +294,13 @@ def derive_components_from_rec(rec: dict, regime: str = "NEUTRAL") -> dict:
     # regime_score: from regime string
     regime_score = REGIME_SCORES.get(regime.upper(), 0.5)
 
-    # momentum_score: from alpha_1d if available, else from priority/action
+    # momentum_score: prefer explicit momentum alignment from consensus, then alpha,
+    # then priority/action.
+    momentum_alignment = rec.get("momentum_alignment")
     alpha = rec.get("alpha_1d")
-    if alpha is not None:
+    if momentum_alignment is not None:
+        momentum_score = max(0.0, min(1.0, float(momentum_alignment) / 100.0))
+    elif alpha is not None:
         # alpha of +3% → 0.8, ±0 → 0.5, -3% → 0.2
         momentum_score = max(0.0, min(1.0, 0.5 + float(alpha) * (0.3 / 0.03)))
     else:

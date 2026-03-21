@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xmore KSA — Tadawul Intelligence</title>
+  <meta name="description" content="AI-powered Tadawul market intelligence. Real-time signals, DCF valuation, Shariah screening, and performance analytics for Saudi stock market investors.">
+  <meta name="theme-color" content="#0A1628">
+  <link rel="stylesheet" href="/ksa-styles.css">
+</head>
+<body>
+
+  <!-- ── Market Switcher ──────────────────────────────────── -->
+  <div class="market-switcher">
+    <a href="/" class="mkt-btn">🇪🇬 EGX</a>
+    <a href="/ksa" class="mkt-btn active">🇸🇦 Tadawul</a>
+  </div>
+
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <header class="ksa-header">
+    <div class="ksa-header-inner">
+      <div class="ksa-brand">
+        <span class="ksa-logo">XMORE</span>
+        <span class="ksa-subtitle" id="headerSubtitle">Tadawul Market Intelligence</span>
+      </div>
+      <div class="ksa-header-right">
+        <div class="ksa-regime-badge" id="regimeBadge" aria-live="polite">Loading...</div>
+        <button class="lang-toggle" id="langToggle" onclick="toggleLang()" aria-label="Toggle language">🇸🇦 عربي</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Ticker Tape ───────────────────────────────────────── -->
+  <div class="ksa-ticker-tape" role="marquee" aria-label="Live market ticker">
+    <div class="ksa-ticker-inner" id="tickerInner">
+      <!-- Populated by ksa-dashboard.js -->
+      <span class="ksa-ticker-item">
+        <span class="ticker-sym">2222</span>
+        <span class="ticker-up">▲</span>
+        <span>Loading...</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Stats Strip: 5 KPI Cards ─────────────────────────── -->
+  <div class="ksa-stats-strip" role="region" aria-label="Performance summary">
+
+    <div class="ksa-stat-card" id="statWinRate">
+      <div class="ksa-stat-label" data-i18n="winRate">Win Rate</div>
+      <div class="ksa-stat-value" id="valWinRate">—</div>
+    </div>
+
+    <div class="ksa-stat-card" id="statSharpe">
+      <div class="ksa-stat-label" data-i18n="sharpeRatio">Sharpe (vs SAMA 4.25%)</div>
+      <div class="ksa-stat-value" id="valSharpe">—</div>
+    </div>
+
+    <div class="ksa-stat-card" id="statPF">
+      <div class="ksa-stat-label" data-i18n="profitFactor">Profit Factor</div>
+      <div class="ksa-stat-value" id="valPF">—</div>
+    </div>
+
+    <div class="ksa-stat-card" id="statSignals">
+      <div class="ksa-stat-label" data-i18n="signalsToday">Signals Today</div>
+      <div class="ksa-stat-value" id="valSignals">—</div>
+    </div>
+
+    <div class="ksa-stat-card" id="statAlpha">
+      <div class="ksa-stat-label" data-i18n="alpha30d">30D Alpha vs TASI</div>
+      <div class="ksa-stat-value" id="valAlpha">—</div>
+    </div>
+
+  </div><!-- /.ksa-stats-strip -->
+
+  <!-- ── Main Grid ─────────────────────────────────────────── -->
+  <div class="ksa-main-grid ksa-wrapper" role="main">
+
+    <!-- ── Left Column: Today's Signals Table ────────────── -->
+    <div class="ksa-col-main">
+
+      <div class="ksa-section-header">
+        <h2 data-i18n="todaySignals">Today's Signals</h2>
+        <span class="ksa-live-badge" aria-label="Live data">LIVE</span>
+      </div>
+
+      <div class="ksa-table-wrap" role="region" aria-label="Today's trading signals">
+        <table class="ksa-signal-table" id="signalTable">
+          <thead>
+            <tr>
+              <th data-i18n="ticker" scope="col">Ticker</th>
+              <th data-i18n="company" scope="col">Company</th>
+              <th data-i18n="signal" scope="col">Signal</th>
+              <th data-i18n="score" scope="col">Score</th>
+              <th data-i18n="risk" scope="col">Risk</th>
+              <th data-i18n="move" scope="col">Expected Move</th>
+              <th data-i18n="shariah" scope="col">Shariah</th>
+            </tr>
+          </thead>
+          <tbody id="signalTableBody">
+            <tr>
+              <td colspan="7">
+                <div class="skeleton-shimmer" style="height:40px;border-radius:6px;"></div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="7">
+                <div class="skeleton-shimmer" style="height:40px;border-radius:6px;margin-top:6px;"></div>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="7">
+                <div class="skeleton-shimmer" style="height:40px;border-radius:6px;margin-top:6px;"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div><!-- /.ksa-table-wrap -->
+
+    </div><!-- /.ksa-col-main -->
+
+    <!-- ── Right Column: Cards ───────────────────────────── -->
+    <div class="ksa-col-side">
+
+      <!-- DCF Insights -->
+      <div class="ksa-card" id="dcfPanel" role="region" aria-label="DCF Insights">
+        <h3 data-i18n="dcfInsights">DCF Insights</h3>
+        <div id="dcfContent">
+          <div class="skeleton-shimmer" style="height:120px;border-radius:6px;"></div>
+        </div>
+      </div>
+
+      <!-- Intelligence Feed -->
+      <div class="ksa-card" id="intelPanel" role="region" aria-label="Intelligence Feed">
+        <h3 data-i18n="intelFeed">Intelligence Feed</h3>
+        <div id="intelContent">
+          <div class="skeleton-shimmer" style="height:160px;border-radius:6px;"></div>
+        </div>
+      </div>
+
+      <!-- Regime Card -->
+      <div class="ksa-card" id="regimePanel" role="region" aria-label="Market Regime">
+        <h3 data-i18n="marketRegime">Market Regime</h3>
+        <div id="regimeContent">
+          <div class="skeleton-shimmer" style="height:60px;border-radius:6px;"></div>
+        </div>
+      </div>
+
+      <!-- Freshness -->
+      <div class="ksa-card" id="freshnessPanel" role="region" aria-label="Data Freshness">
+        <h3 data-i18n="freshness">Data Freshness</h3>
+        <div id="freshnessContent">
+          <div class="skeleton-shimmer" style="height:80px;border-radius:6px;"></div>
+        </div>
+      </div>
+
+    </div><!-- /.ksa-col-side -->
+
+  </div><!-- /.ksa-main-grid -->
+
+  <!-- ── Footer Bar ────────────────────────────────────────── -->
+  <footer class="ksa-footer-bar ksa-wrapper" role="contentinfo">
+    <a href="/ksa/track-record" class="ksa-link" data-i18n="viewTrackRecord">View Full Track Record →</a>
+    <span class="ksa-disclaimer" id="disclaimer" data-i18n="disclaimer">
+      Signals are for informational purposes only and do not constitute investment advice
+    </span>
+  </footer>
+
+  <script src="/ksa-dashboard.js"></script>
+
+</body>
+</html>

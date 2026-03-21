@@ -129,7 +129,8 @@ class RSIAgent(BaseAgent):
         return base_signal
 
     def predict_signal(self, data: pd.DataFrame, symbol: str = "",
-                       sentiment: Optional[Dict[str, Any]] = None) -> dict:
+                       sentiment: Optional[Dict[str, Any]] = None,
+                       market_config: Optional[Dict] = None) -> dict:
         """
         Generate structured prediction with RSI reasoning data.
         

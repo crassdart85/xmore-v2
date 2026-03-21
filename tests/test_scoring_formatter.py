@@ -192,18 +192,22 @@ def test_format_clamps_out_of_range():
     assert sf.format(1.5) == 100
 
 
-# ─── Test 14: derive_components_from_rec with edge_ratio ─────────
+# ─── Test 14: derive_components_from_rec prefers calibrated inputs ─
 
 def test_derive_components_edge_ratio():
     rec = {
         "confidence": 80,
+        "calibrated_confidence": 68,
+        "expected_edge_pct": 1.5,
         "edge_ratio": 9.0,
         "execution_approved": True,
+        "momentum_alignment": 72,
     }
     comps = derive_components_from_rec(rec, regime="BULL")
-    assert comps["consensus_score"] == pytest.approx(0.80, abs=0.01)
-    assert comps["execution_score"] == pytest.approx(9.0 / 15.0, abs=0.01)
+    assert comps["consensus_score"] == pytest.approx(0.68, abs=0.01)
+    assert comps["execution_score"] == pytest.approx(0.80, abs=0.01)
     assert comps["regime_score"] == 1.0
+    assert comps["momentum_score"] == pytest.approx(0.72, abs=0.01)
 
 
 def test_derive_components_bear_regime():

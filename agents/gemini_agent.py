@@ -66,7 +66,8 @@ class GeminiAgent:
     # ──────────────────────────────────────────────────────────────────────
 
     def predict_signal_with_context(
-        self, df, symbol: str, sentiment: dict | None, other_signals: list
+        self, df, symbol: str, sentiment: dict | None, other_signals: list,
+        market_config: dict | None = None,
     ) -> dict:
         """
         Generate a structured AgentSignal dict using Gemini.

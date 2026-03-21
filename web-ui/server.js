@@ -24,6 +24,11 @@ const { router: scoringRouter, attachDb: attachScoringDb } = require('./routes/s
 const { router: trackRecordRouter, attachDb: attachTrackRecordDb } = require('./routes/track-record');
 const { router: screeningRouter, attachDb: attachScreeningDb } = require('./routes/screening');
 
+// KSA routes
+const { router: ksaSignalsRouter,    attachDb: attachKsaSignalsDb    } = require('./routes/ksa-signals');
+const { router: ksaTrackRouter,      attachDb: attachKsaTrackDb      } = require('./routes/ksa-track-record');
+const { router: ksaDcfRouter,        attachDb: attachKsaDcfDb        } = require('./routes/ksa-dcf');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -400,6 +405,11 @@ attachScoringDb(db, isPostgres);
 attachTrackRecordDb(db, isPostgres);
 attachScreeningDb(db, isPostgres);
 
+// KSA DB attach
+attachKsaSignalsDb(db, isPostgres);
+attachKsaTrackDb(db, isPostgres);
+attachKsaDcfDb(db, isPostgres);
+
 app.use('/api', authRouter);
 app.use('/api', stocksRouter);
 app.use('/api', watchlistRouter);
@@ -440,6 +450,11 @@ app.use('/api/etf', etfRouter);
 app.use('/api/signals', scoringRouter);
 app.use('/api/track-record', trackRecordRouter);
 app.use('/api/screening', screeningRouter);
+
+// KSA API routes
+app.use('/api/ksa', ksaSignalsRouter);
+app.use('/api/ksa', ksaTrackRouter);
+app.use('/api/ksa', ksaDcfRouter);
 
 // ============================================
 // API ENDPOINTS
@@ -1534,6 +1549,14 @@ app.get('/landing', (req, res) => {
 
 app.get('/track-record', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'track-record.html'));
+});
+
+// KSA pages
+app.get('/ksa', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ksa-dashboard.html'));
+});
+app.get('/ksa/track-record', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'ksa-track-record.html'));
 });
 
 app.use((err, req, res, next) => {

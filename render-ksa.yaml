@@ -1,0 +1,42 @@
+services:
+  # KSA Web Dashboard — mirrors render.yaml but pointed at the KSA branch / DB
+  - type: web
+    name: xmore-ksa-dashboard
+    env: node
+    rootDir: web-ui
+    buildCommand: npm install
+    startCommand: node init-db.js && node server.js
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ksa-trading-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_SECRET
+        generateValue: true
+      # Market identification — used by server.js to load the correct universe
+      - key: MARKET
+        value: KSA
+      - key: MARKET_TZ
+        value: Asia/Riyadh
+      - key: MARKET_CURRENCY
+        value: SAR
+      # External data API keys (set manually in Render dashboard)
+      - key: FINNHUB_API_KEY
+        sync: false
+      - key: NEWS_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: ARGAAM_API_KEY
+        sync: false
+
+  # Note: Python computation (agents, scoring, backtest, evaluation, DCF) runs via
+  # GitHub Actions (.github/workflows/ksa-scheduled-tasks.yml) — not on Render dyno.
+  # Render env: node has no Python runtime on the free tier.
+
+databases:
+  - name: ksa-trading-db
+    databaseName: ksa_trading_system
+    user: ksa_trading_user

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xmore KSA — Track Record</title>
+  <meta name="description" content="Full performance track record for Xmore Tadawul signals. Win rate, Sharpe ratio, equity curve, and agent accountability for Saudi stock market AI.">
+  <meta name="theme-color" content="#0A1628">
+  <link rel="stylesheet" href="/ksa-styles.css">
+
+  <!-- Server-side preload: filled by Express before serving -->
+  <script>window.KSA_PRELOAD = {};</script>
+</head>
+<body>
+
+  <!-- ── Market Switcher ──────────────────────────────────── -->
+  <div class="market-switcher">
+    <a href="/" class="mkt-btn">🇪🇬 EGX</a>
+    <a href="/ksa" class="mkt-btn">🇸🇦 Tadawul</a>
+  </div>
+
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <header class="ksa-header">
+    <div class="ksa-header-inner">
+      <div class="ksa-brand">
+        <span class="ksa-logo">XMORE</span>
+        <span class="ksa-subtitle" id="headerSubtitle">Tadawul Track Record</span>
+      </div>
+      <div class="ksa-header-right">
+        <a href="/ksa" class="mkt-btn" style="font-size:0.8rem;" id="backLink">← Dashboard</a>
+        <button class="lang-toggle" id="langToggle" onclick="trToggleLang()" aria-label="Toggle language">🇸🇦 عربي</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Page Title ────────────────────────────────────────── -->
+  <div class="ksa-tr-header ksa-wrapper">
+    <h1 data-i18n="trackRecordTitle">Track Record — Tadawul Signals</h1>
+    <p data-i18n="trackRecordSubtitle">
+      All predictions are logged before market open. Results verified at close.
+      Risk-free rate: SAMA repo 4.25%. Benchmark: TASI. Currency: SAR.
+    </p>
+  </div>
+
+  <!-- ── 6 KPI Cards ───────────────────────────────────────── -->
+  <div class="ksa-tr-grid ksa-wrapper" role="region" aria-label="Performance KPIs">
+
+    <!-- Win Rate -->
+    <div class="ksa-tr-kpi" id="kpiWinRate">
+      <div class="ksa-tr-kpi-label" data-i18n="winRate">Win Rate</div>
+      <div class="ksa-tr-kpi-value" id="trValWinRate">
+        <div class="skeleton-shimmer" style="height:2rem;width:80px;margin:0 auto;border-radius:6px;"></div>
+      </div>
+      <div class="ksa-tr-kpi-sub" id="trSubWinRate">&nbsp;</div>
+    </div>
+
+    <!-- Sharpe Ratio -->
+    <div class="ksa-tr-kpi" id="kpiSharpe">
+      <div class="ksa-tr-kpi-label" data-i18n="sharpeRatio">Sharpe (vs SAMA 4.25%)</div>
+      <div class="ksa-tr-kpi-value" id="trValSharpe">
+        <div class="skeleton-shimmer" style="height:2rem;width:80px;margin:0 auto;border-radius:6px;"></div>
+      </div>
+      <div class="ksa-tr-kpi-sub" id="trSubSharpe">
+        <!-- Rating badge rendered by JS -->
+      </div>
+    </div>
+
+    <!-- Max Drawdown -->
+    <div class="ksa-tr-kpi" id="kpiDrawdown">
+      <div class="ksa-tr-kpi-label" data-i18n="maxDrawdown">Max Drawdown</div>
+      <div class="ksa-tr-kpi-value" id="trValDrawdown">
+        <div class="skeleton-shimmer" style="height:2rem;width:80px;margin:0 auto;border-radius:6px;"></div>
+      </div>
+      <div class="ksa-tr-kpi-sub" id="trSubDrawdown" data-i18n="peakToTrough">Peak-to-trough</div>
+    </div>
+
+    <!-- Total Signals -->
+    <div class="ksa-tr-kpi" id="kpiTotal">
+      <div class="ksa-tr-kpi-label" data-i18n="totalSignals">Total Signals</div>
+      <div class="ksa-tr-kpi-value" id="trValTotal">
+        <div class="skeleton-shimmer" style="height:2rem;width:80px;margin:0 auto;border-radius:6px;"></div>
+      </div>
+      <div class="ksa-tr-kpi-sub" id="trSubTotal" data-i18n="sinceInception">Since inception</div>
+    </div>
+
+    <!-- Alpha 30D -->
+    <div class="ksa-tr-kpi" id="kpiAlpha">
+      <div class="ksa-tr-kpi-label" data-i18n="alpha30d">30D Alpha vs TASI</div>
+      <div class="ksa-tr-kpi-value" id="trValAlpha">
+        <div class="skeleton-shimmer" style="height:2rem;width:80px;margin:0 auto;border-radius:6px;"></div>
+      </div>
+      <div class="ksa-tr-kpi-sub" id="trSubAlpha" data-i18n="rollingBenchmark">Rolling vs benchmark</div>
+    </div>
+
+    <!-- Profit Factor -->
+    <div class="ksa-tr-kpi" id="kpiPF">
+      <div class="ksa-tr-kpi-label" data-i18n="profitFactor">Profit Factor</div>
+      <div class="ksa-tr-kpi-value" id="trValPF">
+        <div class="skeleton-shimmer" style="height:2rem;width:80px;margin:0 auto;border-radius:6px;"></div>
+      </div>
+      <div class="ksa-tr-kpi-sub" id="trSubPF" data-i18n="grossProfitOverLoss">Gross profit / gross loss</div>
+    </div>
+
+  </div><!-- /.ksa-tr-grid -->
+
+  <!-- ── Sharpe Rating Banner ───────────────────────────────── -->
+  <div class="ksa-wrapper" style="margin-bottom:16px;" id="sharpeRatingSection" style="display:none">
+    <div id="sharpeRatingBanner" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);">
+      <span id="sharpeRatingIcon" style="font-size:1.1rem;">—</span>
+      <div>
+        <div id="sharpeRatingLabel" style="font-weight:700;font-size:0.85rem;"></div>
+        <div id="sharpeRatingDesc" style="font-size:0.75rem;color:var(--text-muted);"></div>
+      </div>
+      <span id="sharpeRatingBadge" class="sharpe-rating" style="margin-left:auto;"></span>
+    </div>
+  </div>
+
+  <!-- ── Equity Curve ───────────────────────────────────────── -->
+  <div class="ksa-equity-section ksa-wrapper" id="equitySection">
+    <div class="ksa-equity-wrap">
+      <h2 data-i18n="equityCurve">Equity Curve</h2>
+      <div class="benchmark-labels">
+        <div class="benchmark-label">
+          <div class="dot xmore"></div>
+          <span data-i18n="xmoreSignals">Xmore Signals</span>
+        </div>
+        <div class="benchmark-label">
+          <div class="dot tasi"></div>
+          <span data-i18n="tasiIndex">TASI (Benchmark)</span>
+        </div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:12px;" data-i18n="rfRateNote">
+        Risk-free rate: SAMA repo 4.25% annualised
+      </div>
+      <!-- Chart rendered by ksa-track-record.js using Lightweight Charts -->
+      <div id="ksaEquityCurve" style="min-height:300px;width:100%;background:var(--bg-card2);border-radius:8px;display:flex;align-items:center;justify-content:center;">
+        <div class="skeleton-shimmer" style="width:100%;height:300px;border-radius:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Prediction Log ─────────────────────────────────────── -->
+  <div class="ksa-log-section ksa-wrapper" id="logSection">
+
+    <div class="ksa-log-header">
+      <h2 data-i18n="predictionLog">Prediction Log</h2>
+      <button class="ksa-export-btn" id="exportCsvBtn" onclick="exportCsv()" aria-label="Export to CSV">
+        ⬇ <span data-i18n="exportCsv">Export CSV</span>
+      </button>
+    </div>
+
+    <div class="ksa-log-table-wrap">
+      <table class="ksa-log-table" id="logTable">
+        <thead>
+          <tr>
+            <th data-i18n="date" scope="col">Date</th>
+            <th data-i18n="ticker" scope="col">Ticker</th>
+            <th data-i18n="signal" scope="col">Signal</th>
+            <th data-i18n="result" scope="col">Result</th>
+            <th data-i18n="alpha" scope="col">Alpha</th>
+            <th data-i18n="dcfLabel" scope="col">DCF Label</th>
+            <th data-i18n="shariah" scope="col">Shariah</th>
+          </tr>
+        </thead>
+        <tbody id="logTableBody">
+          <tr>
+            <td colspan="7">
+              <div class="skeleton-shimmer" style="height:40px;border-radius:6px;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7">
+              <div class="skeleton-shimmer" style="height:40px;border-radius:6px;margin-top:6px;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7">
+              <div class="skeleton-shimmer" style="height:40px;border-radius:6px;margin-top:6px;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7">
+              <div class="skeleton-shimmer" style="height:40px;border-radius:6px;margin-top:6px;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="7">
+              <div class="skeleton-shimmer" style="height:40px;border-radius:6px;margin-top:6px;"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="ksa-pagination" id="logPagination" role="navigation" aria-label="Prediction log pagination">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </div><!-- /.ksa-log-section -->
+
+  <!-- ── Agent Breakdown ────────────────────────────────────── -->
+  <div class="ksa-agent-section ksa-wrapper" id="agentSection" style="display:none">
+    <h2 data-i18n="agentBreakdown">Agent Breakdown</h2>
+    <div class="ksa-agent-table-wrap">
+      <table class="ksa-agent-table" id="agentTable">
+        <thead>
+          <tr>
+            <th data-i18n="agent" scope="col">Agent</th>
+            <th data-i18n="totalSignals" scope="col">Signals</th>
+            <th data-i18n="winRate" scope="col">Win Rate</th>
+            <th data-i18n="avgReturn" scope="col">Avg Return</th>
+          </tr>
+        </thead>
+        <tbody id="agentTableBody">
+          <!-- Populated by JS -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Sector Section (hidden until data) ─────────────────── -->
+  <div id="sectorSection" class="ksa-wrapper" style="display:none;margin-bottom:32px;">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:16px;" data-i18n="sectorBreakdown">Sector Breakdown</h2>
+    <div id="sectorContent" style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ── Regime Performance (hidden until data) ─────────────── -->
+  <div id="regimeSection" class="ksa-wrapper" style="display:none;margin-bottom:32px;">
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:16px;" data-i18n="regimePerformance">Regime-Aware Performance</h2>
+    <div id="regimeContent" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ── Footer Bar ────────────────────────────────────────────── -->
+  <footer class="ksa-footer-bar ksa-wrapper" role="contentinfo">
+    <a href="/ksa" class="ksa-link" id="footerBack" data-i18n="backToDashboard">← Back to Dashboard</a>
+    <span class="ksa-disclaimer" data-i18n="disclaimer">
+      Signals are for informational purposes only and do not constitute investment advice
+    </span>
+  </footer>
+
+  <script src="/ksa-track-record.js"></script>
+
+</body>
+</html>

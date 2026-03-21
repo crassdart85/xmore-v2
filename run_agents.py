@@ -605,6 +605,36 @@ def _estimate_expected_edge(symbol: str, prediction: str,
     }
 
 
+def _refresh_signal_quality_metrics(symbol: str,
+                                    consensus_result: dict,
+                                    confidence_calibration: dict,
+                                    expected_edge_profiles: dict) -> dict:
+    """
+    Recompute calibrated confidence and expected edge from the latest live signal state.
+
+    This must run after any downstream confidence penalties so persisted ranking data
+    matches the final tradeable signal rather than a pre-adjustment draft.
+    """
+    calibration_meta = _apply_confidence_calibration(
+        consensus_result.get('confidence', 0),
+        confidence_calibration
+    )
+    edge_meta = _estimate_expected_edge(
+        symbol,
+        consensus_result.get('final_signal', 'HOLD'),
+        calibration_meta,
+        expected_edge_profiles
+    )
+    consensus_result['calibrated_confidence'] = calibration_meta.get('calibrated_confidence', 0)
+    consensus_result['expected_edge_pct'] = edge_meta.get('expected_edge_pct', 0)
+    consensus_result['ranking_score'] = edge_meta.get('ranking_score', 0)
+    consensus_result['calibration_meta'] = {
+        **calibration_meta,
+        **edge_meta,
+    }
+    return consensus_result
+
+
 def _json_default(obj):
     """JSON serializer for objects not serializable by default json encoder."""
     if isinstance(obj, (_dt.date, _dt.datetime)):
@@ -1018,23 +1048,6 @@ def execute():
                     market_regime=market_regime,
                 )
 
-                calibration_meta = _apply_confidence_calibration(
-                    consensus_result.get('confidence', 0),
-                    confidence_calibration
-                )
-                edge_meta = _estimate_expected_edge(
-                    stock,
-                    consensus_result.get('final_signal', 'HOLD'),
-                    calibration_meta,
-                    expected_edge_profiles
-                )
-                consensus_result['calibrated_confidence'] = calibration_meta.get('calibrated_confidence', 0)
-                consensus_result['expected_edge_pct'] = edge_meta.get('expected_edge_pct', 0)
-                consensus_result['ranking_score'] = edge_meta.get('ranking_score', 0)
-                consensus_result['calibration_meta'] = {
-                    **calibration_meta,
-                    **edge_meta,
-                }
                 consensus_result['weight_profile'] = {
                     "weights": dynamic_weights,
                     "profiles": dynamic_weight_profiles,
@@ -1073,6 +1086,13 @@ def execute():
                             consensus_result['risk_adjusted'] = True
 
                 consensus_result['momentum_alignment'] = round(momentum_alignment, 2)
+
+                consensus_result = _refresh_signal_quality_metrics(
+                    stock,
+                    consensus_result,
+                    confidence_calibration,
+                    expected_edge_profiles,
+                )
 
                 # ── Signal Enrichment (drivers, risk_level, expected_move) ──
                 if _ENRICHMENT_AVAILABLE:
@@ -2019,6 +2039,10 @@ def generate_daily_trade_recommendations(trading_date):
                 "final_signal": {
                     "prediction": row['final_signal'],
                     "confidence": row['confidence'],
+                    "raw_confidence": row['confidence'],
+                    "calibrated_confidence": row.get('calibrated_confidence', row['confidence']),
+                    "expected_edge_pct": row.get('expected_edge_pct'),
+                    "ranking_score": row.get('ranking_score'),
                     "conviction": row['conviction']
                 },
                 "risk_assessment": {
@@ -2030,7 +2054,8 @@ def generate_daily_trade_recommendations(trading_date):
                 "agent_agreement": {
                     "agreeing": row['agents_agreeing'],
                     "total": row['agents_total']
-                }
+                },
+                "momentum_alignment": row.get('momentum_alignment', 50.0),
             }
         
     for user in users:
