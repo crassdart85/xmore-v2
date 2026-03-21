@@ -834,7 +834,7 @@ def execute():
                         INSERT OR REPLACE INTO regime_log (date, regime, hmm_state, volatility)
                         VALUES ({ph}, {ph}, {ph}, {ph})
                     """, (
-                        trading_date,
+                        today,
                         lbl,
                         market_regime.get('current_regime'),
                         market_regime.get('volatility'),

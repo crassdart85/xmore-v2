@@ -133,6 +133,15 @@ router.get('/summary', async (req, res) => {
             const variance = arr.reduce((acc, v) => acc + ((v - m) ** 2), 0) / (arr.length - 1);
             return Math.sqrt(Math.max(variance, 0));
         };
+        // EGX risk-free rate (CBE rate ~27.25% annual) — used for all Sharpe calculations
+        const EGX_TRADING_DAYS = 247;
+        const EGX_RF_ANNUAL = 0.2725;
+        const _dailyRf = Math.pow(1 + EGX_RF_ANNUAL, 1 / EGX_TRADING_DAYS) - 1;
+        const _sharpeEgx = (arr) => {
+            if (arr.length < 2) return 0;
+            const m = mean(arr), s = stdev(arr);
+            return s > 0 ? ((m - _dailyRf) / s) * Math.sqrt(EGX_TRADING_DAYS) : 0;
+        };
         const calcMaxDrawdown = (returnsArr) => {
             let cum = 0;
             let peak = 0;
@@ -162,10 +171,10 @@ router.get('/summary', async (req, res) => {
             );
             const alphaArr = returnsArr.map((r, i) => r - benchArr[i]); // Net alpha (primary)
             const wins = subset.filter(r => r.was_correct === true || r.was_correct === 1 || r.was_correct === 't').length;
-            const vol = stdev(returnsArr) * Math.sqrt(252);
-            const volGross = stdev(returnsArrGross) * Math.sqrt(252);
-            const sharpe = stdev(alphaArr) > 0 ? (mean(alphaArr) / stdev(alphaArr)) * Math.sqrt(252) : 0;
-            const sharpeGross = stdev(alphaArrGross) > 0 ? (mean(alphaArrGross) / stdev(alphaArrGross)) * Math.sqrt(252) : 0;
+            const vol = stdev(returnsArr) * Math.sqrt(EGX_TRADING_DAYS);
+            const volGross = stdev(returnsArrGross) * Math.sqrt(EGX_TRADING_DAYS);
+            const sharpe = _sharpeEgx(returnsArr);
+            const sharpeGross = _sharpeEgx(returnsArrGross);
             return {
                 trades: total,
                 wins,
@@ -199,23 +208,17 @@ router.get('/summary', async (req, res) => {
         const r90 = buildStats(filterDays(90));
 
         // â”€â”€ Institutional metrics (EGX-correct risk-free rate: 27.25%) â”€â”€
-        const EGX_RF = 0.2725;
-        const TRADING_DAYS = 247;
-        const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
-        const calcSharpeEgx = (arr) => {
-            if (arr.length < 2) return 0;
-            const m = mean(arr), s = stdev(arr);
-            return s > 0 ? ((m - dailyRf) / s) * Math.sqrt(TRADING_DAYS) : 0;
-        };
+        // Note: EGX_TRADING_DAYS, EGX_RF_ANNUAL, _dailyRf, _sharpeEgx are defined above buildStats
+        const calcSharpeEgx = _sharpeEgx; // alias for institutional_metrics block
         const calcSortinoEgx = (arr) => {
             const m = mean(arr), dn = arr.filter(v => v < 0);
             if (!dn.length) return 99.9;
             const ds = stdev(dn);
-            return ds > 0 ? ((m - dailyRf) / ds) * Math.sqrt(TRADING_DAYS) : 99.9;
+            return ds > 0 ? ((m - _dailyRf) / ds) * Math.sqrt(EGX_TRADING_DAYS) : 99.9;
         };
         const calcCalmar = (arr, mdd) => {
             if (arr.length < 20 || !mdd) return 0;
-            const ann = Math.pow(1 + mean(arr), TRADING_DAYS) - 1;
+            const ann = Math.pow(1 + mean(arr), EGX_TRADING_DAYS) - 1;
             return ann / Math.abs(mdd);
         };
         const calcBeta = (pArr, bArr) => {
@@ -231,7 +234,7 @@ router.get('/summary', async (req, res) => {
             if (n < 2) return 0;
             const ex = pArr.slice(0, n).map((v, i) => v - bArr[i]);
             const te = stdev(ex);
-            return te > 0 ? (mean(ex) / te) * Math.sqrt(TRADING_DAYS) : 0;
+            return te > 0 ? (mean(ex) / te) * Math.sqrt(EGX_TRADING_DAYS) : 0;
         };
         const calcCapture = (pArr, bArr, up) => {
             const n = Math.min(pArr.length, bArr.length);
