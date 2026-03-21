@@ -124,13 +124,19 @@ def _apply_regime_gate(signal: str, conviction: str,
     """
     Layer 4: Market regime filter applied after risk gating.
 
-    Rules:
+    Rules (hard suppression — directional signals are too unreliable in
+    elevated-volatility regimes to justify active trading):
+
       Crisis   (highest-vol HMM state, confidence >= 60%):
-        - UP  signal → HOLD   (crisis overrides bullish bets)
-        - DOWN stays; conviction downgraded one level
-      Turbulent (mid-vol state, confidence >= 70%):
-        - UP conviction downgraded one level (bullish is less reliable)
-        - DOWN unchanged
+        - UP  → HOLD  (crisis regime invalidates bullish bets)
+        - DOWN → HOLD  (whipsaw risk too high; stay flat)
+
+      Turbulent (mid-vol state, confidence >= 60%):
+        - UP  → HOLD  (volatility erodes signal edge)
+        - DOWN → HOLD  (EGX has limited short-selling; downside moves are
+                        unpredictable in turbulent conditions)
+
+      Calm: no adjustment.
 
     Returns (adjusted_signal, adjusted_conviction, regime_flag_str_or_None).
     """
@@ -140,27 +146,19 @@ def _apply_regime_gate(signal: str, conviction: str,
     label = market_regime.get('regime_label_en', 'Calm')
     confidence = float(market_regime.get('regime_confidence', 0.0))
 
-    _downgrade = {'VERY_HIGH': 'HIGH', 'HIGH': 'MODERATE', 'MODERATE': 'LOW', 'LOW': 'LOW'}
-
     flag = None
 
     if label == 'Crisis' and confidence >= 0.60:
-        if signal == 'UP':
+        if signal in ('UP', 'DOWN'):
+            flag = f"{signal} blocked: Crisis regime ({confidence:.0%} confidence)"
             signal = 'HOLD'
             conviction = 'LOW'
-            flag = f"UP blocked: Crisis regime ({confidence:.0%} confidence)"
-        else:
-            new_conv = _downgrade.get(conviction, conviction)
-            if new_conv != conviction:
-                flag = f"Conviction {conviction}->{new_conv}: Crisis regime ({confidence:.0%})"
-                conviction = new_conv
 
-    elif label == 'Turbulent' and confidence >= 0.70:
-        if signal == 'UP':
-            new_conv = _downgrade.get(conviction, conviction)
-            if new_conv != conviction:
-                flag = f"Conviction {conviction}->{new_conv}: Turbulent regime ({confidence:.0%})"
-                conviction = new_conv
+    elif label == 'Turbulent' and confidence >= 0.60:
+        if signal in ('UP', 'DOWN'):
+            flag = f"{signal} blocked: Turbulent regime ({confidence:.0%} confidence)"
+            signal = 'HOLD'
+            conviction = 'LOW'
 
     return signal, conviction, flag
 
@@ -181,7 +179,7 @@ def run_consensus(symbol: str,
       1. Signal Agents     — individual structured predictions (passed in)
       2. Bull/Bear         — construct cases for/against majority direction
       3. Risk Gating       — evaluate_risk() blocks/downgrades dangerous signals
-      4. Regime Filter     — HMM market regime suppresses UP signals in Crisis/Turbulent
+      4. Regime Filter     — HMM market regime blocks ALL directional signals in Crisis/Turbulent
 
     Args:
         symbol:              Stock ticker (e.g. "COMI.CA")
@@ -261,7 +259,7 @@ def run_consensus(symbol: str,
     display = _build_display(
         symbol, final_signal, final_conviction,
         bull_case, bear_case, risk_assessment, agreement_ratio,
-        market_regime=market_regime
+        market_regime=market_regime, regime_flag=regime_flag
     )
 
     # ── Assemble Final Result ──
@@ -421,7 +419,7 @@ def _build_reasoning_chain(symbol, agent_signals, consensus_signal,
 
 def _build_display(symbol, final_signal, final_conviction,
                    bull_case, bear_case, risk_assessment, agreement_ratio,
-                   market_regime=None):
+                   market_regime=None, regime_flag=None):
     """Build bilingual display text for the dashboard."""
     signal_map = {
         "UP":   {"en": "Bullish", "ar": "صاعد"},
@@ -448,7 +446,12 @@ def _build_display(symbol, final_signal, final_conviction,
             regime_suffix_en = f" Regime: {lbl}."
             regime_suffix_ar = f" النظام: {lbl_ar}."
 
-    if risk_action == "BLOCK":
+    if regime_flag and 'blocked' in regime_flag:
+        regime_lbl = market_regime.get('regime_label_en', '') if market_regime else ''
+        regime_lbl_ar = market_regime.get('regime_label_ar', regime_lbl) if market_regime else ''
+        summary_en = f"Signal held: {regime_lbl} market regime — directional bets suppressed. Bull: {bull_s} vs Bear: {bear_s}."
+        summary_ar = f"إشارة محتجزة: نظام السوق {regime_lbl_ar} — إشارات الاتجاه مكبوتة. الثور: {bull_s} مقابل الدب: {bear_s}."
+    elif risk_action == "BLOCK":
         summary_en = f"Signal blocked by Risk Agent. Bull: {bull_s}, Bear: {bear_s}.{regime_suffix_en}"
         summary_ar = f"الإشارة محظورة من وكيل المخاطر. الثور: {bull_s}، الدب: {bear_s}.{regime_suffix_ar}"
     elif risk_action == "DOWNGRADE":
