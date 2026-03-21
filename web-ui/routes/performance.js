@@ -207,6 +207,11 @@ router.get('/summary', async (req, res) => {
         const r60 = buildStats(filterDays(60));
         const r90 = buildStats(filterDays(90));
 
+        // "Since quality gates" slice — signals emitted on or after Tier 1 deployment
+        const IMPROVEMENT_DATE = '2026-03-21';
+        const sinceRows = rows.filter(r => String(r.recommendation_date || '').substring(0, 10) >= IMPROVEMENT_DATE);
+        const rSince = sinceRows.length ? buildStats(sinceRows) : null;
+
         // â”€â”€ Institutional metrics (EGX-correct risk-free rate: 27.25%) â”€â”€
         // Note: EGX_TRADING_DAYS, EGX_RF_ANNUAL, _dailyRf, _sharpeEgx are defined above buildStats
         const calcSharpeEgx = _sharpeEgx; // alias for institutional_metrics block
@@ -399,7 +404,15 @@ router.get('/summary', async (req, res) => {
                     profit_factor: Number(r90.profit_factor.toFixed(3)),
                     profit_factor_gross: Number(r90.profit_factor_gross.toFixed(3)),
                     avg_cost_per_trade_pct: Number(r90.avg_cost_per_trade_pct.toFixed(4))
-                }
+                },
+                "since_improvement": rSince ? {
+                    trades:       rSince.trades,
+                    improvement_date: IMPROVEMENT_DATE,
+                    win_rate:     Number(rSince.win_rate.toFixed(1)),
+                    alpha:        Number(rSince.avg_alpha_1d.toFixed(3)),
+                    sharpe_ratio: Number(rSince.sharpe_ratio.toFixed(3)),
+                    max_drawdown: Number(rSince.max_drawdown.toFixed(3))
+                } : { trades: 0, improvement_date: IMPROVEMENT_DATE }
             },
             disclaimer: "Primary metrics are net of transaction costs and based on live predictions. Gross pre-cost metrics are included as secondary fields."
         });

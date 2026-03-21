@@ -3496,6 +3496,32 @@ footer {
     font-size: 0.9em;
 }
 
+/* Since-improvement strip */
+.gs-since-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    margin-top: 10px;
+    padding: 7px 14px;
+    background: color-mix(in srgb, var(--accent) 6%, var(--card-bg));
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+.gs-since-label {
+    font-weight: 600;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.gs-since-sep { color: var(--border-color); }
+.gs-since-item { white-space: nowrap; }
+.gs-since-item strong { color: var(--text-primary); }
+.gs-since-pos { color: #10b981; }
+.gs-since-neg { color: #ef4444; }
+.gs-since-pending { font-style: italic; color: var(--text-muted); }
+
 .intelligence-pulse-section {
     margin: 0 0 24px;
 }

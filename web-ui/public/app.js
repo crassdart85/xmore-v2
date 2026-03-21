@@ -1872,6 +1872,7 @@ async function loadGlobalSnapshotBar() {
 
         const g = data.global || {};
         const r30 = data.rolling?.['30d'] || {};
+        const si = data.rolling?.['since_improvement'] || {};
         const trades = g.total_predictions || 0;
         const progressPct = Math.min(100, Math.round((trades / 100) * 100));
         const sharpe = r30.sharpe_ratio || g.sharpe_ratio || 0;
@@ -1879,10 +1880,33 @@ async function loadGlobalSnapshotBar() {
         const alpha30 = r30.alpha || 0;
         const win30 = r30.win_rate || 0;
 
+        // Since-improvement strip data
+        const siTrades = si.trades || 0;
+        const siDate = si.improvement_date || '2026-03-21';
+        const siWin = si.win_rate != null ? si.win_rate : null;
+        const siAlpha = si.alpha != null ? si.alpha : null;
+        const siWinDelta = (siWin != null && win30) ? (siWin - win30) : null;
+        const siAlphaDelta = (siAlpha != null && alpha30 != null) ? (siAlpha - alpha30) : null;
+
         const card = (id, label, cls, tooltip) => `
             <div class="global-snapshot-card ${cls}" title="${tooltip}">
                 <div class="global-snapshot-label">${label}</div>
                 <div class="global-snapshot-value metric-value" id="${id}">-</div>
+            </div>
+        `;
+
+        // Since-improvement strip: shown when gates have been live at least 1 day
+        const siStrip = `
+            <div class="gs-since-strip" title="Signals emitted after Tier 1 quality gates went live on ${siDate}">
+                <span class="gs-since-label">Since quality gates (${siDate})</span>
+                <span class="gs-since-sep">|</span>
+                <span class="gs-since-item">${siTrades} signal${siTrades !== 1 ? 's' : ''} evaluated</span>
+                ${siTrades > 0 ? `
+                <span class="gs-since-sep">|</span>
+                <span class="gs-since-item">Win rate: <strong id="gsSiWin">-</strong>${siWinDelta != null ? ` <em class="${siWinDelta >= 0 ? 'gs-since-pos' : 'gs-since-neg'}">(${siWinDelta >= 0 ? '+' : ''}${siWinDelta.toFixed(1)}pp)</em>` : ''}</span>
+                <span class="gs-since-sep">|</span>
+                <span class="gs-since-item">Alpha: <strong id="gsSiAlpha">-</strong>${siAlphaDelta != null ? ` <em class="${siAlphaDelta >= 0 ? 'gs-since-pos' : 'gs-since-neg'}">(${siAlphaDelta >= 0 ? '+' : ''}${siAlphaDelta.toFixed(2)}pp)</em>` : ''}</span>
+                ` : `<span class="gs-since-sep">|</span><span class="gs-since-item gs-since-pending">Awaiting next pipeline run</span>`}
             </div>
         `;
 
@@ -1898,6 +1922,7 @@ async function loadGlobalSnapshotBar() {
                     <div class="global-progress-track"><span class="global-progress-fill progress-fill" style="width:${progressPct}%"></span></div>
                 </div>
             </div>
+            ${siStrip}
         `;
 
         // Animate the values (Upgrade 1)
@@ -1906,6 +1931,10 @@ async function loadGlobalSnapshotBar() {
         animateValue('gsMaxDd30', maxDd, { decimalPlaces: 2, suffix: '%' });
         animateValue('gsWinRate30', win30, { decimalPlaces: 1, suffix: '%' });
         animateValue('gsTrades', trades, { decimalPlaces: 0 });
+        if (siTrades > 0) {
+            if (siWin != null) animateValue('gsSiWin', siWin, { decimalPlaces: 1, suffix: '%' });
+            if (siAlpha != null) animateValue('gsSiAlpha', siAlpha, { decimalPlaces: 2, suffix: '%', prefix: siAlpha >= 0 ? '+' : '' });
+        }
     } catch (error) {
         console.error('Error loading global snapshot bar:', error);
         el.innerHTML = `<div class="global-snapshot-empty">${t('errorPerformance')}</div>`;
