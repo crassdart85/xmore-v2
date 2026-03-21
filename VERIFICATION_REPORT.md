@@ -1,5 +1,25 @@
 ## ✅ VERIFICATION COMPLETE - ALL FILES SUCCESSFULLY CREATED
 
+## March 21, 2026 Addendum - Signal Ranking and Production Validation
+
+### Code Changes Verified
+- `run_agents.py`: quality metrics are refreshed after the momentum-alignment penalty so final ranking matches the signal actually exposed to downstream consumers.
+- `engines/trade_recommender.py`: recommendation rows now preserve calibrated confidence, expected edge, ranking score, and momentum alignment for later formatting and scoring.
+- `engines/scoring_formatter.py`: scored output now prefers the calibrated and execution-aware fields instead of older raw-confidence proxies.
+- `tests/test_scoring_formatter.py`: updated and passing for the new score-component precedence.
+- `web-ui/scripts/live-smoke.js`: added deployed API smoke coverage for consensus, intelligence changes, scored signals, and the morning brief.
+
+### Validation Results
+- Targeted unit coverage passed: `pytest tests/test_scoring_formatter.py`
+- Deployed production smoke passed: `npm run smoke:prod`
+- Production PostgreSQL connectivity verified using the external Render host with SSL.
+- Live recommendation generation path executed successfully on March 21, 2026 after installing missing local runtime packages required by this repo's current code path.
+
+### Production Outcome Interpretation
+- The live generation path completed without crashing.
+- No new same-day rows were written to `trade_recommendations` or `scored_signals` in that run.
+- This matched current application logic rather than a write failure: the run reported `EGX=CLOSED`, and the generator skips symbol processing for closed markets.
+
 **Date:** February 15, 2026  
 **Status:** ✅ PRODUCTION READY  
 **Total Files Created:** 18  

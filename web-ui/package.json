@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node scripts/check-frontend-exports.js && node --check public/app.js && node --check public/auth.js && node --check public/briefing.js && node --check public/performance-dashboard.js && node --check public/trades.js && node --check public/watchlist.js"
+    "check": "node scripts/check-frontend-exports.js && node --check public/app.js && node --check public/auth.js && node --check public/briefing.js && node --check public/performance-dashboard.js && node --check public/trades.js && node --check public/watchlist.js",
+    "smoke:prod": "node scripts/live-smoke.js",
+    "smoke:url": "node scripts/live-smoke.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

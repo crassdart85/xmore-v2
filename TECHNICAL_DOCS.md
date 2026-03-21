@@ -139,6 +139,19 @@ The entire workflow is orchestrated by `run_pipeline.py`.
 
 ## 📋 Recent Updates (March 2026)
 
+### Signal Quality Recalibration and Live Validation (March 21, 2026)
+- Recomputed `calibrated_confidence`, `expected_edge_pct`, and `ranking_score` after the later momentum-alignment penalty in [run_agents.py](f:/xmore-project/run_agents.py) so downstream ranking reflects the final adjusted signal state instead of pre-penalty values.
+- Extended recommendation payloads in [engines/trade_recommender.py](f:/xmore-project/engines/trade_recommender.py) to carry `raw_confidence`, `calibrated_confidence`, `expected_edge_pct`, `ranking_score`, and `momentum_alignment` into the scored-signals layer.
+- Updated [engines/scoring_formatter.py](f:/xmore-project/engines/scoring_formatter.py) so scored signals prefer calibrated confidence for consensus quality, expected edge for execution quality, and momentum alignment for momentum quality, while keeping legacy fallbacks for older rows.
+- Added production smoke coverage in [web-ui/scripts/live-smoke.js](f:/xmore-project/web-ui/scripts/live-smoke.js) and npm scripts in [web-ui/package.json](f:/xmore-project/web-ui/package.json):
+    - `npm run smoke:prod`
+    - `npm run smoke:url -- https://your-base-url`
+- Validation status:
+    - Targeted tests passed: `pytest tests/test_scoring_formatter.py`
+    - Deployed API smoke passed against Render on March 21, 2026.
+    - Live recommendation generation executed successfully against production PostgreSQL after installing missing local runtime dependencies (`finnhub-python`, `google-genai`, `python-dotenv`).
+    - The March 21 production run persisted no new `trade_recommendations` or `scored_signals` rows because the run occurred with `EGX=CLOSED`, and [generate_daily_trade_recommendations](f:/xmore-project/run_agents.py#L1939) skips per-symbol processing when the target market is closed.
+
 ### DCF Valuation Engine (New Feature)
 - **Added**: Standalone Discounted Cash Flow (DCF) valuation module (`agents/dcf/`)
 - **Frequency**: Runs once per week (Sundays) via `run_agents.py`
