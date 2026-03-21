@@ -56,8 +56,8 @@ _MIN_FEATURES   = 10      # Never drop below this many features
 CONFIDENCE_THRESHOLD = 0.60  # Only emit UP/DOWN if max(P) >= 60%
 
 # Optuna hyperparameter tuning
-OPTUNA_N_TRIALS = 25     # Trials per symbol (fast on small datasets ~0.1s each)
-OPTUNA_TIMEOUT  = 90     # Hard ceiling in seconds per symbol
+OPTUNA_N_TRIALS = int(os.environ.get('OPTUNA_N_TRIALS', '25'))  # Override via env var in CI
+OPTUNA_TIMEOUT  = 60     # Hard ceiling in seconds per symbol (was 90)
 
 
 def _model_path(symbol: str) -> str:
