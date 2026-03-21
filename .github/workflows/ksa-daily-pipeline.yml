@@ -1,40 +1,29 @@
 name: KSA Daily Pipeline
 
-# Tadawul (Saudi Exchange) hours: 10:00–15:00 AST (UTC+3) = 07:00–12:00 UTC, Mon–Fri
-# ─────────────────────────────────────────────────────────────────────────────────────
-# Schedule overview (all times UTC):
-#
-#  07,08,09,10,11,12  Mon–Fri   ksa-intraday-prices        (hourly prices during Tadawul session)
-#  07,09,11           Mon–Fri   ksa-intraday-news           (KSA news 3× during trading day)
-#  12:45              Mon–Fri   ksa-post-market-pipeline    (30 min after Tadawul close → signals)
-#  21:30              Mon–Fri   ksa-nightly-pipeline        (full nightly: data → agents → evaluate)
-#  00:00              Sat        ksa-weekly-dcf              (Friday-night DCF recompute for all TASI stocks)
-#  06,12,18           Daily      ksa-catchup-evaluation      (resolve expired KSA predictions)
+# Tadawul (Saudi Exchange): 10:00–15:00 AST (UTC+3, no DST) = 07:00–12:00 UTC
+# Trading days: Sun–Thu (GitHub cron: 0=Sun, 1=Mon, ..., 4=Thu)
+# ─────────────────────────────────────────────────────────────────────────────
+# Schedule (UTC):
+#  07–12  Sun–Thu    ksa-intraday-prices      (hourly during Tadawul session)
+#  07,09,11 Sun–Thu  ksa-intraday-news        (news 3× per trading day)
+#  12:15  Sun–Thu    ksa-post-market-pipeline  (15 min after close → signals)
+#  21:30  Sun–Thu    ksa-nightly-pipeline      (full nightly evaluate)
+#  00:00  Sat        ksa-weekly-dcf            (weekly DCF recompute)
+#  06,12,18 Daily    ksa-catchup-evaluation    (resolve expired predictions)
 
 on:
   schedule:
-    # Intraday price collection during Tadawul hours (10:00–15:00 AST = 07:00–12:00 UTC)
-    - cron: '0 7,8,9,10,11,12 * * 1-5'
-
-    # KSA news 3× during trading day (10:00, 12:00, 14:00 AST = 07:00, 09:00, 11:00 UTC)
-    - cron: '0 7,9,11 * * 1-5'
-
-    # Post-market pipeline: 45 min after Tadawul close (15:45 AST = 12:45 UTC)
-    - cron: '45 12 * * 1-5'
-
-    # Full nightly pipeline (00:30 AST+1 = 21:30 UTC)
-    - cron: '30 21 * * 1-5'
-
-    # Weekly DCF recompute (Friday night: 00:00 UTC Saturday = 03:00 AST Saturday)
-    - cron: '0 0 * * 6'
-
-    # Catchup evaluation 3× daily (fills actual_next_day_return for track-record page)
-    - cron: '0 6,12,18 * * *'
+    - cron: '0 7,8,9,10,11,12 * * 0,1,2,3,4'   # intraday prices (Sun–Thu)
+    - cron: '0 7,9,11 * * 0,1,2,3,4'            # intraday news  (Sun–Thu)
+    - cron: '15 12 * * 0,1,2,3,4'               # post-market pipeline
+    - cron: '30 21 * * 0,1,2,3,4'               # nightly pipeline
+    - cron: '0 0 * * 6'                          # weekly DCF (Saturday)
+    - cron: '0 6,12,18 * * *'                    # catchup evaluation
 
   workflow_dispatch:
     inputs:
       job:
-        description: 'Which job to run (leave blank = all)'
+        description: 'Job to run (leave blank = all via dispatch)'
         required: false
         default: ''
 
@@ -43,550 +32,322 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DATABASE_URL: ${{ secrets.DATABASE_URL }}
-  GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-  TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
-  TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
-  MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
-  ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
-  WHATSAPP_API_TOKEN: ${{ secrets.WHATSAPP_API_TOKEN }}
-  WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
-  WHATSAPP_RECIPIENT_LIST: ${{ secrets.WHATSAPP_RECIPIENT_LIST }}
-  KSA_MARKET_ID: 'KSA'
+  DATABASE_URL:            ${{ secrets.DATABASE_URL }}
+  GOOGLE_API_KEY:          ${{ secrets.GOOGLE_API_KEY }}
+  TELEGRAM_API_ID:         ${{ secrets.TELEGRAM_API_ID }}
+  TELEGRAM_API_HASH:       ${{ secrets.TELEGRAM_API_HASH }}
+  MARKETAUX_API_KEY:       ${{ secrets.MARKETAUX_API_KEY }}
+  KSA_WHAPI_TOKEN:         ${{ secrets.KSA_WHAPI_TOKEN }}
+  KSA_WHATSAPP_CHANNEL_ID: ${{ secrets.KSA_WHATSAPP_CHANNEL_ID }}
+  FINNHUB_API_KEY:         ${{ secrets.FINNHUB_API_KEY }}
+  NEWS_API_KEY:            ${{ secrets.NEWS_API_KEY }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Shared setup steps (referenced via YAML anchors)
+# ─────────────────────────────────────────────────────────────────────────────
 
 jobs:
 
-  # ──────────────────────────────────────────────
-  # Job 1: KSA intraday price update
-  # Tadawul trading hours: 10:00–15:00 AST (07:00–12:00 UTC) Mon–Fri
-  # ──────────────────────────────────────────────
+  # ── Job 1: KSA intraday price collection ──────────────────────────────────
   ksa-intraday-prices:
-    if: github.event.schedule == '0 7,8,9,10,11,12 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 7,8,9,10,11,12 * * 0,1,2,3,4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: xmore-ksa
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { ref: xmore-ksa, fetch-depth: 1 }
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
 
-      - name: Restore pip cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-ksa-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-ksa-${{ runner.os }}-
+          restore-keys: pip-ksa-${{ runner.os }}-
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Check Saudi public holiday
-        id: holiday_check
+      - name: Saudi holiday check
         continue-on-error: true
         run: |
           python - <<'EOF'
           import datetime, sys
-          # Saudi public holidays (approximate fixed dates + Eid ranges updated annually)
-          SAUDI_HOLIDAYS_2026 = {
-              # National Day
-              datetime.date(2026, 9, 23),
-              # Founding Day
-              datetime.date(2026, 2, 22),
-              # Eid Al-Fitr 2026 (approx Mar 30 – Apr 3)
+          HOLIDAYS = {
+              datetime.date(2026, 2, 22),  # Founding Day
               datetime.date(2026, 3, 30), datetime.date(2026, 3, 31),
               datetime.date(2026, 4,  1), datetime.date(2026, 4,  2),
-              datetime.date(2026, 4,  3),
-              # Eid Al-Adha 2026 (approx Jun 6–10)
+              datetime.date(2026, 4,  3),  # Eid al-Fitr
               datetime.date(2026, 6,  6), datetime.date(2026, 6,  7),
               datetime.date(2026, 6,  8), datetime.date(2026, 6,  9),
-              datetime.date(2026, 6, 10),
+              datetime.date(2026, 6, 10),  # Eid al-Adha
+              datetime.date(2026, 9, 23),  # National Day
           }
           today = datetime.date.today()
-          if today in SAUDI_HOLIDAYS_2026:
-              print(f"HOLIDAY: {today} is a Saudi public holiday — skipping intraday prices")
+          if today in HOLIDAYS:
+              print(f"HOLIDAY {today} — skipping price collection")
               sys.exit(0)
-          print(f"TRADING DAY: {today} — proceeding with KSA price collection")
+          print(f"Trading day {today} — collecting KSA prices")
           EOF
 
       - name: Collect KSA intraday prices
         run: python collect_data.py --prices-only --market KSA
 
-      - name: Pipeline summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== KSA Intraday Price Update Summary ==="
-          echo "Schedule : ${{ github.event.schedule }}"
-          echo "Run ID   : ${{ github.run_id }}"
-          echo "Time UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
-          echo "Time AST : $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
+          echo "=== KSA Intraday Prices ==="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "AST: $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
 
 
-  # ──────────────────────────────────────────────
-  # Job 2: KSA intraday news update
-  # 3× during Tadawul session (10:00, 12:00, 14:00 AST = 07:00, 09:00, 11:00 UTC)
-  # ──────────────────────────────────────────────
+  # ── Job 2: KSA intraday news ───────────────────────────────────────────────
   ksa-intraday-news:
-    if: github.event.schedule == '0 7,9,11 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 7,9,11 * * 0,1,2,3,4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: xmore-ksa
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { ref: xmore-ksa, fetch-depth: 1 }
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
 
-      - name: Restore pip cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-ksa-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-ksa-${{ runner.os }}-
+          restore-keys: pip-ksa-${{ runner.os }}-
 
-      - name: Restore HuggingFace model cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: hf-finbert-${{ runner.os }}
-          restore-keys: |
-            hf-finbert-${{ runner.os }}
+          restore-keys: hf-finbert-${{ runner.os }}
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Initialize database schema
-        timeout-minutes: 2
-        continue-on-error: true
-        run: python -c "from database import create_tables; create_tables()"
-
-      - name: Check Saudi public holiday
+      - name: KSA intelligence pipeline (news-only)
         continue-on-error: true
         run: |
           python - <<'EOF'
-          import datetime, sys
-          SAUDI_HOLIDAYS_2026 = {
-              datetime.date(2026, 9, 23), datetime.date(2026, 2, 22),
-              datetime.date(2026, 3, 30), datetime.date(2026, 3, 31),
-              datetime.date(2026, 4,  1), datetime.date(2026, 4,  2),
-              datetime.date(2026, 4,  3),
-              datetime.date(2026, 6,  6), datetime.date(2026, 6,  7),
-              datetime.date(2026, 6,  8), datetime.date(2026, 6,  9),
-              datetime.date(2026, 6, 10),
-          }
-          today = datetime.date.today()
-          if today in SAUDI_HOLIDAYS_2026:
-              print(f"HOLIDAY: {today} — news collection will run anyway (non-trading news still relevant)")
-          else:
-              print(f"TRADING DAY: {today}")
+          from agents.intelligence.ksa_intelligence.ksa_run_intelligence import run_ksa_intelligence
+          run_ksa_intelligence(None)
           EOF
 
-      - name: Run KSA intelligence pipeline (news aggregation)
+      - name: KSA Telegram ingestion
         continue-on-error: true
-        run: python ksa/intelligence/ksa_intel_pipeline.py --news-only
+        run: python engines/telegram_reader_ksa.py
 
-      - name: Run KSA Telegram channel ingestion
-        continue-on-error: true
-        env:
-          TELEGRAM_SESSION_B64: ${{ secrets.KSA_TELEGRAM_SESSION_B64 }}
-        run: |
-          if [ -n "$TELEGRAM_SESSION_B64" ]; then
-            echo "$TELEGRAM_SESSION_B64" | base64 -d > ksa_telegram.session
-            python ksa/telegram/ksa_telegram_reader.py --session ksa_telegram.session
-          else
-            echo "No KSA Telegram session found — skipping"
-          fi
-
-      - name: News RAG ingestion (KSA chunks)
+      - name: News RAG ingestion
         continue-on-error: true
         run: python news/ingest_cli.py --market KSA
 
-      - name: Pipeline summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== KSA Intraday News Update Summary ==="
-          echo "Schedule : ${{ github.event.schedule }}"
-          echo "Run ID   : ${{ github.run_id }}"
-          echo "Time UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
-          echo "Time AST : $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
+          echo "=== KSA Intraday News ==="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
 
 
-  # ──────────────────────────────────────────────
-  # Job 3: KSA post-market pipeline
-  # 45 min after Tadawul close (15:45 AST = 12:45 UTC) Mon–Fri
-  # prices → news → sentiment → agents → evaluate
-  # ──────────────────────────────────────────────
+  # ── Job 3: KSA post-market pipeline ───────────────────────────────────────
   ksa-post-market-pipeline:
-    if: github.event.schedule == '45 12 * * 1-5' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '15 12 * * 0,1,2,3,4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: xmore-ksa
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { ref: xmore-ksa, fetch-depth: 1 }
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
 
-      - name: Restore pip cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-ksa-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-ksa-${{ runner.os }}-
+          restore-keys: pip-ksa-${{ runner.os }}-
 
-      - name: Restore KSA ML model cache
-        uses: actions/cache@v4
-        with:
-          path: models/ksa/
-          key: lgbm-ksa-${{ runner.os }}-${{ hashFiles('ksa/agents/ksa_agent_ml.py') }}
-          restore-keys: |
-            lgbm-ksa-${{ runner.os }}-
-
-      - name: Restore HuggingFace model cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
           key: hf-finbert-${{ runner.os }}
-          restore-keys: |
-            hf-finbert-${{ runner.os }}
+          restore-keys: hf-finbert-${{ runner.os }}
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: models/
+          key: lgbm-models-${{ runner.os }}-${{ hashFiles('agents/agent_ml.py') }}
+          restore-keys: lgbm-models-${{ runner.os }}-
 
-      - name: Initialize database schema
-        timeout-minutes: 2
-        continue-on-error: true
-        run: python -c "from database import create_tables; create_tables()"
+      - run: pip install -r requirements.txt
 
-      - name: Check Saudi public holiday
-        id: ksa_holiday
-        continue-on-error: true
+      - name: Saudi holiday check
+        id: holiday
         run: |
           python - <<'EOF'
-          import datetime, sys, os
-          SAUDI_HOLIDAYS_2026 = {
-              datetime.date(2026, 9, 23), datetime.date(2026, 2, 22),
+          import datetime, os
+          HOLIDAYS = {
+              datetime.date(2026, 2, 22),
               datetime.date(2026, 3, 30), datetime.date(2026, 3, 31),
-              datetime.date(2026, 4,  1), datetime.date(2026, 4,  2),
-              datetime.date(2026, 4,  3),
+              datetime.date(2026, 4,  1), datetime.date(2026, 4,  2), datetime.date(2026, 4,  3),
               datetime.date(2026, 6,  6), datetime.date(2026, 6,  7),
-              datetime.date(2026, 6,  8), datetime.date(2026, 6,  9),
-              datetime.date(2026, 6, 10),
+              datetime.date(2026, 6,  8), datetime.date(2026, 6,  9), datetime.date(2026, 6, 10),
+              datetime.date(2026, 9, 23),
           }
           today = datetime.date.today()
-          is_holiday = today in SAUDI_HOLIDAYS_2026
+          is_holiday = today in HOLIDAYS
           with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
               f.write(f"is_holiday={'true' if is_holiday else 'false'}\n")
-          if is_holiday:
-              print(f"HOLIDAY: {today} is a Saudi public holiday — pipeline will skip agent run")
-          else:
-              print(f"TRADING DAY: {today} — full pipeline proceeding")
+          print(f"{'HOLIDAY' if is_holiday else 'TRADING'}: {today}")
           EOF
 
       - name: Collect KSA close prices
         run: python collect_data.py --prices-only --market KSA
 
-      - name: Collect KSA news (post-market)
+      - name: Collect KSA post-market news
         continue-on-error: true
         run: python collect_data.py --news-only --market KSA
 
-      - name: Run KSA intelligence pipeline
-        continue-on-error: true
-        run: python ksa/intelligence/ksa_intel_pipeline.py
-
-      - name: Run KSA Telegram channel ingestion
-        continue-on-error: true
-        env:
-          TELEGRAM_SESSION_B64: ${{ secrets.KSA_TELEGRAM_SESSION_B64 }}
-        run: |
-          if [ -n "$TELEGRAM_SESSION_B64" ]; then
-            echo "$TELEGRAM_SESSION_B64" | base64 -d > ksa_telegram.session
-            python ksa/telegram/ksa_telegram_reader.py --session ksa_telegram.session
-          else
-            echo "No KSA Telegram session — skipping"
-          fi
-
       - name: Analyze KSA sentiment (Gemini)
         continue-on-error: true
-        run: python ksa/ksa_sentiment.py
+        run: python sentiment_gemini.py --market KSA
 
       - name: Run KSA signal agents
-        if: steps.ksa_holiday.outputs.is_holiday != 'true'
+        if: steps.holiday.outputs.is_holiday != 'true'
         env:
           OPTUNA_N_TRIALS: '8'
-          MARKET_ID: 'KSA'
-        run: python ksa/ksa_run_agents.py
+        run: python run_agents_ksa.py
 
       - name: Evaluate KSA prediction accuracy
         run: python evaluate.py --market KSA
 
-      - name: Publish KSA signals to WhatsApp
-        if: steps.ksa_holiday.outputs.is_holiday != 'true'
-        continue-on-error: true
-        run: python ksa/publish/whatsapp_publisher.py --post-market
-
-      - name: Pipeline summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== KSA Post-Market Pipeline Summary ==="
-          echo "Schedule  : ${{ github.event.schedule }}"
-          echo "Run ID    : ${{ github.run_id }}"
-          echo "Holiday   : ${{ steps.ksa_holiday.outputs.is_holiday }}"
-          echo "Time UTC  : $(date -u '+%Y-%m-%d %H:%M:%S')"
-          echo "Time AST  : $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
+          echo "=== KSA Post-Market Pipeline ==="
+          echo "Holiday: ${{ steps.holiday.outputs.is_holiday }}"
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
+          echo "AST: $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
 
 
-  # ──────────────────────────────────────────────
-  # Job 4: KSA nightly full pipeline
-  # 00:30 AST next day = 21:30 UTC Mon–Fri
-  # Full: collect → intelligence → telegram → sentiment → agents → DCF (Sundays) → evaluate → publish
-  # ──────────────────────────────────────────────
+  # ── Job 4: KSA nightly pipeline ───────────────────────────────────────────
   ksa-nightly-pipeline:
     needs: [ksa-post-market-pipeline]
-    if: always() && (github.event.schedule == '30 21 * * 1-5' || github.event_name == 'workflow_dispatch')
+    if: always() && (github.event.schedule == '30 21 * * 0,1,2,3,4' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 60
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: xmore-ksa
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { ref: xmore-ksa, fetch-depth: 1 }
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
 
-      - name: Restore pip cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-ksa-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-ksa-${{ runner.os }}-
+          restore-keys: pip-ksa-${{ runner.os }}-
 
-      - name: Restore KSA ML model cache
-        uses: actions/cache@v4
-        with:
-          path: models/ksa/
-          key: lgbm-ksa-${{ runner.os }}-${{ hashFiles('ksa/agents/ksa_agent_ml.py') }}
-          restore-keys: |
-            lgbm-ksa-${{ runner.os }}-
+      - run: pip install -r requirements.txt
 
-      - name: Restore HuggingFace model cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/huggingface
-          key: hf-finbert-${{ runner.os }}
-          restore-keys: |
-            hf-finbert-${{ runner.os }}
-
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
-
-      - name: Initialize database schema
-        timeout-minutes: 2
-        continue-on-error: true
-        run: python -c "from database import create_tables; create_tables()"
-
-      - name: Collect KSA prices and news
-        run: python collect_data.py --market KSA
-
-      - name: Run KSA intelligence pipeline (full)
-        continue-on-error: true
-        run: python ksa/intelligence/ksa_intel_pipeline.py --full
-
-      - name: Run KSA Telegram channel ingestion
-        continue-on-error: true
-        env:
-          TELEGRAM_SESSION_B64: ${{ secrets.KSA_TELEGRAM_SESSION_B64 }}
-        run: |
-          if [ -n "$TELEGRAM_SESSION_B64" ]; then
-            echo "$TELEGRAM_SESSION_B64" | base64 -d > ksa_telegram.session
-            python ksa/telegram/ksa_telegram_reader.py --session ksa_telegram.session
-          else
-            echo "No KSA Telegram session — skipping"
-          fi
-
-      - name: Analyze KSA sentiment (Gemini)
-        continue-on-error: true
-        run: python ksa/ksa_sentiment.py
-
-      - name: Run KSA signal agents (nightly)
-        env:
-          OPTUNA_N_TRIALS: '8'
-          MARKET_ID: 'KSA'
-        run: python ksa/ksa_run_agents.py
-
-      - name: Run KSA DCF recompute (Sundays only)
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.schedule, '0 0 * * 6') || (github.event.schedule == '30 21 * * 1-5' && format('{0}', github.event.repository.pushed_at) == '')
+      - name: Evaluate KSA performance metrics
         continue-on-error: true
         run: |
-          DAY=$(TZ='Asia/Riyadh' date '+%u')
-          if [ "$DAY" = "5" ]; then
-            echo "Friday — running DCF recompute for all TASI stocks"
-            python ksa/dcf/ksa_dcf_engine.py --all-stocks
-          else
-            echo "Not Friday (day=$DAY) — skipping nightly DCF"
-          fi
+          python -c "
+          from engines.evaluate_performance import run_evaluation
+          run_evaluation(market_id='KSA')
+          "
 
-      - name: Evaluate KSA prediction accuracy
-        run: python evaluate.py --market KSA
-
-      - name: Publish KSA morning briefing to WhatsApp
+      - name: Generate KSA portfolios
         continue-on-error: true
-        run: python ksa/publish/whatsapp_publisher.py --morning-briefing
+        run: python engines/generate_portfolios.py --market KSA
 
-      - name: Pipeline summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== KSA Nightly Pipeline Summary ==="
-          echo "Schedule : ${{ github.event.schedule }}"
-          echo "Run ID   : ${{ github.run_id }}"
-          echo "Time UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
-          echo "Time AST : $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
+          echo "=== KSA Nightly Pipeline ==="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
 
 
-  # ──────────────────────────────────────────────
-  # Job 5: KSA weekly DCF recompute
-  # Every Saturday 00:00 UTC (= Friday 03:00 AST) — full TASI DCF refresh
-  # Runs independently of nightly pipeline; can also run via workflow_dispatch
-  # ──────────────────────────────────────────────
+  # ── Job 5: Weekly KSA DCF recompute ───────────────────────────────────────
   ksa-weekly-dcf:
     if: github.event.schedule == '0 0 * * 6' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 90
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: xmore-ksa
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { ref: xmore-ksa, fetch-depth: 1 }
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
 
-      - name: Restore pip cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-ksa-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-ksa-${{ runner.os }}-
+          restore-keys: pip-ksa-${{ runner.os }}-
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Initialize database schema
-        timeout-minutes: 2
-        continue-on-error: true
-        run: python -c "from database import create_tables; create_tables()"
-
-      - name: Run KSA DCF engine — all TASI stocks (base + bull + bear scenarios)
-        run: python ksa/dcf/ksa_dcf_engine.py --all-stocks --scenarios base,bull,bear
+      - name: Run KSA DCF engine — all stocks (bull/base/bear)
+        run: python agents/dcf/ksa_dcf_engine.py --force
 
       - name: Publish DCF deep-value summary to WhatsApp
         continue-on-error: true
-        run: python ksa/publish/whatsapp_publisher.py --dcf-summary
+        run: |
+          python - <<'EOF'
+          from engines.whatsapp_publisher_ksa import publish_ksa_daily
+          publish_ksa_daily([])  # DCF summary mode
+          EOF
 
-      - name: Pipeline summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== KSA Weekly DCF Summary ==="
-          echo "Schedule : ${{ github.event.schedule }}"
-          echo "Run ID   : ${{ github.run_id }}"
-          echo "Time UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
-          echo "Time AST : $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
+          echo "=== KSA Weekly DCF ==="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
 
 
-  # ──────────────────────────────────────────────
-  # Job 6: KSA catchup evaluation (3× daily: 06:00, 12:00, 18:00 UTC)
-  # Resolves KSA predictions whose target_date has passed between pipeline runs
-  # Never blocks on holiday — evaluation is always safe to run
-  # ──────────────────────────────────────────────
+  # ── Job 6: Catchup evaluation (3× daily) ──────────────────────────────────
   ksa-catchup-evaluation:
     if: github.event.schedule == '0 6,12,18 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ref: xmore-ksa
-          fetch-depth: 1
+      - uses: actions/checkout@v4
+        with: { ref: xmore-ksa, fetch-depth: 1 }
 
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-          cache: 'pip'
-          cache-dependency-path: requirements.txt
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
 
-      - name: Restore pip cache
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: pip-ksa-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            pip-ksa-${{ runner.os }}-
+          restore-keys: pip-ksa-${{ runner.os }}-
 
-      - name: Install Python dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Initialize database schema
-        timeout-minutes: 3
-        continue-on-error: true
-        run: python -c "from database import create_tables; create_tables()"
-
-      - name: Evaluate KSA prediction accuracy (catchup)
+      - name: Evaluate KSA predictions (catchup)
         run: python evaluate.py --market KSA
 
-      - name: Evaluate KSA trade performance metrics
+      - name: Evaluate KSA performance metrics
         continue-on-error: true
-        run: python -c "from engines.evaluate_performance import run_evaluation; run_evaluation(market_id='KSA')"
+        run: |
+          python -c "
+          from engines.evaluate_performance import run_evaluation
+          run_evaluation(market_id='KSA')
+          "
 
-      - name: Pipeline summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== KSA Catchup Evaluation Summary ==="
-          echo "Schedule : ${{ github.event.schedule }}"
-          echo "Run ID   : ${{ github.run_id }}"
-          echo "Time UTC : $(date -u '+%Y-%m-%d %H:%M:%S')"
-          echo "Time AST : $(TZ='Asia/Riyadh' date '+%Y-%m-%d %H:%M:%S')"
+          echo "=== KSA Catchup Evaluation ==="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
