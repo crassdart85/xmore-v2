@@ -280,7 +280,8 @@ async function buildExpectedEdgeState() {
     rows.forEach(row => {
       const prediction = String(row.prediction || '').toUpperCase();
       if (!['UP', 'DOWN', 'BUY', 'SELL'].includes(prediction)) return;
-      const actualChange = Number(row.actual_change_pct || 0);
+      // Cap at ±25% to prevent outlier data errors from poisoning the edge profile
+      const actualChange = Math.max(-25, Math.min(25, Number(row.actual_change_pct || 0)));
       const realizedEdge = (prediction === 'UP' || prediction === 'BUY') ? actualChange : -actualChange;
 
       const keys = [`${row.symbol}|${prediction}`, `_GLOBAL_|${prediction}`];
@@ -366,7 +367,9 @@ function ageHoursFromDate(value) {
   if (!value) return null;
   const dt = new Date(value);
   if (Number.isNaN(dt.getTime())) return null;
-  return (Date.now() - dt.getTime()) / 3600000;
+  const age = (Date.now() - dt.getTime()) / 3600000;
+  // Future-dated records (corrupted timestamps) should not appear fresh
+  return age < 0 ? null : age;
 }
 
 function freshnessStatus(ageHours, thresholdHours) {
