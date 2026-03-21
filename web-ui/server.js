@@ -891,7 +891,7 @@ app.get('/api/intelligence/quality', optionalAuth, async (req, res) => {
       { key: 'prices', sql: `SELECT MAX(date) AS latest_value FROM prices`, thresholdHours: 36 },
       { key: 'predictions', sql: `SELECT MAX(prediction_date) AS latest_value FROM predictions`, thresholdHours: 36 },
       { key: 'consensus', sql: `SELECT MAX(prediction_date) AS latest_value FROM consensus_results`, thresholdHours: 36 },
-      { key: 'news', sql: `SELECT MAX(date) AS latest_value FROM news`, thresholdHours: 24 },
+      { key: 'news', sql: `SELECT MAX(date) AS latest_value FROM news WHERE date <= ${DATABASE_URL ? 'CURRENT_DATE' : "date('now')"}`, thresholdHours: 24 },
       { key: 'sentiment', sql: `SELECT MAX(date) AS latest_value FROM sentiment_scores`, thresholdHours: 36 },
       { key: 'fx_rates', sql: `SELECT MAX(date) AS latest_value FROM fx_rates_history`, thresholdHours: 36 }
     ];
