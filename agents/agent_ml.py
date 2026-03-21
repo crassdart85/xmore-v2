@@ -8,7 +8,7 @@ tuning (cached per symbol) to maximise OOS accuracy.
 
 Three major signal-quality improvements over the original RF model:
   1. Per-symbol models    — stock-specific patterns; global fallback for thin data
-  2. Confidence gating    — UP/DOWN only emitted when max P(class) >= 0.60
+  2. Confidence gating    — UP/DOWN only emitted when max P(class) >= 0.65
   3. Optuna tuning        — 25-trial TPE search cached in model file (runs once)
 """
 
@@ -20,6 +20,8 @@ import warnings
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 try:
     from lightgbm import LGBMClassifier
@@ -38,8 +40,6 @@ from agents.agent_base import BaseAgent, AgentSignal
 from features import (add_technical_indicators, add_sentiment_features,
                       add_macro_features, get_feature_columns, log_feature_importance)
 from database import get_connection
-
-logger = logging.getLogger(__name__)
 
 MODEL_DIR = 'models'
 MODEL_MAX_AGE_DAYS = 7    # Force retrain if saved model is older than this
