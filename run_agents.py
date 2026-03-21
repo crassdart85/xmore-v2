@@ -13,6 +13,13 @@ import json
 import datetime as _dt
 import pandas as pd
 from datetime import datetime, timedelta
+
+try:
+    from engines.signal_enrichment import enrich_signal
+    _ENRICHMENT_AVAILABLE = True
+except Exception as _enr_err:
+    _ENRICHMENT_AVAILABLE = False
+    print(f"⚠️  Signal enrichment unavailable: {_enr_err}")
 from typing import Optional
 import config
 from database import get_connection
@@ -620,6 +627,12 @@ def _store_consensus(conn, stock, today, consensus_result):
     weight_profile_json = json.dumps(consensus_result.get('weight_profile', {}), default=_json_default)
     calibration_meta_json = json.dumps(consensus_result.get('calibration_meta', {}), default=_json_default)
 
+    # Signal enrichment fields
+    drivers_json = json.dumps(consensus_result.get('drivers', []), default=_json_default)
+    risk_level = consensus_result.get('risk_level', 'Medium')
+    expected_move = consensus_result.get('expected_move', None)
+    enrichment_regime = consensus_result.get('enrichment_regime', 'normal')
+
     if os.getenv('DATABASE_URL'):
         cursor.execute("""
             INSERT INTO consensus_results
@@ -629,14 +642,16 @@ def _store_consensus(conn, stock, today, consensus_result):
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
              agent_signals_json, reasoning_chain_json, display_json,
-             momentum_alignment, weight_profile_json, calibration_meta_json)
+             momentum_alignment, weight_profile_json, calibration_meta_json,
+             drivers_json, risk_level, expected_move, enrichment_regime)
             VALUES (%s, %s, %s, %s, %s, %s,
                     %s, %s, %s,
                     %s, %s, %s, %s,
                     %s, %s, %s, %s, %s,
                     %s, %s, %s,
                     %s, %s, %s,
-                    %s, %s, %s)
+                    %s, %s, %s,
+                    %s, %s, %s, %s)
             ON CONFLICT (symbol, prediction_date)
             DO UPDATE SET
                 final_signal = EXCLUDED.final_signal,
@@ -663,7 +678,11 @@ def _store_consensus(conn, stock, today, consensus_result):
                 display_json = EXCLUDED.display_json,
                 momentum_alignment = EXCLUDED.momentum_alignment,
                 weight_profile_json = EXCLUDED.weight_profile_json,
-                calibration_meta_json = EXCLUDED.calibration_meta_json
+                calibration_meta_json = EXCLUDED.calibration_meta_json,
+                drivers_json = EXCLUDED.drivers_json,
+                risk_level = EXCLUDED.risk_level,
+                expected_move = EXCLUDED.expected_move,
+                enrichment_regime = EXCLUDED.enrichment_regime
         """, (
             stock, today,
             consensus_result.get('final_signal', 'HOLD'),
@@ -684,7 +703,8 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('risk_score', 0),
             bull_json, bear_json, risk_json,
             signals_json, chain_json, display_json,
-            momentum_alignment, weight_profile_json, calibration_meta_json
+            momentum_alignment, weight_profile_json, calibration_meta_json,
+            drivers_json, risk_level, expected_move, enrichment_regime
         ))
     else:
         cursor.execute("""
@@ -695,14 +715,16 @@ def _store_consensus(conn, stock, today, consensus_result):
              majority_direction, bull_score, bear_score, risk_action, risk_score,
              bull_case_json, bear_case_json, risk_assessment_json,
              agent_signals_json, reasoning_chain_json, display_json,
-             momentum_alignment, weight_profile_json, calibration_meta_json)
+             momentum_alignment, weight_profile_json, calibration_meta_json,
+             drivers_json, risk_level, expected_move, enrichment_regime)
             VALUES (?, ?, ?, ?, ?, ?,
                     ?, ?, ?,
                     ?, ?, ?, ?,
                     ?, ?, ?, ?, ?,
                     ?, ?, ?,
                     ?, ?, ?,
-                    ?, ?, ?)
+                    ?, ?, ?,
+                    ?, ?, ?, ?)
         """, (
             stock, today,
             consensus_result.get('final_signal', 'HOLD'),
@@ -723,7 +745,8 @@ def _store_consensus(conn, stock, today, consensus_result):
             consensus_result.get('risk_score', 0),
             bull_json, bear_json, risk_json,
             signals_json, chain_json, display_json,
-            momentum_alignment, weight_profile_json, calibration_meta_json
+            momentum_alignment, weight_profile_json, calibration_meta_json,
+            drivers_json, risk_level, expected_move, enrichment_regime
         ))
 
 
@@ -1050,6 +1073,14 @@ def execute():
                             consensus_result['risk_adjusted'] = True
 
                 consensus_result['momentum_alignment'] = round(momentum_alignment, 2)
+
+                # ── Signal Enrichment (drivers, risk_level, expected_move) ──
+                if _ENRICHMENT_AVAILABLE:
+                    enrich_signal(
+                        consensus_result, df,
+                        consensus_result.get('final_signal', 'HOLD'),
+                        market_data
+                    )
 
                 # Store consensus result
                 _store_consensus(conn, stock, today, consensus_result)
