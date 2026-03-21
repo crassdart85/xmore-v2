@@ -10,6 +10,7 @@ Flow:
 
 import os
 import json
+import datetime as _dt
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import Optional
@@ -597,20 +598,27 @@ def _estimate_expected_edge(symbol: str, prediction: str,
     }
 
 
+def _json_default(obj):
+    """JSON serializer for objects not serializable by default json encoder."""
+    if isinstance(obj, (_dt.date, _dt.datetime)):
+        return obj.isoformat()
+    raise TypeError(f'Object of type {type(obj).__name__} is not JSON serializable')
+
+
 def _store_consensus(conn, stock, today, consensus_result):
     """Store consensus result in consensus_results table."""
     cursor = conn.cursor()
 
-    # Serialize JSON fields
-    bull_json = json.dumps(consensus_result.get('bull_case', {}))
-    bear_json = json.dumps(consensus_result.get('bear_case', {}))
-    risk_json = json.dumps(consensus_result.get('risk_assessment', {}))
-    signals_json = json.dumps(consensus_result.get('agent_signals', []))
-    chain_json = json.dumps(consensus_result.get('reasoning_chain', []))
-    display_json = json.dumps(consensus_result.get('display', {}))
+    # Serialize JSON fields (use _json_default to handle datetime.date from PostgreSQL)
+    bull_json = json.dumps(consensus_result.get('bull_case', {}), default=_json_default)
+    bear_json = json.dumps(consensus_result.get('bear_case', {}), default=_json_default)
+    risk_json = json.dumps(consensus_result.get('risk_assessment', {}), default=_json_default)
+    signals_json = json.dumps(consensus_result.get('agent_signals', []), default=_json_default)
+    chain_json = json.dumps(consensus_result.get('reasoning_chain', []), default=_json_default)
+    display_json = json.dumps(consensus_result.get('display', {}), default=_json_default)
     momentum_alignment = consensus_result.get('momentum_alignment', 50.0)
-    weight_profile_json = json.dumps(consensus_result.get('weight_profile', {}))
-    calibration_meta_json = json.dumps(consensus_result.get('calibration_meta', {}))
+    weight_profile_json = json.dumps(consensus_result.get('weight_profile', {}), default=_json_default)
+    calibration_meta_json = json.dumps(consensus_result.get('calibration_meta', {}), default=_json_default)
 
     if os.getenv('DATABASE_URL'):
         cursor.execute("""

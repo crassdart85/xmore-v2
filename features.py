@@ -343,11 +343,21 @@ def add_sentiment_features(price_df, news_df):
         price_df['sentiment_score'] = 0
         return price_df
 
+    # Coerce to numeric — PostgreSQL NULL comes back as None (object dtype), causing agg failure
+    news_df = news_df.copy()
+    news_df['sentiment_score'] = pd.to_numeric(news_df['sentiment_score'], errors='coerce')
+    # Normalize date to string so merge works regardless of date/datetime/str type from PG or SQLite
+    news_df['date'] = pd.to_datetime(news_df['date']).dt.strftime('%Y-%m-%d')
+    price_df = price_df.copy()
+    price_df['_date_str'] = pd.to_datetime(price_df['date']).dt.strftime('%Y-%m-%d')
+
     # Group news by date
     daily_sentiment = news_df.groupby('date')['sentiment_score'].mean().reset_index()
 
-    # Merge
-    price_df = pd.merge(price_df, daily_sentiment, on='date', how='left')
+    # Merge on normalized date strings
+    price_df = pd.merge(price_df, daily_sentiment, left_on='_date_str', right_on='date',
+                        how='left', suffixes=('', '_sent'))
+    price_df = price_df.drop(columns=['_date_str', 'date_sent'], errors='ignore')
 
     # Fill missing sentiment with 0 (neutral)
     price_df['sentiment_score'] = price_df['sentiment_score'].fillna(0)
