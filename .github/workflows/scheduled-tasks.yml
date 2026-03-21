@@ -136,6 +136,15 @@ jobs:
       - name: Collect news and RSS feeds
         run: python collect_data.py --news-only
 
+      - name: Write Gmail credentials
+        continue-on-error: true
+        env:
+          GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
+          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
+        run: |
+          [ -n "$GMAIL_CREDENTIALS_B64" ] && echo "$GMAIL_CREDENTIALS_B64" | base64 -d > xmore_news_reliable/credentials.json
+          [ -n "$GMAIL_TOKEN_B64" ] && echo "$GMAIL_TOKEN_B64" | base64 -d > xmore_news_reliable/token.json
+
       - name: Collect reliable institutional news (RSS + PDF)
         continue-on-error: true
         run: python xmore_news_reliable/main.py --run-all
@@ -203,6 +212,15 @@ jobs:
         run: python collect_data.py --news-only
 
       # Institutional news (CBE, EGX, IMF, FRA) via RSS and PDF monitor
+      - name: Write Gmail credentials
+        continue-on-error: true
+        env:
+          GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
+          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
+        run: |
+          [ -n "$GMAIL_CREDENTIALS_B64" ] && echo "$GMAIL_CREDENTIALS_B64" | base64 -d > xmore_news_reliable/credentials.json
+          [ -n "$GMAIL_TOKEN_B64" ] && echo "$GMAIL_TOKEN_B64" | base64 -d > xmore_news_reliable/token.json
+
       - name: Collect reliable institutional news
         continue-on-error: true
         run: python xmore_news_reliable/main.py --run-all
@@ -317,6 +335,15 @@ jobs:
         run: python engines/custom_source_fetcher.py --fetch-all
 
       # Step 3: Reliable institutional news (CBE, EGX, IMF, FRA, MoF)
+      - name: Write Gmail credentials
+        continue-on-error: true
+        env:
+          GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
+          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
+        run: |
+          [ -n "$GMAIL_CREDENTIALS_B64" ] && echo "$GMAIL_CREDENTIALS_B64" | base64 -d > xmore_news_reliable/credentials.json
+          [ -n "$GMAIL_TOKEN_B64" ] && echo "$GMAIL_TOKEN_B64" | base64 -d > xmore_news_reliable/token.json
+
       - name: Collect reliable institutional news
         continue-on-error: true
         run: python xmore_news_reliable/main.py --run-all
