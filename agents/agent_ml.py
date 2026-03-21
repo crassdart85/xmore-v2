@@ -53,7 +53,7 @@ _TOP_N_FEATURES = 20      # Keep top-N by gain importance after WFV
 _MIN_FEATURES   = 10      # Never drop below this many features
 
 # Confidence gating — suppress low-confidence directional signals
-CONFIDENCE_THRESHOLD = 0.60  # Only emit UP/DOWN if max(P) >= 60%
+CONFIDENCE_THRESHOLD = 0.65  # Only emit UP/DOWN if max(P) >= 65%
 
 # Optuna hyperparameter tuning
 OPTUNA_N_TRIALS = int(os.environ.get('OPTUNA_N_TRIALS', '25'))  # Override via env var in CI

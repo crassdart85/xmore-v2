@@ -212,6 +212,33 @@ def run_consensus(symbol: str,
         agent_signals, dynamic_weights=dynamic_weights
     )
 
+    # ── Tier 1: Minimum Directional Agreement Gate ──
+    # Require ≥60% of agents to agree before emitting UP/DOWN.
+    # Weighted plurality alone is too easy to achieve with 4 agents (e.g. 2/4 = 50%).
+    MIN_DIRECTIONAL_AGREEMENT = 0.60
+    if consensus_signal in ('UP', 'DOWN') and agreement_ratio < MIN_DIRECTIONAL_AGREEMENT:
+        logger.debug(
+            f"[{symbol}] Agreement gate: {agreement_ratio:.0%} < {MIN_DIRECTIONAL_AGREEMENT:.0%} → HOLD"
+        )
+        consensus_signal = 'HOLD'
+
+    # ── Tier 1: Minimum Bull-Bear Score Gap Gate ──
+    # Require a meaningful spread between bull and bear scores before emitting a
+    # directional signal. Low spread = ambiguous evidence = stay flat.
+    MIN_SCORE_GAP = 15
+    _bull_s = bull_case['bull_score']
+    _bear_s = bear_case['bear_score']
+    if consensus_signal == 'UP' and (_bull_s - _bear_s) < MIN_SCORE_GAP:
+        logger.debug(
+            f"[{symbol}] Score gap gate: bull {_bull_s} - bear {_bear_s} = {_bull_s - _bear_s} < {MIN_SCORE_GAP} → HOLD"
+        )
+        consensus_signal = 'HOLD'
+    elif consensus_signal == 'DOWN' and (_bear_s - _bull_s) < MIN_SCORE_GAP:
+        logger.debug(
+            f"[{symbol}] Score gap gate: bear {_bear_s} - bull {_bull_s} = {_bear_s - _bull_s} < {MIN_SCORE_GAP} → HOLD"
+        )
+        consensus_signal = 'HOLD'
+
     avg_confidence = sum(s.get('confidence', 50) for s in agent_signals) / len(agent_signals)
 
     conviction, xmore_score = _compute_conviction(
