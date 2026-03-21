@@ -116,6 +116,15 @@ jobs:
           cache: 'pip'
           cache-dependency-path: requirements.txt
 
+      # Cache HuggingFace FinBERT model — avoids re-downloading ~500MB on every run
+      - name: Restore HuggingFace model cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-finbert-${{ runner.os }}
+          restore-keys: |
+            hf-finbert-${{ runner.os }}
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
@@ -166,6 +175,15 @@ jobs:
           key: lgbm-models-${{ runner.os }}-${{ hashFiles('agents/agent_ml.py') }}
           restore-keys: |
             lgbm-models-${{ runner.os }}-
+
+      # Cache HuggingFace FinBERT model — avoids re-downloading ~500MB on every run
+      - name: Restore HuggingFace model cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-finbert-${{ runner.os }}
+          restore-keys: |
+            hf-finbert-${{ runner.os }}
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -271,6 +289,15 @@ jobs:
           key: lgbm-models-${{ runner.os }}-${{ hashFiles('agents/agent_ml.py') }}
           restore-keys: |
             lgbm-models-${{ runner.os }}-
+
+      # Cache HuggingFace FinBERT model — avoids re-downloading ~500MB on every run
+      - name: Restore HuggingFace model cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-finbert-${{ runner.os }}
+          restore-keys: |
+            hf-finbert-${{ runner.os }}
 
       - name: Install dependencies
         run: pip install -r requirements.txt
