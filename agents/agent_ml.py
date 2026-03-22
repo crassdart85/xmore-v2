@@ -386,6 +386,10 @@ class MLAgent(BaseAgent):
                        sentiment: Optional[Dict[str, Any]] = None,
                        market_config: Optional[Dict] = None) -> dict:
         """Generate structured prediction with class probabilities and top features."""
+        # Inject symbol so predict() can use per-symbol model files
+        if symbol and 'symbol' not in data.columns:
+            data = data.copy()
+            data['symbol'] = symbol
         prediction = self.predict(data, sentiment)
 
         class_probs = self._last_probs or {"UP": 0.33, "DOWN": 0.33, "FLAT": 0.34}
