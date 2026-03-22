@@ -4,7 +4,7 @@ Replaces evaluate_trades.py
 
 Responsibilities:
 1. Resolve outcome fields on trade_recommendations (existing)
-2. Calculate benchmark returns (EGX30) over same periods (NEW)
+2. Calculate benchmark returns (TASI) over same periods (NEW)
 3. Calculate alpha (NEW)
 4. Resolve user_positions with benchmark comparison (NEW)
 5. Track per-agent accuracy contribution (NEW)
@@ -19,9 +19,8 @@ from database import get_connection
 MODEL_VERSION = "v1.0"  # Increment on agent/pipeline changes
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-# EGX30 index symbols to try (in order of preference)
-EGX30_SYMBOLS = ['EGX30', '^CASE', 'CASE.CA', 'EGX30.CA',
-                  'COMI.CA', 'ETEL.CA', 'HRHO.CA']   # liquid EGX30 proxies
+# Benchmark symbols to try (official symbol first, then compatible aliases)
+BENCHMARK_SYMBOLS = ['TASI', '^TASI', 'TASI.SR', 'TASI.INDX']
 
 
 # ─── SQL HELPERS ───────────────────────────────────────────────
@@ -163,7 +162,7 @@ def resolve_1day_outcomes() -> int:
                 ((next_close - rec["close_price"]) / rec["close_price"]) * 100, 4
             )
 
-            # Benchmark: EGX30 index return over same day
+            # Benchmark: TASI return over same day
             benchmark_return = get_benchmark_return(cursor, rec_date, next_date)
 
             # Buy-and-hold: same stock, same period (identical to actual for 1-day)
@@ -354,10 +353,10 @@ def resolve_position_benchmarks() -> int:
 
 def get_benchmark_return(cursor, start_date, end_date) -> float:
     """
-    Get EGX30 index return between two dates.
+    Get benchmark index return between two dates.
     Returns percentage return, or None if data unavailable.
     """
-    for symbol in EGX30_SYMBOLS:
+    for symbol in BENCHMARK_SYMBOLS:
         start_sql = f"""
             SELECT close FROM prices
             WHERE symbol = {_ph(1)} AND date <= {_ph(2)}

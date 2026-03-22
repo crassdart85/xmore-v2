@@ -60,5 +60,9 @@ class MarketDataProvider(ABC):
         """Check if provider supports intraday (sub-daily) intervals."""
         return False
 
+    def supports_symbol(self, symbol: str) -> bool:
+        """Return whether the provider can reasonably serve the requested symbol."""
+        return True
+
     def __repr__(self) -> str:
         return f"<{self.__class__.__name__}('{self.name}')>"

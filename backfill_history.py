@@ -1,8 +1,8 @@
 """
 Historical Price Backfill Script
 =================================
-One-time (or re-runnable) script to populate the prices table with 5 years of
-daily OHLCV data from Yahoo Finance.
+One-time (or re-runnable) script to populate the prices table with multi-year
+daily OHLCV data using the source-driven provider layer.
 
 Why this matters
 ----------------
@@ -31,7 +31,7 @@ import time
 import logging
 from datetime import datetime, timedelta
 
-import yfinance as yf
+from xmore_data.data_manager import DataManager
 
 # ── stdlib logging ──────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -42,6 +42,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+_DATA_MANAGER = None
+
+
+def _get_data_manager():
+    global _DATA_MANAGER
+    if _DATA_MANAGER is None:
+        _DATA_MANAGER = DataManager(use_cache=False, verbose=False)
+    return _DATA_MANAGER
 
 
 # ── DB helpers ───────────────────────────────────────────────────────────────
@@ -160,19 +168,24 @@ def _macro_symbols():
     """Macro instruments needed for ML features."""
     return {
         "MACRO_BRENT":  "BZ=F",
-        "MACRO_USDEGP": "USDEGP=X",
+        "MACRO_USDSAR": "USDSAR=X",
+        "MACRO_USDEGP": "USDSAR=X",
         "MACRO_EEM":    "EEM",
-        # KSA-relevant macros
-        "MACRO_BRENT_USD": "BZ=F",   # same source, deduped by upsert
-        "MACRO_USDSAR":    "USDSAR=X",
+        "MACRO_BRENT_USD": "BZ=F",
+    }
+
+
+def _benchmark_symbols():
+    return {
+        "TASI": "^TASI",
     }
 
 
 # ── Core fetch + store ────────────────────────────────────────────────────────
 
-def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> dict:
+def _fetch_and_store(symbol: str, source_symbol: str, years: int, dry_run: bool) -> dict:
     """
-    Fetch `years` years of daily history for `yf_symbol` and store under `symbol`.
+    Fetch `years` years of daily history for `source_symbol` and store under `symbol`.
 
     Returns a result dict: {symbol, rows_fetched, rows_new, skipped, error}
     """
@@ -188,14 +201,28 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
             result["skipped"] = True
             return result
 
-        period = f"{years}y"
-        logger.info("  FETCH %-18s  period=%s  existing=%d rows", symbol, period, existing)
+        start_date = datetime.utcnow() - timedelta(days=years * 366)
+        end_date = datetime.utcnow()
+        logger.info(
+            "  FETCH %-18s  range=%s..%s  existing=%d rows",
+            symbol,
+            start_date.date(),
+            end_date.date(),
+            existing,
+        )
 
-        ticker = yf.Ticker(yf_symbol)
-        df = ticker.history(period=period, auto_adjust=True)
+        data_manager = _get_data_manager()
+        df = data_manager.fetch_data(
+            source_symbol,
+            interval="1d",
+            start=start_date.strftime("%Y-%m-%d"),
+            end=end_date.strftime("%Y-%m-%d"),
+            force_refresh=True,
+        )
+        provider_source = data_manager.get_last_source(source_symbol) or "market_data"
 
         if df is None or len(df) == 0:
-            result["error"] = "yfinance returned empty DataFrame"
+            result["error"] = "provider chain returned empty DataFrame"
             logger.warning("  WARN  %-18s: no data", symbol)
             return result
 
@@ -209,24 +236,27 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
         insert_rows = []
         with _get_connection() as conn:
             cur = conn.cursor()
-            for date, row in df.iterrows():
+            for _, row in df.iterrows():
                 try:
                     if any(math.isnan(float(row[col])) for col in ("Open", "High", "Low", "Close")):
                         continue
+                    row_date = row["Date"]
+                    if hasattr(row_date, "to_pydatetime"):
+                        row_date = row_date.to_pydatetime()
                     volume = row.get("Volume", 0)
                     volume = 0 if volume is None or (isinstance(volume, float) and math.isnan(volume)) else int(volume)
                     insert_rows.append((
                         symbol,
-                        date.strftime("%Y-%m-%d"),
+                        row_date.strftime("%Y-%m-%d"),
                         float(row["Open"]),
                         float(row["High"]),
                         float(row["Low"]),
                         float(row["Close"]),
                         volume,
-                        "yfinance_backfill",
+                        provider_source,
                     ))
                 except Exception as row_err:
-                    logger.debug("Row error %s %s: %s", symbol, date, row_err)
+                    logger.debug("Row error %s %s: %s", symbol, row.get("Date"), row_err)
 
             inserted = _bulk_upsert_rows(cur, insert_rows)
 
@@ -242,30 +272,14 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
 
 def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
     """
-    Batch-download using yf.download for efficiency (fewer API calls),
-    then store each symbol individually.
+    Fetch each symbol through the provider layer.
 
-    symbols_map: {internal_symbol: yf_symbol}
+    symbols_map: {internal_symbol: source_symbol}
     """
     results = []
-    yf_symbols = list(symbols_map.values())
     existing_counts = _existing_row_counts(list(symbols_map.keys()))
 
-    logger.info("Batch-downloading %d symbols via yf.download ...", len(yf_symbols))
-    try:
-        data = yf.download(
-            tickers=yf_symbols,
-            period=f"{years}y",
-            auto_adjust=True,
-            group_by="ticker",
-            threads=True,
-            progress=False,
-        )
-    except Exception as e:
-        logger.warning("Batch download failed (%s) — falling back to per-symbol", e)
-        data = None
-
-    for internal_sym, yf_sym in symbols_map.items():
+    for internal_sym, source_sym in symbols_map.items():
         try:
             existing = existing_counts.get(internal_sym, 0)
             threshold = years * 200
@@ -273,60 +287,7 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
                 logger.info("  SKIP %-18s (already %d rows)", internal_sym, existing)
                 results.append({"symbol": internal_sym, "rows_fetched": 0, "rows_new": 0, "skipped": True, "error": None})
                 continue  # already well-stocked
-
-            # Extract this symbol's slice from batch data
-            if data is not None and not data.empty:
-                try:
-                    if len(yf_symbols) == 1:
-                        df = data
-                    else:
-                        df = data[yf_sym] if yf_sym in data.columns.get_level_values(0) else None
-                except Exception:
-                    df = None
-            else:
-                df = None
-
-            if df is None or (hasattr(df, "__len__") and len(df) == 0):
-                # Fallback: individual fetch
-                r = _fetch_and_store(internal_sym, yf_sym, years, dry_run)
-                results.append(r)
-                continue
-
-            rows_fetched = len(df)
-            logger.info("  STORE %-18s: %d rows from batch", internal_sym, rows_fetched)
-
-            if dry_run:
-                results.append({"symbol": internal_sym, "rows_fetched": rows_fetched, "rows_new": 0, "skipped": False, "error": None})
-                continue
-
-            inserted = 0
-            with _get_connection() as conn:
-                cur = conn.cursor()
-                insert_rows = []
-                for date, row in df.iterrows():
-                    try:
-                        close = float(row.get("Close", row.get("close", 0)))
-                        if close == 0:
-                            continue
-                        volume = row.get("Volume", 0)
-                        volume = 0 if volume is None or (isinstance(volume, float) and math.isnan(volume)) else int(volume)
-                        insert_rows.append((
-                            internal_sym,
-                            date.strftime("%Y-%m-%d"),
-                            float(row.get("Open", close)),
-                            float(row.get("High", close)),
-                            float(row.get("Low", close)),
-                            close,
-                            volume,
-                            "yfinance_backfill",
-                        ))
-                    except Exception as row_err:
-                        logger.debug("Row error %s %s: %s", internal_sym, date, row_err)
-
-                inserted = _bulk_upsert_rows(cur, insert_rows)
-
-            results.append({"symbol": internal_sym, "rows_fetched": rows_fetched, "rows_new": inserted, "skipped": False, "error": None})
-            logger.info("  OK    %-18s: %d rows stored", internal_sym, inserted)
+            results.append(_fetch_and_store(internal_sym, source_sym, years, dry_run))
 
         except Exception as e:
             results.append({"symbol": internal_sym, "rows_fetched": 0, "rows_new": 0, "skipped": False, "error": str(e)})
@@ -355,8 +316,7 @@ def run_backfill(market: str = "EGX", years: int = 5, dry_run: bool = False):
             logger.warning("No EGX symbols found — check config.EGX_STOCKS")
         else:
             print(f"[EGX] {len(egx_syms)} stocks - fetching {years}-year history\n")
-            # EGX stocks use .CA suffix on yfinance
-            sym_map = {s: s for s in egx_syms}  # symbol == yf symbol for EGX
+            sym_map = {s: s for s in egx_syms}
             results = _batch_fetch_yfinance(sym_map, years, dry_run)
             all_results.extend(results)
             # Brief pause between batches
@@ -370,11 +330,15 @@ def run_backfill(market: str = "EGX", years: int = 5, dry_run: bool = False):
             logger.warning("No KSA symbols found — check config/ksa_universe.py")
         else:
             print(f"\n[KSA] {len(ksa_syms)} stocks - fetching {years}-year history\n")
-            sym_map = {s: s for s in ksa_syms}  # symbol == yf symbol (.SR suffix)
+            sym_map = {s: s for s in ksa_syms}
             results = _batch_fetch_yfinance(sym_map, years, dry_run)
             all_results.extend(results)
             if not dry_run:
                 time.sleep(2)
+
+    print(f"\n[BENCHMARK] Fetching Tadawul benchmark ({years}y)\n")
+    benchmark_results = _batch_fetch_yfinance(_benchmark_symbols(), years, dry_run)
+    all_results.extend(benchmark_results)
 
     # ── Macro instruments ──
     print(f"\n[MACRO] Fetching macro instruments ({years}y)\n")

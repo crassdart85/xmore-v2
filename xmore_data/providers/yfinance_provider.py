@@ -48,6 +48,9 @@ class YFinanceProvider(MarketDataProvider):
             logger.error("yfinance not installed. Install: pip install yfinance")
             raise
 
+    def supports_symbol(self, symbol: str) -> bool:
+        return True
+
     @exponential_backoff(max_attempts=Config.RETRY_ATTEMPTS)
     def fetch(
         self,

@@ -1,5 +1,5 @@
 """
-Market Regime Filter — prevents new long positions during EGX30 downtrends.
+Market Regime Filter — prevents new long positions during benchmark downtrends.
 
 Uses a simple MA-distance rule rather than the HMM model in regime_model.py,
 so it works without hmmlearn and runs in seconds during the signal pipeline.
@@ -8,15 +8,13 @@ so it works without hmmlearn and runs in seconds during the signal pipeline.
 import logging
 from datetime import datetime, timezone
 
-try:
-    import yfinance as yf
-    HAS_YFINANCE = True
-except ImportError:
-    HAS_YFINANCE = False
+import pandas as pd
 
 from config.execution_config import (
     REGIME_TICKER, REGIME_MA_PERIOD, REGIME_BEARISH_BUFFER,
 )
+from database import get_connection
+from xmore_data.data_manager import DataManager
 
 logger = logging.getLogger("RegimeFilter")
 
@@ -24,37 +22,55 @@ logger = logging.getLogger("RegimeFilter")
 class RegimeFilter:
 
     def __init__(self):
-        self._cache = {"date": None, "regime": None, "egx30": None, "ma20": None}
+        self._cache = {"date": None, "regime": None, "benchmark": None, "ma20": None}
+        self._data_manager = DataManager(use_cache=True, verbose=False)
 
     # ── Data fetch ───────────────────────────────────────────────────────────
 
     def fetch_egx30_data(self, lookback_days: int = 30):
-        """Download EGX30 close prices via yfinance. Returns DataFrame or empty."""
-        if not HAS_YFINANCE:
-            logger.warning("[RegimeFilter] yfinance not installed — regime unavailable")
-            try:
-                import pandas as pd
-                return pd.DataFrame()
-            except ImportError:
-                return None
-
-        import pandas as pd
+        """Load benchmark close prices from DB first, then provider layer if needed."""
+        cutoff = datetime.now(timezone.utc).date().isoformat()
         try:
-            raw = yf.download(
-                REGIME_TICKER,
-                period=f"{lookback_days}d",
-                interval="1d",
-                progress=False,
-                auto_adjust=True,
-            )
-            if raw is None or raw.empty:
-                logger.warning(f"[RegimeFilter] No data returned for {REGIME_TICKER}")
-                return pd.DataFrame()
-            df = raw[["Close"]].reset_index()
-            df.columns = ["Date", "Close"]
-            return df
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                placeholder = "%s" if hasattr(cursor, "mogrify") else "?"
+                sql = f"""
+                    SELECT date, close FROM prices
+                    WHERE symbol IN ('TASI', '{REGIME_TICKER}', '^TASI')
+                      AND date <= {placeholder}
+                    ORDER BY date DESC
+                    LIMIT {lookback_days * 3}
+                """
+                cursor.execute(sql, (cutoff,))
+                rows = cursor.fetchall() or []
+            if rows:
+                records = []
+                for row in rows:
+                    if isinstance(row, dict):
+                        records.append({"Date": row["date"], "Close": row["close"]})
+                    else:
+                        records.append({"Date": row[0], "Close": row[1]})
+                df = pd.DataFrame(records)
+                df["Date"] = pd.to_datetime(df["Date"])
+                df = df.sort_values("Date").reset_index(drop=True)
+                if len(df) >= REGIME_MA_PERIOD:
+                    return df
         except Exception as e:
-            logger.warning(f"[RegimeFilter] Fetch error: {e}")
+            logger.warning(f"[RegimeFilter] DB benchmark load failed: {e}")
+
+        try:
+            end = datetime.now(timezone.utc)
+            start = end - pd.Timedelta(days=lookback_days * 3)
+            df = self._data_manager.fetch_data(
+                REGIME_TICKER,
+                interval="1d",
+                start=start.strftime("%Y-%m-%d"),
+                end=end.strftime("%Y-%m-%d"),
+                force_refresh=True,
+            )
+            return df[["Date", "Close"]]
+        except Exception as e:
+            logger.warning(f"[RegimeFilter] Provider fetch error: {e}")
             return pd.DataFrame()
 
     # ── Regime detection ─────────────────────────────────────────────────────
@@ -65,7 +81,7 @@ class RegimeFilter:
         if not force_refresh and self._cache["date"] == today and self._cache["regime"]:
             return {
                 "regime":              self._cache["regime"],
-                "egx30_price":         self._cache["egx30"],
+                "egx30_price":         self._cache["benchmark"],
                 "ma20":                self._cache["ma20"],
                 "distance_from_ma_pct": self._cache["distance"],
                 "new_longs_allowed":   self._cache["regime"] == "BULL",
@@ -110,7 +126,7 @@ class RegimeFilter:
         self._cache.update({
             "date":     today,
             "regime":   regime,
-            "egx30":    result["egx30_price"],
+            "benchmark": result["egx30_price"],
             "ma20":     result["ma20"],
             "distance": result["distance_from_ma_pct"],
         })
@@ -127,5 +143,5 @@ class RegimeFilter:
         return (
             False,
             f"Market regime {regime} — new longs BLOCKED "
-            f"(EGX30 {distance:.1f}% from MA20)",
+            f"(TASI {distance:.1f}% from MA20)",
         )

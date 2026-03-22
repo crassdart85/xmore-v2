@@ -71,6 +71,10 @@ class EGXPYProvider(MarketDataProvider):
             logger.error(f"Failed to initialize EGXPY: {e}")
             raise
 
+    def supports_symbol(self, symbol: str) -> bool:
+        normalized = (symbol or "").upper()
+        return not normalized.endswith(".SR") and normalized not in Config.KSA_BENCHMARK_ALIASES
+
     @exponential_backoff(max_attempts=Config.EGXPY_RETRIES)
     def fetch(
         self,

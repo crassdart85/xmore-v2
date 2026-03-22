@@ -20,6 +20,11 @@ class Config:
 
     # API Keys (loaded from .env, graceful fallback)
     ALPHA_VANTAGE_API_KEY: Optional[str] = os.getenv("ALPHA_VANTAGE_API_KEY")
+    EODHD_API_KEY: Optional[str] = (
+        os.getenv("EODHD_API_KEY")
+        or os.getenv("EODHD_API_TOKEN")
+        or os.getenv("EOD_API_KEY")
+    )
     
     # EGXPY Configuration
     EGXPY_TIMEOUT: int = int(os.getenv("EGXPY_TIMEOUT", "30"))
@@ -35,6 +40,8 @@ class Config:
     # Rate Limiting
     ALPHA_VANTAGE_RATE_LIMIT: int = 5  # Free tier: 5 calls/min
     ALPHA_VANTAGE_RATE_WINDOW_SEC: int = 60
+    EODHD_RATE_LIMIT: int = 20
+    EODHD_RATE_WINDOW_SEC: int = 60
     YFINANCE_RATE_LIMIT: int = 100  # Conservative estimate
     YFINANCE_RATE_WINDOW_SEC: int = 60
     
@@ -52,6 +59,21 @@ class Config:
     
     # Markets
     EGX_INDEX_SYMBOL: str = "^CASE"  # Egyptian Exchange Index
+    KSA_INDEX_SYMBOL: str = os.getenv("KSA_INDEX_SYMBOL", "TASI")
+    KSA_BENCHMARK_ALIASES: list[str] = [
+        "TASI",
+        "^TASI",
+        "TASI.SR",
+        "TASI_INDEX",
+        "SAUDI_TASI",
+    ]
+    EODHD_BENCHMARK_SYMBOL: str = os.getenv("EODHD_BENCHMARK_SYMBOL", "TASI.INDX")
+    EODHD_KSA_EXCHANGE: str = os.getenv("EODHD_KSA_EXCHANGE", "SR")
+    EODHD_BASE_URL: str = os.getenv("EODHD_BASE_URL", "https://eodhd.com/api")
+    SAUDI_EXCHANGE_HISTORICAL_REPORTS_URL: str = os.getenv(
+        "SAUDI_EXCHANGE_HISTORICAL_REPORTS_URL",
+        "https://www.saudiexchange.sa/wps/portal/saudiexchange/newsandreports/reports-publications/historical-reports?locale=en",
+    )
     EGX30_SYMBOLS: list[str] = [
         "COMI",    # Commercial International Bank
         "SWDY",    # Swvl Holding Company
@@ -103,6 +125,8 @@ class Config:
         """Validate critical configuration."""
         if not cls.ALPHA_VANTAGE_API_KEY:
             print("⚠️  ALPHA_VANTAGE_API_KEY not set in .env (Alpha Vantage fallback disabled)")
+        if not cls.EODHD_API_KEY:
+            print("⚠️  EODHD_API_KEY not set in .env (EODHD provider disabled)")
         
         cls.CACHE_DIR.mkdir(parents=True, exist_ok=True)
         cls.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)

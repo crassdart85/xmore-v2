@@ -2,19 +2,18 @@
 Data Collection Script
 
 This module is responsible for fetching stock prices and news from external APIs.
-Primary EGX source: EGX live feed (http://41.33.162.236/egs4/)
-Fallback: Yahoo Finance (yfinance)
+Primary KSA equity source: EODHD through the provider layer.
+Primary benchmark source: official Saudi Exchange historical reports, with
+provider-layer fallback for historical coverage.
 News: NewsAPI + RSS feeds
 
 Key components:
-- EGX live feed scraper (primary for Egyptian stocks)
-- Price collection via yfinance (fallback + US stocks)
+- Source-driven provider layer for Tadawul equities, benchmark, and fallback flows
 - News collection via NewsAPI
 - Basic sentiment analysis using TextBlob
 - Database persistence for collected data
 """
 
-import yfinance as yf
 from newsapi import NewsApiClient
 from datetime import datetime, timedelta
 import time
@@ -25,12 +24,36 @@ import re
 # Import your existing logic
 import config
 from database import get_connection, log_system_run, log_data_quality_issue, create_tables
+from xmore_data.data_manager import DataManager
+from config.execution_config import REGIME_TICKER
 
 # Check if using PostgreSQL
 import os
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 logger = logging.getLogger(__name__)
+_DATA_MANAGER = None
+
+
+def _get_data_manager():
+    global _DATA_MANAGER
+    if _DATA_MANAGER is None:
+        _DATA_MANAGER = DataManager(use_cache=False, verbose=False)
+    return _DATA_MANAGER
+
+
+def _fetch_market_data(symbol: str, lookback_days: int = 90):
+    data_manager = _get_data_manager()
+    end = datetime.utcnow()
+    start = end - timedelta(days=lookback_days)
+    df = data_manager.fetch_data(
+        symbol,
+        interval="1d",
+        start=start.strftime("%Y-%m-%d"),
+        end=end.strftime("%Y-%m-%d"),
+        force_refresh=True,
+    )
+    return df, (data_manager.get_last_source(symbol) or "market_data")
 
 def _adapt_sql(sql):
     """Convert SQLite SQL to PostgreSQL when needed."""
@@ -44,38 +67,18 @@ def _adapt_sql(sql):
 
 def collect_egx_data():
     """
-    Collect EGX stock data using live feed as primary source, yfinance as fallback.
+    Collect KSA stock data using the provider layer.
 
     Strategy:
-    - Try EGX live feed first (200+ stocks, real-time data)
-    - Fall back to yfinance if live feed fails
+    - Use EODHD as primary Tadawul source
+    - Fall back through the provider chain when necessary
     - Store all data in prices table with source tracking
 
     Returns:
         int: Number of stocks successfully collected.
     """
-    print("🏛️  Fetching EGX data...")
-
-    try:
-        # Primary: EGX live feed
-        from data.egx_live_scraper import fetch_egx_live, egx_to_prices_schema
-        df = fetch_egx_live()
-        prices_df = egx_to_prices_schema(df)
-        
-        if len(prices_df) > 0:
-            stored = _store_prices(prices_df, source='egx_live')
-            print(f"  ✅ EGX live feed: {stored} stocks collected")
-            return stored
-        else:
-            raise ValueError("EGX live feed returned 0 stocks")
-
-    except Exception as e:
-        print(f"  ⚠️  EGX live feed failed: {e}")
-        print(f"  🔄 Falling back to yfinance for EGX stocks...")
-        logger.warning(f"EGX live feed failed: {e}, falling back to yfinance")
-
-        # Fallback: use yfinance for EGX stocks
-        return collect_prices_yfinance(config.EGX_STOCKS)
+    print("🏛️  Fetching Tadawul data via provider layer...")
+    return collect_prices_yfinance(config.EGX_STOCKS)
 
 
 def validate_price_continuity(symbol: str, df) -> None:
@@ -94,7 +97,10 @@ def validate_price_continuity(symbol: str, df) -> None:
         return
 
     import pandas as pd
-    dates = pd.to_datetime(df.index)
+    if "Date" in df.columns:
+        dates = pd.to_datetime(df["Date"])
+    else:
+        dates = pd.to_datetime(df.index)
 
     # --- Gap check ---
     for i in range(1, len(dates)):
@@ -125,7 +131,7 @@ def validate_price_continuity(symbol: str, df) -> None:
 
 def collect_prices_yfinance(symbols=None):
     """
-    Fetch stock prices from Yahoo Finance and save to DB.
+    Fetch stock prices through the provider layer and save to DB.
 
     Args:
         symbols: List of symbols to fetch. Defaults to ALL_STOCKS.
@@ -136,13 +142,12 @@ def collect_prices_yfinance(symbols=None):
     if symbols is None:
         symbols = config.ALL_STOCKS
 
-    print(f"📈 Fetching price data from yfinance for {len(symbols)} stocks...")
+    print(f"📈 Fetching price data via provider layer for {len(symbols)} stocks...")
     success_count = 0
     
     for symbol in symbols:
         try:
-            ticker = yf.Ticker(symbol)
-            df = ticker.history(period="90d")
+            df, provider_source = _fetch_market_data(symbol, lookback_days=90)
             validate_price_continuity(symbol, df)
             
             if DATABASE_URL:
@@ -161,14 +166,17 @@ def collect_prices_yfinance(symbols=None):
                 """
             with get_connection() as conn:
                 cursor = conn.cursor()
-                for date, row in df.iterrows():
-                    if row.isnull().any():
+                for _, row in df.iterrows():
+                    if row[["Open", "High", "Low", "Close"]].isnull().any():
                         continue
+                    row_date = row["Date"]
+                    if hasattr(row_date, "to_pydatetime"):
+                        row_date = row_date.to_pydatetime()
                     cursor.execute(yf_sql, (
                         symbol,
-                        date.strftime('%Y-%m-%d'),
+                        row_date.strftime('%Y-%m-%d'),
                         float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']),
-                        int(row['Volume']), 'yahoo_finance'
+                        int(row['Volume']), provider_source
                     ))
             success_count += 1
         except Exception as e:
@@ -270,11 +278,11 @@ def _fetch_usdegp_rate():
 
 def collect_macro_data():
     """
-    Fetch macro context data via yfinance and store in the prices table.
+        Fetch macro context data via the provider layer and store in the prices table.
 
     Three instruments captured as special symbols:
       MACRO_BRENT   ← BZ=F  (Brent crude front-month future)
-      MACRO_USDEGP  ← USDEGP=X  (USD / Egyptian Pound spot rate, CBE primary)
+            MACRO_USDSAR  ← USDSAR=X  (USD / Saudi Riyal spot rate)
       MACRO_EEM     ← EEM   (iShares MSCI Emerging Markets ETF)
 
     Stored in the same prices table as stock prices (with data_source='yfinance_macro').
@@ -282,7 +290,8 @@ def collect_macro_data():
     """
     MACRO_SYMBOLS = {
         'MACRO_BRENT':  'BZ=F',
-        'MACRO_USDEGP': 'USDEGP=X',
+        'MACRO_USDSAR': 'USDSAR=X',
+        'MACRO_USDEGP': 'USDSAR=X',
         'MACRO_EEM':    'EEM',
     }
 
@@ -301,55 +310,66 @@ def collect_macro_data():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
-    print("Fetching macro context data (Brent, USD/EGP, EM)...")
+    print("Fetching macro context data (Brent, USD/SAR, EM)...")
     stored = 0
-    today = datetime.utcnow().strftime('%Y-%m-%d')
 
-    # --- Special handling for USD/EGP: try CBE official source first ---
-    cbe_rate = _fetch_usdegp_rate()
-    if cbe_rate is not None:
+    for internal_sym, provider_symbol in MACRO_SYMBOLS.items():
         try:
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute(sql, (
-                    'MACRO_USDEGP',
-                    today,
-                    cbe_rate, cbe_rate, cbe_rate, cbe_rate,
-                    0,
-                    'cbe_official',
-                ))
-            stored += 1
-            print(f"  OK MACRO_USDEGP (CBE): {cbe_rate:.4f} EGP/USD")
-            MACRO_SYMBOLS.pop('MACRO_USDEGP', None)   # skip yfinance fallback
-        except Exception as e:
-            print(f"  MACRO_USDEGP CBE store error: {e} — will try yfinance")
-
-    for internal_sym, yf_sym in MACRO_SYMBOLS.items():
-        try:
-            ticker = yf.Ticker(yf_sym)
-            df = ticker.history(period="90d")
+            df, provider_source = _fetch_market_data(provider_symbol, lookback_days=90)
             if len(df) == 0:
-                print(f"  WARNING: No data for {yf_sym} ({internal_sym})")
+                print(f"  WARNING: No data for {provider_symbol} ({internal_sym})")
                 continue
             with get_connection() as conn:
                 cursor = conn.cursor()
-                for date, row in df.iterrows():
+                for _, row in df.iterrows():
+                    row_date = row['Date']
+                    if hasattr(row_date, 'to_pydatetime'):
+                        row_date = row_date.to_pydatetime()
                     cursor.execute(sql, (
                         internal_sym,
-                        date.strftime('%Y-%m-%d'),
-                        float(row.get('Open',   row['Close'])),
-                        float(row.get('High',   row['Close'])),
-                        float(row.get('Low',    row['Close'])),
+                        row_date.strftime('%Y-%m-%d'),
+                        float(row.get('Open', row['Close'])),
+                        float(row.get('High', row['Close'])),
+                        float(row.get('Low', row['Close'])),
                         float(row['Close']),
                         int(row.get('Volume', 0)),
-                        'yfinance_macro',
+                        provider_source,
                     ))
             stored += 1
-            print(f"  OK {internal_sym} ({yf_sym}): collected")
+            print(f"  OK {internal_sym} ({provider_symbol}): collected via {provider_source}")
         except Exception as e:
-            print(f"  WARNING: {internal_sym} ({yf_sym}): {e}")
+            print(f"  WARNING: {internal_sym} ({provider_symbol}): {e}")
 
     return stored
+
+
+def collect_benchmark_data():
+    """Fetch TASI benchmark history through the provider layer and store it in prices."""
+    print("Fetching TASI benchmark data...")
+    try:
+        df, provider_source = _fetch_market_data(REGIME_TICKER, lookback_days=90)
+        records = []
+        for _, row in df.iterrows():
+            row_date = row['Date']
+            if hasattr(row_date, 'to_pydatetime'):
+                row_date = row_date.to_pydatetime()
+            records.append({
+                'symbol': 'TASI',
+                'date': row_date.strftime('%Y-%m-%d'),
+                'open': float(row['Open']),
+                'high': float(row['High']),
+                'low': float(row['Low']),
+                'close': float(row['Close']),
+                'volume': int(row.get('Volume', 0)),
+            })
+        if records:
+            import pandas as pd
+            _store_prices(pd.DataFrame(records), source=provider_source)
+            print(f"  OK TASI: collected via {provider_source}")
+            return 1
+    except Exception as e:
+        print(f"  WARNING: benchmark fetch failed: {e}")
+    return 0
 
 
 def collect_prices():
@@ -371,7 +391,8 @@ def collect_prices():
         print("📈 Fetching US stock data from yfinance...")
         total += collect_prices_yfinance(config.US_STOCKS)
 
-    # Macro context (Brent, USD/EGP, EM) — used as ML features
+    # Benchmark and macro context — used for regime and ML features
+    collect_benchmark_data()
     collect_macro_data()
 
     return total

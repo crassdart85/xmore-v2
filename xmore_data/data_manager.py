@@ -16,6 +16,8 @@ import pandas as pd
 from .config import Config
 from .cache import MarketDataCache
 from .utils import get_logger, parse_date_range
+from .providers.saudi_exchange_provider import SaudiExchangeProvider
+from .providers.eodhd_provider import EODHDProvider
 from .providers.egxpy_provider import EGXPYProvider
 from .providers.yfinance_provider import YFinanceProvider
 from .providers.alpha_vantage_provider import AlphaVantageProvider
@@ -66,26 +68,44 @@ class DataManager:
             List of provider instances (successfully initialized)
         """
         providers = []
-        
-        # Priority 1: EGXPY (primary)
+
+        # Priority 1: Official Saudi Exchange benchmark provider
+        try:
+            saudi_exchange = SaudiExchangeProvider()
+            providers.append(saudi_exchange)
+            if self.verbose:
+                logger.info("✓ Saudi Exchange provider initialized (benchmark primary)")
+        except Exception as e:
+            logger.warning(f"Saudi Exchange provider not available: {e}")
+
+        # Priority 2: EODHD (primary for Tadawul equities)
+        try:
+            eodhd = EODHDProvider()
+            providers.append(eodhd)
+            if self.verbose:
+                logger.info("✓ EODHD provider initialized (KSA primary)")
+        except Exception as e:
+            logger.warning(f"EODHD not available: {e}")
+
+        # Priority 3: EGXPY (legacy EGX primary)
         try:
             egxpy = EGXPYProvider()
             providers.append(egxpy)
             if self.verbose:
-                logger.info("✓ EGXPY provider initialized (primary)")
+                logger.info("✓ EGXPY provider initialized (EGX primary)")
         except Exception as e:
             logger.warning(f"EGXPY not available: {e}")
-        
-        # Priority 2: yfinance (fallback)
+
+        # Priority 4: yfinance (fallback)
         try:
             yf = YFinanceProvider()
             providers.append(yf)
             if self.verbose:
-                logger.info("✓ yfinance provider initialized (fallback 1)")
+                logger.info("✓ yfinance provider initialized (fallback)")
         except Exception as e:
             logger.warning(f"yfinance not available: {e}")
-        
-        # Priority 3: Alpha Vantage (tertiary fallback)
+
+        # Priority 5: Alpha Vantage (tertiary fallback)
         try:
             av = AlphaVantageProvider()
             providers.append(av)
@@ -104,6 +124,10 @@ class DataManager:
             )
         
         return providers
+
+    def _get_provider_chain(self, symbol: str) -> List[MarketDataProvider]:
+        chain = [provider for provider in self.providers if provider.supports_symbol(symbol)]
+        return chain or self.providers
 
     def fetch_data(
         self,
@@ -141,7 +165,7 @@ class DataManager:
         
         # Try providers in fallback order
         last_error = None
-        for provider in self.providers:
+        for provider in self._get_provider_chain(symbol):
             try:
                 logger.info(f"Attempting fetch: {symbol} from {provider.name}")
                 
@@ -192,7 +216,7 @@ class DataManager:
         """
         egx30_data = {}
         
-        logger.info(f"Fetching EGX30 ({len(Config.EGX30_SYMBOLS)} symbols)")
+        logger.info(f"Fetching market basket ({len(Config.EGX30_SYMBOLS)} symbols)")
         
         for i, symbol in enumerate(Config.EGX30_SYMBOLS, 1):
             try:
