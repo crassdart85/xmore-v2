@@ -71,6 +71,10 @@ KSA_TOP50 = [
 # Initial universe for data collection (all 50)
 KSA_INITIAL_UNIVERSE = [s["symbol"] for s in KSA_TOP50]
 
+# Sets used by intelligence agents for quick membership checks
+KSA_TICKER_SR    = {s["symbol"] for s in KSA_TOP50}               # full ".SR" symbols
+KSA_TICKER_CODES = {s["symbol"].replace(".SR", "") for s in KSA_TOP50}  # bare 4-digit codes
+
 # Sector map: sector_en -> list of symbols
 KSA_SECTOR_MAP: dict[str, list[str]] = {}
 for _stock in KSA_TOP50:
@@ -125,3 +129,8 @@ KSA_BANKING_TICKERS = [
     "1020.SR",  # Bank AlJazira (duplicate code variant)
     "1030.SR",  # Saudi Investment Bank
 ]
+
+
+def get_ksa_top50_symbols() -> list:
+    """Return list of .SR ticker symbols from KSA_TOP50."""
+    return [s["symbol"] for s in KSA_TOP50]

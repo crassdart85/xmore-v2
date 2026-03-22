@@ -29,7 +29,10 @@ def _run_fundamentals(conn):
     updated = 0
 
     for row in KSA_TOP50:
-        code, yf_ticker, name_ar, name_en, sector, *_ = row
+        yf_ticker = row["symbol"]
+        name_en   = row.get("name_en", yf_ticker)
+        name_ar   = row.get("name_ar", yf_ticker)
+        sector    = row.get("sector_en", "")
         try:
             info = yf.Ticker(yf_ticker).info
             if not info:

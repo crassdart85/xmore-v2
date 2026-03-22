@@ -145,7 +145,6 @@ def _detect_market_regime(conn) -> dict:
             period="2mo",
             auto_adjust=True,
             progress=False,
-            show_errors=False,
         )
         if tasi_raw is None or len(tasi_raw) < 20:
             logger.warning(
@@ -247,7 +246,6 @@ def _fetch_ticker_data(ticker: str, days: int = 120) -> "pd.DataFrame | None":
             period="6mo",
             auto_adjust=True,
             progress=False,
-            show_errors=False,
         )
         if raw is None or len(raw) == 0:
             logger.debug(f"[KSA] {ticker}: yfinance returned empty DataFrame")
@@ -384,7 +382,7 @@ def _run_agents_for_ticker(
     try:
         from agents.agent_ma import MAAgent
         ma_agent = MAAgent()
-        result = ma_agent.run(df, market_config=config)
+        result = ma_agent.predict_signal(df, symbol=ticker, market_config=config)
         if result:
             result.setdefault("agent_name", "MA_Crossover_Agent")
             signals.append(result)
@@ -395,7 +393,7 @@ def _run_agents_for_ticker(
     try:
         from agents.agent_rsi import RSIAgent
         rsi_agent = RSIAgent()
-        result = rsi_agent.run(df, market_config=config)
+        result = rsi_agent.predict_signal(df, symbol=ticker, market_config=config)
         if result:
             result.setdefault("agent_name", "RSI_Agent")
             signals.append(result)
@@ -406,7 +404,7 @@ def _run_agents_for_ticker(
     try:
         from agents.agent_volume import VolumeAgent
         vol_agent = VolumeAgent()
-        result = vol_agent.run(df, market_config=config)
+        result = vol_agent.predict_signal(df, symbol=ticker, market_config=config)
         if result:
             result.setdefault("agent_name", "Volume_Spike_Agent")
             signals.append(result)
@@ -417,7 +415,7 @@ def _run_agents_for_ticker(
     try:
         from agents.agent_ml import MLAgent
         ml_agent = MLAgent()
-        result = ml_agent.run(df, ticker=ticker, market_config=config)
+        result = ml_agent.predict_signal(df, symbol=ticker, market_config=config)
         if result:
             result.setdefault("agent_name", "ML_RandomForest")
             signals.append(result)
@@ -437,9 +435,9 @@ def _run_agents_for_ticker(
                 f"Current price: {market_data.get('current_price', 'N/A')} SAR | "
                 f"Volatility (20d): {market_data.get('volatility_20d', 'N/A')}"
             )
-            result = gemini_agent.run(
+            result = gemini_agent.predict_signal_with_context(
                 df,
-                ticker=ticker,
+                symbol=ticker,
                 extra_context=ksa_context,
                 market_config=config,
             )
@@ -488,8 +486,8 @@ def _run_consensus(
         }
 
         consensus = run_consensus(
-            ticker=ticker,
-            signals=signals,
+            symbol=ticker,
+            agent_signals=signals,
             market_data=market_data,
             market_regime=regime_for_consensus,
         )
@@ -612,14 +610,22 @@ def execute(args) -> None:
     # ---- 2. DB connection ------------------------------------------------
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
-        logger.error("[KSA] DATABASE_URL not set -- aborting")
-        return
-
-    try:
-        conn = psycopg2.connect(db_url)
-    except Exception as e:
-        logger.error(f"[KSA] Cannot connect to database: {e}")
-        return
+        if args.dry_run:
+            # Allow local dry-run via shared SQLite fallback
+            logger.warning("[KSA] DATABASE_URL not set — using SQLite fallback for dry-run")
+            import sqlite3
+            _sqlite_path = os.path.join(os.path.dirname(__file__), "stocks.db")
+            conn = sqlite3.connect(_sqlite_path)
+            conn.row_factory = sqlite3.Row
+        else:
+            logger.error("[KSA] DATABASE_URL not set -- aborting")
+            return
+    else:
+        try:
+            conn = psycopg2.connect(db_url)
+        except Exception as e:
+            logger.error(f"[KSA] Cannot connect to database: {e}")
+            return
 
     # ---- 3. Intelligence layer -------------------------------------------
     material_tickers: list = []
