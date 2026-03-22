@@ -21,8 +21,36 @@ def fetch_ksa_fundamentals(conn) -> None:
         logger.warning(f"[KSA] Fundamentals error (non-fatal): {e}")
 
 
+def _fetch_info(ticker: str) -> dict:
+    """
+    Fetch fundamentals for one ticker.
+    Provider chain: EODHD (primary) → yfinance (fallback).
+    Returns a dict compatible with yfinance .info keys.
+    """
+    # 1. EODHD — better Tadawul coverage
+    try:
+        from xmore_data.providers.eodhd_provider import fetch_eodhd_fundamentals
+        info = fetch_eodhd_fundamentals(ticker)
+        if info:
+            logger.debug(f"[KSA] Fundamentals {ticker}: EODHD")
+            return info
+    except Exception as e:
+        logger.debug(f"[KSA] Fundamentals {ticker}: EODHD error ({e}), trying yfinance")
+
+    # 2. yfinance fallback
+    try:
+        import yfinance as yf
+        info = yf.Ticker(ticker).info
+        if info:
+            logger.debug(f"[KSA] Fundamentals {ticker}: yfinance")
+            return info
+    except Exception as e:
+        logger.debug(f"[KSA] Fundamentals {ticker}: yfinance error ({e})")
+
+    return {}
+
+
 def _run_fundamentals(conn):
-    import yfinance as yf
     from config.ksa_universe import KSA_TOP50, KSA_BANKING_TICKERS
 
     _ensure_table(conn)
@@ -34,7 +62,7 @@ def _run_fundamentals(conn):
         name_ar   = row.get("name_ar", yf_ticker)
         sector    = row.get("sector_en", "")
         try:
-            info = yf.Ticker(yf_ticker).info
+            info = _fetch_info(yf_ticker)
             if not info:
                 continue
 

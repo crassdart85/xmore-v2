@@ -228,18 +228,80 @@ def _detect_market_regime(conn) -> dict:
 # Price data fetch
 # ---------------------------------------------------------------------------
 
+def _normalise_ohlcv(raw: "pd.DataFrame", ticker: str) -> "pd.DataFrame | None":
+    """
+    Normalise an OHLCV DataFrame (any column casing) to lowercase snake-case.
+    Returns None if required columns are missing or fewer than 30 rows remain.
+    """
+    raw = raw.copy()
+
+    # Flatten MultiIndex columns (yfinance >= 0.2)
+    if isinstance(raw.columns, pd.MultiIndex):
+        raw.columns = [c[0].lower() if isinstance(c, tuple) else str(c).lower()
+                       for c in raw.columns]
+    else:
+        raw.columns = [str(c).lower() for c in raw.columns]
+
+    # date column may arrive as "Date" (title-cased) after reset_index
+    if "date" not in raw.columns and raw.index.name and raw.index.name.lower() == "date":
+        raw = raw.reset_index()
+        raw.columns = [str(c).lower() for c in raw.columns]
+
+    # adj close / adjusted_close → close (if close absent)
+    for alt in ("adj close", "adjusted_close", "adjclose"):
+        if alt in raw.columns and "close" not in raw.columns:
+            raw.rename(columns={alt: "close"}, inplace=True)
+            break
+
+    required = {"date", "open", "high", "low", "close", "volume"}
+    missing  = required - set(raw.columns)
+    if missing:
+        logger.debug(f"[KSA] {ticker}: missing columns {missing}")
+        return None
+
+    df = raw[["date", "open", "high", "low", "close", "volume"]].copy()
+    df.dropna(subset=["close"], inplace=True)
+    df.sort_values("date", inplace=True)
+    df.reset_index(drop=True, inplace=True)
+
+    if len(df) < 30:
+        logger.debug(f"[KSA] {ticker}: only {len(df)} rows after cleaning — insufficient")
+        return None
+    return df
+
+
 def _fetch_ticker_data(ticker: str, days: int = 120) -> "pd.DataFrame | None":
     """
-    Download ~6 months of daily OHLCV data for a Tadawul ticker via yfinance.
+    Download ~6 months of daily OHLCV data for a Tadawul ticker.
 
-    Returns a clean DataFrame with columns:
+    Provider chain:
+      1. EODHD (primary) — reliable Tadawul coverage, requires EODHD_API_KEY
+      2. yfinance (fallback) — free but incomplete for some .SR symbols
+
+    Returns a clean DataFrame with lowercase columns:
         date, open, high, low, close, volume
-
-    Returns None if:
-      - yfinance returns an empty result
-      - Required columns are missing after normalisation
-      - Fewer than 30 rows remain after cleaning
+    Returns None if both providers fail or data is insufficient (<30 rows).
     """
+    from datetime import datetime, timedelta
+
+    start = datetime.utcnow() - timedelta(days=180)
+    end   = datetime.utcnow()
+
+    # ---- 1. EODHD (primary) ---------------------------------------------
+    try:
+        from xmore_data.providers.eodhd_provider import EODHDProvider
+        eodhd = EODHDProvider()
+        if eodhd.enabled:
+            raw = eodhd.fetch(ticker, interval="1d", start=start, end=end)
+            if raw is not None and not raw.empty:
+                df = _normalise_ohlcv(raw, ticker)
+                if df is not None:
+                    logger.debug(f"[KSA] {ticker}: EODHD — {len(df)} rows")
+                    return df
+    except Exception as e:
+        logger.debug(f"[KSA] {ticker}: EODHD fetch failed (trying yfinance): {e}")
+
+    # ---- 2. yfinance (fallback) -----------------------------------------
     try:
         raw = yf.download(
             ticker,
@@ -252,37 +314,9 @@ def _fetch_ticker_data(ticker: str, days: int = 120) -> "pd.DataFrame | None":
             return None
 
         raw = raw.reset_index()
-
-        # Flatten multi-level columns produced by yfinance >= 0.2
-        if isinstance(raw.columns, pd.MultiIndex):
-            raw.columns = [
-                c[0].lower() if isinstance(c, tuple) else c.lower()
-                for c in raw.columns
-            ]
-        else:
-            raw.columns = [c.lower() for c in raw.columns]
-
-        # Normalise "adj close" -> "close"
-        if "adj close" in raw.columns and "close" not in raw.columns:
-            raw.rename(columns={"adj close": "close"}, inplace=True)
-
-        required = {"date", "open", "high", "low", "close", "volume"}
-        missing  = required - set(raw.columns)
-        if missing:
-            logger.debug(f"[KSA] {ticker}: missing columns {missing} -- skipping")
-            return None
-
-        df = raw[["date", "open", "high", "low", "close", "volume"]].copy()
-        df.dropna(subset=["close"], inplace=True)
-        df.sort_values("date", inplace=True)
-        df.reset_index(drop=True, inplace=True)
-
-        if len(df) < 30:
-            logger.debug(
-                f"[KSA] {ticker}: only {len(df)} rows after cleaning -- insufficient"
-            )
-            return None
-
+        df = _normalise_ohlcv(raw, ticker)
+        if df is not None:
+            logger.debug(f"[KSA] {ticker}: yfinance — {len(df)} rows")
         return df
 
     except Exception as e:
