@@ -79,88 +79,107 @@ def ensure_dcf_table(conn):
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_dcf_ticker_date ON dcf_valuations (ticker, computed_at DESC)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_dcf_label ON dcf_valuations (valuation_label, dcf_confidence)")
     else:
-        # PostgreSQL path
-        cursor.execute(DCF_TABLE_SQL)
+        # PostgreSQL path — execute each DDL statement separately (psycopg2
+        # cursor.execute() runs ONE statement at a time; multi-statement strings
+        # raise ProgrammingError which aborts the entire transaction)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS dcf_valuations (
+              id SERIAL PRIMARY KEY,
+              ticker VARCHAR(10) NOT NULL,
+              computed_at TIMESTAMPTZ DEFAULT NOW(),
+              scenario VARCHAR(10),
+              intrinsic_per_share NUMERIC(12,2),
+              current_price NUMERIC(12,2),
+              margin_of_safety NUMERIC(8,4),
+              upside_pct NUMERIC(8,2),
+              valuation_label VARCHAR(20),
+              dcf_confidence VARCHAR(10),
+              enterprise_value BIGINT,
+              equity_value BIGINT,
+              pv_stage1 BIGINT,
+              pv_terminal BIGINT,
+              terminal_value_pct NUMERIC(5,1),
+              wacc NUMERIC(6,4),
+              cost_of_equity NUMERIC(6,4),
+              beta_used NUMERIC(6,3),
+              terminal_growth NUMERIC(6,4),
+              net_debt BIGINT,
+              years_of_data INT,
+              raw_json JSONB,
+              UNIQUE (ticker, scenario)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_dcf_ticker_date ON dcf_valuations (ticker, computed_at DESC)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_dcf_label ON dcf_valuations (valuation_label, dcf_confidence)")
     conn.commit()
 
 
 def store_dcf_results(conn, scenarios: dict, ticker: str):
     """Persist scenario results to the dcf_valuations table."""
     ensure_dcf_table(conn)
+    is_pg = not (hasattr(conn, 'execute') and conn.__class__.__name__.startswith('Connection'))
     for scenario_name, result in scenarios.items():
         if not result:
             continue
         # Normalize raw JSON for storage
         raw = json.dumps(result)
 
-        if hasattr(conn, 'execute') and conn.__class__.__name__.startswith('Connection'):
-            conn.execute("""
-                INSERT OR REPLACE INTO dcf_valuations (
-                    ticker, scenario, intrinsic_per_share, current_price,
-                    margin_of_safety, upside_pct, valuation_label, dcf_confidence,
-                    enterprise_value, equity_value, pv_stage1, pv_terminal,
-                    terminal_value_pct, wacc, cost_of_equity, beta_used,
-                    terminal_growth, net_debt, years_of_data, raw_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                ticker, scenario_name,
-                result.get("intrinsic_per_share"),
-                result.get("current_price"),
-                result.get("margin_of_safety"),
-                result.get("upside_pct"),
-                result.get("valuation_label"),
-                result.get("dcf_confidence"),
-                result.get("enterprise_value"),
-                result.get("equity_value"),
-                result.get("pv_stage1"),
-                result.get("pv_terminal"),
-                result.get("terminal_value_pct"),
-                result.get("wacc"),
-                result.get("cost_of_equity"),
-                result.get("beta_used"),
-                result.get("terminal_growth"),
-                result.get("net_debt"),
-                result.get("years_of_data"),
-                raw,
-            ))
-        else:
-            # PostgreSQL path: insert or replace on conflict with (ticker, scenario)
-            conn.execute("""
-                INSERT INTO dcf_valuations (
-                    ticker, scenario, intrinsic_per_share, current_price,
-                    margin_of_safety, upside_pct, valuation_label, dcf_confidence,
-                    enterprise_value, equity_value, pv_stage1, pv_terminal,
-                    terminal_value_pct, wacc, cost_of_equity, beta_used,
-                    terminal_growth, net_debt, years_of_data, raw_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (ticker, scenario)
-                DO UPDATE SET
-                  intrinsic_per_share = EXCLUDED.intrinsic_per_share,
-                  margin_of_safety    = EXCLUDED.margin_of_safety,
-                  valuation_label     = EXCLUDED.valuation_label,
-                  dcf_confidence      = EXCLUDED.dcf_confidence,
-                  raw_json            = EXCLUDED.raw_json
-            """, (
-                ticker, scenario_name,
-                result.get("intrinsic_per_share"),
-                result.get("current_price"),
-                result.get("margin_of_safety"),
-                result.get("upside_pct"),
-                result.get("valuation_label"),
-                result.get("dcf_confidence"),
-                result.get("enterprise_value"),
-                result.get("equity_value"),
-                result.get("pv_stage1"),
-                result.get("pv_terminal"),
-                result.get("terminal_value_pct"),
-                result.get("wacc"),
-                result.get("cost_of_equity"),
-                result.get("beta_used"),
-                result.get("terminal_growth"),
-                result.get("net_debt"),
-                result.get("years_of_data"),
-                raw,
-            ))
+        cur = conn.cursor()
+        vals = (
+            ticker, scenario_name,
+            result.get("intrinsic_per_share"),
+            result.get("current_price"),
+            result.get("margin_of_safety"),
+            result.get("upside_pct"),
+            result.get("valuation_label"),
+            result.get("dcf_confidence"),
+            result.get("enterprise_value"),
+            result.get("equity_value"),
+            result.get("pv_stage1"),
+            result.get("pv_terminal"),
+            result.get("terminal_value_pct"),
+            result.get("wacc"),
+            result.get("cost_of_equity"),
+            result.get("beta_used"),
+            result.get("terminal_growth"),
+            result.get("net_debt"),
+            result.get("years_of_data"),
+            raw,
+        )
+        try:
+            if is_pg:
+                cur.execute("SAVEPOINT dcf_upsert")
+                cur.execute("""
+                    INSERT INTO dcf_valuations (
+                        ticker, scenario, intrinsic_per_share, current_price,
+                        margin_of_safety, upside_pct, valuation_label, dcf_confidence,
+                        enterprise_value, equity_value, pv_stage1, pv_terminal,
+                        terminal_value_pct, wacc, cost_of_equity, beta_used,
+                        terminal_growth, net_debt, years_of_data, raw_json
+                    ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                    ON CONFLICT (ticker, scenario) DO UPDATE SET
+                      intrinsic_per_share = EXCLUDED.intrinsic_per_share,
+                      margin_of_safety    = EXCLUDED.margin_of_safety,
+                      valuation_label     = EXCLUDED.valuation_label,
+                      dcf_confidence      = EXCLUDED.dcf_confidence,
+                      raw_json            = EXCLUDED.raw_json
+                """, vals)
+                cur.execute("RELEASE SAVEPOINT dcf_upsert")
+            else:
+                cur.execute("""
+                    INSERT OR REPLACE INTO dcf_valuations (
+                        ticker, scenario, intrinsic_per_share, current_price,
+                        margin_of_safety, upside_pct, valuation_label, dcf_confidence,
+                        enterprise_value, equity_value, pv_stage1, pv_terminal,
+                        terminal_value_pct, wacc, cost_of_equity, beta_used,
+                        terminal_growth, net_debt, years_of_data, raw_json
+                    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                """, vals)
+        except Exception as _e:
+            logger.warning(f"[DCF] store {ticker}/{scenario_name} failed: {_e}")
+            if is_pg:
+                try: cur.execute("ROLLBACK TO SAVEPOINT dcf_upsert")
+                except Exception: pass
     conn.commit()
 
 
