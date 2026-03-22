@@ -52,7 +52,8 @@ class VolumeAgent(BaseAgent):
         return "HOLD"
 
     def predict_signal(self, data: pd.DataFrame, symbol: str = "",
-                       sentiment: Optional[Dict[str, Any]] = None) -> dict:
+                       sentiment: Optional[Dict[str, Any]] = None,
+                       market_config: Optional[Dict] = None) -> dict:
         """
         Generate structured prediction with volume reasoning data.
         

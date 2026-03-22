@@ -92,7 +92,8 @@ class MAAgent(BaseAgent):
             return "DOWN"
 
     def predict_signal(self, data: pd.DataFrame, symbol: str = "",
-                       sentiment: Optional[Dict[str, Any]] = None) -> dict:
+                       sentiment: Optional[Dict[str, Any]] = None,
+                       market_config: Optional[Dict] = None) -> dict:
         """
         Generate structured prediction with reasoning data.
         

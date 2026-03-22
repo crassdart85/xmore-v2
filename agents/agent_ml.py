@@ -383,7 +383,8 @@ class MLAgent(BaseAgent):
             return "HOLD"
 
     def predict_signal(self, data: pd.DataFrame, symbol: str = "",
-                       sentiment: Optional[Dict[str, Any]] = None) -> dict:
+                       sentiment: Optional[Dict[str, Any]] = None,
+                       market_config: Optional[Dict] = None) -> dict:
         """Generate structured prediction with class probabilities and top features."""
         prediction = self.predict(data, sentiment)
 
