@@ -24,6 +24,7 @@ Usage
 """
 
 import argparse
+import math
 import os
 import sys
 import time
@@ -210,8 +211,10 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
             cur = conn.cursor()
             for date, row in df.iterrows():
                 try:
-                    if row.isnull().any():
+                    if any(math.isnan(float(row[col])) for col in ("Open", "High", "Low", "Close")):
                         continue
+                    volume = row.get("Volume", 0)
+                    volume = 0 if volume is None or (isinstance(volume, float) and math.isnan(volume)) else int(volume)
                     insert_rows.append((
                         symbol,
                         date.strftime("%Y-%m-%d"),
@@ -219,7 +222,7 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
                         float(row["High"]),
                         float(row["Low"]),
                         float(row["Close"]),
-                        int(row.get("Volume", 0)),
+                        volume,
                         "yfinance_backfill",
                     ))
                 except Exception as row_err:
@@ -305,6 +308,8 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
                         close = float(row.get("Close", row.get("close", 0)))
                         if close == 0:
                             continue
+                        volume = row.get("Volume", 0)
+                        volume = 0 if volume is None or (isinstance(volume, float) and math.isnan(volume)) else int(volume)
                         insert_rows.append((
                             internal_sym,
                             date.strftime("%Y-%m-%d"),
@@ -312,7 +317,7 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
                             float(row.get("High", close)),
                             float(row.get("Low", close)),
                             close,
-                            int(row.get("Volume", 0)),
+                            volume,
                             "yfinance_backfill",
                         ))
                     except Exception as row_err:
