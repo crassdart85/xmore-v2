@@ -1,0 +1,72 @@
+name: Backfill Historical Prices
+
+# Manual trigger only — run ONCE to seed 5 years of OHLCV data.
+# After this runs, the daily collect_data.py (period=90d) maintains the gap.
+on:
+  workflow_dispatch:
+    inputs:
+      market:
+        description: "Market to backfill"
+        required: true
+        default: "EGX"
+        type: choice
+        options:
+          - EGX
+          - KSA
+          - ALL
+      years:
+        description: "Years of history to fetch (default: 5)"
+        required: false
+        default: "5"
+      dry_run:
+        description: "Dry run (no DB writes)"
+        required: false
+        default: "false"
+        type: boolean
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120    # 5 years × 190 EGX stocks can take ~60 min
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run historical backfill
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: |
+          DRY_FLAG=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            DRY_FLAG="--dry-run"
+          fi
+          python backfill_history.py \
+            --market "${{ github.event.inputs.market }}" \
+            --years "${{ github.event.inputs.years || '5' }}" \
+            $DRY_FLAG
+
+      - name: Retrain ML models after backfill
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          echo "Triggering agent run to retrain per-symbol LightGBM models..."
+          python run_agents.py || echo "Agent run completed (non-fatal errors ignored)"
