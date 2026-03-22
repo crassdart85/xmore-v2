@@ -10,9 +10,16 @@ from pathlib import Path
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load .env file from project root
-ENV_PATH = Path(__file__).parent.parent / ".env"
-load_dotenv(ENV_PATH)
+# Load repo-level environment files from project root.
+# Order matters: .env provides shared defaults, .env.local overrides local/dev secrets.
+PROJECT_ROOT = Path(__file__).parent.parent
+ENV_PATH = PROJECT_ROOT / ".env"
+ENV_LOCAL_PATH = PROJECT_ROOT / ".env.local"
+
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+if ENV_LOCAL_PATH.exists():
+    load_dotenv(ENV_LOCAL_PATH, override=True)
 
 
 class Config:
