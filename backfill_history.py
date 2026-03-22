@@ -123,17 +123,17 @@ def _existing_row_counts(symbols: list[str]) -> dict[str, int]:
         return {}
 
 
-        def _bulk_upsert_rows(cur, rows: list[tuple]):
-            if not rows:
-                return 0
+def _bulk_upsert_rows(cur, rows: list[tuple]):
+    if not rows:
+        return 0
 
-            if DATABASE_URL:
-                from psycopg2.extras import execute_values
-                execute_values(cur, _upsert_sql(), rows, page_size=1000)
-                return len(rows)
+    if DATABASE_URL:
+        from psycopg2.extras import execute_values
+        execute_values(cur, _upsert_sql(), rows, page_size=1000)
+        return len(rows)
 
-            cur.executemany(_upsert_sql(), rows)
-            return len(rows)
+    cur.executemany(_upsert_sql(), rows)
+    return len(rows)
 
 
 # ── Symbol lists ─────────────────────────────────────────────────────────────
