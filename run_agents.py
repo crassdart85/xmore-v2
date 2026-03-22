@@ -152,7 +152,37 @@ def _detect_market_regime(conn) -> Optional[dict]:
         if not HAS_HMMLEARN:
             return None
 
-        # Try EGX30 index first, fall back to COMI.CA
+        # Detect which universe is active and pick the matching regime method.
+        # KSA (Tadawul) uses a fast MA/vol approach that avoids HMM mis-labelling
+        # caused by comparing current Tadawul vol against long EGX history.
+        try:
+            from config import EGX_STOCKS
+            _universe_is_ksa = bool(EGX_STOCKS) and EGX_STOCKS[0].endswith('.SR')
+        except Exception:
+            _universe_is_ksa = False
+
+        if _universe_is_ksa:
+            import yfinance as _yf
+            _tasi = _yf.download('^TASI.SR', period='2mo', auto_adjust=True, progress=False)
+            if _tasi is not None and len(_tasi) >= 20:
+                _tasi = _tasi.reset_index()
+                _tasi.columns = [str(c[0]).lower() if isinstance(c, tuple) else str(c).lower()
+                                 for c in _tasi.columns] if hasattr(_tasi.columns, 'levels') \
+                                 else [str(c).lower() for c in _tasi.columns]
+                _closes = _tasi.get('close', _tasi.get('adj close')).dropna()
+                _ma20 = float(_closes.tail(20).mean())
+                _price = float(_closes.iloc[-1])
+                _vol   = float(_closes.pct_change().dropna().tail(20).std())
+                _bearish = _price < _ma20
+                _label = 'Turbulent' if (_bearish and (((_price/_ma20)-1) < -0.03 or _vol > 0.025)) else 'Calm'
+                logger.info(f"[KSA] Regime: {_label} | TASI={_price:.2f} MA20={_ma20:.2f} vol_20d={_vol:.4f}")
+                return {
+                    'regime_label_en': _label, 'regime_label_ar': _label,
+                    'current_regime': 0 if _label == 'Calm' else 1,
+                    'regime_confidence': 0.80, 'is_bearish': _bearish,
+                }
+
+        # EGX proxies (HMM-based)
         proxy_symbols = ['EGX30.CA', 'COMI.CA', 'HRHO.CA']
         price_series = None
         for sym in proxy_symbols:
