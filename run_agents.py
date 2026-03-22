@@ -857,6 +857,8 @@ def execute():
                         print(f"[DCF] Completed: {dcf_results.get('succeeded', 0)} succeeded, {dcf_results.get('failed', 0)} failed")
                 except Exception as _dcf_err:
                     print(f"[DCF] Skipped / failed: {_dcf_err}")
+                    try: conn.rollback()
+                    except Exception: pass
             # ──────────────────────────────────────────────────────────────
 
             # Load accuracy-adjusted weights once for the entire run
@@ -903,6 +905,8 @@ def execute():
                     conn.commit()
                 except Exception as _rl_err:
                     logger.debug(f"regime_log write skipped: {_rl_err}")
+                    try: conn.rollback()
+                    except Exception: pass
             else:
                 print("Market Regime: detection unavailable (hmmlearn not installed or insufficient data)")
 
