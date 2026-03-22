@@ -56,6 +56,7 @@ function buildAllowedOrigins(req) {
 
   origins.add('https://xmore-project.onrender.com');
   origins.add('https://xmore-v2.onrender.com');
+  origins.add('https://xmore-ksa.onrender.com');
 
   const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
   if (vercelUrl) origins.add(vercelUrl);
@@ -693,14 +694,29 @@ app.get('/api/stats', (req, res) => {
 
   const stats = {};
   let completed = 0;
+  let successCount = 0;
+  let firstError = null;
 
   Object.keys(queries).forEach(key => {
     db.get(queries[key], [], (err, row) => {
       if (!err && row) {
         stats[key] = row.count || row.date;
+        successCount++;
+      } else if (err && !firstError) {
+        firstError = err;
       }
       completed++;
       if (completed === Object.keys(queries).length) {
+        if (successCount === 0) {
+          return res.status(503).json({
+            error: firstError?.message || 'Database unavailable',
+            database_unavailable: true
+          });
+        }
+        if (successCount < Object.keys(queries).length) {
+          stats.partial = true;
+          stats.database_warning = firstError?.message || 'Some statistics could not be loaded';
+        }
         res.json(stats);
       }
     });

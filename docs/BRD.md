@@ -6,7 +6,7 @@
 | **Document version** | 1.2 |
 | **Date** | March 2026 |
 | **Status** | Live / In Production |
-| **Platform URL** | xmore-project.onrender.com |
+| **Platform URL** | xmore-ksa.onrender.com |
 | **Repository** | github.com/crassdart85/xmore-v2 |
 
 ---
@@ -325,7 +325,7 @@ All scoring is computed during the daily pipeline and written to `scored_signals
 | PostgreSQL | Render.com managed PostgreSQL | Schema initialised by `init-db.js` on each deploy |
 | Python pipeline | GitHub Actions (`ubuntu-latest`) | 9 cron jobs; connects to production PostgreSQL via `DATABASE_URL` |
 | Static assets | Served by Express | `express.static()` from `web-ui/public/` |
-| Domain | Render-provided | `xmore-project.onrender.com` |
+| Domain | Render-provided | `xmore-ksa.onrender.com` |
 
 ### 7.3 Pre-computation Pattern (Critical)
 

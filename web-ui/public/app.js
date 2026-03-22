@@ -2218,7 +2218,9 @@ async function loadStats() {
             fetch(`${API_URL}/stats`),
             fetch(`${API_URL}/performance`).catch(() => null),
         ]);
+        if (!statsRes.ok) throw new Error(`HTTP error: ${statsRes.status}`);
         const data = await statsRes.json();
+        if (data.database_unavailable) throw new Error(data.error || 'Database unavailable');
 
         animateValue('stocksTracked', data.stocksTracked || 0, { decimalPlaces: 0 });
         animateValue('totalPredictions', data.totalPredictions || 0, { decimalPlaces: 0 });
@@ -2235,6 +2237,10 @@ async function loadStats() {
         }
     } catch (error) {
         console.error('Error loading stats:', error);
+        document.getElementById('stocksTracked').textContent = 'N/A';
+        document.getElementById('totalPredictions').textContent = 'N/A';
+        document.getElementById('overallAccuracy').textContent = 'N/A';
+        document.getElementById('latestDate').textContent = 'Unavailable';
     }
 }
 

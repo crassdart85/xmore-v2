@@ -6,7 +6,7 @@
 | **Document version** | 1.4 |
 | **Date** | March 2026 |
 | **Status** | Live / In Production |
-| **Platform URL** | xmore-project.onrender.com |
+| **Platform URL** | xmore-ksa.onrender.com |
 | **Repository** | github.com/crassdart85/xmore-v2 |
 
 ---
