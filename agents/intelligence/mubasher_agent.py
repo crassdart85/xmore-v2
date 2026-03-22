@@ -45,7 +45,8 @@ def fetch_mubasher_news(hours_back: int = 25) -> list:
                 if resp.status_code != 200:
                     time.sleep(0.5)
                     continue
-                soup = BeautifulSoup(resp.text, "lxml")
+                _parser = "lxml" if __import__("importlib").util.find_spec("lxml") else "html.parser"
+                soup = BeautifulSoup(resp.text, _parser)
 
                 items = (
                     soup.select("div.news-item") or

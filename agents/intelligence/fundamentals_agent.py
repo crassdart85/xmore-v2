@@ -94,8 +94,7 @@ CREATE TABLE IF NOT EXISTS company_fundamentals (
     near_52w_high             INTEGER,
     near_52w_low              INTEGER,
     value_flag                INTEGER,
-    momentum_flag             INTEGER,
-    UNIQUE (ticker, date(fetched_at))
+    momentum_flag             INTEGER
 )
 """
 
@@ -143,6 +142,11 @@ def ensure_fundamentals_table(conn):
             cursor.execute("ROLLBACK TO SAVEPOINT create_fundamentals")
     else:
         cursor.execute(sql)
+        # SQLite doesn't allow expressions in UNIQUE constraints — use a separate index
+        try:
+            cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_fund_ticker_date ON company_fundamentals(ticker, date(fetched_at))")
+        except Exception:
+            pass
 
 
 def run_fundamentals(conn) -> int:

@@ -274,13 +274,18 @@ def create_tables():
         # Add reasoning column to predictions if it doesn't exist
         _safe_add_column(cursor, "predictions", "reasoning", "TEXT")
 
-        # Add xmore_score to consensus_results if it doesn't exist
+        # Add columns to consensus_results if they don't exist
         _safe_add_column(cursor, "consensus_results", "xmore_score", "REAL")
         _safe_add_column(cursor, "consensus_results", "calibrated_confidence", "REAL")
         _safe_add_column(cursor, "consensus_results", "expected_edge_pct", "REAL")
         _safe_add_column(cursor, "consensus_results", "ranking_score", "REAL")
         _safe_add_column(cursor, "consensus_results", "weight_profile_json", "TEXT")
         _safe_add_column(cursor, "consensus_results", "calibration_meta_json", "TEXT")
+        # Signal enrichment columns (added with signal_enrichment.py)
+        _safe_add_column(cursor, "consensus_results", "drivers_json", "TEXT")
+        _safe_add_column(cursor, "consensus_results", "risk_level", "TEXT")
+        _safe_add_column(cursor, "consensus_results", "expected_move", "REAL")
+        _safe_add_column(cursor, "consensus_results", "enrichment_regime", "TEXT")
 
         # Table: Backtest Results (walk-forward ML performance per symbol)
         cursor.execute(f"""
@@ -605,7 +610,7 @@ def create_tables():
         _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_sse_symbol ON stock_signal_evals(symbol, prediction_date DESC)")
         _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)")
 
-        # Seed EGX 30 stocks (upsert: ignore if already exists)
+        # Seed legacy EGX symbols plus the KSA universe into the shared reference table.
         egx30_stocks = [
             ('COMI.CA', 'Commercial International Bank', 'البنك التجاري الدولي', 'Banking', 'البنوك'),
             ('HRHO.CA', 'Hermes Holding', 'القابضة المصرية الكويتية (هيرميس)', 'Financial Services', 'الخدمات المالية'),
@@ -638,6 +643,12 @@ def create_tables():
             ('DMCR.CA', 'Dice Medical & Scientific', 'دايس الطبية والعلمية', 'Healthcare', 'الرعاية الصحية'),
             ('ASCM.CA', 'Arabian Cement', 'الأسمنت العربية', 'Materials', 'المواد'),
         ]
+        try:
+            from config.ksa_universe import get_ksa_reference_rows
+            egx30_stocks.extend(get_ksa_reference_rows())
+        except Exception as exc:
+            logger.warning(f"KSA reference seed skipped: {exc}")
+
         if DATABASE_URL:
             for stock in egx30_stocks:
                 cursor.execute(_adapt_sql("""

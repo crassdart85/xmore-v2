@@ -1439,8 +1439,8 @@ app.get('/api/stocks/:symbol/brief', async (req, res) => {
     db.get(sql, params, (err, row) => resolve(row || {}));
   });
 
-  const prompt = `You are a concise EGX (Egyptian Exchange) stock analyst. Write a 3-sentence professional brief for ${symbol}.
-Data: Signal=${ctx.final_signal||'N/A'}, Conviction=${ctx.conviction||'N/A'}, Confidence=${ctx.confidence||'N/A'}%, XmoreScore=${ctx.xmore_score||'N/A'}, BullScore=${ctx.bull_score||'N/A'}, BearScore=${ctx.bear_score||'N/A'}, Price=${ctx.close||'N/A'} EGP.
+  const prompt = `You are a concise Tadawul stock analyst. Write a 3-sentence professional brief for ${symbol}.
+Data: Signal=${ctx.final_signal||'N/A'}, Conviction=${ctx.conviction||'N/A'}, Confidence=${ctx.confidence||'N/A'}%, XmoreScore=${ctx.xmore_score||'N/A'}, BullScore=${ctx.bull_score||'N/A'}, BearScore=${ctx.bear_score||'N/A'}, Price=${ctx.close||'N/A'} SAR.
 Format: 1) Current stance and signal quality 2) Key risk factor 3) Short-term outlook. Be direct, no disclaimers.`;
 
   try {

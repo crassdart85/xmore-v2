@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="base.css">
         <title>Xmore - Market Intelligence Dashboard</title>
     <meta name="description"
-        content="Xmore is an market intelligence and signal-ranking system for the Egyptian Exchange (EGX) and US markets. Live performance tracking, multi-agent consensus signals.">
+        content="Xmore is a market intelligence and signal-ranking system for the Saudi Exchange (Tadawul). Live performance tracking and multi-agent consensus signals.">
     <link rel="stylesheet" href="style.css?v=20260215a">
     <link rel="stylesheet" href="auth.css?v=20260215a">
     <link rel="stylesheet" href="performance-dashboard.css?v=20260215a">
@@ -18,7 +18,7 @@
 <body>
     <a href="#main-content" class="skip-link">Skip to content</a>
     <div class="container" id="main-content">
-        <!-- TradingView Ticker Tape (EGX30 index) -->
+        <!-- TradingView Ticker Tape (Tadawul leaders) -->
         <div id="tv-ticker-tape" class="tv-ticker-container"></div>
 
         <header class="x-topbar x-topbar--dark">
@@ -472,7 +472,7 @@
         <!-- Tab: Time Machine -->
         <section class="tab-content" id="tab-timemachine" role="tabpanel" aria-labelledby="tabTimeMachine">
             <div class="section-header">
-                <p class="section-subtitle" id="timemachineBrief">Explore your portfolio's past performance or simulate the probabilistic future of any EGX stock.</p>
+                <p class="section-subtitle" id="timemachineBrief">Explore your portfolio's past performance or simulate the probabilistic future of any Tadawul stock.</p>
             </div>
 
             <!-- Past / Future sub-tabs -->
@@ -540,7 +540,7 @@
                 <!-- Key Metrics Row -->
                 <div class="tm-metrics-row">
                     <div class="tm-metric">
-                        <span class="tm-metric-label" data-translate="tmAlpha">Alpha vs EGX30</span>
+                        <span class="tm-metric-label" data-translate="tmAlpha">Alpha vs TASI</span>
                         <span class="tm-metric-value" id="tmAlpha"></span>
                         <span class="tm-metric-sub" data-translate="tmVsEGX30">outperformance</span>
                     </div>
@@ -571,7 +571,7 @@
                     <h4 data-translate="tmEquityCurve">Your Money Over Time</h4>
                     <div class="tm-chart-legend">
                         <span class="tm-legend-xmore">&#9679; Xmore</span>
-                        <span class="tm-legend-egx30">&#9679; EGX30</span>
+                        <span class="tm-legend-egx30">&#9679; TASI</span>
                     </div>
                     <div id="tmEquityChart" style="width:100%;min-height:300px;"></div>
                 </div>
@@ -601,7 +601,7 @@
                 </div>
 
                 <!-- Disclaimer -->
-                <div class="tm-disclaimer" data-translate="tmDisclaimer">This simulation uses real EGX price data from Yahoo Finance and applies Xmore's signal logic retroactively. Past performance does not guarantee future results. This is not financial advice.</div>
+                <div class="tm-disclaimer" data-translate="tmDisclaimer">This simulation uses market price data and applies Xmore's signal logic retroactively. Past performance does not guarantee future results. This is not financial advice.</div>
             </div>
 
             <!-- Loading state -->
@@ -627,7 +627,7 @@
                     <div class="fc-mode-toggle" role="group" aria-label="Forecast mode">
                         <button class="fc-mode-btn fc-mode-active" id="fcModeAuto">
                             <span class="fc-mode-name" data-translate="fcModeAuto">Automatic picks</span>
-                            <span class="fc-mode-desc" data-translate="fcModeAutoDesc">Auto-selects the best EGX30 stock for your date</span>
+                            <span class="fc-mode-desc" data-translate="fcModeAutoDesc">Auto-selects the best Tadawul stock for your date</span>
                         </button>
                         <button class="fc-mode-btn" id="fcModeManual">
                             <span class="fc-mode-name" data-translate="fcModeManual">I pick manually</span>
@@ -653,7 +653,7 @@
                         <div class="tm-field">
                             <label for="fcEndDate" data-translate="fcEndDateLabel">Target Date</label>
                             <input type="date" id="fcEndDate" class="tm-date-input">
-                            <p class="fc-date-hint" data-translate="fcEndDateHint">Up to 30 days from today - the system picks the best EGX30 stock for you</p>
+                            <p class="fc-date-hint" data-translate="fcEndDateHint">Up to 30 days from today - the system picks the best Tadawul stock for you</p>
                         </div>
                     </div>
 
@@ -826,13 +826,13 @@
                         <div class="fc-stage-dot"></div>
                         <div class="fc-stage-text">
                             <span class="fc-stage-label" data-translate="fcStage1">Fetching price history...</span>
-                            <span class="fc-stage-sub" data-translate="fcStage1Sub">Loading historical EGX data</span>
+                            <span class="fc-stage-sub" data-translate="fcStage1Sub">Loading historical Tadawul data</span>
                         </div>
                     </div>
                     <div class="fc-stage" id="fcStage2">
                         <div class="fc-stage-dot"></div>
                         <div class="fc-stage-text">
-                            <span class="fc-stage-label" id="fcStage2Label" data-translate="fcStage2Auto">Scanning EGX30 stocks...</span>
+                            <span class="fc-stage-label" id="fcStage2Label" data-translate="fcStage2Auto">Scanning Tadawul stocks...</span>
                             <span class="fc-stage-sub" data-translate="fcStage2Sub">Computing GBM parameters per stock</span>
                         </div>
                     </div>

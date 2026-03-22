@@ -50,11 +50,16 @@ def _get_connection():
     return get_connection()
 
 
+def _ensure_schema():
+    from database import create_tables
+    create_tables()
+
+
 def _upsert_sql():
     if DATABASE_URL:
         return """
             INSERT INTO prices (symbol, date, open, high, low, close, volume, data_source)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES %s
             ON CONFLICT (symbol, date) DO UPDATE SET
                 open=EXCLUDED.open, high=EXCLUDED.high, low=EXCLUDED.low,
                 close=EXCLUDED.close, volume=EXCLUDED.volume,
@@ -76,9 +81,58 @@ def _existing_row_count(symbol: str) -> int:
             cur = conn.cursor()
             cur.execute(sql, (symbol,))
             row = cur.fetchone()
-            return int(row[0]) if row else 0
+            if not row:
+                return 0
+            if isinstance(row, dict):
+                return int(next(iter(row.values())))
+            return int(row[0])
     except Exception:
         return 0
+
+
+def _existing_row_counts(symbols: list[str]) -> dict[str, int]:
+    """Return existing price-row counts for a batch of symbols."""
+    if not symbols:
+        return {}
+
+    try:
+        with _get_connection() as conn:
+            cur = conn.cursor()
+            if DATABASE_URL:
+                cur.execute(
+                    "SELECT symbol, COUNT(*) AS cnt FROM prices WHERE symbol = ANY(%s) GROUP BY symbol",
+                    (symbols,),
+                )
+            else:
+                placeholders = ", ".join(["?"] * len(symbols))
+                cur.execute(
+                    f"SELECT symbol, COUNT(*) AS cnt FROM prices WHERE symbol IN ({placeholders}) GROUP BY symbol",
+                    symbols,
+                )
+
+            rows = cur.fetchall() or []
+            counts = {}
+            for row in rows:
+                if isinstance(row, dict):
+                    counts[str(row.get("symbol"))] = int(row.get("cnt", 0))
+                else:
+                    counts[str(row[0])] = int(row[1])
+            return counts
+    except Exception:
+        return {}
+
+
+        def _bulk_upsert_rows(cur, rows: list[tuple]):
+            if not rows:
+                return 0
+
+            if DATABASE_URL:
+                from psycopg2.extras import execute_values
+                execute_values(cur, _upsert_sql(), rows, page_size=1000)
+                return len(rows)
+
+            cur.executemany(_upsert_sql(), rows)
+            return len(rows)
 
 
 # ── Symbol lists ─────────────────────────────────────────────────────────────
@@ -151,14 +205,14 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
             return result
 
         sql = _upsert_sql()
-        inserted = 0
+        insert_rows = []
         with _get_connection() as conn:
             cur = conn.cursor()
             for date, row in df.iterrows():
                 try:
                     if row.isnull().any():
                         continue
-                    cur.execute(sql, (
+                    insert_rows.append((
                         symbol,
                         date.strftime("%Y-%m-%d"),
                         float(row["Open"]),
@@ -168,9 +222,10 @@ def _fetch_and_store(symbol: str, yf_symbol: str, years: int, dry_run: bool) -> 
                         int(row.get("Volume", 0)),
                         "yfinance_backfill",
                     ))
-                    inserted += 1
                 except Exception as row_err:
                     logger.debug("Row error %s %s: %s", symbol, date, row_err)
+
+            inserted = _bulk_upsert_rows(cur, insert_rows)
 
         result["rows_new"] = inserted
         logger.info("  OK    %-18s: %d rows stored (total was %d)", symbol, inserted, existing)
@@ -191,7 +246,7 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
     """
     results = []
     yf_symbols = list(symbols_map.values())
-    internal_keys = list(symbols_map.keys())
+    existing_counts = _existing_row_counts(list(symbols_map.keys()))
 
     logger.info("Batch-downloading %d symbols via yf.download ...", len(yf_symbols))
     try:
@@ -209,7 +264,7 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
 
     for internal_sym, yf_sym in symbols_map.items():
         try:
-            existing = _existing_row_count(internal_sym)
+            existing = existing_counts.get(internal_sym, 0)
             threshold = years * 200
             if existing >= threshold:
                 logger.info("  SKIP %-18s (already %d rows)", internal_sym, existing)
@@ -241,16 +296,16 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
                 results.append({"symbol": internal_sym, "rows_fetched": rows_fetched, "rows_new": 0, "skipped": False, "error": None})
                 continue
 
-            sql = _upsert_sql()
             inserted = 0
             with _get_connection() as conn:
                 cur = conn.cursor()
+                insert_rows = []
                 for date, row in df.iterrows():
                     try:
                         close = float(row.get("Close", row.get("close", 0)))
                         if close == 0:
                             continue
-                        cur.execute(sql, (
+                        insert_rows.append((
                             internal_sym,
                             date.strftime("%Y-%m-%d"),
                             float(row.get("Open", close)),
@@ -260,9 +315,10 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
                             int(row.get("Volume", 0)),
                             "yfinance_backfill",
                         ))
-                        inserted += 1
                     except Exception as row_err:
                         logger.debug("Row error %s %s: %s", internal_sym, date, row_err)
+
+                inserted = _bulk_upsert_rows(cur, insert_rows)
 
             results.append({"symbol": internal_sym, "rows_fetched": rows_fetched, "rows_new": inserted, "skipped": False, "error": None})
             logger.info("  OK    %-18s: %d rows stored", internal_sym, inserted)
@@ -278,6 +334,7 @@ def _batch_fetch_yfinance(symbols_map: dict, years: int, dry_run: bool) -> list:
 
 def run_backfill(market: str = "EGX", years: int = 5, dry_run: bool = False):
     start_ts = datetime.utcnow()
+    _ensure_schema()
     print(f"\n{'='*60}")
     print(f"  Historical Price Backfill")
     print(f"  Market: {market}  |  Years: {years}  |  Dry-run: {dry_run}")

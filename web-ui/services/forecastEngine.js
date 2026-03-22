@@ -14,49 +14,14 @@ const MIN_PRICES = 60;
 const LOOKBACK_YEARS = 5;
 
 const SCENARIO_DRIFT_ADJ = { base: 0.0, bull: 0.02, bear: -0.02 };
+const {
+    getKsaStockNames,
+    getKsaUniverseSymbols,
+    normalizeDisplaySymbol,
+} = require('./marketUniverse');
 
-// EGX30 constituents for auto-select mode (mirrors timemachine_forecast.py)
-const EGX30_FORECAST_SYMBOLS = [
-    'COMI.CA', 'HRHO.CA', 'SWDY.CA', 'TMGH.CA', 'EKHO.CA',
-    'EFIH.CA', 'ORWE.CA', 'PHDC.CA', 'ABUK.CA', 'CLHO.CA',
-    'ESRS.CA', 'ETEL.CA', 'JUFO.CA', 'ALCN.CA', 'OCDI.CA',
-    'HELI.CA', 'AMOC.CA', 'EAST.CA', 'CCAP.CA', 'EGAL.CA',
-    'ELEC.CA', 'FWRY.CA', 'GBCO.CA', 'ISPH.CA', 'MFPC.CA',
-    'PHAR.CA', 'SKPC.CA', 'SPIN.CA', 'SUGR.CA', 'TALM.CA',
-];
-
-const STOCK_NAMES = {
-    'COMI.CA': ['Commercial International Bank', 'البنك التجاري الدولي'],
-    'HRHO.CA': ['Hermes Holding', 'هيرميس القابضة'],
-    'SWDY.CA': ['Elsewedy Electric', 'السويدي إلكتريك'],
-    'TMGH.CA': ['Talaat Moustafa Group', 'مجموعة طلعت مصطفى'],
-    'EKHO.CA': ['Egyptian Kuwaiti Holding', 'المصرية الكويتية القابضة'],
-    'EFIH.CA': ['EFG Hermes Holding', 'إي إف جي هيرميس'],
-    'ORWE.CA': ['Oriental Weavers', 'السجاد الشرقي'],
-    'PHDC.CA': ['Palm Hills Development', 'بالم هيلز للتعمير'],
-    'ABUK.CA': ['Abu Qir Fertilizers', 'أبو قير للأسمدة'],
-    'CLHO.CA': ['Cleopatra Hospital', 'مستشفى كليوباترا'],
-    'ESRS.CA': ['Ezz Steel', 'حديد عز'],
-    'ETEL.CA': ['Telecom Egypt', 'المصرية للاتصالات'],
-    'JUFO.CA': ['Juhayna Food Industries', 'جهينة للصناعات الغذائية'],
-    'ALCN.CA': ['Alexandria Container', 'الإسكندرية للحاويات والبضائع'],
-    'OCDI.CA': ['Orascom Development', 'أوراسكوم للتنمية'],
-    'HELI.CA': ['Heliopolis Housing', 'مصر الجديدة للإسكان'],
-    'AMOC.CA': ['Alexandria Mineral Oils', 'الإسكندرية للزيوت المعدنية'],
-    'EAST.CA': ['Eastern Company', 'الشركة الشرقية للدخان'],
-    'CCAP.CA': ['Citadel Capital', 'القلعة القابضة'],
-    'EGAL.CA': ['Edita Food Industries', 'إيديتا للصناعات الغذائية'],
-    'ELEC.CA': ['El Sewedy Electric', 'الكابلات الكهربائية'],
-    'FWRY.CA': ['Fawry for Banking', 'فوري للمدفوعات'],
-    'GBCO.CA': ['SODIC', 'سوديك'],
-    'ISPH.CA': ['Ibnsina Pharma', 'ابن سينا فارما'],
-    'MFPC.CA': ['Misr Fertilizers', 'مصر للأسمدة'],
-    'PHAR.CA': ['Pharos Holding', 'فاروس القابضة'],
-    'SKPC.CA': ['Sidi Kerir Petrochemicals', 'سيدي كرير للبتروكيماويات'],
-    'SPIN.CA': ['Spinneys Egypt', 'سبينيز مصر'],
-    'SUGR.CA': ['Delta Sugar', 'الدلتا للسكر'],
-    'TALM.CA': ['Taaleem Management', 'تعليم لإدارة المدارس'],
-};
+const TADAWUL_FORECAST_SYMBOLS = getKsaUniverseSymbols();
+const STOCK_NAMES = getKsaStockNames();
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
@@ -266,12 +231,12 @@ async function simulateStock(symbol, amount, horizonDays, scenario, db) {
 }
 
 async function autoSelectBest(amount, horizonDays, scenario, db) {
-    // Step 1: one batch DB query for all 30 EGX30 stocks
-    const dbPrices = await batchPricesFromDb(EGX30_FORECAST_SYMBOLS, db);
+    // Step 1: one batch DB query for the Tadawul auto-select universe.
+    const dbPrices = await batchPricesFromDb(TADAWUL_FORECAST_SYMBOLS, db);
 
     // Step 2: yahoo-finance2 fallback for any DB misses (parallel)
     const allPrices = { ...dbPrices };
-    const missing = EGX30_FORECAST_SYMBOLS.filter(s => (allPrices[s] || []).length < MIN_PRICES);
+    const missing = TADAWUL_FORECAST_SYMBOLS.filter(s => (allPrices[s] || []).length < MIN_PRICES);
     if (missing.length > 0) {
         const fetched = await Promise.allSettled(missing.map(sym =>
             getPricesFromYahoo(sym).then(prices => ({ sym, prices }))
@@ -285,7 +250,7 @@ async function autoSelectBest(amount, horizonDays, scenario, db) {
 
     // Step 3: run MC for each available stock
     const ranked = [];
-    for (const sym of EGX30_FORECAST_SYMBOLS) {
+    for (const sym of TADAWUL_FORECAST_SYMBOLS) {
         const prices = allPrices[sym];
         if (!prices || prices.length < MIN_PRICES) continue;
         try {
@@ -301,18 +266,18 @@ async function autoSelectBest(amount, horizonDays, scenario, db) {
     }
 
     if (ranked.length === 0) {
-        return { ok: false, error: 'Could not fetch price data for any EGX30 stock. Market data may be temporarily unavailable.' };
+        return { ok: false, error: 'Could not fetch price data for the Tadawul auto-select universe. Market data may be temporarily unavailable.' };
     }
 
     ranked.sort((a, b) => b.score - a.score);
     const w = ranked[0];
     const result = buildResult(w.sym, amount, horizonDays, scenario, w.prices, w.params, w.terminalValues, w.muUsed);
-    const names = STOCK_NAMES[w.sym] || [w.sym.replace('.CA', ''), w.sym.replace('.CA', '')];
+    const names = STOCK_NAMES[w.sym] || [normalizeDisplaySymbol(w.sym), normalizeDisplaySymbol(w.sym)];
 
     const top5 = ranked.slice(0, 5).map(r => {
-        const n = STOCK_NAMES[r.sym] || [r.sym.replace('.CA', ''), r.sym.replace('.CA', '')];
+        const n = STOCK_NAMES[r.sym] || [normalizeDisplaySymbol(r.sym), normalizeDisplaySymbol(r.sym)];
         return {
-            symbol: r.sym.replace('.CA', ''),
+            symbol: normalizeDisplaySymbol(r.sym),
             name_en: n[0], name_ar: n[1],
             score: +r.score.toFixed(4),
             probability_positive: +r.probPos.toFixed(1),

@@ -19,13 +19,15 @@ from datetime import time
 # STOCK SELECTION
 # ============================================
 
-# Import EGX symbols from dedicated module
-from egx_symbols import get_egx30_symbols
+# Import Tadawul symbols from dedicated universe module.
+from config.ksa_universe import get_ksa_top50_symbols
 
-# EGX Stocks - Use EGX 30 index constituents by default
-# This provides the most liquid and actively traded Egyptian stocks
-# Note: EGX data may have liquidity gaps or delays compared to US markets.
-EGX_STOCKS = get_egx30_symbols()
+# Tadawul stocks are the default production universe for the KSA version.
+KSA_STOCKS = get_ksa_top50_symbols()
+
+# Legacy compatibility alias: a large part of the pipeline still imports EGX_STOCKS.
+# Keep the public name stable while switching the underlying market universe.
+EGX_STOCKS = KSA_STOCKS
 
 # US Stocks (Optional / Legacy)
 US_STOCKS = [
@@ -33,32 +35,31 @@ US_STOCKS = [
     # "MSFT",
 ]
 
-# Combined list - defaulting to EGX for Xmore2
-ALL_STOCKS = EGX_STOCKS + US_STOCKS
+# Combined list - defaulting to Tadawul for the KSA version.
+ALL_STOCKS = KSA_STOCKS + US_STOCKS
 
 # ============================================
 # EGYPTIAN MARKET SETTINGS
 # ============================================
 
-# EGX Market Configuration
-EGX_CONFIG = {
-    "market_name": "Egyptian Exchange",
-    "currency": "EGP",
-    "timezone": "Africa/Cairo",
+# Tadawul Market Configuration
+KSA_CONFIG = {
+    "market_name": "Saudi Exchange (Tadawul)",
+    "currency": "SAR",
+    "timezone": "Asia/Riyadh",
     "trading_days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
     "trading_hours": {
-        "open": "09:00",   # EGX opens at 09:00 Cairo (07:00 UTC)
-        "close": "14:00",  # EGX closes at 14:00 Cairo (12:00 UTC)
+        "open": "10:00",
+        "close": "15:00",
     },
-    # EGX has higher volatility than US markets
-    "volatility_adjustment": 1.2,
-    # Use RSS feeds for better Egyptian news coverage
+    "volatility_adjustment": 1.0,
     "use_rss_news": True,
-    # Optional best-effort EGX website scraper adapter (disabled by default)
-    # Enable only if EGX pages are reachable from your runtime environment.
     "use_egx_web_scraper": False,
-    "egx_web_news_url": "https://www.egx.com.eg/en/NewsList.aspx?ID=10",
+    "egx_web_news_url": "",
 }
+
+# Legacy compatibility alias for older code paths that still import EGX_CONFIG.
+EGX_CONFIG = KSA_CONFIG
 
 # ============================================
 # API CREDENTIALS
@@ -86,8 +87,8 @@ MAX_RETRIES = 3
 RETRY_DELAY_SECONDS = 5  # Wait between retries
 
 # Data collection time (after market close)
-# EGX closes at 14:00 Cairo (12:00 UTC). Hourly intraday updates run 09:00-14:00 Cairo.
-COLLECTION_TIME = time(14, 30)  # 2:30 PM Cairo (30 min post-close fallback)
+# Tadawul closes at 15:00 Riyadh. Collect shortly after the close.
+COLLECTION_TIME = time(15, 30)
 
 # ============================================
 # DATABASE SETTINGS
@@ -124,7 +125,7 @@ MA_SHORT_PERIOD = 10 # 2 weeks (approx) - fast moving trend
 MA_LONG_PERIOD = 30  # 1.5 months (approx) - slow moving trend
 
 # Prediction timeframe
-PREDICTION_HORIZON_DAYS = 5  # Predict next 5 trading days (shortened for EGX volatility)
+PREDICTION_HORIZON_DAYS = 5
 
 # Confidence thresholds
 # Confidence thresholds
