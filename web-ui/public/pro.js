@@ -10,7 +10,7 @@ const _PRO_I18N = {
     email: 'Email', password: 'Password',
     tracked: 'TRACKED', upToday: 'UP', downToday: 'DOWN',
     bestWinRate: 'BEST AGENT WIN RATE', lastData: 'LAST DATA', marketRegime: 'Market Regime',
-    egx30Title: 'EGX 30 — Intraday', egxBlueChips: 'EGX Blue Chips',
+    egx30Title: 'TASI — Intraday', egxBlueChips: 'Tadawul Leaders',
     topGainers: 'Top Gainers', topLosers: 'Top Losers',
     colSymbol: 'Symbol', colClose: 'Close', colChg: 'Chg%',
     colSignal: 'Signal', colConf: 'Conf',
@@ -22,7 +22,7 @@ const _PRO_I18N = {
     pfLoginDesc: 'Sign in to see how your system-generated stock portfolios are performing in real time — forecast vs actual return per stock, progress to target date, and agent signals.',
     signInArrow: 'Sign In ↗',
     pfEmptyTitle: 'No Forecast Portfolios Yet',
-    pfEmptyDesc: 'Create a forecast portfolio on the main dashboard to start tracking forecast accuracy against live EGX price movements.',
+    pfEmptyDesc: 'Create a forecast portfolio on the main dashboard to start tracking forecast accuracy against live Saudi market price movements.',
     createPortfolio: 'Create Portfolio ↗',
     legendForecast: 'Forecast', legendActualPos: 'Actual (positive)', legendActualNeg: 'Actual (negative)',
     derivTitle: 'Derivatives Brief', derivBtn: 'Price ▶', pricing: 'Pricing…',
@@ -38,7 +38,7 @@ const _PRO_I18N = {
     email: 'البريد الإلكتروني', password: 'كلمة المرور',
     tracked: 'متتبع', upToday: 'صاعد', downToday: 'هابط',
     bestWinRate: 'أفضل معدل نجاح', lastData: 'آخر بيانات', marketRegime: 'نظام السوق',
-    egx30Title: 'EGX 30 — خلال اليوم', egxBlueChips: 'أسهم EGX الكبرى',
+    egx30Title: 'تاسي — خلال اليوم', egxBlueChips: 'قادة تداول',
     topGainers: 'أعلى الرابحين', topLosers: 'أعلى الخاسرين',
     colSymbol: 'الرمز', colClose: 'الإغلاق', colChg: 'التغير%',
     colSignal: 'الإشارة', colConf: 'الثقة',
@@ -50,7 +50,7 @@ const _PRO_I18N = {
     pfLoginDesc: 'سجّل دخولك لمتابعة أداء محافظ الأسهم المولّدة بالذكاء الاصطناعي — المقارنة بين التوقع والعائد الفعلي لكل سهم.',
     signInArrow: 'تسجيل الدخول ↗',
     pfEmptyTitle: 'لا توجد محافظ بعد',
-    pfEmptyDesc: 'أنشئ محفظة توقعات من اللوحة الرئيسية لبدء تتبع دقة الذكاء الاصطناعي مقارنةً بتحركات سوق البورصة.',
+    pfEmptyDesc: 'أنشئ محفظة توقعات من اللوحة الرئيسية لبدء تتبع دقة الذكاء الاصطناعي مقارنةً بتحركات السوق السعودي.',
     createPortfolio: 'إنشاء محفظة ↗',
     legendForecast: 'التوقع', legendActualPos: 'الفعلي (موجب)', legendActualNeg: 'الفعلي (سالب)',
     derivTitle: 'موجز المشتقات', derivBtn: 'تسعير ▶', pricing: 'جارٍ التسعير…',
@@ -83,6 +83,14 @@ function proToggleLang() {
 }
 
 proApplyLang();
+
+function displaySymbol(symbol) {
+  return String(symbol || '').replace(/\.(CA|SR)$/i, '');
+}
+
+function isSaudiSymbol(symbol) {
+  return /\.SR$/i.test(symbol || '') || /^(TASI|MT30)(\.SR)?$/i.test(symbol || '');
+}
 
 // ── Mobile Menu (640px and below) ────────────────────────────────────────────
 function initProMobileMenu() {
@@ -143,19 +151,10 @@ async function loadFxRates() {
     const data = await res.json();
     if (!data || data.error) throw new Error(data.error || 'no data');
 
-    const fxItems = [
-      { label: 'USD/EGP', val: data.USD_EGP?.toFixed(2)  || '—' },
-      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4)  || '—' },
-      { label: 'SAR/EGP', val: data.SAR_EGP?.toFixed(4)  || '—' },
+    const allItems = [
+      { label: 'USD/SAR', val: data.USD_SAR?.toFixed(4) || '—' },
+      ...(data.XAU_USD ? [{ label: 'Gold/Oz', val: data.XAU_USD?.toFixed(2) + ' USD' }] : []),
     ];
-    const goldItems = data.GOLD_24K_EGP_G ? [
-      { label: '🥇 24K/g',   val: data.GOLD_24K_EGP_G?.toFixed(0) + ' EGP' },
-      { label: '21K/g',      val: data.GOLD_21K_EGP_G?.toFixed(0) + ' EGP' },
-      { label: '18K/g',      val: data.GOLD_18K_EGP_G?.toFixed(0) + ' EGP' },
-      { label: 'جنيه ذهب',  val: data.GOLD_POUND_EGP?.toFixed(0)  + ' EGP' },
-    ] : [];
-
-    const allItems = [...fxItems, ...goldItems];
     strip.innerHTML = allItems.map((item, i) =>
       `${i > 0 ? '<span class="pro-fx-sep">·</span>' : ''}
        <div class="pro-fx-item">
@@ -199,15 +198,15 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   script.async = true;
   script.innerHTML = JSON.stringify({
     symbols: [
-      { proName: 'EGX:EGX30',  title: 'EGX 30'  },
-      { proName: 'EGX:COMI',   title: 'CIB'      },
-      { proName: 'EGX:HRHO',   title: 'EFG'      },
-      { proName: 'EGX:ETEL',   title: 'Telecom'  },
-      { proName: 'EGX:EFIH',   title: 'EFG Fin'  },
-      { proName: 'EGX:CLHO',   title: 'Cleopatra'},
-      { proName: 'EGX:SWDY',   title: 'Edita'    },
-      { proName: 'EGX:AMOC',   title: 'AMOC'     },
-      { proName: 'EGX:ABUK',   title: 'AbuQir'   },
+      { proName: 'TADAWUL:TASI', title: 'TASI' },
+      { proName: 'TADAWUL:2222', title: 'Aramco' },
+      { proName: 'TADAWUL:2010', title: 'SABIC' },
+      { proName: 'TADAWUL:1120', title: 'Al Rajhi' },
+      { proName: 'TADAWUL:7010', title: 'stc' },
+      { proName: 'TADAWUL:1150', title: 'Alinma' },
+      { proName: 'TADAWUL:1180', title: 'SNB' },
+      { proName: 'TADAWUL:1211', title: 'Maaden' },
+      { proName: 'TADAWUL:2082', title: 'ACWA' },
     ],
     showSymbolLogo: false,
     colorTheme: 'dark',
@@ -219,7 +218,7 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   container.appendChild(wrapper);
 })();
 
-// ── EGX 30 Intraday Chart ────────────────────────────────────────────────────
+// ── TASI Intraday Chart ──────────────────────────────────────────────────────
 (function loadEGX30Chart() {
   const container = document.getElementById('egx30ChartWidget');
   if (!container) return;
@@ -239,9 +238,9 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   script.async = true;
   script.innerHTML = JSON.stringify({
     autosize: true,
-    symbol: 'EGX:EGX30',
+    symbol: 'TADAWUL:TASI',
     interval: '5',
-    timezone: 'Africa/Cairo',
+    timezone: 'Asia/Riyadh',
     theme: 'dark',
     style: '2',        // area chart
     locale: 'en',
@@ -257,7 +256,7 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
   container.appendChild(wrapper);
 })();
 
-// ── EGX Market Indices ────────────────────────────────────────────────────────
+// ── Tadawul Market Overview ──────────────────────────────────────────────────
 (function loadEGXIndices() {
   const container = document.getElementById('egxIndicesWidget');
   if (!container) return;
@@ -287,18 +286,18 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
     height: '100%',
     tabs: [
       {
-        title: 'EGX Blue Chips',
+        title: 'Tadawul Leaders',
         symbols: [
-          { s: 'EGX:COMI',  d: 'CIB'        },
-          { s: 'EGX:HRHO',  d: 'EFG Hermes' },
-          { s: 'EGX:ETEL',  d: 'Telecom EG' },
-          { s: 'EGX:CLHO',  d: 'Cleopatra'  },
-          { s: 'EGX:SWDY',  d: 'Edita'      },
-          { s: 'EGX:AMOC',  d: 'AMOC'       },
-          { s: 'EGX:ABUK',  d: 'AbuQir'     },
-          { s: 'EGX:EFIH',  d: 'EFG Fin'    },
+          { s: 'TADAWUL:2222', d: 'Saudi Aramco' },
+          { s: 'TADAWUL:2010', d: 'SABIC' },
+          { s: 'TADAWUL:1120', d: 'Al Rajhi' },
+          { s: 'TADAWUL:7010', d: 'stc' },
+          { s: 'TADAWUL:1150', d: 'Alinma' },
+          { s: 'TADAWUL:1180', d: 'SNB' },
+          { s: 'TADAWUL:1211', d: 'Maaden' },
+          { s: 'TADAWUL:2082', d: 'ACWA Power' },
         ],
-        originalTitle: 'EGX Blue Chips',
+        originalTitle: 'Tadawul Leaders',
       },
     ],
   });
@@ -354,10 +353,11 @@ Promise.all([
   fetch('/api/performance').then(r => r.json()).catch(() => []),
   fetch('/api/etf/signals').then(r => r.json()).catch(() => []),
 ]).then(([prices, stocksData, consensus, stats, perf, etfSignals]) => {
-  const stocks = Array.isArray(stocksData) ? stocksData : (stocksData.stocks || []);
-  const pricesArr = Array.isArray(prices) ? prices : [];
-  const consensusArr = Array.isArray(consensus) ? consensus : [];
+  const stocks = (Array.isArray(stocksData) ? stocksData : (stocksData.stocks || [])).filter(s => isSaudiSymbol(s.symbol));
+  const pricesArr = (Array.isArray(prices) ? prices : []).filter(p => isSaudiSymbol(p.symbol));
+  const consensusArr = (Array.isArray(consensus) ? consensus : []).filter(c => isSaudiSymbol(c.symbol));
   const perfArr = Array.isArray(perf) ? perf : [];
+  const saudiEtfSignals = (Array.isArray(etfSignals) ? etfSignals : (etfSignals.latest || [])).filter(s => isSaudiSymbol(s.symbol));
 
   // Populate shared consensus map for portfolio renderer
   consensusArr.forEach(c => {
@@ -371,7 +371,7 @@ Promise.all([
   renderStats(pricesArr, stats, perfArr);
   renderMovers(pricesArr, stocks, consensusArr);
   renderSectors(pricesArr, stocks);
-  renderEtfSignals(Array.isArray(etfSignals) ? etfSignals : (etfSignals.latest || []));
+  renderEtfSignals(saudiEtfSignals);
 });
 
 // ── renderStats ───────────────────────────────────────────────────────────────
@@ -447,7 +447,7 @@ function fillMoversTable(tableId, rows, csMap) {
 
   tbody.innerHTML = rows.map(p => {
     const sym    = p.symbol || '';
-    const label  = sym.replace('.CA', '');
+    const label  = displaySymbol(sym);
     const chg    = parseFloat(p.change_pct);
     const chgCls = chg > 0 ? 'green' : (chg < 0 ? 'red' : '');
     const cs     = csMap[sym] || {};
@@ -595,7 +595,7 @@ async function loadMacroBrief() {
 
   } catch (err) {
     content.innerHTML = `<div style="color:var(--pro-red)">Error: ${escHtml(err.message)}</div>`;
-    btn.textContent = "📊 Load Read";
+    btn.textContent = '↺ Refresh';
     btn.disabled = false;
   }
 }
@@ -626,7 +626,7 @@ async function loadBacktestResults() {
         const pnlCls = r.signal_pnl_pct >= 0 ? 'green' : 'red';
         const dirCls = (r.directional_accuracy || 0) >= 0.55 ? 'green' : (r.directional_accuracy || 0) >= 0.45 ? '' : 'red';
         return `<tr>
-          <td class="sym-cell">${escHtml(r.symbol.replace('.CA',''))}</td>
+          <td class="sym-cell">${escHtml(displaySymbol(r.symbol))}</td>
           <td>${escHtml(acc)}</td>
           <td class="${dirCls}">${escHtml(dir)}</td>
           <td class="${pnlCls}">${escHtml(pnl)}</td>
@@ -652,7 +652,7 @@ loadBacktestResults();
 
 // ── Derivatives Brief ────────────────────────────────────────────────
 async function loadDerivativesBrief() {
-  const ticker   = document.getElementById('derivTicker').value.trim() || 'COMI.CA';
+  const ticker   = document.getElementById('derivTicker').value.trim() || '2222.SR';
   const spotEl   = document.getElementById('derivSpot');
   const strikeEl = document.getElementById('derivStrike');
   const T        = parseFloat(document.getElementById('derivExpiry').value);
@@ -702,13 +702,13 @@ async function loadDerivativesBrief() {
 
     const m = data.metrics || {};
     const cards = [
-      { label: 'Call Price',   value: fmt2(m.call_price),  unit: 'EGP' },
-      { label: 'Put Price',    value: fmt2(m.put_price),   unit: 'EGP' },
-      { label: 'Straddle',     value: fmt2(m.straddle),    unit: 'EGP' },
+      { label: 'Call Price',   value: fmt2(m.call_price),  unit: 'SAR' },
+      { label: 'Put Price',    value: fmt2(m.put_price),   unit: 'SAR' },
+      { label: 'Straddle',     value: fmt2(m.straddle),    unit: 'SAR' },
       { label: 'Delta',        value: fmt3(m.delta),       unit: '\u0394' },
       { label: 'Gamma',        value: fmt4(m.gamma),       unit: '\u0393' },
-      { label: 'Theta / day',  value: fmt2(m.theta),       unit: 'EGP' },
-      { label: 'Vega / 1%',    value: fmt2(m.vega),        unit: 'EGP' },
+      { label: 'Theta / day',  value: fmt2(m.theta),       unit: 'SAR' },
+      { label: 'Vega / 1%',    value: fmt2(m.vega),        unit: 'SAR' },
       { label: 'IV used',      value: pct1(m.sigma_used),  unit: '' },
     ];
 
@@ -961,7 +961,7 @@ function renderPortfolioChart(portfolio, results) {
       </div>
       <div class="pro-pf-kpi">
         <span class="pro-stat-label">Investment</span>
-        <span class="pro-stat-val">${invest ? 'EGP ' + invest.toLocaleString() : '—'}</span>
+        <span class="pro-stat-val">${invest ? 'SAR ' + invest.toLocaleString() : '—'}</span>
         <span class="pro-stat-sub">${escHtml(portfolio.scenario || 'base')} scenario · ${rows.length} stocks</span>
       </div>
     `;
@@ -996,7 +996,7 @@ function renderPortfolioChart(portfolio, results) {
       perfSentence = `Market price data is not yet available for this portfolio — actual vs. forecast comparison will appear once trading data is recorded.`;
     }
 
-    narEl.innerHTML = `<strong>${name}</strong> is a <strong>${scenario}</strong>-scenario portfolio of <strong>${n} EGX stocks</strong> on a <strong>${horiz}-trading-day</strong> horizon, targeting <strong>${targetDate}</strong>. The forecast is <strong>${phase}</strong> — ${daysElapsed} of ${horiz} trading days elapsed (${progressPct}%). ${perfSentence}`;
+    narEl.innerHTML = `<strong>${name}</strong> is a <strong>${scenario}</strong>-scenario portfolio of <strong>${n} Saudi stocks</strong> on a <strong>${horiz}-trading-day</strong> horizon, targeting <strong>${targetDate}</strong>. The forecast is <strong>${phase}</strong> — ${daysElapsed} of ${horiz} trading days elapsed (${progressPct}%). ${perfSentence}`;
   }
 
   // ── Meta row ───────────────────────────────────────────────────────────────
@@ -1011,7 +1011,7 @@ function renderPortfolioChart(portfolio, results) {
   }
 
   // ── Chart ──────────────────────────────────────────────────────────────────
-  const labels       = rows.map(r => r.symbol.replace('.CA', ''));
+  const labels       = rows.map(r => displaySymbol(r.symbol));
   const expected     = rows.map(r => parseFloat(r.expected_return_pct).toFixed(2));
   const actualColors = actualVals.map(v => v === null ? 'transparent' :
     v >= 0 ? 'rgba(0,200,83,0.75)' : 'rgba(255,23,68,0.75)');
@@ -1060,7 +1060,7 @@ function renderPortfolioChart(portfolio, results) {
 
   tbody.innerHTML = rows.map((r, i) => {
     const sym      = r.symbol || '';
-    const label    = sym.replace('.CA', '');
+    const label    = displaySymbol(sym);
     const forecast = parseFloat(r.expected_return_pct);
     const actVal   = actualVals[i];
     const gap      = actVal !== null ? (actVal - forecast) : null;

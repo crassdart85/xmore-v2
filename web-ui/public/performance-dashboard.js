@@ -19,7 +19,7 @@ const PERF_TRANSLATIONS = {
         degraded: 'Degraded',
         sinceInception: 'Since Inception',
         liveOnly: 'Live-only immutable logs',
-        showBenchmark: 'Show EGX30',
+        showBenchmark: 'Show TASI',
         showDrawdown: 'Drawdown',
         noData: 'Performance tracking will appear after live evaluations.',
         openAudit: 'Open Audit Trail',
@@ -55,7 +55,7 @@ const PERF_TRANSLATIONS = {
         informationRatio:     'Information Ratio',
         maxDrawdown:          'Max Drawdown',
         recoveryTime:         'Recovery Time',
-        betaVsBenchmark:      'Beta vs EGX30',
+        betaVsBenchmark:      'Beta vs TASI',
         downCapture:          'Down Capture',
         benchmarkComparison:  'Benchmark Comparison',
         riskFreeRateApplied:  'Risk-Free Rate Applied',
@@ -85,7 +85,7 @@ const PERF_TRANSLATIONS = {
         degraded: 'متراجع',
         sinceInception: 'منذ الانطلاق',
         liveOnly: 'سجل حي غير قابل للتعديل',
-        showBenchmark: 'عرض EGX30',
+        showBenchmark: 'عرض تاسي',
         showDrawdown: 'الهبوط',
         noData: 'سيظهر تتبع الأداء بعد توفر تقييمات حية.',
         openAudit: 'فتح سجل التدقيق',
@@ -121,7 +121,7 @@ const PERF_TRANSLATIONS = {
         informationRatio:     'نسبة المعلومات',
         maxDrawdown:          'أقصى تراجع',
         recoveryTime:         'وقت الاسترداد',
-        betaVsBenchmark:      'بيتا مقابل EGX30',
+        betaVsBenchmark:      'بيتا مقابل تاسي',
         downCapture:          'معدل التراجع',
         benchmarkComparison:  'مقارنة المرجع',
         riskFreeRateApplied:  'معدل الخطر المطبق',
@@ -230,7 +230,7 @@ function buildProofOfEdge(summary, equity) {
     return createSection(`
         <h3>${pt('proof')}</h3>
         <div class="perf-proof-grid">
-            ${metricCard(pt('alpha'), '-', alpha > 0 ? 'positive' : 'negative', '30-day alpha versus EGX30', 'perfEdgeAlpha')}
+            ${metricCard(pt('alpha'), '-', alpha > 0 ? 'positive' : 'negative', '30-day alpha versus TASI', 'perfEdgeAlpha')}
             ${metricCard(pt('sharpe'), '-', sharpe >= 1 ? 'positive' : 'neutral', '30-day risk-adjusted return', 'perfEdgeSharpe')}
             ${metricCard(pt('maxDd'), '-', maxDd <= 8 ? 'positive' : 'negative', '30-day maximum drawdown', 'perfEdgeMaxDd')}
         </div>
@@ -247,7 +247,7 @@ function buildProofOfEdge(summary, equity) {
         <div class="perf-chart-wrap" id="equityCurveChartContainer" style="min-height:350px;"></div>
         <div class="perf-chart-legend">
             <span style="color:#10b981">&#9632; Xmore ${equity.total_xmore > 0 ? '+' : ''}${Number(equity.total_xmore || 0).toFixed(2)}%</span>
-            <span style="color:#6b7280">&#9632; EGX30 ${equity.total_egx30 > 0 ? '+' : ''}${Number(equity.total_egx30 || 0).toFixed(2)}%</span>
+            <span style="color:#6b7280">&#9632; TASI ${equity.total_egx30 > 0 ? '+' : ''}${Number(equity.total_egx30 || 0).toFixed(2)}%</span>
             <span>Alpha ${equity.total_alpha > 0 ? '+' : ''}${Number(equity.total_alpha || 0).toFixed(2)}%</span>
         </div>
     `);
@@ -400,7 +400,7 @@ function buildInstitutionalMetrics(summary, fullReport) {
     const fmtR = v => v === '—' ? '—' : `${Number(v) >= 0 ? '+' : ''}${Number(v).toFixed(2)}%`;
     const benchTable = `
         <table class="inst-bench-table">
-            <thead><tr><th></th><th>Xmore2</th><th>EGX30</th></tr></thead>
+            <thead><tr><th></th><th>Xmore2</th><th>TASI</th></tr></thead>
             <tbody>
                 <tr><td>Total Return</td><td class="${Number(benchTotalXmore) > Number(benchTotalEgx30) ? 'inst-highlight' : ''}">${fmtR(benchTotalXmore)}</td><td>${fmtR(benchTotalEgx30)}</td></tr>
                 <tr><td>Alpha</td><td class="inst-highlight">${fmtR(alpha)}</td><td>—</td></tr>
@@ -421,11 +421,11 @@ function buildInstitutionalMetrics(summary, fullReport) {
             ${instCard(pt('sharpeRatio'), sharpe, colorSharpe(Number(sharpe)), 'Return per unit of risk, adjusted for Egypt CBE rate (27.25%)')}
             ${instCard(pt('sortinoRatio'), sortino, colorSortino(Number(sortino)), 'Like Sharpe, but only penalizes downside volatility')}
             ${instCard(pt('calmarRatio'), calmar, colorCalmar(Number(calmar)), 'Annualized return divided by maximum drawdown depth')}
-            ${instCard(pt('informationRatio'), ir, colorIR(Number(ir)), 'Alpha per unit of tracking error vs EGX30')}
+            ${instCard(pt('informationRatio'), ir, colorIR(Number(ir)), 'Alpha per unit of tracking error vs TASI')}
             ${instCard(pt('maxDrawdown'), mdd, colorMdd(mdd), 'Largest peak-to-trough decline in portfolio value')}
             ${instCard(pt('recoveryTime'), recStr, colorRec(recDays), 'Trading days from drawdown trough to new equity high')}
-            ${instCard(pt('betaVsBenchmark'), beta, colorBeta(Number(beta)), 'Portfolio sensitivity to EGX30 movements. <1 = less volatile')}
-            ${instCard(pt('downCapture'), downStr, colorDown(Number(downCap)), 'How much of EGX30 down days the portfolio captures. <80% is excellent')}
+            ${instCard(pt('betaVsBenchmark'), beta, colorBeta(Number(beta)), 'Portfolio sensitivity to TASI movements. <1 = less volatile')}
+            ${instCard(pt('downCapture'), downStr, colorDown(Number(downCap)), 'How much of TASI down days the portfolio captures. <80% is excellent')}
         </div>
         <div class="inst-sub-row">
             <div class="inst-sub-card">
@@ -574,7 +574,7 @@ function renderEquityCurveLW(container, points) {
         color: '#6b7280',
         lineWidth: 1,
         lineStyle: LightweightCharts.LineStyle.Dashed,
-        title: 'EGX30',
+        title: 'TASI',
         visible: perfChartState.showBenchmark,
     });
 
@@ -677,7 +677,7 @@ function renderEquityCurveCanvas(data) {
         tip.style.display = 'block';
         tip.style.left = `${Math.min(w - 170, Math.max(8, mx + 10))}px`;
         tip.style.top = '10px';
-        tip.innerHTML = `Xmore: ${Number(p.xmore).toFixed(2)}%<br>EGX30: ${Number(p.egx30).toFixed(2)}%<br>Alpha: ${Number(p.alpha).toFixed(2)}%`;
+        tip.innerHTML = `Xmore: ${Number(p.xmore).toFixed(2)}%<br>TASI: ${Number(p.egx30).toFixed(2)}%<br>Alpha: ${Number(p.alpha).toFixed(2)}%`;
     };
     canvas.onmousemove = move;
     canvas.onmouseleave = () => { if (tip) tip.style.display = 'none'; };

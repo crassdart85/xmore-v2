@@ -4,6 +4,7 @@ const router = express.Router();
 const { spawn } = require('child_process');
 const path = require('path');
 const { simulateStock, autoSelectBest } = require('../services/forecastEngine');
+const { resolveMarketSymbol } = require('../services/marketUniverse');
 
 // Simple in-memory cache (TTL: 1 hour)
 const cache = new Map();
@@ -198,7 +199,7 @@ router.post('/forecast', async (req, res) => {
     try {
         const { symbol, investment_amount, horizon, scenario } = req.body;
 
-        // symbol is optional — omitting triggers auto-select across all EGX30 stocks
+        // symbol is optional — omitting triggers auto-select across the Tadawul universe.
         const isAuto = !symbol || symbol === 'auto';
         const sym = isAuto ? 'auto' : String(symbol).trim().toUpperCase();
 
@@ -218,7 +219,8 @@ router.post('/forecast', async (req, res) => {
         }
 
         // Cache check
-        const cacheKey = getForecastCacheKey(sym, amount, horizonDays, sc);
+        const resolvedSymbol = isAuto ? 'auto' : await resolveMarketSymbol(sym, _db);
+        const cacheKey = getForecastCacheKey(resolvedSymbol, amount, horizonDays, sc);
         const cached = cache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
             return res.json(cached.data);
@@ -227,7 +229,7 @@ router.post('/forecast', async (req, res) => {
         // Run pure-JS forecast engine (no Python spawn required)
         const result = isAuto
             ? await autoSelectBest(amount, horizonDays, sc, _db)
-            : await simulateStock(sym.endsWith('.CA') ? sym : `${sym}.CA`, amount, horizonDays, sc, _db);
+            : await simulateStock(resolvedSymbol, amount, horizonDays, sc, _db);
 
         if (!result.ok) {
             return res.status(422).json(result);

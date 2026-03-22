@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="base.css">
-  <title>Xmore - Session Sheet</title>
+  <title>Xmore - Tadawul Session Sheet</title>
   <link rel="stylesheet" href="session.css">
   <link rel="stylesheet" href="assistant-widget.css">
 </head>
@@ -61,7 +61,7 @@
 
   <div class="s-container">
 
-    <!-- Index levels (EGX30 / EGX70 pivot levels) -->
+    <!-- Market levels (TASI / MT30 when available) -->
     <div class="s-section-title" id="sIdxTitle">
       <span>INDEX SUPPORT &amp; RESISTANCE</span>
     </div>
@@ -103,7 +103,7 @@
   <footer class="s-footer">
     <span class="s-footer-logo">XMORE</span>
     <span class="s-footer-note" id="sFooterNote">
-      system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.
+      system-generated signals — not financial advice. Tadawul · Sun–Thu 10:00–15:00 Riyadh.
     </span>
   </footer>
 
@@ -113,7 +113,7 @@
 const T = {
   en: {
     back:        '← Dashboard', SessionLabel:'Session',
-    idxTitle:    'INDEX SUPPORT & RESISTANCE',
+    idxTitle:    'MARKET SUPPORT & RESISTANCE',
     stockTitle:  'STOCK SIGNALS',
     colQ:        '#',
     colCode:     'CODE',
@@ -139,13 +139,13 @@ const T = {
     simStats:    'Stats',
     loading:     'Loading session data...',
     idxLoading:  'Loading index levels…',
-    empty:       'No session data available. Run the pipeline to generate signals.',
+    empty:       'No Tadawul session data is available yet. Run the pipeline to generate signals.',
     noLogin:     'Sign in to view your personalised session sheet.',
-    footer:      'system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.',
+    footer:      'system-generated signals — not financial advice. Tadawul · Sun–Thu 10:00–15:00 Riyadh.',
   },
   ar: {
     back:        'الرئيسية →', SessionLabel:'جلسة',
-    idxTitle:    'مستويات الدعم والمقاومة للمؤشرات',
+    idxTitle:    'مستويات دعم ومقاومة السوق',
     stockTitle:  'إشارات الأسهم',
     colQ:        '#',
     colCode:     'الكود',
@@ -171,9 +171,9 @@ const T = {
     simStats:    'إحصاءات',
     loading:     'جاري تحميل البيانات…',
     idxLoading:  'جاري تحميل مستويات المؤشرات…',
-    empty:       'لا توجد بيانات للجلسة. قم بتشغيل الخط لتوليد الإشارات.',
+    empty:       'لا توجد بيانات لجلسة تداول السعودية بعد. شغّل المسار لتوليد الإشارات.',
     noLogin:     'سجّل دخولك لعرض ورقة الجلسة الخاصة بك.',
-    footer:      'إشارات مولّدة بالذكاء الاصطناعي — ليست نصيحة مالية. بورصة مصر · الأحد–الخميس 10:00–14:30 القاهرة.',
+    footer:      'إشارات مولّدة بالذكاء الاصطناعي — ليست نصيحة مالية. تداول · الأحد–الخميس 10:00–15:00 الرياض.',
   }
 };
 
@@ -238,6 +238,10 @@ function fmtPct(v) {
   return `<span class="${cls}">${n.toFixed(1)}%</span>`;
 }
 
+function displaySymbol(symbol) {
+  return String(symbol || '').replace(/\.(CA|SR)$/i, '');
+}
+
 /* ─── Render table head ───────────────────────────────────────────────────── */
 function renderHead() {
   const cols = [
@@ -295,7 +299,7 @@ function renderTable(data) {
   const rows = data.map((row, i) => {
     const tc = trendClass(row.trend_en);
     const recCls = (row.rec_type_en || '').toLowerCase() === 'trade' ? 's-rec-trade' : 's-rec-hold';
-    const sym = row.symbol.replace('.CA', '');
+    const sym = displaySymbol(row.symbol);
 
     return `<tr>
       <td data-label="${labels.q}" class="s-row-num">${i + 1}</td>
@@ -339,7 +343,7 @@ function renderIndexCards(data) {
   };
 
   wrap.innerHTML = data.map(row => {
-    const sym = row.symbol.replace('.CA', '');
+    const sym = displaySymbol(row.symbol);
     const name = lang === 'ar' ? (row.name_ar || sym) : (row.name_en || sym);
     const cells = [
       { label: labels.s2,    val: fmt(row.s2,             3), cls: 's-num-sl'  },
@@ -383,11 +387,11 @@ async function loadSession() {
 
     // SetSession date
     const dateEl = document.getElementById('sSessionDate');
-    dateEl.textContent = json.Session_date || '—';
+    dateEl.textContent = json.session_date || json.Session_date || '—';
     applyLang();
 
-    window._SessionData = json.stocks || [];
-    window._indexData   = json.indices || [];
+    window._SessionData = (json.stocks || []).filter(row => /\.SR$/i.test(row.symbol || '') || /^(TASI|MT30)(\.SR)?$/i.test(row.symbol || ''));
+    window._indexData   = (json.indices || []).filter(row => /\.SR$/i.test(row.symbol || '') || /^(TASI|MT30)(\.SR)?$/i.test(row.symbol || ''));
 
     renderTable(window._SessionData);
     renderIndexCards(window._indexData);
@@ -456,7 +460,7 @@ async function loadSimulator() {
       list.innerHTML = open.map(p => {
         const ret = parseFloat(p.unrealized_return_pct || 0);
         const cls = ret >= 0 ? 's-pct-pos' : 's-pct-neg';
-        const sym = p.symbol.replace('.CA', '');
+        const sym = displaySymbol(p.symbol);
         const name = lang === 'ar' ? (p.name_ar || sym) : (p.name_en || sym);
         return `<div class="s-sim-row">
           <span class="s-sim-sym">${sym}</span>
@@ -481,7 +485,7 @@ async function loadSimulator() {
 function populateSimSymbols(data) {
   const sel = document.getElementById('simSymbol');
   if (!sel || !data || data.length === 0) return;
-  sel.innerHTML = data.map(r => `<option value="${r.symbol}">${r.symbol.replace('.CA', '')}</option>`).join('');
+  sel.innerHTML = data.map(r => `<option value="${r.symbol}">${displaySymbol(r.symbol)}</option>`).join('');
 }
 
 /* ─── Auth ────────────────────────────────────────────────────────────────── */

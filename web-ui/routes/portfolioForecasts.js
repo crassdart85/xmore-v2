@@ -16,6 +16,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const { simulateStock } = require('../services/forecastEngine');
+const { resolveMarketSymbol } = require('../services/marketUniverse');
 
 let _db = null;
 let _isPostgres = false;
@@ -212,9 +213,9 @@ router.post('/:id/run', authMiddleware, async (req, res) => {
         // Run all forecasts in parallel
         const forecastPromises = symbols.map(async (symbol) => {
             try {
-                const sym = symbol.endsWith('.CA') ? symbol : `${symbol}.CA`;
+                const sym = await resolveMarketSymbol(symbol, _db);
                 const result = await simulateStock(sym, amount, horizon, scenario, _db);
-                return { symbol, result };
+                return { symbol: sym, result };
             } catch (err) {
                 return { symbol, result: { ok: false, error: String(err.message || err) } };
             }

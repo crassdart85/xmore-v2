@@ -458,8 +458,8 @@ router.patch('/positions/:id', authMiddleware, async (req, res) => {
 });
 
 // ─── Session Sheet (/api/trades/session-sheet) ───────────────────────────────
-// Returns today's signals enriched with pivot levels, trend, buy guide, rec type.
-// Also returns index-level pivot data for EGX30 / EGX70.
+// Returns the latest Tadawul session signals enriched with pivot levels, trend,
+// and execution guidance.
 router.get('/session-sheet', authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
@@ -477,41 +477,55 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
         const stocksSql = `
             SELECT
                 tr.symbol,
-                s.name_en, s.name_ar, s.sector_en, s.sector_ar,
+                COALESCE(s.name_en, REPLACE(REPLACE(tr.symbol, '.SR', ''), '.CA', '')) AS name_en,
+                COALESCE(s.name_ar, REPLACE(REPLACE(tr.symbol, '.SR', ''), '.CA', '')) AS name_ar,
+                s.sector_en, s.sector_ar,
                 tr.action, tr.signal, tr.confidence, tr.conviction,
                 tr.close_price, tr.stop_loss_price, tr.stop_loss_pct,
                 tr.target_price, tr.target_pct, tr.risk_reward_ratio,
                 tr.trend_ar, tr.trend_en, tr.rec_type_ar, tr.rec_type_en,
                 tr.buy_guide, tr.pivot, tr.r1, tr.r2, tr.s1, tr.s2, tr.patterns
             FROM trade_recommendations tr
-            JOIN egx30_stocks s ON tr.symbol = s.symbol
+            LEFT JOIN egx30_stocks s ON tr.symbol = s.symbol
             WHERE tr.user_id = $1
               AND tr.recommendation_date = $2
               AND tr.signal IN ('UP', 'DOWN')
+              AND (UPPER(tr.symbol) LIKE '%.SR' OR UPPER(tr.symbol) IN ('TASI', 'TASI.SR', 'MT30', 'MT30.SR'))
             ORDER BY tr.confidence DESC, tr.priority DESC
         `;
         const stocksRes = await queryAll(stocksSql, [userId, sessionDate]);
 
-        // Index pivot levels (EGX30, EGX70 stored as MACRO symbols)
-        const indexSymbols = ['EGX30.CA', 'EGX70.CA'];
+        // Index pivot levels (TASI, MT30 when available in the price store)
+        const indexSymbols = [
+            { candidates: ['TASI.SR', 'TASI', '^TASI'], name_en: 'TASI Index', name_ar: 'مؤشر تاسي' },
+            { candidates: ['MT30.SR', 'MT30'], name_en: 'Tadawul MT30', name_ar: 'مؤشر إم تي 30' },
+        ];
         const indexData = [];
-        for (const sym of indexSymbols) {
-            const ph = db._isPostgres ? '$1' : '?';
-            const idxRes = await queryAll(
-                `SELECT open, high, low, close FROM prices WHERE symbol = ${ph} ORDER BY date DESC LIMIT 2`,
-                [sym]
-            );
+        for (const meta of indexSymbols) {
+            let selectedSymbol = null;
+            let idxRes = { rows: [] };
+            for (const candidate of meta.candidates) {
+                const ph = db._isPostgres ? '$1' : '?';
+                idxRes = await queryAll(
+                    `SELECT open, high, low, close FROM prices WHERE symbol = ${ph} ORDER BY date DESC LIMIT 2`,
+                    [candidate]
+                );
+                if (idxRes.rows.length >= 2) {
+                    selectedSymbol = candidate;
+                    break;
+                }
+            }
             if (idxRes.rows.length >= 2) {
-                const prev = idxRes.rows[1]; // older row
+                const prev = idxRes.rows[1];
                 const H = parseFloat(prev.high), L = parseFloat(prev.low), C = parseFloat(prev.close);
                 const P  = (H + L + C) / 3;
                 const R1 = 2*P - L, R2 = P + (H - L);
                 const S1 = 2*P - H, S2 = P - (H - L);
                 const close = parseFloat(idxRes.rows[0].close);
                 indexData.push({
-                    symbol: sym,
-                    name_en: sym === 'EGX30.CA' ? 'EGX 30 Index' : 'EGX 70 Index',
-                    name_ar: sym === 'EGX30.CA' ? 'مؤشر ايجى اكس 30' : 'مؤشر ايجى اكس 70',
+                    symbol: selectedSymbol,
+                    name_en: meta.name_en,
+                    name_ar: meta.name_ar,
                     close_price:    parseFloat(close.toFixed(2)),
                     stop_loss_price: parseFloat((close * 0.97).toFixed(2)),
                     pivot: parseFloat(P.toFixed(2)),

@@ -74,7 +74,7 @@ class GeminiAgent:
 
         Args:
             df:            Price DataFrame (date, open, high, low, close, volume)
-            symbol:        EGX ticker (e.g. 'COMI.CA')
+            symbol:        Tadawul ticker (e.g. '2222.SR')
             sentiment:     Latest sentiment dict or None
             other_signals: List of AgentSignal dicts from the 4 technical agents
 
@@ -186,8 +186,8 @@ class GeminiAgent:
             context_labels.append("historical patterns")
         based_on = ", ".join(context_labels)
 
-        return f"""You are an expert analyst for the Egyptian Exchange (EGX).
-Market: EGX trades Sunday–Thursday, 09:00–14:00 Cairo time (UTC+2).
+        return f"""You are an expert analyst for the Saudi Exchange (Tadawul).
+    Market: Tadawul trades Sunday–Thursday, 10:00–15:00 Riyadh time (UTC+3).
 
 Stock: {symbol}
 Recent price trend: {trend_text}
@@ -209,7 +209,7 @@ Rules:
 - "signal" must be exactly one of: "buy", "sell", "hold"
 - "confidence" must be a float 0.0–1.0
 - "reasoning" must be plain English, under 200 characters
-- Account for EGX-specific context: lower liquidity than US markets, EGP currency
+- Account for Tadawul-specific context: Saudi market structure, SAR currency, and regional liquidity dynamics
 - Make a decisive signal based on the weight of evidence; use "hold" only when signals genuinely contradict each other
 - Bearish signals (falling price trend, negative sentiment, RSI rolling over, declining volume) should produce "sell", not "hold"
 """
