@@ -66,6 +66,7 @@ env:
   TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
   TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
   MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
+  EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
 
 jobs:
   # ──────────────────────────────────────────────
