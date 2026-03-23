@@ -363,11 +363,14 @@ def run_backfill(market: str = "EGX", years: int = 5, dry_run: bool = False):
     print(f"{'='*60}")
 
     if errors:
-        print("\nFailed symbols:")
+        print("\nFailed symbols (non-fatal — many EGX stocks are not on yfinance):")
         for r in errors:
             print(f"  {r['symbol']}: {r['error']}")
 
-    return len(errors) == 0
+    # Per-symbol not-found errors are expected (EGX stocks not on yfinance use
+    # the live scraper instead). Only fail catastrophically if nothing succeeded.
+    catastrophic = len(ok) == 0 and len(skipped) == 0 and not dry_run
+    return not catastrophic
 
 
 if __name__ == "__main__":
