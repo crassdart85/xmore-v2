@@ -199,8 +199,9 @@ jobs:
         continue-on-error: true
         run: python collect_data.py --news-only
 
-      - name: Skip legacy EGX institutional news
-        run: echo "Skipping EGX institutional news for KSA deployment"
+      - name: Collect EGX institutional news
+        continue-on-error: true
+        run: python collect_data.py --news-only --source egx
 
       # Sentiment scoring via Gemini
       - name: Analyze sentiment
@@ -221,7 +222,7 @@ jobs:
   # Job 4: EGX daily snapshot (14:00 UTC = 16:00 Cairo, after EGX close)
   # ──────────────────────────────────────────────
   egx-daily-snapshot:
-    if: ${{ false }}
+    if: github.event.schedule == '0 14 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -311,9 +312,10 @@ jobs:
         continue-on-error: true
         run: python engines/custom_source_fetcher.py --fetch-all
 
-      # Step 3: Skip EGX institutional news sources in KSA deployment
-      - name: Skip legacy EGX institutional news
-        run: echo "Skipping EGX institutional news for KSA deployment"
+      # Step 3: EGX institutional news sources
+      - name: Collect EGX institutional news
+        continue-on-error: true
+        run: python collect_data.py --news-only --source egx
 
       # Step 4: Full sentiment analysis with Gemini
       - name: Analyze sentiment
@@ -398,7 +400,7 @@ jobs:
   # due to scheduler saturation. One trigger is reliable.
   # ─────────────────────────────────────
   etf-egx-all:
-    if: ${{ false }}
+    if: github.event.schedule == '30 13 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

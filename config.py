@@ -19,12 +19,15 @@ from datetime import time
 # STOCK SELECTION
 # ============================================
 
+# EGX (Egyptian Exchange) is the primary production universe for xmore-project.onrender.com.
+# KSA (Tadawul) runs as a separate deployment on xmore-ksa.onrender.com.
+from agents.intelligence.egx_universe import EGX_TOP50
+
+EGX_STOCKS = [row[1] for row in EGX_TOP50]   # yahoo_ticker column, e.g. 'COMI.CA'
+
+# KSA_STOCKS kept for backward compatibility with shared engine code.
 from config.ksa_universe import get_ksa_top50_symbols
 KSA_STOCKS = get_ksa_top50_symbols()
-
-# Shared engine code still imports EGX_STOCKS; keep the legacy name mapped to
-# the active KSA/Tadawul universe for the xmore-ksa deployment.
-EGX_STOCKS = KSA_STOCKS
 
 # US Stocks (Optional / Legacy)
 US_STOCKS = [
@@ -32,7 +35,7 @@ US_STOCKS = [
     # "MSFT",
 ]
 
-ALL_STOCKS = KSA_STOCKS + US_STOCKS
+ALL_STOCKS = EGX_STOCKS + US_STOCKS
 
 # ============================================
 # MARKET CONFIGURATION
