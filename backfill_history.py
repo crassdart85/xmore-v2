@@ -29,7 +29,10 @@ import os
 import sys
 import time
 import logging
+import signal
 from datetime import datetime, timedelta
+
+_SYMBOL_TIMEOUT_SEC = 90  # max seconds per symbol fetch before giving up
 
 from xmore_data.data_manager import DataManager
 
@@ -212,14 +215,27 @@ def _fetch_and_store(symbol: str, source_symbol: str, years: int, dry_run: bool)
         )
 
         data_manager = _get_data_manager()
-        df = data_manager.fetch_data(
-            source_symbol,
-            interval="1d",
-            start=start_date.strftime("%Y-%m-%d"),
-            end=end_date.strftime("%Y-%m-%d"),
-            force_refresh=True,
-        )
-        provider_source = data_manager.get_last_source(source_symbol) or "market_data"
+
+        # Per-symbol timeout via SIGALRM (Unix only; no-op on Windows)
+        def _timeout_handler(signum, frame):
+            raise TimeoutError(f"fetch timed out after {_SYMBOL_TIMEOUT_SEC}s")
+
+        has_sigalrm = hasattr(signal, "SIGALRM")
+        if has_sigalrm:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(_SYMBOL_TIMEOUT_SEC)
+        try:
+            df = data_manager.fetch_data(
+                source_symbol,
+                interval="1d",
+                start=start_date.strftime("%Y-%m-%d"),
+                end=end_date.strftime("%Y-%m-%d"),
+                force_refresh=True,
+            )
+            provider_source = data_manager.get_last_source(source_symbol) or "market_data"
+        finally:
+            if has_sigalrm:
+                signal.alarm(0)  # cancel alarm
 
         if df is None or len(df) == 0:
             result["error"] = "provider chain returned empty DataFrame"
