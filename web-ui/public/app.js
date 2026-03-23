@@ -1764,6 +1764,61 @@ function closeSentimentModal() {
 // TRADINGVIEW WIDGETS (Task 5)
 // ============================================
 
+const TOP_TICKER_SYMBOLS = [
+    { proName: 'TADAWUL:TASI', title: 'TASI', dataSymbol: 'TASI' },
+    { proName: 'TADAWUL:2222', title: 'Aramco', dataSymbol: '2222.SR' },
+    { proName: 'TADAWUL:2010', title: 'SABIC', dataSymbol: '2010.SR' },
+    { proName: 'TADAWUL:1120', title: 'Al Rajhi', dataSymbol: '1120.SR' },
+    { proName: 'TADAWUL:7010', title: 'STC', dataSymbol: '7010.SR' },
+    { proName: 'TADAWUL:1150', title: 'Alinma', dataSymbol: '1150.SR' },
+];
+
+function hasTradingViewTickerValues(container) {
+    const text = String(container?.innerText || '');
+    return /\d+\.\d+/.test(text);
+}
+
+function buildNativeTickerItem(config, row) {
+    const price = Number(row.close || 0);
+    const changePct = Number(row.change_pct || 0);
+    const changeClass = changePct > 0 ? 'native-ticker-change positive-change'
+        : changePct < 0 ? 'native-ticker-change negative-change'
+        : 'native-ticker-change';
+    const changePrefix = changePct > 0 ? '+' : '';
+    return `
+        <div class="native-ticker-item">
+            <span class="native-ticker-symbol">${escapeHtml(config.title)}</span>
+            <span class="native-ticker-price">${Number.isFinite(price) ? price.toFixed(2) : '—'}</span>
+            <span class="${changeClass}">${changePrefix}${Number.isFinite(changePct) ? changePct.toFixed(2) : '0.00'}%</span>
+        </div>
+    `;
+}
+
+async function renderNativeTickerTape(container) {
+    try {
+        const response = await fetch(`${API_URL}/prices`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const rows = await response.json();
+        const rowsBySymbol = new Map((rows || []).map(row => [row.symbol, row]));
+        const items = TOP_TICKER_SYMBOLS
+            .map(config => ({ config, row: rowsBySymbol.get(config.dataSymbol) }))
+            .filter(item => item.row);
+
+        if (!items.length) return;
+
+        const repeated = [...items, ...items];
+        container.innerHTML = `
+            <div class="native-ticker-tape" aria-label="Live market ticker">
+                <div class="native-ticker-track">
+                    ${repeated.map(item => buildNativeTickerItem(item.config, item.row)).join('')}
+                </div>
+            </div>
+        `;
+    } catch (error) {
+        console.warn('Native ticker fallback failed:', error);
+    }
+}
+
 function loadTradingViewTicker() {
     const container = document.getElementById('tv-ticker-tape');
     if (!container) return;
@@ -1781,21 +1836,21 @@ function loadTradingViewTicker() {
     script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
     script.async = true;
     script.textContent = JSON.stringify({
-        symbols: [
-            { proName: 'EGX:EGX30', title: 'EGX30' },
-            { proName: 'EGX:COMI',  title: 'CIB' },
-            { proName: 'EGX:HRHO',  title: 'EFG Hermes' },
-            { proName: 'EGX:SWDY',  title: 'El Sewedy' },
-            { proName: 'EGX:TMGH',  title: 'Talaat' },
-            { proName: 'EGX:ESRS',  title: 'Ezz Steel' },
-        ],
+        symbols: TOP_TICKER_SYMBOLS.map(({ proName, title }) => ({ proName, title })),
         showSymbolLogo: true,
         colorTheme: colorTheme,
         isTransparent: true,
         displayMode: 'adaptive',
         locale: locale
     });
+    script.onerror = () => renderNativeTickerTape(container);
     container.appendChild(script);
+
+    window.setTimeout(() => {
+        if (!hasTradingViewTickerValues(container)) {
+            renderNativeTickerTape(container);
+        }
+    }, 4500);
 }
 
 // Lazy-load TradingView mini chart for a stock card

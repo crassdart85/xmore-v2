@@ -131,6 +131,58 @@ textarea {
     border-bottom: 1px solid var(--border-color);
 }
 
+.native-ticker-tape {
+    width: 100%;
+    min-height: 46px;
+    background: var(--container-bg);
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+.native-ticker-track {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    width: max-content;
+    min-height: 46px;
+    padding: 0 20px;
+    animation: nativeTickerScroll 32s linear infinite;
+}
+
+.native-ticker-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.native-ticker-symbol {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.native-ticker-price {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.native-ticker-change {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+@keyframes nativeTickerScroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .native-ticker-track {
+        animation: none;
+    }
+}
+
 /* ============================================
    HEADER
    ============================================ */
