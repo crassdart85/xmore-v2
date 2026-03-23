@@ -2,6 +2,7 @@
 Intelligence Pipeline Orchestrator.
 Called from run_agents.py BEFORE all trading agents.
 """
+import config
 import logging
 from datetime import datetime
 
@@ -17,22 +18,30 @@ def run_intelligence_pipeline(conn) -> dict:
     start     = datetime.now()
     all_items = []
     results   = {}
+    is_ksa_mode = any(str(symbol).upper().endswith(".SR") for symbol in getattr(config, "EGX_STOCKS", []))
 
     # Lazy imports (avoid import-time failures)
     from agents.intelligence.marketaux_agent    import fetch_marketaux_news
-    from agents.intelligence.mubasher_agent     import fetch_mubasher_news
-    from agents.intelligence.egx_announcements_agent import fetch_egx_announcements
     from agents.intelligence.argaam_agent       import fetch_argaam_news
     from agents.intelligence.news_aggregator    import aggregate_and_store
     from agents.intelligence.fundamentals_agent import run_fundamentals
     from agents.intelligence.insider_agent      import fetch_insider_data
 
-    AGENTS = [
-        ("MARKETAUX", fetch_marketaux_news),
-        ("MUBASHER",  fetch_mubasher_news),
-        ("EGX",       fetch_egx_announcements),
-        ("ARGAAM",    fetch_argaam_news),
-    ]
+    if is_ksa_mode:
+        AGENTS = [
+            ("MARKETAUX", fetch_marketaux_news),
+            ("ARGAAM",    fetch_argaam_news),
+        ]
+    else:
+        from agents.intelligence.mubasher_agent import fetch_mubasher_news
+        from agents.intelligence.egx_announcements_agent import fetch_egx_announcements
+
+        AGENTS = [
+            ("MARKETAUX", fetch_marketaux_news),
+            ("MUBASHER",  fetch_mubasher_news),
+            ("EGX",       fetch_egx_announcements),
+            ("ARGAAM",    fetch_argaam_news),
+        ]
 
     for name, fn in AGENTS:
         try:

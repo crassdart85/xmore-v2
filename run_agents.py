@@ -879,9 +879,14 @@ def execute():
             if market_regime:
                 lbl = market_regime.get('regime_label_en', 'Unknown')
                 conf = market_regime.get('regime_confidence', 0)
+                current_regime = market_regime.get('current_regime', '?')
+                regime_count = market_regime.get('n_regimes')
+                try:
+                    regime_total = max(int(regime_count) - 1, 0)
+                except (TypeError, ValueError):
+                    regime_total = '?'
                 print(f"Market Regime: {lbl} ({conf:.1%} confidence) "
-                      f"[regime {market_regime.get('current_regime')}/"
-                      f"{market_regime.get('n_regimes', '?')-1}]")
+                      f"[regime {current_regime}/{regime_total}]")
                 # Persist regime to regime_log for track-record page
                 try:
                     _cursor = conn.cursor()

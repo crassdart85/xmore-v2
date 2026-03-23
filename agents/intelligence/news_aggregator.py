@@ -18,6 +18,8 @@ NEGATIVE_EN = ["loss","decline","fine","delay","miss","downgrade","default","inv
 
 SOURCE_WEIGHTS = {
     "egx_official": 0.9,
+    "tadawul_official": 0.9,
+    "saudi_exchange": 0.9,
     "marketaux":    0.7,
     "mubasher":     0.7,
     "argaam":       0.6,
@@ -96,7 +98,7 @@ def _compute_urgency(item: dict) -> float:
 
 def aggregate_and_store(conn, items: list) -> dict:
     from database import DATABASE_URL
-    from agents.intelligence.egx_universe import TICKER_BY_CA
+    from agents.intelligence.market_universe import TICKER_BY_SYMBOL
 
     ensure_news_columns(conn)
     cursor = conn.cursor()
@@ -105,7 +107,7 @@ def aggregate_and_store(conn, items: list) -> dict:
 
     for item in items:
         ticker = item.get("ticker", "")
-        ticker_info = TICKER_BY_CA.get(ticker)
+        ticker_info = TICKER_BY_SYMBOL.get(str(ticker or "").upper())
         if ticker_info:
             item["company_en"] = ticker_info[3]
             item["company_ar"] = ticker_info[2]

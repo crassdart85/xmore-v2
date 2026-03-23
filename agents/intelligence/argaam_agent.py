@@ -1,7 +1,4 @@
-"""
-Argaam Agent — Arabic RSS feeds for EGX-related news.
-Free, no API key, most reliable source. Saudi-primary but strong EGX coverage.
-"""
+"""Argaam Agent — Saudi/Tadawul RSS feeds mapped to the KSA universe."""
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -17,7 +14,6 @@ logger = logging.getLogger(__name__)
 FEEDS = [
     ("https://www.argaam.com/en/rss",        "en"),
     ("https://www.argaam.com/ar/rss",        "ar"),
-    ("https://www.argaam.com/en/rss/Egypt",  "en"),
 ]
 
 
@@ -26,7 +22,7 @@ def fetch_argaam_news(hours_back: int = 25) -> list:
         logger.warning("[INTEL:ARGAAM] feedparser not installed — skipping")
         return []
 
-    from agents.intelligence.egx_announcements_agent import _match_ticker_from_text
+    from agents.intelligence.market_universe import match_ticker_from_text
 
     articles = []
     cutoff = datetime.now(timezone.utc) - timedelta(hours=hours_back)
@@ -44,7 +40,7 @@ def fetch_argaam_news(hours_back: int = 25) -> list:
                 url     = entry.get("link", "")
                 full    = f"{title} {summary}"
 
-                ticker = _match_ticker_from_text(full)
+                ticker = match_ticker_from_text(full)
                 if not ticker:
                     continue
 
@@ -61,7 +57,7 @@ def fetch_argaam_news(hours_back: int = 25) -> list:
         except Exception as e:
             logger.error(f"[INTEL:ARGAAM] Feed {feed_url}: {e}")
 
-    logger.info(f"[INTEL:ARGAAM] {len(articles)} articles matched to EGX tickers")
+    logger.info(f"[INTEL:ARGAAM] {len(articles)} articles matched to Tadawul tickers")
     return articles
 
 

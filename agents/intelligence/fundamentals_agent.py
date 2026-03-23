@@ -161,13 +161,13 @@ def run_fundamentals(conn) -> int:
         return 0
 
     from database import DATABASE_URL, _adapt_sql
-    from agents.intelligence.egx_universe import EGX_TOP50
+    from agents.intelligence.market_universe import TICKER_ROWS
 
     ensure_fundamentals_table(conn)
     cursor = conn.cursor()
     count  = 0
 
-    for ca, yahoo, *_ in EGX_TOP50:
+    for ticker, yahoo, *_ in TICKER_ROWS:
         try:
             stock = yf.Ticker(yahoo)
             info  = stock.info or {}
@@ -205,7 +205,7 @@ def run_fundamentals(conn) -> int:
                         qrev.append({"q": str(col.date()), "revenue": int(rev) if rev == rev else None})
                     row["quarterly_revenue"] = json.dumps(qrev)
             except Exception as e:
-                logger.debug(f"[INTEL:FUNDAMENTALS] {ca}: quarterly revenue parse failed: {e}")
+                logger.debug(f"[INTEL:FUNDAMENTALS] {ticker}: quarterly revenue parse failed: {e}")
 
             # Ownership
             try:
@@ -214,7 +214,7 @@ def run_fundamentals(conn) -> int:
                     row["insider_ownership_pct"]     = float(major.iloc[0, 0]) if len(major) > 0 else None
                     row["institution_ownership_pct"] = float(major.iloc[1, 0]) if len(major) > 1 else None
             except Exception as e:
-                logger.debug(f"[INTEL:FUNDAMENTALS] {ca}: ownership parse failed: {e}")
+                logger.debug(f"[INTEL:FUNDAMENTALS] {ticker}: ownership parse failed: {e}")
 
             ph = "%s" if DATABASE_URL else "?"
             cols = ", ".join(["ticker"] + list(row.keys()))
@@ -225,18 +225,18 @@ def run_fundamentals(conn) -> int:
                 cursor.execute(
                     f"INSERT INTO company_fundamentals ({cols}) VALUES ({vals})"
                     f" ON CONFLICT (ticker, fetched_at::date) DO UPDATE SET {update_set}",
-                    [ca] + list(row.values())
+                    [ticker] + list(row.values())
                 )
             else:
                 cursor.execute(
                     f"INSERT OR REPLACE INTO company_fundamentals ({cols}) VALUES ({vals})",
-                    [ca] + list(row.values())
+                    [ticker] + list(row.values())
                 )
             count += 1
-            logger.info(f"[INTEL:FUNDAMENTALS] {ca}: P/E={row.get('pe_ratio')}, MCap={row.get('market_cap')}")
+            logger.info(f"[INTEL:FUNDAMENTALS] {ticker}: P/E={row.get('pe_ratio')}, MCap={row.get('market_cap')}")
 
         except Exception as e:
-            logger.error(f"[INTEL:FUNDAMENTALS] {ca}: {e}")
+            logger.error(f"[INTEL:FUNDAMENTALS] {ticker}: {e}")
 
     logger.info(f"[INTEL:FUNDAMENTALS] {count} companies updated")
     return count

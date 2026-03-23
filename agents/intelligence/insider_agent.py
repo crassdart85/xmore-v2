@@ -72,13 +72,13 @@ def fetch_insider_data(conn) -> int:
         return 0
 
     from database import DATABASE_URL
-    from agents.intelligence.egx_universe import EGX_TOP50
+    from agents.intelligence.market_universe import TICKER_ROWS
 
     ensure_insider_table(conn)
     cursor = conn.cursor()
     count = 0
 
-    for ca, yahoo, *_ in EGX_TOP50:
+    for ticker, yahoo, *_ in TICKER_ROWS:
         try:
             stock = yf.Ticker(yahoo)
             time.sleep(1.5)
@@ -117,7 +117,7 @@ def fetch_insider_data(conn) -> int:
                             cursor.execute(
                                 insert_sql,
                                 (
-                                    ca, txn_date,
+                                    ticker, txn_date,
                                     str(row.get("Insider", ""))[:200],
                                     str(row.get("Position", ""))[:100],
                                     txn_type, abs(shares), abs(int(value)),
@@ -126,12 +126,12 @@ def fetch_insider_data(conn) -> int:
                             )
                             count += 1
                         except Exception as ex:
-                            logger.debug(f"[INTEL:INSIDER] {ca} insert: {ex}")
+                            logger.debug(f"[INTEL:INSIDER] {ticker} insert: {ex}")
             except Exception as e:
-                logger.debug(f"[INTEL:INSIDER] {ca}: insider transactions unavailable: {e}")
+                logger.debug(f"[INTEL:INSIDER] {ticker}: insider transactions unavailable: {e}")
 
         except Exception as e:
-            logger.error(f"[INTEL:INSIDER] {ca}: {e}")
+            logger.error(f"[INTEL:INSIDER] {ticker}: {e}")
 
     logger.info(f"[INTEL:INSIDER] {count} insider transactions stored")
     return count
