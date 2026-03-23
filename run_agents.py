@@ -134,91 +134,102 @@ def _compute_market_data(df):
 
 def _detect_market_regime(conn) -> Optional[dict]:
     """
-    Fit a Gaussian HMM on recent EGX30-representative returns to classify
-    the current market regime as Calm / Turbulent / Crisis.
+    Classify current market regime as Calm or Turbulent using an MA/vol approach.
 
-    Uses COMI.CA (Commercial International Bank) as a liquid EGX30 proxy when
-    a dedicated EGX30 index price series is not available.
+    Both EGX and KSA use the same method:
+      - Fetch the benchmark index closing prices (DB first, yfinance fallback)
+      - Compute 20-day MA and 20-day realised vol
+      - Turbulent: price is >3% below MA20 AND/OR vol exceeds threshold
+      - Calm: everything else
+
+    EGX proxy: COMI.CA → HRHO.CA → ^EGX30 (yfinance)
+    KSA proxy: ^TASI.SR (yfinance)
 
     Returns a dict with keys:
-        regime_label_en   — "Calm", "Turbulent", or "Crisis"
-        regime_label_ar   — Arabic equivalent
-        regime_confidence — P(current state | data) in [0, 1]
-        current_regime    — 0-indexed integer, vol-sorted
-    Returns None on any failure (HMM not installed, insufficient data, etc.)
+        regime_label_en   — "Calm" or "Turbulent"
+        regime_label_ar   — same (no Arabic lookup needed for two labels)
+        regime_confidence — 0.80 (fixed; MA/vol is deterministic)
+        current_regime    — 0 (Calm) or 1 (Turbulent)
+        is_bearish        — bool
+    Returns None on any failure or insufficient data.
     """
     try:
-        from engines.regime_model import RegimeModel, HAS_HMMLEARN
-        if not HAS_HMMLEARN:
-            return None
-
-        # Detect which universe is active and pick the matching regime method.
-        # KSA (Tadawul) uses a fast MA/vol approach that avoids HMM mis-labelling
-        # caused by comparing current Tadawul vol against long EGX history.
+        # Detect which universe is active.
         try:
             from config import EGX_STOCKS
             _universe_is_ksa = bool(EGX_STOCKS) and EGX_STOCKS[0].endswith('.SR')
         except Exception:
             _universe_is_ksa = False
 
+        def _ma_vol_regime(closes_series, market_tag: str) -> dict:
+            """Compute Calm/Turbulent from a pandas Series of closing prices."""
+            closes = closes_series.dropna()
+            if len(closes) < 20:
+                return None
+            _ma20    = float(closes.tail(20).mean())
+            _price   = float(closes.iloc[-1])
+            _vol     = float(closes.pct_change().dropna().tail(20).std())
+            _bearish = _price < _ma20
+            _label   = 'Turbulent' if (_bearish and (((_price / _ma20) - 1) < -0.03 or _vol > 0.025)) else 'Calm'
+            logger.info(
+                f"[{market_tag}] Regime: {_label} | price={_price:.2f} MA20={_ma20:.2f} vol_20d={_vol:.4f}"
+            )
+            return {
+                'regime_label_en': _label, 'regime_label_ar': _label,
+                'current_regime': 0 if _label == 'Calm' else 1,
+                'regime_confidence': 0.80, 'is_bearish': _bearish,
+            }
+
+        # ── KSA: yfinance ^TASI.SR ─────────────────────────────────────────────
         if _universe_is_ksa:
             import yfinance as _yf
-            _tasi = _yf.download('^TASI.SR', period='2mo', auto_adjust=True, progress=False)
-            if _tasi is not None and len(_tasi) >= 20:
-                _tasi = _tasi.reset_index()
-                _tasi.columns = [str(c[0]).lower() if isinstance(c, tuple) else str(c).lower()
-                                 for c in _tasi.columns] if hasattr(_tasi.columns, 'levels') \
-                                 else [str(c).lower() for c in _tasi.columns]
-                _closes = _tasi.get('close', _tasi.get('adj close')).dropna()
-                _ma20 = float(_closes.tail(20).mean())
-                _price = float(_closes.iloc[-1])
-                _vol   = float(_closes.pct_change().dropna().tail(20).std())
-                _bearish = _price < _ma20
-                _label = 'Turbulent' if (_bearish and (((_price/_ma20)-1) < -0.03 or _vol > 0.025)) else 'Calm'
-                logger.info(f"[KSA] Regime: {_label} | TASI={_price:.2f} MA20={_ma20:.2f} vol_20d={_vol:.4f}")
-                return {
-                    'regime_label_en': _label, 'regime_label_ar': _label,
-                    'current_regime': 0 if _label == 'Calm' else 1,
-                    'regime_confidence': 0.80, 'is_bearish': _bearish,
-                }
+            _raw = _yf.download('^TASI.SR', period='2mo', auto_adjust=True, progress=False)
+            if _raw is not None and len(_raw) >= 20:
+                _raw = _raw.reset_index()
+                _raw.columns = [str(c[0]).lower() if isinstance(c, tuple) else str(c).lower()
+                                for c in _raw.columns] if hasattr(_raw.columns, 'levels') \
+                                else [str(c).lower() for c in _raw.columns]
+                _closes = _raw.get('close', _raw.get('adj close'))
+                result = _ma_vol_regime(_closes, 'KSA')
+                if result:
+                    return result
 
-        # EGX proxies (HMM-based)
-        proxy_symbols = ['EGX30.CA', 'COMI.CA', 'HRHO.CA']
-        price_series = None
-        for sym in proxy_symbols:
-            if os.getenv('DATABASE_URL'):
+        # ── EGX: DB first (COMI.CA / HRHO.CA), then yfinance ^EGX30 ───────────
+        ph = '%s' if os.getenv('DATABASE_URL') else '?'
+        egx_proxies_db = ['COMI.CA', 'HRHO.CA']
+        for sym in egx_proxies_db:
+            try:
                 cursor = conn.cursor()
                 cursor.execute(
-                    "SELECT date, close FROM prices WHERE symbol=%s ORDER BY date", (sym,)
+                    f"SELECT close FROM prices WHERE symbol={ph} ORDER BY date DESC LIMIT 30", (sym,)
                 )
-            else:
-                cursor = conn.cursor()
-                cursor.execute(
-                    "SELECT date, close FROM prices WHERE symbol=? ORDER BY date", (sym,)
-                )
-            rows = cursor.fetchall()
-            if rows and len(rows) >= 100:
-                df_proxy = pd.DataFrame(rows, columns=['date', 'close'])
-                log_ret = np.log(df_proxy['close'] / df_proxy['close'].shift(1)).dropna()
-                if len(log_ret) >= 100:
-                    price_series = log_ret
-                    break
+                rows = cursor.fetchall()
+                if rows and len(rows) >= 20:
+                    import pandas as _pd
+                    closes = _pd.Series([r[0] for r in reversed(rows)], dtype=float)
+                    result = _ma_vol_regime(closes, 'EGX')
+                    if result:
+                        return result
+            except Exception:
+                pass
 
-        if price_series is None or len(price_series) < 100:
-            return None
+        # Fallback: yfinance EGX30 index
+        try:
+            import yfinance as _yf
+            _raw = _yf.download('^EGX30', period='2mo', auto_adjust=True, progress=False)
+            if _raw is not None and len(_raw) >= 20:
+                _raw = _raw.reset_index()
+                _raw.columns = [str(c[0]).lower() if isinstance(c, tuple) else str(c).lower()
+                                for c in _raw.columns] if hasattr(_raw.columns, 'levels') \
+                                else [str(c).lower() for c in _raw.columns]
+                _closes = _raw.get('close', _raw.get('adj close'))
+                result = _ma_vol_regime(_closes, 'EGX')
+                if result:
+                    return result
+        except Exception:
+            pass
 
-        import warnings
-        regime_model = RegimeModel(use_auto_select=True, n_iter=100)
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore')
-            state = regime_model.fit(price_series)
-
-        result = state.to_dict()
-        result['regime_label_en'] = state.regime_label_en
-        result['regime_label_ar'] = state.regime_label_ar
-        result['regime_confidence'] = state.regime_confidence
-        result['current_regime'] = state.current_regime
-        return result
+        return None
 
     except Exception as e:
         logger.debug(f"Regime detection skipped: {e}")
