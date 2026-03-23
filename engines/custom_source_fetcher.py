@@ -148,8 +148,8 @@ def detect_language(text: str) -> str:
 # Minimal inline fallback so this module has no hard dependency on rss_news_collector
 def _match_to_symbols(text: str, conn, is_postgres: bool) -> List[str]:
     """
-    Match text to EGX stock symbols using the egx30_stocks reference table.
-    Falls back to top-5 liquid stocks for general EGX market news.
+    Match text to KSA stock symbols using the Tadawul reference universe.
+    Falls back to top liquid Tadawul names for general market news.
     """
     try:
         from rss_news_collector import match_article_to_symbols
@@ -157,18 +157,19 @@ def _match_to_symbols(text: str, conn, is_postgres: bool) -> List[str]:
     except Exception:
         pass
 
-    # Inline fallback: scan egx30_stocks table
+    # Inline fallback: scan the KSA reference universe.
+    from config.ksa_universe import KSA_TOP50
+
     symbols: List[str] = []
     text_upper = text.upper()
     text_lower = text.lower()
 
     try:
-        cur = conn.cursor()
-        cur.execute("SELECT symbol, name_en, name_ar FROM egx30_stocks WHERE is_active = TRUE")
-        rows = cur.fetchall()
-        for row in rows:
-            sym, name_en, name_ar = row[0], row[1] or "", row[2] or ""
-            ticker = sym.split(".")[0]
+        for stock in KSA_TOP50:
+            sym = stock["symbol"]
+            name_en = stock.get("name_en", "") or ""
+            name_ar = stock.get("name_ar", "") or ""
+            ticker = sym.split(".")[0].upper()
             if re.search(rf"\b{ticker}\b", text_upper):
                 symbols.append(sym)
                 continue
@@ -181,10 +182,12 @@ def _match_to_symbols(text: str, conn, is_postgres: bool) -> List[str]:
     except Exception as e:
         logger.warning("Symbol match DB error: %s", e)
 
-    market_kws = ["egx", "egyptian exchange", "cairo stock", "egypt stock market",
-                  "البورصة المصرية", "egx30"]
+    market_kws = [
+        "tadawul", "saudi exchange", "saudi market", "riyadh market",
+        "السوق السعودي", "تداول", "tasi",
+    ]
     if any(kw in text_lower for kw in market_kws):
-        symbols.extend(["COMI.CA", "HRHO.CA", "TMGH.CA", "SWDY.CA", "ETEL.CA"])
+        symbols.extend(["2222.SR", "2010.SR", "1120.SR", "7010.SR", "1180.SR"])
 
     return list(set(symbols))
 

@@ -1,6 +1,6 @@
 name: Trading System Automation
 
-# EGX market hours: 09:00–14:00 Cairo (UTC+2) = 07:00–12:00 UTC, Sun–Thu
+# KSA market hours: 10:00–15:00 Riyadh (UTC+3) = 07:00–12:00 UTC, Sun–Thu
 # NYSE/NASDAQ market hours: Mon–Fri
 # ─────────────────────────────────────────────────────────────────────────
 # Schedule overview (all times UTC):
@@ -8,17 +8,17 @@ name: Trading System Automation
 #  07,08,09,10,11,12  Sun–Thu  intraday-price-update         (hourly prices, 09:00–14:00 Cairo)
 #  07,09,11           Sun–Thu  intraday-news-update           (news+RSS 3× during trading day)
 #  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
-#  14:00              Sun–Thu  egx-daily-snapshot             (backup EGX data export, 16:00 Cairo)
+#  14:00              Sun–Thu  egx-daily-snapshot             (disabled for KSA deployment)
 #  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
 #  06,12,18:00        3×/day   catchup-evaluation             (resolve expired predictions → track-record data)
-#  13:30              Sun–Thu  etf-egx-all (EGX ETF post-close: tape+nav+holdings+fv+pd)
+#  13:30              Sun–Thu  etf-egx-all                    (disabled for KSA deployment)
 #  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
 #  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
 #  :15                Hourly   etf-rag-embedding
 
 on:
   schedule:
-    # Hourly price collection during EGX trading hours (09:00–14:00 Cairo = 07:00–12:00 UTC)
+    # Hourly price collection during Tadawul trading hours (10:00–15:00 Riyadh = 07:00–12:00 UTC)
     - cron: '0 7,8,9,10,11,12 * * 0-4'
 
     # News + RSS collection 3× during trading day (09:00, 11:00, 13:00 Cairo = 07:00, 09:00, 11:00 UTC)
@@ -28,7 +28,7 @@ on:
     # prices → news → reliable-news → sentiment → agents → evaluate
     - cron: '30 12 * * 0-4'
 
-    # EGX daily snapshot backup (16:00 Cairo = 14:00 UTC)
+    # Legacy EGX daily snapshot slot (disabled for KSA deployment)
     - cron: '0 14 * * 0-4'
 
     # Full nightly pipeline (00:00 Cairo+1 = 22:00 UTC) — includes briefing + portfolios
@@ -37,8 +37,8 @@ on:
     # Catchup evaluation: 3× daily (fills actual_next_day_return for track-record page)
     - cron: '0 6,12,18 * * *'
 
-    # ── ETF jobs (EGX post-close, Africa/Cairo UTC+2) ──
-    # All EGX ETF scrapes combined in one trigger (15:30 Cairo = 13:30 UTC, Sun–Thu)
+    # ── Legacy EGX ETF jobs (disabled for KSA deployment) ──
+    # Historical slot retained to avoid cron drift while EGX ETF automation is off.
     # tape → NAV → holdings → fund volume → premium/discount run sequentially
     - cron: '30 13 * * 0-4'
     # Global ETF prices night run (23:30 Cairo = 21:30 UTC, Mon–Fri — NYSE/NASDAQ)
@@ -69,7 +69,7 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
-  # Job 1: Intraday price update (hourly during EGX trading, 09:00–14:00 Cairo)
+  # Job 1: Intraday price update (hourly during Tadawul trading, 10:00–15:00 Riyadh)
   # Lightweight — prices only, no news, no agents
   # ──────────────────────────────────────────────
   intraday-price-update:
@@ -136,18 +136,8 @@ jobs:
       - name: Collect news and RSS feeds
         run: python collect_data.py --news-only
 
-      - name: Write Gmail credentials
-        continue-on-error: true
-        env:
-          GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
-          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
-        run: |
-          [ -n "$GMAIL_CREDENTIALS_B64" ] && echo "$GMAIL_CREDENTIALS_B64" | base64 -d > xmore_news_reliable/credentials.json
-          [ -n "$GMAIL_TOKEN_B64" ] && echo "$GMAIL_TOKEN_B64" | base64 -d > xmore_news_reliable/token.json
-
-      - name: Collect reliable institutional news (RSS + PDF)
-        continue-on-error: true
-        run: python xmore_news_reliable/main.py --run-all
+      - name: Skip EGX institutional news sources in KSA mode
+        run: echo "Skipping xmore_news_reliable in KSA deployment"
 
       - name: News RAG ingestion (embed + classify + drift adjustment)
         continue-on-error: true
@@ -156,7 +146,7 @@ jobs:
         run: python news/ingest_cli.py
 
   # ──────────────────────────────────────────────
-  # Job 3: Post-market pipeline (30 min after EGX close — 14:30 Cairo = 12:30 UTC)
+  # Job 3: Post-market pipeline (30 min after Tadawul close — 15:30 Riyadh = 12:30 UTC)
   # Runs same-day predictions so the dashboard shows fresh signals by afternoon
   # ──────────────────────────────────────────────
   post-market-pipeline:
@@ -211,19 +201,8 @@ jobs:
         continue-on-error: true
         run: python collect_data.py --news-only
 
-      # Institutional news (CBE, EGX, IMF, FRA) via RSS and PDF monitor
-      - name: Write Gmail credentials
-        continue-on-error: true
-        env:
-          GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
-          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
-        run: |
-          [ -n "$GMAIL_CREDENTIALS_B64" ] && echo "$GMAIL_CREDENTIALS_B64" | base64 -d > xmore_news_reliable/credentials.json
-          [ -n "$GMAIL_TOKEN_B64" ] && echo "$GMAIL_TOKEN_B64" | base64 -d > xmore_news_reliable/token.json
-
-      - name: Collect reliable institutional news
-        continue-on-error: true
-        run: python xmore_news_reliable/main.py --run-all
+      - name: Skip EGX institutional news sources in KSA mode
+        run: echo "Skipping xmore_news_reliable in KSA deployment"
 
       # Sentiment scoring via Gemini
       - name: Analyze sentiment
@@ -241,10 +220,10 @@ jobs:
         run: python evaluate.py
 
   # ──────────────────────────────────────────────
-  # Job 4: EGX daily snapshot (backup export, 16:00 Cairo = 14:00 UTC, Sun–Thu)
+  # Job 4: Legacy EGX daily snapshot (disabled for KSA deployment)
   # ──────────────────────────────────────────────
   egx-daily-snapshot:
-    if: github.event.schedule == '0 14 * * 0-4' || github.event_name == 'workflow_dispatch'
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -334,19 +313,9 @@ jobs:
         continue-on-error: true
         run: python engines/custom_source_fetcher.py --fetch-all
 
-      # Step 3: Reliable institutional news (CBE, EGX, IMF, FRA, MoF)
-      - name: Write Gmail credentials
-        continue-on-error: true
-        env:
-          GMAIL_CREDENTIALS_B64: ${{ secrets.GMAIL_CREDENTIALS_B64 }}
-          GMAIL_TOKEN_B64: ${{ secrets.GMAIL_TOKEN_B64 }}
-        run: |
-          [ -n "$GMAIL_CREDENTIALS_B64" ] && echo "$GMAIL_CREDENTIALS_B64" | base64 -d > xmore_news_reliable/credentials.json
-          [ -n "$GMAIL_TOKEN_B64" ] && echo "$GMAIL_TOKEN_B64" | base64 -d > xmore_news_reliable/token.json
-
-      - name: Collect reliable institutional news
-        continue-on-error: true
-        run: python xmore_news_reliable/main.py --run-all
+      # Step 3: Skip EGX institutional news sources in KSA deployment
+      - name: Skip EGX institutional news sources in KSA mode
+        run: echo "Skipping xmore_news_reliable in KSA deployment"
 
       # Step 4: Full sentiment analysis with Gemini
       - name: Analyze sentiment
@@ -418,7 +387,7 @@ jobs:
         run: python -c "from database import get_connection; from engines.holding_manager import HoldingManager; conn = get_connection(); HoldingManager(conn).run_daily_check(); conn.close()"
 
   # ══════════════════════════════════════════════════
-  # ETF JOBS (EGX local + global Egypt-exposure ETFs)
+  # ETF JOBS (legacy EGX local + global Egypt-exposure ETFs)
   # ══════════════════════════════════════════════════
 
   # ─────────────────────────────────────
@@ -431,7 +400,7 @@ jobs:
   # due to scheduler saturation. One trigger is reliable.
   # ─────────────────────────────────────
   etf-egx-all:
-    if: github.event.schedule == '30 13 * * 0-4' || github.event_name == 'workflow_dispatch'
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
