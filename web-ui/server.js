@@ -1551,6 +1551,11 @@ app.get('/track-record', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'track-record.html'));
 });
 
+// Root redirect → KSA dashboard (this is the KSA deployment)
+app.get('/', (req, res) => {
+  res.redirect(301, '/ksa');
+});
+
 // KSA pages
 app.get('/ksa', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ksa-dashboard.html'));
