@@ -1,24 +1,24 @@
 name: Trading System Automation
 
-# KSA market hours: 10:00–15:00 Riyadh (UTC+3) = 07:00–12:00 UTC, Sun–Thu
+# EGX (Egyptian Exchange) market hours: 10:00–14:30 Cairo (UTC+2/+3) = 08:00–12:30 UTC, Sun–Thu
 # NYSE/NASDAQ market hours: Mon–Fri
 # ─────────────────────────────────────────────────────────────────────────
 # Schedule overview (all times UTC):
 #
-#  07,08,09,10,11,12  Sun–Thu  intraday-price-update         (hourly prices, 09:00–14:00 Cairo)
+#  07,08,09,10,11,12  Sun–Thu  intraday-price-update         (hourly prices, 08:00–12:30 Cairo close)
 #  07,09,11           Sun–Thu  intraday-news-update           (news+RSS 3× during trading day)
-#  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
-#  14:00              Sun–Thu  egx-daily-snapshot             (disabled for KSA deployment)
+#  12:30              Sun–Thu  post-market-pipeline           (EGX close 14:30 Cairo = 12:30 UTC)
+#  14:00              Sun–Thu  egx-daily-snapshot             (EGX data export)
 #  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
 #  06,12,18:00        3×/day   catchup-evaluation             (resolve expired predictions → track-record data)
-#  13:30              Sun–Thu  etf-egx-all                    (disabled for KSA deployment)
+#  13:30              Sun–Thu  etf-egx-all                    (EGX ETF: tape → NAV → holdings → signals)
 #  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
 #  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
 #  :15                Hourly   etf-rag-embedding
 
 on:
   schedule:
-    # Hourly price collection during Tadawul trading hours (10:00–15:00 Riyadh = 07:00–12:00 UTC)
+    # Hourly price collection during EGX trading hours (10:00–14:30 Cairo = 08:00–12:30 UTC)
     - cron: '0 7,8,9,10,11,12 * * 0-4'
 
     # News + RSS collection 3× during trading day (09:00, 11:00, 13:00 Cairo = 07:00, 09:00, 11:00 UTC)
@@ -69,7 +69,7 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
-  # Job 1: Intraday price update (hourly during Tadawul trading, 10:00–15:00 Riyadh)
+  # Job 1: Intraday price update (hourly during EGX trading, 10:00–14:30 Cairo)
   # Lightweight — prices only, no news, no agents
   # ──────────────────────────────────────────────
   intraday-price-update:
@@ -136,9 +136,6 @@ jobs:
       - name: Collect news and RSS feeds
         run: python collect_data.py --news-only
 
-      - name: Skip EGX institutional news sources in KSA mode
-        run: echo "Skipping xmore_news_reliable in KSA deployment"
-
       - name: News RAG ingestion (embed + classify + drift adjustment)
         continue-on-error: true
         env:
@@ -146,7 +143,7 @@ jobs:
         run: python news/ingest_cli.py
 
   # ──────────────────────────────────────────────
-  # Job 3: Post-market pipeline (30 min after Tadawul close — 15:30 Riyadh = 12:30 UTC)
+  # Job 3: Post-market pipeline (EGX close 14:30 Cairo = 12:30 UTC)
   # Runs same-day predictions so the dashboard shows fresh signals by afternoon
   # ──────────────────────────────────────────────
   post-market-pipeline:
@@ -201,8 +198,9 @@ jobs:
         continue-on-error: true
         run: python collect_data.py --news-only
 
-      - name: Skip EGX institutional news sources in KSA mode
-        run: echo "Skipping xmore_news_reliable in KSA deployment"
+      - name: Collect EGX institutional news
+        continue-on-error: true
+        run: python collect_data.py --news-only --source egx
 
       # Sentiment scoring via Gemini
       - name: Analyze sentiment
@@ -220,10 +218,10 @@ jobs:
         run: python evaluate.py
 
   # ──────────────────────────────────────────────
-  # Job 4: Legacy EGX daily snapshot (disabled for KSA deployment)
+  # Job 4: EGX daily snapshot (14:00 UTC = 16:00 Cairo, after EGX close)
   # ──────────────────────────────────────────────
   egx-daily-snapshot:
-    if: ${{ false }}
+    if: github.event.schedule == '0 14 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -314,8 +312,9 @@ jobs:
         run: python engines/custom_source_fetcher.py --fetch-all
 
       # Step 3: Skip EGX institutional news sources in KSA deployment
-      - name: Skip EGX institutional news sources in KSA mode
-        run: echo "Skipping xmore_news_reliable in KSA deployment"
+      - name: Collect EGX institutional news
+        continue-on-error: true
+        run: python collect_data.py --news-only --source egx
 
       # Step 4: Full sentiment analysis with Gemini
       - name: Analyze sentiment
@@ -400,7 +399,7 @@ jobs:
   # due to scheduler saturation. One trigger is reliable.
   # ─────────────────────────────────────
   etf-egx-all:
-    if: ${{ false }}
+    if: github.event.schedule == '30 13 * * 0-4' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

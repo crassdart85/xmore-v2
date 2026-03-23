@@ -19,15 +19,15 @@ from datetime import time
 # STOCK SELECTION
 # ============================================
 
-# Import Tadawul symbols from dedicated universe module.
+# EGX (Egyptian Exchange) is the primary production universe for xmore-project.onrender.com.
+# KSA (Tadawul) runs as a separate deployment on xmore-ksa.onrender.com.
+from agents.intelligence.egx_universe import EGX_TOP50
+
+EGX_STOCKS = [row[1] for row in EGX_TOP50]   # yahoo_ticker column, e.g. 'COMI.CA'
+
+# KSA_STOCKS kept for backward compatibility with shared engine code.
 from config.ksa_universe import get_ksa_top50_symbols
-
-# Tadawul stocks are the default production universe for the KSA version.
 KSA_STOCKS = get_ksa_top50_symbols()
-
-# Legacy compatibility alias: a large part of the pipeline still imports EGX_STOCKS.
-# Keep the public name stable while switching the underlying market universe.
-EGX_STOCKS = KSA_STOCKS
 
 # US Stocks (Optional / Legacy)
 US_STOCKS = [
@@ -35,14 +35,28 @@ US_STOCKS = [
     # "MSFT",
 ]
 
-# Combined list - defaulting to Tadawul for the KSA version.
-ALL_STOCKS = KSA_STOCKS + US_STOCKS
+ALL_STOCKS = EGX_STOCKS + US_STOCKS
 
 # ============================================
-# EGYPTIAN MARKET SETTINGS
+# MARKET CONFIGURATION
 # ============================================
 
-# Tadawul Market Configuration
+EGX_CONFIG = {
+    "market_name": "Egyptian Exchange (EGX)",
+    "currency": "EGP",
+    "timezone": "Africa/Cairo",
+    "trading_days": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday"],
+    "trading_hours": {
+        "open": "10:00",
+        "close": "14:30",
+    },
+    "volatility_adjustment": 1.0,
+    "use_rss_news": True,
+    "use_egx_web_scraper": True,
+    "egx_web_news_url": "http://41.33.162.236/egs4/",
+}
+
+# KSA config retained for xmore-ksa branch compatibility.
 KSA_CONFIG = {
     "market_name": "Saudi Exchange (Tadawul)",
     "currency": "SAR",
@@ -57,9 +71,6 @@ KSA_CONFIG = {
     "use_egx_web_scraper": False,
     "egx_web_news_url": "",
 }
-
-# Legacy compatibility alias for older code paths that still import EGX_CONFIG.
-EGX_CONFIG = KSA_CONFIG
 
 # ============================================
 # API CREDENTIALS
