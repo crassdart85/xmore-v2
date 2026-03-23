@@ -12,14 +12,15 @@ function attachDb(_db) {
     db = _db;
 }
 
-// GET /api/stocks — public, returns EGX stocks (.CA) first then any others.
+// GET /api/stocks — public, returns active Tadawul stocks (.SR).
 router.get('/stocks', (req, res) => {
     const isPostgres = db && db._isPostgres;
     const query = `
         SELECT id, symbol, name_en, name_ar, sector_en, sector_ar
         FROM egx30_stocks
         WHERE is_active = ${isPostgres ? 'TRUE' : '1'}
-        ORDER BY CASE WHEN UPPER(symbol) LIKE '%.CA' THEN 0 ELSE 1 END, symbol
+          AND UPPER(symbol) LIKE '%.SR'
+        ORDER BY symbol
     `;
 
     if (!db || !db.all) {
