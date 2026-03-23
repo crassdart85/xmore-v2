@@ -95,6 +95,11 @@ def fetch_ksa_announcements(conn, hours_back: int = 25) -> list:
 
             time.sleep(0.5)
 
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 403:
+            logger.info("[KSA] Announcements: saudiexchange.sa blocked (403) — skipping")
+        else:
+            logger.warning(f"[KSA] Announcements scrape error (non-fatal): {e}")
     except Exception as e:
         logger.warning(f"[KSA] Announcements scrape error (non-fatal): {e}")
 
