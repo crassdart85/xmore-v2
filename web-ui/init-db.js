@@ -9,10 +9,10 @@ if (!DATABASE_URL) {
   process.exit(0);
 }
 
-// Set a global timeout - exit after 600 seconds no matter what
-const TIMEOUT_MS = 600000;
+// Set a global timeout - exit after 900 seconds no matter what
+const TIMEOUT_MS = 900000;
 const timeoutId = setTimeout(() => {
-  console.error('❌ Database initialization timed out after 600 seconds');
+  console.error('❌ Database initialization timed out after 900 seconds');
   process.exit(1);
 }, TIMEOUT_MS);
 timeoutId.unref(); // Don't keep process alive just for timeout
@@ -45,7 +45,7 @@ async function safeCreateIndex(db, sql) {
   try {
     await db.query('BEGIN');
     await db.query("SET LOCAL lock_timeout = '5s'");
-    await db.query('SET LOCAL statement_timeout = 0'); // no cap on index build time
+    await db.query("SET LOCAL statement_timeout = '120s'"); // cap index builds at 2 min
     await db.query(sql);
     await db.query('COMMIT');
   } catch (e) {
