@@ -171,11 +171,12 @@ def _detect_market_regime(conn) -> Optional[dict]:
             _vol     = float(closes.pct_change().dropna().tail(20).std())
             _bearish = _price < _ma20
             _label   = 'Turbulent' if (_bearish and (((_price / _ma20) - 1) < -0.03 or _vol > 0.025)) else 'Calm'
+            _label_ar = 'هادئ' if _label == 'Calm' else 'مضطرب'
             logger.info(
                 f"[{market_tag}] Regime: {_label} | price={_price:.2f} MA20={_ma20:.2f} vol_20d={_vol:.4f}"
             )
             return {
-                'regime_label_en': _label, 'regime_label_ar': _label,
+                'regime_label_en': _label, 'regime_label_ar': _label_ar,
                 'current_regime': 0 if _label == 'Calm' else 1,
                 'regime_confidence': 0.80, 'is_bearish': _bearish,
             }
