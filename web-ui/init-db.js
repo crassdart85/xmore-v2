@@ -991,6 +991,9 @@ async function initializeDatabase() {
 
     console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals) ready');
 
+    // Remove any KSA (.SR) stocks that may have been inserted during KSA testing
+    await pool.query("DELETE FROM egx30_stocks WHERE symbol LIKE '%.SR'");
+
     // Seed ALL EGX stocks (~190) — disable statement_timeout for this large INSERT
     await pool.query("SET statement_timeout = 0");
     console.log('🌱 Seeding EGX stocks...');

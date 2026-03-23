@@ -1782,12 +1782,12 @@ function loadTradingViewTicker() {
     script.async = true;
     script.textContent = JSON.stringify({
         symbols: [
-            { proName: 'TADAWUL:TASI', title: 'TASI' },
-            { proName: 'TADAWUL:2222', title: 'Aramco' },
-            { proName: 'TADAWUL:2010', title: 'SABIC' },
-            { proName: 'TADAWUL:1120', title: 'Al Rajhi' },
-            { proName: 'TADAWUL:7010', title: 'STC' },
-            { proName: 'TADAWUL:1150', title: 'Alinma' },
+            { proName: 'EGX:EGX30', title: 'EGX30' },
+            { proName: 'EGX:COMI',  title: 'CIB' },
+            { proName: 'EGX:HRHO',  title: 'EFG Hermes' },
+            { proName: 'EGX:SWDY',  title: 'El Sewedy' },
+            { proName: 'EGX:TMGH',  title: 'Talaat' },
+            { proName: 'EGX:ESRS',  title: 'Ezz Steel' },
         ],
         showSymbolLogo: true,
         colorTheme: colorTheme,
