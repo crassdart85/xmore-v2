@@ -1623,7 +1623,7 @@ const COMPANY_NAMES = {
 function getCompanyName(symbol) {
     const company = COMPANY_NAMES[symbol];
     if (company) return company[currentLang] || company.en;
-    return symbol.replace('.CA', '');
+    return symbol.replace(/\.(CA|SR)$/i, '');
 }
 
 // ============================================
