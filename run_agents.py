@@ -1973,7 +1973,7 @@ def generate_daily_trade_recommendations(trading_date):
     
     # 1. Check calendar
     markets = should_generate_recommendations(datetime.strptime(trading_date, "%Y-%m-%d").date())
-    print(f"  📅 Market Status: EGX={'OPEN' if markets['egx'] else 'CLOSED'}, US={'OPEN' if markets['us'] else 'CLOSED'}")
+    print(f"  📅 Market Status: KSA={'OPEN' if markets['egx'] else 'CLOSED'}, US={'OPEN' if markets['us'] else 'CLOSED'}")
     
     # In this MVP, we process anyway if it's a weekday, but logically strict system would skip.
     # The prompt implies we should respect it.

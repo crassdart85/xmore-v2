@@ -100,8 +100,11 @@ def run_evaluation(pipeline_run_id: str = None):
         # 5. Refresh materialized performance views (PostgreSQL only)
         if DATABASE_URL:
             try:
-                refresh_performance_views()
-                print("[Evaluate] Performance views refreshed")
+                refreshed = refresh_performance_views()
+                if refreshed:
+                    print("[Evaluate] Performance views refreshed")
+                else:
+                    print("[Evaluate] Performance views refresh skipped")
             except Exception as e:
                 print(f"[Evaluate] Performance views skipped: {e}")
 
@@ -481,15 +484,26 @@ def update_agent_accuracy_snapshot():
 def refresh_performance_views():
     """Refresh the materialized performance views (PostgreSQL only)."""
     if not DATABASE_URL:
-        return
+        return False
 
     with get_connection() as conn:
         cursor = conn.cursor()
         try:
+            cursor.execute("SAVEPOINT refresh_perf_views")
             cursor.execute("SELECT refresh_performance_views()")
+            cursor.execute("RELEASE SAVEPOINT refresh_perf_views")
+            return True
         except Exception as e:
             # View may not exist yet if migration hasn't run
+            try:
+                cursor.execute("ROLLBACK TO SAVEPOINT refresh_perf_views")
+            except Exception:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
             print(f"[Evaluate] Warning: Could not refresh materialized view: {e}")
+            return False
 
 
 # ─── STANDALONE EXECUTION ─────────────────────────────────────

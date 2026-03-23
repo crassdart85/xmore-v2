@@ -279,8 +279,21 @@ def add_macro_features(df, macro_df):
         return df
 
     macro = macro_df.copy()
-    # Normalise date to string YYYY-MM-DD for merge
-    macro['date'] = pd.to_datetime(macro['date']).dt.strftime('%Y-%m-%d')
+    if 'date' not in macro.columns:
+        for col in macro_cols:
+            df[col] = 0.0
+        return df
+
+    # Normalise date to string YYYY-MM-DD for merge. Some upstream sources can
+    # leak a literal header row like 'date', which should be treated as invalid.
+    macro_dates = pd.to_datetime(macro['date'], errors='coerce')
+    macro = macro.loc[macro_dates.notna()].copy()
+    if macro.empty:
+        for col in macro_cols:
+            df[col] = 0.0
+        return df
+
+    macro['date'] = macro_dates.loc[macro.index].dt.strftime('%Y-%m-%d')
     macro = macro.sort_values('date')
 
     for raw_col, ret_col in [
@@ -297,7 +310,8 @@ def add_macro_features(df, macro_df):
     date_col = 'date' if 'date' in df.columns else None
     if date_col:
         df = df.copy()
-        df['_date_str'] = pd.to_datetime(df[date_col]).dt.strftime('%Y-%m-%d')
+        df_dates = pd.to_datetime(df[date_col], errors='coerce')
+        df['_date_str'] = df_dates.dt.strftime('%Y-%m-%d')
         df = df.merge(
             macro[['date'] + macro_cols],
             left_on='_date_str', right_on='date',

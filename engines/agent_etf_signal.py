@@ -113,7 +113,7 @@ def _is_postgres(conn) -> bool:
     return 'psycopg2' in module
 
 def _ph(n: int, pg: bool) -> str:
-    return f'${n}' if pg else '?'
+    return '%s' if pg else '?'
 
 def _fetch_etf_prices(conn, instrument_id: int, pg: bool, limit: int = 80) -> pd.Series:
     """Return close prices for an ETF from etf_price_daily."""
