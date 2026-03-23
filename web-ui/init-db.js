@@ -45,7 +45,7 @@ async function safeCreateIndex(db, sql) {
   try {
     await db.query('BEGIN');
     await db.query("SET LOCAL lock_timeout = '5s'");
-    await db.query("SET LOCAL statement_timeout = '120s'"); // cap index builds at 2 min
+    await db.query('SET LOCAL statement_timeout = 120000'); // cap index builds at 2 min (120s)
     await db.query(sql);
     await db.query('COMMIT');
   } catch (e) {
