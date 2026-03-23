@@ -41,18 +41,25 @@ const pool = new Pool({
  * Errors (lock timeout, statement timeout, concurrent run) are caught
  * and logged as warnings; they never abort the whole init.
  */
-async function safeCreateIndex(db, sql) {
+async function safeDDL(db, sql, stmtTimeoutMs = 30000) {
+  // Wraps any DDL (CREATE INDEX, ALTER TABLE ADD COLUMN, etc.) in its own
+  // transaction with SET LOCAL so lock_timeout + statement_timeout cannot
+  // be overridden by Render's managed-PG role configuration.
   try {
     await db.query('BEGIN');
     await db.query("SET LOCAL lock_timeout = '5s'");
-    await db.query('SET LOCAL statement_timeout = 120000'); // cap index builds at 2 min (120s)
+    await db.query(`SET LOCAL statement_timeout = ${stmtTimeoutMs}`);
     await db.query(sql);
     await db.query('COMMIT');
   } catch (e) {
     try { await db.query('ROLLBACK'); } catch (_) {}
-    console.warn(`⚠️  DDL skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
+    console.warn(`⚠️  DDL skipped (lock/stmt timeout or concurrent run): ${e.message.split('\n')[0]}`);
   }
 }
+
+// Aliases for readability
+const safeCreateIndex = (db, sql) => safeDDL(db, sql, 120000); // indexes: up to 2 min
+const safeAddColumn   = (db, sql) => safeDDL(db, sql, 10000);  // ADD COLUMN: up to 10s
 
 async function initializeDatabase() {
   console.log('🔧 Initializing PostgreSQL database...');
@@ -231,29 +238,23 @@ async function initializeDatabase() {
     `);
 
     // Add reasoning column to predictions if it doesn't exist
-    try {
-      await pool.query('ALTER TABLE predictions ADD COLUMN IF NOT EXISTS reasoning TEXT');
-      console.log('✅ Added reasoning column to predictions');
-    } catch (err) {
-      // Column may already exist, that's fine
-    }
+    await safeAddColumn(pool, 'ALTER TABLE predictions ADD COLUMN IF NOT EXISTS reasoning TEXT');
+    console.log('✅ Added reasoning column to predictions');
 
-    // Add xmore_score column to consensus_results if not exists
-    try {
-      await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS xmore_score REAL');
-      console.log('✅ Added xmore_score column to consensus_results');
-    } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibrated_confidence REAL'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_edge_pct REAL'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS ranking_score REAL'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS weight_profile_json TEXT'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibration_meta_json TEXT'); } catch (err) { /* already exists */ }
+    // Add xmore_score + calibration columns to consensus_results
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS xmore_score REAL');
+    console.log('✅ Added xmore_score column to consensus_results');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibrated_confidence REAL');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_edge_pct REAL');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS ranking_score REAL');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS weight_profile_json TEXT');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibration_meta_json TEXT');
 
     // Signal enrichment columns (drivers, risk_level, expected_move, enrichment_regime)
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS drivers_json TEXT'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS risk_level TEXT'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_move TEXT'); } catch (err) { /* already exists */ }
-    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS enrichment_regime TEXT'); } catch (err) { /* already exists */ }
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS drivers_json TEXT');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS risk_level TEXT');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_move TEXT');
+    await safeAddColumn(pool, 'ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS enrichment_regime TEXT');
 
     // Table: Backtest Results (walk-forward ML performance per symbol)
     await pool.query(`
@@ -455,7 +456,7 @@ async function initializeDatabase() {
       ['kelly_position_pct','REAL'], ['position_size_pct','REAL'],
       ['shares_requested','INTEGER'], ['shares_expected','INTEGER'], ['position_sizing_mode','TEXT'],
     ]) {
-      try { await pool.query(`ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS ${col[0]} ${col[1]}`); } catch(_) {}
+      await safeAddColumn(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS ${col[0]} ${col[1]}`);
     }
 
     // Table: Daily Briefings (one global row per date)
@@ -635,9 +636,9 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)');
 
     // Add source_meta + pgvector column to existing installs
-    try { await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS source_meta TEXT'); } catch(_) {}
+    await safeAddColumn(pool, 'ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS source_meta TEXT');
     try {
-      await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS embedding_vec vector(768)');
+      await safeAddColumn(pool, 'ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS embedding_vec vector(768)');
       await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_vec ON rag_chunks USING ivfflat (embedding_vec vector_cosine_ops) WITH (lists = 100)');
       console.log('✅ pgvector column + index on rag_chunks ready');
     } catch(_) {
@@ -914,8 +915,8 @@ async function initializeDatabase() {
     console.log('✅ ETF / instrument tables ready');
 
     // New columns (safe — IF NOT EXISTS syntax; errors caught so lock_timeout doesn't abort init)
-    try { await pool.query('ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1'); } catch(_) {}
-    try { await pool.query('ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5'); } catch(_) {}
+    await safeAddColumn(pool, 'ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1');
+    await safeAddColumn(pool, 'ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5');
 
     // Table: Price Alerts
     await pool.query(`
@@ -1221,8 +1222,7 @@ async function initializeDatabase() {
     `);
     console.log('✅ EGX stocks seeded');
 
-    // Re-enable statement_timeout for index creation (30s per index)
-    await pool.query("SET statement_timeout = '30s'");
+    // safeCreateIndex uses SET LOCAL per transaction — no session reset needed
 
     // Create indexes
     console.log('📊 Creating indexes...');
