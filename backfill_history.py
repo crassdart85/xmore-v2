@@ -177,7 +177,7 @@ def _macro_symbols():
 
 def _benchmark_symbols():
     return {
-        "TASI": "^TASI",
+        "TASI": "^TASI.SR",
     }
 
 

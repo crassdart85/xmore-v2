@@ -95,6 +95,6 @@ EGX_TRADING_DAYS_PER_YEAR = 252      # Tadawul trading-calendar approximation
 
 # ─── MARKET REGIME FILTER ───────────────────────────────────────────────────
 REGIME_MA_PERIOD       = 20
-REGIME_TICKER          = "^TASI"
+REGIME_TICKER          = "^TASI.SR"
 REGIME_BEARISH_BUFFER  = 0.02       # Index must be ≥ 2% above MA to allow new longs
                                     # Prevents buying into corrections/peaks
