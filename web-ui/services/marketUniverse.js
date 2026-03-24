@@ -1,26 +1,26 @@
 'use strict';
 
-const KSA_FORECAST_UNIVERSE = [
-    { symbol: '2222.SR', name_en: 'Saudi Aramco', name_ar: 'Saudi Aramco' },
-    { symbol: '2010.SR', name_en: 'SABIC', name_ar: 'SABIC' },
-    { symbol: '1211.SR', name_en: 'Maaden', name_ar: 'Maaden' },
-    { symbol: '1120.SR', name_en: 'Al Rajhi Bank', name_ar: 'Al Rajhi Bank' },
-    { symbol: '7010.SR', name_en: 'stc', name_ar: 'stc' },
-    { symbol: '1150.SR', name_en: 'Alinma Bank', name_ar: 'Alinma Bank' },
-    { symbol: '1180.SR', name_en: 'Saudi National Bank', name_ar: 'Saudi National Bank' },
-    { symbol: '1140.SR', name_en: 'Bank Albilad', name_ar: 'Bank Albilad' },
-    { symbol: '1060.SR', name_en: 'Saudi Awwal Bank', name_ar: 'Saudi Awwal Bank' },
-    { symbol: '1010.SR', name_en: 'Riyad Bank', name_ar: 'Riyad Bank' },
-    { symbol: '1050.SR', name_en: 'Banque Saudi Fransi', name_ar: 'Banque Saudi Fransi' },
-    { symbol: '2082.SR', name_en: 'ACWA Power', name_ar: 'ACWA Power' },
-    { symbol: '2280.SR', name_en: 'Almarai', name_ar: 'Almarai' },
-    { symbol: '4002.SR', name_en: 'Mouwasat Medical', name_ar: 'Mouwasat Medical' },
-    { symbol: '4013.SR', name_en: 'Dr. Sulaiman Al Habib', name_ar: 'Dr. Sulaiman Al Habib' },
-    { symbol: '4190.SR', name_en: 'Jarir Marketing', name_ar: 'Jarir Marketing' },
-    { symbol: '5110.SR', name_en: 'Saudi Electricity', name_ar: 'Saudi Electricity' },
-    { symbol: '2380.SR', name_en: 'Petro Rabigh', name_ar: 'Petro Rabigh' },
-    { symbol: '2060.SR', name_en: 'National Industrialization', name_ar: 'National Industrialization' },
-    { symbol: '1810.SR', name_en: 'Seera Group', name_ar: 'Seera Group' },
+const EGX_FORECAST_UNIVERSE = [
+    { symbol: 'COMI.CA', name_en: 'Commercial International Bank', name_ar: 'البنك التجاري الدولي' },
+    { symbol: 'ETEL.CA', name_en: 'Telecom Egypt', name_ar: 'المصرية للاتصالات' },
+    { symbol: 'HRHO.CA', name_en: 'El Sewedy Electric', name_ar: 'السويدي إليكتريك' },
+    { symbol: 'SWDY.CA', name_en: 'Swedy Electric', name_ar: 'السويدي للكابلات' },
+    { symbol: 'SKPC.CA', name_en: 'Sidi Kerir Petrochemicals', name_ar: 'سيدي كرير للبتروكيماويات' },
+    { symbol: 'ABUK.CA', name_en: 'Abu Qir Fertilizers', name_ar: 'أبو قير للأسمدة' },
+    { symbol: 'MNVL.CA', name_en: 'Misr National Valves', name_ar: 'صمامات مصر الوطنية' },
+    { symbol: 'ORWE.CA', name_en: 'Oriental Weavers', name_ar: 'النساجون الشرقيون' },
+    { symbol: 'CLHO.CA', name_en: 'Cleopatra Hospitals', name_ar: 'مستشفيات كليوباترا' },
+    { symbol: 'PHDC.CA', name_en: 'Palm Hills Developments', name_ar: 'بالم هيلز للتعمير' },
+    { symbol: 'EMFD.CA', name_en: 'Emaar Misr', name_ar: 'إعمار مصر' },
+    { symbol: 'TMGH.CA', name_en: 'Talaat Moustafa Group', name_ar: 'مجموعة طلعت مصطفى' },
+    { symbol: 'EFIC.CA', name_en: 'Egyptian Fertilizers', name_ar: 'الأسمدة المصرية' },
+    { symbol: 'OCDI.CA', name_en: 'Orascom Development Egypt', name_ar: 'أوراسكوم للتنمية' },
+    { symbol: 'ESRS.CA', name_en: 'Ezz Steel', name_ar: 'عز للصلب' },
+    { symbol: 'IRON.CA', name_en: 'Ezz Iron and Steel', name_ar: 'عز الدخيلة للصلب' },
+    { symbol: 'RAYA.CA', name_en: 'Raya Holding', name_ar: 'راية القابضة' },
+    { symbol: 'CIEB.CA', name_en: 'CIB Egypt', name_ar: 'بنك CIB' },
+    { symbol: 'ALCN.CA', name_en: 'Al Ahli Ceramics', name_ar: 'السيراميك والفخار' },
+    { symbol: 'EAST.CA', name_en: 'Eastern Tobacco', name_ar: 'الشرقية للدخان' },
 ];
 
 const DISPLAY_SUFFIX_RE = /\.(CA|SR)$/i;
@@ -38,27 +38,32 @@ function normalizeDisplaySymbol(symbol) {
     return String(symbol || '').toUpperCase().replace(DISPLAY_SUFFIX_RE, '');
 }
 
-function getKsaUniverseSymbols() {
-    return KSA_FORECAST_UNIVERSE.map((entry) => entry.symbol);
+function getEgxUniverseSymbols() {
+    return EGX_FORECAST_UNIVERSE.map((entry) => entry.symbol);
 }
 
-function getKsaStockNames() {
-    return KSA_FORECAST_UNIVERSE.reduce((acc, entry) => {
+function getEgxStockNames() {
+    return EGX_FORECAST_UNIVERSE.reduce((acc, entry) => {
         acc[entry.symbol] = [entry.name_en, entry.name_ar];
         return acc;
     }, {});
 }
 
+// Legacy aliases used by callers built for the KSA version
+const getKsaUniverseSymbols = getEgxUniverseSymbols;
+const getKsaStockNames = getEgxStockNames;
+
 async function resolveMarketSymbol(rawSymbol, db) {
     const input = String(rawSymbol || '').trim().toUpperCase();
     if (!input) return '';
 
-    if (input === 'TASI' || input === '^TASI') return 'TASI.SR';
-    if (/\.(SR|CA)$/i.test(input)) return input;
+    if (input === 'EGX30' || input === '^CASE') return 'EGX30.CA';
+    if (/\.(CA|SR)$/i.test(input)) return input;
 
-    const candidates = /^\d{4}$/.test(input)
-        ? [`${input}.SR`, `${input}.CA`, input]
-        : [`${input}.CA`, `${input}.SR`, input];
+    // EGX symbols are alphabetic (e.g. COMI, ETEL); numeric → not an EGX code
+    const candidates = /^\d+$/.test(input)
+        ? [`${input}.CA`, input]
+        : [`${input}.CA`, input];
 
     if (db && typeof db.all === 'function') {
         try {
@@ -68,33 +73,33 @@ async function resolveMarketSymbol(rawSymbol, db) {
                    FROM prices
                    WHERE UPPER(symbol) = ANY($1)
                    ORDER BY CASE
-                     WHEN UPPER(symbol) LIKE '%.SR' THEN 0
-                     WHEN UPPER(symbol) LIKE '%.CA' THEN 1
-                     ELSE 2
+                     WHEN UPPER(symbol) LIKE '%.CA' THEN 0
+                     ELSE 1
                    END
                    LIMIT 1`
                 : `SELECT DISTINCT symbol
                    FROM prices
                    WHERE UPPER(symbol) IN (${candidates.map(() => '?').join(',')})
                    ORDER BY CASE
-                     WHEN UPPER(symbol) LIKE '%.SR' THEN 0
-                     WHEN UPPER(symbol) LIKE '%.CA' THEN 1
-                     ELSE 2
+                     WHEN UPPER(symbol) LIKE '%.CA' THEN 0
+                     ELSE 1
                    END
                    LIMIT 1`;
             const rows = await dbAll(db, sql, isPostgres ? [candidates] : candidates);
             if (rows[0] && rows[0].symbol) return String(rows[0].symbol).toUpperCase();
         } catch (_err) {
-            // Fall back to KSA-first heuristics when the DB cannot resolve the symbol.
+            // Fall back to .CA suffix for EGX symbols
         }
     }
 
-    return /^\d{4}$/.test(input) ? `${input}.SR` : `${input}.CA`;
+    return `${input}.CA`;
 }
 
 module.exports = {
     getKsaStockNames,
     getKsaUniverseSymbols,
+    getEgxStockNames,
+    getEgxUniverseSymbols,
     normalizeDisplaySymbol,
     resolveMarketSymbol,
 };

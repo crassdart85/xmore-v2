@@ -1,6 +1,6 @@
 /**
  * Xmore — Stocks Route
- * GET /api/stocks — returns the active Tadawul universe when available.
+ * GET /api/stocks — returns the active EGX universe (.CA stocks).
  */
 
 const express = require('express');
@@ -12,14 +12,14 @@ function attachDb(_db) {
     db = _db;
 }
 
-// GET /api/stocks — public, returns active Tadawul stocks (.SR).
+// GET /api/stocks — public, returns active EGX stocks (.CA).
 router.get('/stocks', (req, res) => {
     const isPostgres = db && db._isPostgres;
     const query = `
         SELECT id, symbol, name_en, name_ar, sector_en, sector_ar
         FROM egx30_stocks
         WHERE is_active = ${isPostgres ? 'TRUE' : '1'}
-          AND UPPER(symbol) LIKE '%.SR'
+          AND UPPER(symbol) LIKE '%.CA'
         ORDER BY symbol
     `;
 

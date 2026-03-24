@@ -199,7 +199,7 @@ router.post('/forecast', async (req, res) => {
     try {
         const { symbol, investment_amount, horizon, scenario } = req.body;
 
-        // symbol is optional — omitting triggers auto-select across the Tadawul universe.
+        // symbol is optional — omitting triggers auto-select across the EGX universe.
         const isAuto = !symbol || symbol === 'auto';
         const sym = isAuto ? 'auto' : String(symbol).trim().toUpperCase();
 

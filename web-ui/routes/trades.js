@@ -458,7 +458,7 @@ router.patch('/positions/:id', authMiddleware, async (req, res) => {
 });
 
 // ─── Session Sheet (/api/trades/session-sheet) ───────────────────────────────
-// Returns the latest Tadawul session signals enriched with pivot levels, trend,
+// Returns the latest EGX session signals enriched with pivot levels, trend,
 // and execution guidance.
 router.get('/session-sheet', authMiddleware, async (req, res) => {
     try {
@@ -490,15 +490,15 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
             WHERE tr.user_id = $1
               AND tr.recommendation_date = $2
               AND tr.signal IN ('UP', 'DOWN')
-              AND (UPPER(tr.symbol) LIKE '%.SR' OR UPPER(tr.symbol) IN ('TASI', 'TASI.SR', 'MT30', 'MT30.SR'))
+              AND (UPPER(tr.symbol) LIKE '%.CA' OR UPPER(tr.symbol) IN ('EGX30', 'EGX30.CA', 'EGX70', 'EGX100'))
             ORDER BY tr.confidence DESC, tr.priority DESC
         `;
         const stocksRes = await queryAll(stocksSql, [userId, sessionDate]);
 
-        // Index pivot levels (TASI, MT30 when available in the price store)
+        // Index pivot levels (EGX30, EGX70 when available in the price store)
         const indexSymbols = [
-            { candidates: ['TASI.SR', 'TASI', '^TASI'], name_en: 'TASI Index', name_ar: 'مؤشر تاسي' },
-            { candidates: ['MT30.SR', 'MT30'], name_en: 'Tadawul MT30', name_ar: 'مؤشر إم تي 30' },
+            { candidates: ['EGX30.CA', 'EGX30', '^CASE'], name_en: 'EGX30 Index', name_ar: 'مؤشر EGX30' },
+            { candidates: ['EGX70.CA', 'EGX70'], name_en: 'EGX70 Index', name_ar: 'مؤشر EGX70' },
         ];
         const indexData = [];
         for (const meta of indexSymbols) {
