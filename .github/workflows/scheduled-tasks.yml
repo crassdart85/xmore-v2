@@ -67,6 +67,7 @@ env:
   TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
   MARKETAUX_API_KEY: ${{ secrets.MARKETAUX_API_KEY }}
   EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ──────────────────────────────────────────────
@@ -384,7 +385,17 @@ jobs:
       # Trailing stop checks — updates open positions held ≥20 days
       - name: Run holding manager (trailing stops)
         continue-on-error: true
-        run: python -c "from database import get_connection; from engines.holding_manager import HoldingManager; conn = get_connection(); HoldingManager(conn).run_daily_check(); conn.close()"
+        run: |
+          python << 'EOF'
+          from database import get_connection
+          from engines.holding_manager import HoldingManager
+          conn = get_connection()
+          cur = conn.cursor()
+          cur.execute("SELECT symbol, close FROM prices p WHERE date=(SELECT MAX(date) FROM prices WHERE symbol=p.symbol)")
+          price_data = {r[0]: r[1] for r in (cur.fetchall() or [])}
+          HoldingManager(conn).run_daily_check(price_data)
+          conn.close()
+          EOF
 
   # ══════════════════════════════════════════════════
   # ETF JOBS (legacy EGX local + global Egypt-exposure ETFs)
