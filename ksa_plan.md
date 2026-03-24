@@ -83,7 +83,7 @@ Key outcomes:
 - EGX_STOCKS remains as a compatibility alias to the KSA list for older modules
 - EGX_CONFIG remains as a compatibility alias to KSA market configuration
 - collection time now aligns with Tadawul close instead of Cairo close
-- regime ticker default is now ^TASI in the execution config
+- regime ticker default now uses the working Tadawul benchmark alias `^TASI.SR`
 
 ### 5. Backfill path for Tadawul price history
 
@@ -100,7 +100,9 @@ Key outcomes:
 - PostgreSQL count handling was fixed for RealDict rows
 - existing row counts are now fetched in batches instead of one connection per symbol
 - PostgreSQL inserts are now bulk upserts instead of row-by-row writes
-- NaN Yahoo volume values are normalized safely instead of crashing inserts
+- NaN provider volume values are normalized safely instead of crashing inserts
+- Tadawul benchmark backfill now uses the working `^TASI.SR` alias
+- GitHub Actions workflows now pass `EODHD_API_KEY`, allowing KSA backfill and scheduled runs to use EODHD as the primary Tadawul source instead of falling back to yfinance
 
 ## Live Migration Results
 
@@ -115,7 +117,7 @@ The following live validation was completed against the Render PostgreSQL databa
 - Saudi price rows present in prices where symbol ends with .SR: 50,503
 - distinct Saudi symbols present in prices: 41
 
-These rows were inserted using bulk PostgreSQL upserts from Yahoo Finance history.
+These rows were inserted using bulk PostgreSQL upserts through the provider layer, with EODHD as the intended primary KSA source and yfinance as fallback.
 
 ## Wider Live Tests
 
@@ -162,8 +164,9 @@ The migration is not complete across the full repo. Important remaining work inc
    - EGX-named benchmark fields and comments
 
 3. benchmark data source work for TASI index history
-   - Yahoo Finance did not provide a working ^TASI or TASI.SR index series in this environment
-   - index-level Tadawul benchmark backfill still needs a reliable source
+  - workflow/runtime now use the working `^TASI.SR` alias for benchmark collection
+  - GitHub Actions now forward `EODHD_API_KEY` so KSA jobs can use EODHD before falling back to yfinance
+  - MT30 and other non-TASI benchmark expansion still need source validation
 
 4. sentiment and research layers still contain some EGX-specific symbol handling and prompt/reference content in secondary paths
 
@@ -174,5 +177,5 @@ The migration is not complete across the full repo. Important remaining work inc
 1. replace remaining egx30_stocks joins with a market-neutral reference abstraction
 2. migrate benchmark computation from EGX30 semantics to TASI semantics across performance and track-record routes
 3. finish KSA conversion in RAG and screening routes
-4. add a reliable Tadawul benchmark ingestion source for TASI and MT30
+4. extend benchmark ingestion beyond TASI and validate source coverage for MT30
 5. run a fresh deploy and post-deploy smoke test against the production app endpoints
