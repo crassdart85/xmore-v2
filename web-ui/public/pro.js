@@ -219,8 +219,8 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
 })();
 
 // ── TASI Intraday Chart ──────────────────────────────────────────────────────
-(function loadEGX30Chart() {
-  const container = document.getElementById('egx30ChartWidget');
+(function loadTASIChart() {
+  const container = document.getElementById('tasiChartWidget');
   if (!container) return;
 
   const wrapper = document.createElement('div');
@@ -257,8 +257,8 @@ setInterval(loadFxRates, 60 * 60 * 1000);  // refresh hourly
 })();
 
 // ── Tadawul Market Overview ──────────────────────────────────────────────────
-(function loadEGXIndices() {
-  const container = document.getElementById('egxIndicesWidget');
+(function loadKSAIndices() {
+  const container = document.getElementById('ksaIndicesWidget');
   if (!container) return;
 
   const wrapper = document.createElement('div');

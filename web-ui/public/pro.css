@@ -402,8 +402,8 @@ body {
 }
 .pro-source-pill:hover { opacity: 0.75; }
 
-/* ─── EGX Index section ──────────────────────────────────────────────────── */
-.pro-egx-section {
+/* ─── KSA Index section ──────────────────────────────────────────────────── */
+.pro-ksa-section {
   display: grid;
   grid-template-columns: 3fr 2fr;
   gap: 1px;
@@ -411,13 +411,13 @@ body {
   margin-top: 1px;
 }
 
-.pro-egx-chart-panel,
-.pro-egx-indices-panel {
+.pro-ksa-chart-panel,
+.pro-ksa-indices-panel {
   background: var(--pro-surface);
 }
 
-#egx30ChartWidget,
-#egxIndicesWidget {
+#tasiChartWidget,
+#ksaIndicesWidget {
   height: 320px;
 }
 
@@ -682,7 +682,7 @@ body {
 @media (max-width: 640px) {
   .pro-movers-grid  { grid-template-columns: 1fr; }
   .pro-sector-grid  { grid-template-columns: 1fr; }
-  .pro-egx-section  { grid-template-columns: 1fr; }
+  .pro-ksa-section  { grid-template-columns: 1fr; }
   .pro-stat-row { flex-wrap: wrap; }
   .pro-stat { flex: 1 1 45%; }
 }
@@ -800,10 +800,10 @@ body {
   .pro-stat { flex: 1 1 48%; min-width: 0; padding: 10px 12px; }
   .pro-stat-val { font-size: 18px; }
 
-  /* EGX section: single column */
-  .pro-egx-section { grid-template-columns: 1fr; }
-  #egx30ChartWidget,
-  #egxIndicesWidget { height: 260px; }
+  /* KSA section: single column */
+  .pro-ksa-section { grid-template-columns: 1fr; }
+  #tasiChartWidget,
+  #ksaIndicesWidget { height: 260px; }
 
   /* Movers: single column, scrollable tables */
   .pro-movers-grid { grid-template-columns: 1fr; }
