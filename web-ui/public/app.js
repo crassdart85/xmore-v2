@@ -18,6 +18,23 @@ window.onerror = function (msg, url, line, col, error) {
 
 const API_URL = '/api';
 
+// Intelligence Pulse section collapse/expand
+function toggleIntelligencePulse() {
+    const section = document.getElementById('intelligencePulse');
+    const btn = document.getElementById('intelligencePulseToggle');
+    const collapsed = section.classList.toggle('collapsed');
+    btn.setAttribute('aria-expanded', String(!collapsed));
+    localStorage.setItem('intelligencePulseCollapsed', collapsed ? '1' : '0');
+}
+(function initIntelligencePulseState() {
+    if (localStorage.getItem('intelligencePulseCollapsed') === '1') {
+        const section = document.getElementById('intelligencePulse');
+        const btn = document.getElementById('intelligencePulseToggle');
+        if (section) section.classList.add('collapsed');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+})();
+
 // Shared HTML escaping utility
 function escapeHtml(value) {
     return String(value || '')

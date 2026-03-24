@@ -3578,6 +3578,39 @@ footer {
     margin: 0 0 24px;
 }
 
+.intelligence-pulse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 6px 2px 8px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.intelligence-pulse-toggle:hover { color: var(--text-primary); }
+
+.ipt-chevron {
+    font-size: 14px;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+
+.intelligence-pulse-section.collapsed .ipt-chevron {
+    transform: rotate(-90deg);
+}
+
+.intelligence-pulse-section.collapsed .intelligence-pulse-grid {
+    display: none;
+}
+
 .intelligence-pulse-grid {
     display: grid;
     grid-template-columns: 1.45fr 1fr;

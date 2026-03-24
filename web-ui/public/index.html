@@ -65,7 +65,11 @@
         </section>
 
         <section id="intelligencePulse" class="intelligence-pulse-section">
-            <div class="intelligence-pulse-grid">
+            <button class="intelligence-pulse-toggle" id="intelligencePulseToggle" onclick="toggleIntelligencePulse()" aria-expanded="true" aria-controls="intelligencePulseGrid">
+                <span class="ipt-label">Intelligence Pulse</span>
+                <span class="ipt-chevron">▾</span>
+            </button>
+            <div class="intelligence-pulse-grid" id="intelligencePulseGrid">
                 <div class="intelligence-pulse-card">
                     <div class="intelligence-pulse-head">
                         <h2 id="changesTodayTitle">What Changed Today</h2>
