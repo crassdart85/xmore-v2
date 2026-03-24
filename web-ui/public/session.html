@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="base.css">
-  <title>Xmore - Tadawul Session Sheet</title>
+  <title>Xmore - EGX Session Sheet</title>
   <link rel="stylesheet" href="session.css">
   <link rel="stylesheet" href="assistant-widget.css">
 </head>
@@ -61,7 +61,7 @@
 
   <div class="s-container">
 
-    <!-- Market levels (TASI / MT30 when available) -->
+    <!-- Market levels (EGX30 / EGX70 when available) -->
     <div class="s-section-title" id="sIdxTitle">
       <span>INDEX SUPPORT &amp; RESISTANCE</span>
     </div>
@@ -103,7 +103,7 @@
   <footer class="s-footer">
     <span class="s-footer-logo">XMORE</span>
     <span class="s-footer-note" id="sFooterNote">
-      system-generated signals — not financial advice. Tadawul · Sun–Thu 10:00–15:00 Riyadh.
+      system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.
     </span>
   </footer>
 
@@ -139,9 +139,9 @@ const T = {
     simStats:    'Stats',
     loading:     'Loading session data...',
     idxLoading:  'Loading index levels…',
-    empty:       'No Tadawul session data is available yet. Run the pipeline to generate signals.',
+    empty:       'No EGX session data is available yet. Run the pipeline to generate signals.',
     noLogin:     'Sign in to view your personalised session sheet.',
-    footer:      'system-generated signals — not financial advice. Tadawul · Sun–Thu 10:00–15:00 Riyadh.',
+    footer:      'system-generated signals — not financial advice. EGX · Sun–Thu 10:00–14:30 Cairo.',
   },
   ar: {
     back:        'الرئيسية →', SessionLabel:'جلسة',
@@ -171,9 +171,9 @@ const T = {
     simStats:    'إحصاءات',
     loading:     'جاري تحميل البيانات…',
     idxLoading:  'جاري تحميل مستويات المؤشرات…',
-    empty:       'لا توجد بيانات لجلسة تداول السعودية بعد. شغّل المسار لتوليد الإشارات.',
+    empty:       'لا توجد بيانات لجلسة البورصة المصرية بعد. شغّل المسار لتوليد الإشارات.',
     noLogin:     'سجّل دخولك لعرض ورقة الجلسة الخاصة بك.',
-    footer:      'إشارات مولّدة بالذكاء الاصطناعي — ليست نصيحة مالية. تداول · الأحد–الخميس 10:00–15:00 الرياض.',
+    footer:      'إشارات مولّدة بالذكاء الاصطناعي — ليست نصيحة مالية. EGX · الأحد–الخميس 10:00–14:30 القاهرة.',
   }
 };
 
@@ -390,8 +390,8 @@ async function loadSession() {
     dateEl.textContent = json.session_date || json.Session_date || '—';
     applyLang();
 
-    window._SessionData = (json.stocks || []).filter(row => /\.SR$/i.test(row.symbol || '') || /^(TASI|MT30)(\.SR)?$/i.test(row.symbol || ''));
-    window._indexData   = (json.indices || []).filter(row => /\.SR$/i.test(row.symbol || '') || /^(TASI|MT30)(\.SR)?$/i.test(row.symbol || ''));
+    window._SessionData = (json.stocks || []).filter(row => /\.CA$/i.test(row.symbol || '') || /^(EGX30|EGX70|EGX100)(\.CA)?$/i.test(row.symbol || ''));
+    window._indexData   = (json.indices || []).filter(row => /\.CA$/i.test(row.symbol || '') || /^(EGX30|EGX70|EGX100)(\.CA)?$/i.test(row.symbol || ''));
 
     renderTable(window._SessionData);
     renderIndexCards(window._indexData);
