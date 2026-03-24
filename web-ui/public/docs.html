@@ -48,44 +48,16 @@ a {
 	color: inherit;
 }
 
-.top {
-	position: sticky;
-	top: 0;
-	z-index: 30;
-	backdrop-filter: blur(14px);
-	background: rgba(244, 239, 228, 0.9);
-	border-bottom: 1px solid var(--line);
-}
-
-[data-theme="dark"] .top {
-	background: rgba(8, 17, 31, 0.88);
-}
-
-.inner,
 .section,
 .foot {
 	width: min(1180px, calc(100% - 32px));
 	margin: 0 auto;
 }
 
-.inner {
-	display: flex;
-	align-items: center;
-	gap: 16px;
-	padding: 16px 0;
-}
-
-.brand {
-	font-size: 1.32rem;
-	font-weight: 700;
-}
-
-.brand-sub,
 .lead,
 .copy,
 .section-head p,
 .foot-copy,
-.nav,
 .badge,
 .chip,
 .metric p,
@@ -95,78 +67,38 @@ a {
 	font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
-.brand-sub {
-	font-size: 0.84rem;
-	color: var(--muted);
+.docs-lang-btn {
+	font-size: 0.82rem;
+	padding: 4px 10px;
+	border-radius: 6px;
+	border: 1px solid var(--border-color, rgba(255,255,255,0.15));
+	background: transparent;
+	color: var(--text-secondary, #b0b8c8);
+	cursor: pointer;
+	transition: border-color 0.18s, color 0.18s;
 }
 
-.nav {
-	margin-inline-start: auto;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 10px;
-	align-items: center;
+.docs-lang-btn:hover {
+	border-color: var(--accent, #49e3cf);
+	color: var(--accent, #49e3cf);
 }
 
-.nav a,
-.lang,
-.cta,
-.theme-btn {
+.cta {
 	border-radius: 999px;
 	border: 1px solid var(--line);
 	background: var(--control-bg);
 	color: var(--ink);
 	text-decoration: none;
-	transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
-}
-
-.nav a,
-.lang,
-.cta {
 	padding: 10px 14px;
 	font-size: 0.92rem;
-}
-
-.theme-btn {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 40px;
-	height: 40px;
+	transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 	cursor: pointer;
-	font-size: 1.1rem;
-	padding: 0;
 }
 
-.theme-btn span {
-	display: none;
-}
-
-.theme-btn .icon-moon {
-	display: block;
-}
-
-[data-theme="dark"] .theme-btn .icon-sun {
-	display: block;
-}
-
-[data-theme="dark"] .theme-btn .icon-moon {
-	display: none;
-}
-
-.nav a:hover,
-.lang:hover,
-.cta:hover,
-.theme-btn:hover {
+.cta:hover {
 	transform: translateY(-1px);
 	border-color: rgba(15, 118, 110, 0.42);
 	background: var(--control-hover);
-}
-
-.lang,
-.cta,
-.theme-btn {
-	cursor: pointer;
 }
 
 .hero {
@@ -412,10 +344,6 @@ a {
 	font-family: Tahoma, Arial, sans-serif;
 }
 
-.rtl .nav {
-	margin-inline-start: 0;
-	margin-inline-end: auto;
-}
 
 .rtl .hero-copy,
 .rtl .panel,
@@ -443,45 +371,11 @@ a {
 }
 
 @media (max-width: 640px) {
-	.inner,
 	.section,
 	.foot {
 		width: min(100% - 20px, 1180px);
 	}
 
-	.top .inner {
-		display: grid;
-		grid-template-columns: 1fr auto;
-		gap: 8px;
-		align-items: center;
-		padding: 10px 0;
-	}
-
-	.top .inner > div:first-child {
-		min-width: 0;
-	}
-
-	.top .brand {
-		font-size: 1.16rem;
-		line-height: 1.1;
-	}
-
-	.top .brand-sub {
-		font-size: 0.78rem;
-	}
-
-	.nav {
-		grid-column: 1 / -1;
-		margin-inline-start: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		width: 100%;
-		position: relative;
-	}
-
-	.nav a,
-	.lang,
 	.cta {
 		flex: 1 1 calc(50% - 8px);
 		min-height: 38px;
@@ -490,39 +384,6 @@ a {
 		justify-content: center;
 		text-align: center;
 		padding: 8px 10px;
-	}
-
-	.nav > a {
-		display: none;
-	}
-
-	.mobile-menu-btn {
-		display: flex !important;
-		width: 38px !important;
-		height: 38px !important;
-		min-height: 38px;
-		padding: 0 !important;
-		flex: 0 0 38px;
-		margin-left: auto;
-	}
-
-	.theme-btn {
-		width: 38px;
-		height: 38px;
-		min-height: 38px;
-		flex: 0 0 38px;
-	}
-
-	.lang {
-		flex: 0 0 auto;
-		min-width: 92px;
-	}
-
-	.mobile-menu-dropdown {
-		top: calc(100% + 4px);
-		right: 0;
-		min-width: 190px;
-		max-width: calc(100vw - 24px);
 	}
 
 	.hero-copy,
@@ -545,28 +406,29 @@ a {
 <link rel="stylesheet" href="assistant-widget.css">
 </head>
 <body>
-<header class="top">
-	<div class="inner">
-		<div>
-			<div class="brand">Xmore</div>
-			<div class="brand-sub" data-i18n="brandSub">Market intelligence for the Egyptian Exchange</div>
-		</div>
-		<nav class="nav">
-			<a href="/" data-i18n="navHome">Home</a>
-			<a href="/track-record" data-i18n="navTrack">Track Record</a>
-			<a href="/pro" data-i18n="navPro">Pro</a>
-			<button id="DocsMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="DocsMobileMenuDropdown"><span class="hamburger-icon">☰</span></button>
-			<button id="themeBtn" class="theme-btn" type="button" title="Toggle dark mode"><span class="icon-sun">☀️</span><span class="icon-moon">🌙</span></button>
-			<button class="lang" id="langToggleBtn" type="button">العربية</button>
-			<div id="DocsMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-				<a href="/" class="mobile-menu-item" role="menuitem">Home</a>
-				<a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a>
-				<a href="/pro" class="mobile-menu-item" role="menuitem">Pro</a>
-				<a href="/session" class="mobile-menu-item" role="menuitem">Session</a>
-				<a href="/docs" class="mobile-menu-item active" role="menuitem">Docs</a>
-			</div>
-		</nav>
-	</div>
+<header class="docs-header x-topbar x-topbar--dark">
+  <a href="/" class="docs-back x-back">← Dashboard</a>
+  <span class="docs-logo x-brand">XMORE <span class="docs-logo-tag">Docs</span></span>
+  <nav class="x-nav-links" aria-label="Primary">
+    <a class="x-link" href="/">Home</a>
+    <a class="x-link" href="/track-record">Track Record</a>
+    <a class="x-link" href="/pro">Pro</a>
+    <a class="x-link" href="/session">Session</a>
+    <a class="x-link active" href="/docs" aria-current="page">Docs</a>
+  </nav>
+  <button id="DocsMobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="DocsMobileMenuDropdown">
+    <span class="hamburger-icon">☰</span>
+  </button>
+  <div id="DocsMobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
+    <a href="/" class="mobile-menu-item" role="menuitem">Home</a>
+    <a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a>
+    <a href="/pro" class="mobile-menu-item" role="menuitem">Pro</a>
+    <a href="/session" class="mobile-menu-item" role="menuitem">Session</a>
+    <a href="/docs" class="mobile-menu-item active" role="menuitem">Docs</a>
+  </div>
+  <div class="x-actions">
+    <button class="docs-lang-btn" id="langToggleBtn" type="button">العربية</button>
+  </div>
 </header>
 <main>
 	<section class="section hero">
