@@ -4,10 +4,10 @@ Replaces evaluate_trades.py
 
 Responsibilities:
 1. Resolve outcome fields on trade_recommendations (existing)
-2. Calculate benchmark returns (EGX30) over same periods (NEW)
-3. Calculate alpha (NEW)
-4. Resolve user_positions with benchmark comparison (NEW)
-5. Track per-agent accuracy contribution (NEW)
+2. Calculate benchmark returns (TASI) over same periods
+3. Calculate alpha vs TASI
+4. Resolve user_positions with benchmark comparison
+5. Track per-agent accuracy contribution
 
 Runs as Step 8 in the daily pipeline.
 """
@@ -19,9 +19,10 @@ from database import get_connection
 MODEL_VERSION = "v1.0"  # Increment on agent/pipeline changes
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-# EGX30 index symbols to try (in order of preference)
-EGX30_SYMBOLS = ['EGX30', '^CASE', 'CASE.CA', 'EGX30.CA',
-                  'COMI.CA', 'ETEL.CA', 'HRHO.CA']   # liquid EGX30 proxies
+# TASI benchmark symbols to try (in order of preference)
+# TASI.INDX is written by engines/fetch_tasi_benchmark.py
+# 2222.SR (Aramco) is a ~15% weight proxy of last resort
+EGX30_SYMBOLS = ['TASI.INDX', '^TASI', '2222.SR']  # alias kept for internal use
 
 
 # ─── SQL HELPERS ───────────────────────────────────────────────
@@ -118,7 +119,7 @@ def resolve_1day_outcomes() -> int:
     """
     For recommendations where 1 trading day has passed:
     - Fill actual_next_day_return
-    - Fill benchmark_1d_return (EGX30 over same day)
+    - Fill benchmark_1d_return (TASI over same day)
     - Calculate alpha_1d
     - Set was_correct
     """
@@ -163,7 +164,7 @@ def resolve_1day_outcomes() -> int:
                 ((next_close - rec["close_price"]) / rec["close_price"]) * 100, 4
             )
 
-            # Benchmark: EGX30 index return over same day
+            # Benchmark: TASI index return over same day
             benchmark_return = get_benchmark_return(cursor, rec_date, next_date)
 
             # Buy-and-hold: same stock, same period (identical to actual for 1-day)
@@ -310,7 +311,7 @@ def resolve_5day_outcomes() -> int:
 
 def resolve_position_benchmarks() -> int:
     """
-    For closed positions: calculate what EGX30 returned
+    For closed positions: calculate what TASI returned
     over the same entry_date → exit_date period.
     """
     with get_connection() as conn:
@@ -354,7 +355,9 @@ def resolve_position_benchmarks() -> int:
 
 def get_benchmark_return(cursor, start_date, end_date) -> float:
     """
-    Get EGX30 index return between two dates.
+    Get TASI benchmark return between two dates.
+    Tries TASI.INDX (stored by fetch_tasi_benchmark.py), then ^TASI, then
+    Saudi Aramco (2222.SR) as a liquid proxy of last resort.
     Returns percentage return, or None if data unavailable.
     """
     for symbol in EGX30_SYMBOLS:

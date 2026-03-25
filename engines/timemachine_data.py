@@ -1,13 +1,14 @@
 """
-Time Machine Data Fetcher
-Fetches historical OHLCV for all EGX30 stocks using a multi-source strategy:
+Time Machine Data Fetcher — KSA/Tadawul
+Fetches historical OHLCV for all KSA (.SR) stocks using a multi-source strategy:
 
-  1. yfinance batch (primary — fast, gets ~27/30 stocks)
-  2. Direct Yahoo Finance v8/chart API via requests (fallback per-symbol)
-  3. EGX30 equal-weight proxy (computed from available stocks — permanent benchmark fix)
+  1. PostgreSQL prices table (primary — data pre-loaded by backfill_history.py)
+  2. EODHD API per-symbol (fallback for symbols missing from DB)
+  3. yfinance (last-resort; limited .SR coverage)
+  4. TASI equal-weight proxy for benchmark (from component stocks in DB)
 
 All data stays in-memory — nothing is written to the database.
-EGX stocks use .CA suffix on Yahoo Finance (e.g. COMI.CA, HRHO.CA).
+Tadawul stocks use .SR suffix (e.g. 2222.SR, 1180.SR).
 """
 
 import logging
@@ -21,48 +22,62 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-# EGX30 constituents — the main stocks Xmore tracks
-EGX30_SYMBOLS = [
-    'COMI.CA', 'HRHO.CA', 'SWDY.CA', 'TMGH.CA', 'EKHO.CA',
-    'EFIH.CA', 'ORWE.CA', 'PHDC.CA', 'ABUK.CA', 'CLHO.CA',
-    'ESRS.CA', 'ETEL.CA', 'JUFO.CA', 'ALCN.CA', 'OCDI.CA',
-    'HELI.CA', 'AMOC.CA', 'EAST.CA', 'CCAP.CA', 'EGAL.CA',
-    'ELEC.CA', 'FWRY.CA', 'GBCO.CA', 'ISPH.CA', 'MFPC.CA',
-    'PHAR.CA', 'SKPC.CA', 'SPIN.CA', 'SUGR.CA', 'TALM.CA'
+# KSA Tadawul constituents — the main stocks Xmore tracks
+EGX30_SYMBOLS = [   # name kept for import compat; these are .SR KSA symbols
+    '2222.SR', '1180.SR', '1170.SR', '7010.SR', '2010.SR',
+    '2020.SR', '1150.SR', '1060.SR', '4190.SR', '1050.SR',
+    '4061.SR', '7020.SR', '2030.SR', '4031.SR', '8010.SR',
+    '1140.SR', '1010.SR', '1020.SR', '1030.SR', '1080.SR',
+    '1160.SR', '2100.SR', '2060.SR', '2080.SR', '2090.SR',
+    '7030.SR', '4003.SR', '4050.SR', '4001.SR', '4240.SR',
+    '4321.SR', '4020.SR', '4040.SR', '4100.SR', '4150.SR',
+    '2120.SR', '2130.SR', '3002.SR', '4002.SR', '8020.SR',
+    '4030.SR',
 ]
 
 # Human-readable stock names for the frontend
 STOCK_NAMES = {
-    'COMI.CA': ('Commercial International Bank', 'البنك التجاري الدولي'),
-    'HRHO.CA': ('Hermes Holding', 'هيرميس القابضة'),
-    'SWDY.CA': ('Elsewedy Electric', 'السويدي إلكتريك'),
-    'TMGH.CA': ('Talaat Moustafa Group', 'مجموعة طلعت مصطفى'),
-    'EKHO.CA': ('Egyptian Kuwaiti Holding', 'المصرية الكويتية القابضة'),
-    'EFIH.CA': ('EFG Hermes Holding', 'إي إف جي هيرميس'),
-    'ORWE.CA': ('Oriental Weavers', 'السجاد الشرقي'),
-    'PHDC.CA': ('Palm Hills Development', 'بالم هيلز للتعمير'),
-    'ABUK.CA': ('Abu Qir Fertilizers', 'أبو قير للأسمدة'),
-    'CLHO.CA': ('Cleopatra Hospital', 'مستشفى كليوباترا'),
-    'ESRS.CA': ('Ezz Steel', 'حديد عز'),
-    'ETEL.CA': ('Telecom Egypt', 'المصرية للاتصالات'),
-    'JUFO.CA': ('Juhayna Food Industries', 'جهينة للصناعات الغذائية'),
-    'ALCN.CA': ('Alexandria Container', 'الإسكندرية للحاويات والبضائع'),
-    'OCDI.CA': ('Orascom Development', 'أوراسكوم للتنمية'),
-    'HELI.CA': ('Heliopolis Housing', 'مصر الجديدة للإسكان'),
-    'AMOC.CA': ('Alexandria Mineral Oils', 'الإسكندرية للزيوت المعدنية'),
-    'EAST.CA': ('Eastern Company', 'الشركة الشرقية للدخان'),
-    'CCAP.CA': ('Citadel Capital', 'القلعة القابضة'),
-    'EGAL.CA': ('Edita Food Industries', 'إيديتا للصناعات الغذائية'),
-    'ELEC.CA': ('El Sewedy Electric', 'الكابلات الكهربائية'),
-    'FWRY.CA': ('Fawry for Banking', 'فوري للمدفوعات'),
-    'GBCO.CA': ('SODIC', 'سوديك'),
-    'ISPH.CA': ('Ibnsina Pharma', 'ابن سينا فارما'),
-    'MFPC.CA': ('Misr Fertilizers', 'مصر للأسمدة'),
-    'PHAR.CA': ('Pharos Holding', 'فاروس القابضة'),
-    'SKPC.CA': ('Sidi Kerir Petrochemicals', 'سيدي كرير للبتروكيماويات'),
-    'SPIN.CA': ('Spinneys Egypt', 'سبينيز مصر'),
-    'SUGR.CA': ('Delta Sugar', 'الدلتا للسكر'),
-    'TALM.CA': ('Taaleem Management', 'تعليم لإدارة المدارس'),
+    '2222.SR': ('Saudi Aramco',               'أرامكو السعودية'),
+    '1180.SR': ('Al Rajhi Bank',              'مصرف الراجحي'),
+    '1170.SR': ('Saudi National Bank',        'البنك الأهلي السعودي'),
+    '7010.SR': ('Saudi Telecom Company',      'الاتصالات السعودية'),
+    '2010.SR': ('SABIC',                      'سابك'),
+    '2020.SR': ('Saudi Industrial Investment','الاستثمار الصناعي السعودي'),
+    '1150.SR': ('Alinma Bank',                'مصرف الإنماء'),
+    '1060.SR': ('Saudi Arabian British Bank', 'البنك السعودي البريطاني'),
+    '4190.SR': ('Jarir Marketing',            'مكتبة جرير'),
+    '1050.SR': ('Banque Saudi Fransi',        'بنك ساب السعودي الفرنسي'),
+    '4061.SR': ('Almarai',                    'المراعي'),
+    '7020.SR': ('Etihad Etisalat (Mobily)',   'اتحاد اتصالات (موبايلي)'),
+    '2030.SR': ('SAFCO',                      'سافكو'),
+    '4031.SR': ('Bahri (National Shipping)',  'البحري'),
+    '8010.SR': ('Tawuniya',                   'التعاونية'),
+    '1140.SR': ('Al Bilad Bank',              'بنك البلاد'),
+    '1010.SR': ('Riyad Bank',                 'بنك الرياض'),
+    '1020.SR': ('Bank AlJazira',              'بنك الجزيرة'),
+    '1030.SR': ('Saudi Investment Bank',      'البنك السعودي للاستثمار'),
+    '1080.SR': ('Arab National Bank',         'البنك العربي الوطني'),
+    '1160.SR': ('Al-Rajhi Takaful',           'الراجحي للتكافل'),
+    '2100.SR': ('Gulf International Services','الخليج الدولية للخدمات'),
+    '2060.SR': ('Yanbu National Petrochemicals','ينساب'),
+    '2080.SR': ('National Industrialization', 'التصنيع الوطنية'),
+    '2090.SR': ('National Petrochemical',     'الوطنية للبتروكيماويات'),
+    '7030.SR': ('Zain KSA',                   'زين السعودية'),
+    '4003.SR': ('Extra (United Electronics)', 'إكسترا'),
+    '4050.SR': ('Savola Group',               'مجموعة صافولا'),
+    '4001.SR': ('Aldrees Petroleum',          'الدريس للبترول'),
+    '4240.SR': ('Fawaz Alhokair',             'فواز الحكير'),
+    '4321.SR': ('Abdullah Al Othaim Markets', 'أسواق عبدالله العثيم'),
+    '4020.SR': ('Dar Al Arkan Real Estate',   'دار الأركان'),
+    '4040.SR': ('Saudi Real Estate',          'شركة العقارية'),
+    '4100.SR': ('Emaar The Economic City',    'إعمار المدينة الاقتصادية'),
+    '4150.SR': ('Taiba Investments',          'طيبة للاستثمار'),
+    '2120.SR': ('Astra Industrial Group',     'مجموعة أسترا الصناعية'),
+    '2130.SR': ('Saudi Ceramics',             'السيراميك السعودي'),
+    '3002.SR': ('Saudi Cement',               'الإسمنت السعودية'),
+    '4002.SR': ('Dallah Healthcare',          'دله الصحية'),
+    '8020.SR': ('BUPA Arabia',                'بوبا العربية'),
+    '4030.SR': ('Saudi Airlines Catering',    'الخطوط الجوية للتموين'),
 }
 
 # Shared session headers — mimic a real browser to avoid 429 blocks
@@ -177,16 +192,18 @@ def _http_get_json(url: str, timeout: int = 15) -> dict:
         return {}
 
 
-# ─── Source 3: EGX30 equal-weight proxy ───────────────────────────────────────
+# ─── Source 4: TASI equal-weight proxy ────────────────────────────────────────
 
-def _compute_egx30_proxy(price_data: dict, buffer_start: str) -> list:
+def _compute_tasi_proxy(price_data: dict, buffer_start: str) -> list:
     """
-    Build an equal-weight EGX30 proxy from available component stocks.
+    Build an equal-weight TASI proxy from available KSA component stocks.
     Each stock is normalised to 1.0 at the earliest shared date, then averaged.
+    Scaled to TASI_BASE (≈ 12000) to produce a realistic index level.
 
     Returns list of {date, open, high, low, close, volume} dicts stored under
-    the key '^EGX30' in the caller's result dict.
+    the key '^TASI' in the caller's result dict.
     """
+    TASI_BASE = 12_000
     # Collect all dates from component stocks (exclude the proxy key itself)
     component_data = {
         sym: price_data[sym]
@@ -236,8 +253,8 @@ def _compute_egx30_proxy(price_data: dict, buffer_start: str) -> list:
             continue
 
         avg = sum(ratios) / len(ratios)
-        # Scale to a realistic EGX30-like index starting at 30000
-        index_val = round(avg * 30000, 2)
+        # Scale to TASI_BASE (~12000) for a realistic index level
+        index_val = round(avg * TASI_BASE, 2)
         proxy_rows.append({
             'date': d,
             'open': index_val,
@@ -247,7 +264,7 @@ def _compute_egx30_proxy(price_data: dict, buffer_start: str) -> list:
             'volume': 0,
         })
 
-    logger.info(f"  EGX30 proxy: {len(proxy_rows)} days from {len(base_prices)} stocks")
+    logger.info(f"  TASI proxy: {len(proxy_rows)} days from {len(base_prices)} stocks")
     return proxy_rows
 
 
@@ -259,7 +276,7 @@ def _fetch_from_local_db(symbol: str, buffer_start: str, end_date: str) -> list:
     if not _LOCAL_PRICE_DB.exists():
         return []
 
-    clean = symbol.replace('.CA', '')
+    clean = symbol.replace('.SR', '').replace('.CA', '')
     rows_out: list = []
     conn = sqlite3.connect(_LOCAL_PRICE_DB)
     conn.row_factory = sqlite3.Row
@@ -271,7 +288,7 @@ def _fetch_from_local_db(symbol: str, buffer_start: str, end_date: str) -> list:
             WHERE (
                 UPPER(symbol) = UPPER(?)
                 OR UPPER(symbol) = UPPER(?)
-                OR UPPER(REPLACE(symbol, '.CA', '')) = UPPER(?)
+                OR UPPER(REPLACE(REPLACE(symbol, '.SR', ''), '.CA', '')) = UPPER(?)
             )
               AND DATE(SUBSTR(CAST(date AS TEXT), 1, 10)) >= DATE(?)
               AND DATE(SUBSTR(CAST(date AS TEXT), 1, 10)) <= DATE(?)
@@ -315,7 +332,7 @@ def _fetch_from_postgres_db(symbol: str, buffer_start: str, end_date: str) -> li
     except ImportError:
         return []
 
-    clean = symbol.replace('.CA', '')
+    clean = symbol.replace('.SR', '').replace('.CA', '')
     conn = None
     rows_out: list = []
     try:
@@ -328,7 +345,7 @@ def _fetch_from_postgres_db(symbol: str, buffer_start: str, end_date: str) -> li
             WHERE (
                 UPPER(symbol) = UPPER(%s)
                 OR UPPER(symbol) = UPPER(%s)
-                OR UPPER(REPLACE(symbol, '.CA', '')) = UPPER(%s)
+                OR UPPER(REPLACE(REPLACE(symbol, '.SR', ''), '.CA', '')) = UPPER(%s)
             )
               AND CAST(date AS DATE) >= CAST(%s AS DATE)
               AND CAST(date AS DATE) <= CAST(%s AS DATE)
@@ -374,12 +391,14 @@ def _fetch_from_db_fallback(symbol: str, buffer_start: str, end_date: str) -> li
 
 def fetch_historical_prices(start_date: str, end_date: str) -> dict:
     """
-    Fetch OHLCV data for all EGX30 stocks + EGX30 benchmark.
+    Fetch OHLCV data for all KSA (.SR) stocks + TASI benchmark.
 
-    Strategy:
-      1. yfinance batch download (fast primary source)
-      2. Direct Yahoo Finance v8 API per-symbol (fallback for batch failures)
-      3. EGX30 equal-weight proxy (computed from step-1+2 data — always present)
+    Strategy (KSA-optimised):
+      1. PostgreSQL/SQLite prices table (primary — populated by backfill_history.py)
+      2. EODHD API per-symbol (fallback for symbols not yet in DB)
+      3. yfinance (last-resort; coverage varies for .SR)
+      4. TASI equal-weight proxy benchmark (from fetched component data)
+         Also tries TASI.INDX from DB (written by fetch_tasi_benchmark.py)
 
     Args:
         start_date: "YYYY-MM-DD"
@@ -387,104 +406,106 @@ def fetch_historical_prices(start_date: str, end_date: str) -> dict:
 
     Returns:
         {
-          "COMI.CA": [{"date": "2025-06-15", "open": 62.0, "high": 63.5,
-                       "low": 61.8, "close": 63.2, "volume": 1500000}, ...],
-          "^EGX30":  [{"date": "2025-06-15", "close": 30250.0, ...}, ...],
+          "2222.SR": [{"date": "2025-06-15", "open": 31.2, "high": 31.8,
+                       "low": 30.9, "close": 31.5, "volume": 12000000}, ...],
+          "^TASI":   [{"date": "2025-06-15", "close": 12543.0, ...}, ...],
           ...
         }
     """
-    yf = None
-    try:
-        import yfinance as yf  # type: ignore[assignment]
-    except ImportError:
-        logger.warning("yfinance not installed; using direct Yahoo/API + DB fallbacks only")
-
-    # Add a generous warmup buffer so short user ranges still have enough
-    # prior sessions for SMA/RSI indicators (EGX has fewer weekly sessions).
+    # Add a generous warmup buffer for SMA/RSI warmup
     buffer_start = (
         datetime.strptime(start_date, '%Y-%m-%d') - timedelta(days=180)
     ).strftime('%Y-%m-%d')
 
     logger.info(
-        f"Fetching {len(EGX30_SYMBOLS)} EGX stocks from {buffer_start} to {end_date}"
+        f"Fetching {len(EGX30_SYMBOLS)} KSA stocks from {buffer_start} to {end_date}"
     )
 
-    # ── Step 1: yfinance batch ────────────────────────────────────────────────
     result: dict = {}
-    data = None
-    if yf is not None:
-        try:
-            data = yf.download(
-                tickers=EGX30_SYMBOLS,
-                start=buffer_start,
-                end=end_date,
-                interval='1d',
-                group_by='ticker',
-                auto_adjust=True,
-                progress=False,
-                threads=True,
-            )
-        except Exception as e:
-            logger.error(f"yfinance batch download failed: {e}")
-            data = None
 
-    if data is not None and not data.empty:
-        for symbol in EGX30_SYMBOLS:
-            try:
-                df = data[symbol].dropna(subset=['Close'])
-                rows = []
-                for idx, row in df.iterrows():
-                    rows.append({
-                        'date': idx.strftime('%Y-%m-%d'),
-                        'open': round(float(row['Open']), 2),
-                        'high': round(float(row['High']), 2),
-                        'low': round(float(row['Low']), 2),
-                        'close': round(float(row['Close']), 2),
-                        'volume': int(row['Volume']) if row['Volume'] > 0 else 0,
-                    })
-                if rows:
-                    result[symbol] = rows
-                    logger.info(f"  [batch] {symbol}: {len(rows)} days")
-            except Exception as e:
-                logger.debug(f"  [batch] {symbol}: failed ({e})")
-    else:
-        logger.warning("yfinance batch returned no data — will use direct API for all symbols")
+    # ── Step 1: PostgreSQL / SQLite prices table (primary) ───────────────────
+    logger.info("Step 1: Fetching from prices table (DB primary)...")
+    for symbol in EGX30_SYMBOLS:
+        rows = _fetch_from_db_fallback(symbol, buffer_start, end_date)
+        if rows:
+            result[symbol] = rows
+            logger.info(f"  [db] {symbol}: {len(rows)} days")
 
-    # ── Step 2: direct Yahoo v8 API for symbols that batch missed ────────────
+    # ── Step 2: EODHD for symbols not in DB ──────────────────────────────────
     missing = [s for s in EGX30_SYMBOLS if s not in result]
-    if missing:
-        logger.info(f"Step 2: Direct Yahoo API fallback for {len(missing)} symbols: {missing}")
-        for symbol in missing:
-            rows = _fetch_yahoo_direct(symbol, buffer_start, end_date)
-            if rows:
-                result[symbol] = rows
-                logger.info(f"  [direct] {symbol}: {len(rows)} days")
-            else:
-                logger.debug(f"  [direct] {symbol}: no data (delisted or unavailable)")
-            # Small delay to avoid rate-limiting when fetching many symbols
-            time.sleep(0.3)
+    if missing and os.getenv('EODHD_API_KEY'):
+        logger.info(f"Step 2: EODHD fallback for {len(missing)} symbols")
+        try:
+            from fetch_tasi_benchmark import _fetch_from_eodhd as _eodhd_fetch
+        except ImportError:
+            _eodhd_fetch = None
 
-    # ── Step 3: local DB fallback for still-missing symbols ──────────────────
+        if _eodhd_fetch:
+            for symbol in missing:
+                rows_raw = _eodhd_fetch(symbol, buffer_start, end_date)
+                if rows_raw:
+                    # Strip the symbol override — _eodhd_fetch tags as TASI.INDX
+                    rows = [{**r, 'symbol': symbol} for r in rows_raw]
+                    result[symbol] = [
+                        {'date': r['date'], 'open': r['open'], 'high': r['high'],
+                         'low': r['low'], 'close': r['close'], 'volume': r['volume']}
+                        for r in rows
+                    ]
+                    logger.info(f"  [eodhd] {symbol}: {len(rows)} days")
+                time.sleep(0.2)
+
+    # ── Step 3: yfinance last-resort for still-missing symbols ───────────────
     still_missing = [s for s in EGX30_SYMBOLS if s not in result]
     if still_missing:
-        logger.info(f"Step 3: Database fallback for {len(still_missing)} symbols")
-        for symbol in still_missing:
-            rows = _fetch_from_db_fallback(symbol, buffer_start, end_date)
-            if rows:
-                result[symbol] = rows
-                logger.info(f"  [db] {symbol}: {len(rows)} days")
+        yf = None
+        try:
+            import yfinance as yf  # type: ignore[assignment]
+        except ImportError:
+            pass
 
-    # ── Step 4: EGX30 equal-weight proxy ─────────────────────────────────────
-    logger.info("Step 4: Building EGX30 equal-weight proxy benchmark...")
-    proxy = _compute_egx30_proxy(result, buffer_start)
-    if proxy:
-        result['^EGX30'] = proxy
+        if yf is not None:
+            logger.info(f"Step 3: yfinance last-resort for {len(still_missing)} symbols")
+            for symbol in still_missing:
+                try:
+                    df = yf.download(symbol, start=buffer_start, end=end_date,
+                                     interval='1d', auto_adjust=True, progress=False)
+                    if df is not None and not df.empty:
+                        df.dropna(subset=['Close'], inplace=True)
+                        rows = []
+                        for idx, row in df.iterrows():
+                            rows.append({
+                                'date':   idx.strftime('%Y-%m-%d'),
+                                'open':   round(float(row['Open']), 2),
+                                'high':   round(float(row['High']), 2),
+                                'low':    round(float(row['Low']), 2),
+                                'close':  round(float(row['Close']), 2),
+                                'volume': int(row['Volume']) if row['Volume'] > 0 else 0,
+                            })
+                        if rows:
+                            result[symbol] = rows
+                            logger.info(f"  [yf] {symbol}: {len(rows)} days")
+                except Exception as e:
+                    logger.debug(f"  [yf] {symbol}: failed ({e})")
+                time.sleep(0.3)
+
+    # ── Step 4: TASI benchmark ────────────────────────────────────────────────
+    # Try TASI.INDX from DB first (written by fetch_tasi_benchmark.py)
+    logger.info("Step 4: Fetching TASI benchmark...")
+    tasi_db = _fetch_from_db_fallback('TASI.INDX', buffer_start, end_date)
+    if tasi_db:
+        result['^TASI'] = tasi_db
+        logger.info(f"  TASI.INDX from DB: {len(tasi_db)} days")
     else:
-        logger.warning("Could not build EGX30 proxy (not enough component data)")
+        # Build equal-weight proxy from component stocks fetched in steps 1-3
+        proxy = _compute_tasi_proxy(result, buffer_start)
+        if proxy:
+            result['^TASI'] = proxy
+        else:
+            logger.warning("Could not build TASI benchmark (not enough component data)")
 
     logger.info(
-        f"Data fetch complete: {len([k for k in result if k != '^EGX30'])} stocks + "
-        f"{'EGX30 proxy' if '^EGX30' in result else 'no benchmark'}"
+        f"Data fetch complete: {len([k for k in result if k != '^TASI'])} stocks + "
+        f"{'^TASI (' + str(len(result['^TASI'])) + ' days)' if '^TASI' in result else 'no benchmark'}"
     )
     return result
 

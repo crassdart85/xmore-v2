@@ -41,6 +41,7 @@ env:
   KSA_WHATSAPP_CHANNEL_ID: ${{ secrets.KSA_WHATSAPP_CHANNEL_ID }}
   FINNHUB_API_KEY:         ${{ secrets.FINNHUB_API_KEY }}
   NEWS_API_KEY:            ${{ secrets.NEWS_API_KEY }}
+  EODHD_API_KEY:           ${{ secrets.EODHD_API_KEY }}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Shared setup steps (referenced via YAML anchors)
@@ -264,6 +265,12 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - name: Fetch TASI benchmark prices
+        continue-on-error: true
+        env:
+          EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
+        run: python engines/fetch_tasi_benchmark.py --days 30
+
       - name: Evaluate KSA performance metrics
         continue-on-error: true
         run: |
@@ -346,6 +353,12 @@ jobs:
           restore-keys: pip-ksa-${{ runner.os }}-
 
       - run: pip install -r requirements.txt
+
+      - name: Fetch TASI benchmark prices (catchup)
+        continue-on-error: true
+        env:
+          EODHD_API_KEY: ${{ secrets.EODHD_API_KEY }}
+        run: python engines/fetch_tasi_benchmark.py --days 7
 
       - name: Evaluate KSA predictions (catchup)
         run: python evaluate.py

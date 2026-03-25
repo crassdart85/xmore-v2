@@ -95,17 +95,17 @@ def _compute_monthly_breakdown(equity_curve, initial_amount):
         point = months[month_key]
         ret_pct = round(((point['value'] - prev_value) / prev_value) * 100, 2) if prev_value > 0 else 0
         egx_ret = None
-        if point.get('egx30_value') is not None and prev_egx > 0:
-            egx_ret = round(((point['egx30_value'] - prev_egx) / prev_egx) * 100, 2)
+        if point.get('tasi_value') is not None and prev_egx > 0:
+            egx_ret = round(((point['tasi_value'] - prev_egx) / prev_egx) * 100, 2)
 
         monthly.append({
             'month': month_key,
             'return_pct': ret_pct,
-            'egx30_return_pct': egx_ret,
+            'tasi_return_pct': egx_ret,
         })
         prev_value = point['value']
         if point.get('egx30_value') is not None:
-            prev_egx = point['egx30_value']
+            prev_egx = point['tasi_value']
 
     return monthly
 
@@ -115,7 +115,7 @@ def _build_allocation_timeline(completed_trades, stock_names_fn):
     events = []
     for tr in completed_trades:
         symbol = tr['stock_symbol']
-        clean_symbol = symbol.replace('.CA', '')
+        clean_symbol = symbol.replace('.SR', '').replace('.CA', '')
 
         # BUY event
         events.append({
@@ -176,8 +176,8 @@ def run_simulation(amount: float, start_date: str, signals: list, price_data: di
         return {'error': True, 'message_en': 'No trading days found in this period.',
                 'message_ar': 'لم يتم العثور على أيام تداول في هذه الفترة.'}
 
-    # EGX30 baseline for benchmark
-    egx30_data = price_data.get('^EGX30', [])
+    # TASI baseline for benchmark
+    egx30_data = price_data.get('^TASI', [])
     egx30_start = _get_price_on_date(egx30_data, start_date)
 
     # Build signals lookup: date -> [signals sorted by consensus DESC]
@@ -211,8 +211,8 @@ def run_simulation(amount: float, start_date: str, signals: list, price_data: di
 
                 completed_trades.append({
                     'stock_symbol': symbol,
-                    'stock_name_en': stock_names_fn(symbol, 'en') if stock_names_fn else symbol.replace('.CA', ''),
-                    'stock_name_ar': stock_names_fn(symbol, 'ar') if stock_names_fn else symbol.replace('.CA', ''),
+                    'stock_name_en': stock_names_fn(symbol, 'en') if stock_names_fn else symbol.replace('.SR', '').replace('.CA', ''),
+                    'stock_name_ar': stock_names_fn(symbol, 'ar') if stock_names_fn else symbol.replace('.SR', '').replace('.CA', ''),
                     'action': pos['signal']['action'],
                     'buy_date': pos['buy_date'],
                     'sell_date': day,
@@ -283,7 +283,7 @@ def run_simulation(amount: float, start_date: str, signals: list, price_data: di
         equity_curve.append({
             'date': day,
             'value': round(portfolio_value, 2),
-            'egx30_value': round(egx30_value, 2) if egx30_value is not None else None,
+            'tasi_value': round(egx30_value, 2) if egx30_value is not None else None,
         })
 
     # --- FORCE-CLOSE remaining holdings at last day's price ---
@@ -295,8 +295,8 @@ def run_simulation(amount: float, start_date: str, signals: list, price_data: di
             return_pct = ((current_price / pos['buy_price']) - 1) * 100
             completed_trades.append({
                 'stock_symbol': symbol,
-                'stock_name_en': stock_names_fn(symbol, 'en') if stock_names_fn else symbol.replace('.CA', ''),
-                'stock_name_ar': stock_names_fn(symbol, 'ar') if stock_names_fn else symbol.replace('.CA', ''),
+                'stock_name_en': stock_names_fn(symbol, 'en') if stock_names_fn else symbol.replace('.SR', '').replace('.CA', ''),
+                'stock_name_ar': stock_names_fn(symbol, 'ar') if stock_names_fn else symbol.replace('.SR', '').replace('.CA', ''),
                 'action': pos['signal']['action'],
                 'buy_date': pos['buy_date'],
                 'sell_date': last_day,
@@ -392,10 +392,10 @@ def run_simulation(amount: float, start_date: str, signals: list, price_data: di
             'annualized_return_pct': round(annualized, 2),
 
             'benchmark': {
-                'egx30_return_pct': round(egx30_return_pct, 2),
-                'egx30_final_value': round(egx30_final, 2),
+                'tasi_return_pct': round(egx30_return_pct, 2),
+                'tasi_final_value': round(egx30_final, 2),
                 'alpha_pct': round(total_return_pct - egx30_return_pct, 2),
-                'alpha_egp': round(total_return_egp - (egx30_final - amount), 2),
+                'alpha_sar': round(total_return_egp - (egx30_final - amount), 2),
             },
 
             'risk_metrics': {
