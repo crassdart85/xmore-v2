@@ -56,7 +56,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
@@ -110,7 +112,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
@@ -160,7 +164,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
@@ -243,7 +249,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
@@ -283,7 +291,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
@@ -322,7 +332,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
 
       - uses: actions/setup-python@v4
         with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
