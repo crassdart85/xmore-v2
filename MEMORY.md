@@ -19,6 +19,16 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
   - Keep KSA cron orchestration on `main` unless `xmore-ksa` becomes the default branch.
   - Keep direct KSA branch workflows branch-aware (`${{ github.ref_name }}`) for manual runs and future default-branch changes.
 
+## Mar 25, 2026 - Performance Metrics EGX Basis Fix
+- Fixed `engines/performance_metrics.py` so Sharpe/Sortino/reporting defaults no longer inherit KSA compatibility aliases from `config/execution_config.py`.
+- EGX reporting basis is now explicitly pinned back to:
+  - `EGX_RISK_FREE_RATE_ANNUAL = 0.2725`
+  - `EGX_TRADING_DAYS_PER_YEAR = 247`
+- `EGX_ROUND_TRIP_RATE` still imports from execution config.
+- Result:
+  - `tests/test_performance_metrics.py::test_sharpe_uses_egx_rate_not_us` now passes
+  - full Python suite passes on both `main` and `xmore-ksa`
+
 ## Mar 20, 2026 — Hamburger Menu Cleanup + Time Machine Validation
 - **Hamburger menu icon removal**: Stripped all emoji icon prefixes from mobile menu items across all 6 pages (`landing.html`, `session.html`, `pro.html`, `track-record.html`, `index.html`, `docs.html`)
 - **pro.html ID case bug fixed**: HTML had `ProMobileMenuBtn`/`ProMobileMenuDropdown` (capital P) but `Pro.js` queries `proMobileMenuBtn`/`proMobileMenuDropdown` (lowercase p) — menu was silently broken; fixed HTML IDs to match JS

@@ -14,6 +14,18 @@
   - use `${{ github.ref_name }}` for normal branch-aware workflow execution
   - use a default-branch dispatcher when scheduled automation must target a non-default branch
 
+### Performance metrics loading KSA compatibility aliases as EGX defaults
+- **Error**: `tests/test_performance_metrics.py::test_sharpe_uses_egx_rate_not_us` failed on both branches because default Sharpe inputs were effectively:
+  - risk-free rate `0.05`
+  - trading days `252`
+- **Cause**: `engines/performance_metrics.py` imported legacy `EGX_*` names from `config/execution_config.py`, but those names had been repurposed there for Tadawul/KSA compatibility.
+- **Fix**:
+  - pinned EGX reporting defaults locally in `engines/performance_metrics.py`
+  - kept only `EGX_ROUND_TRIP_RATE` imported from execution config
+- **Result**:
+  - EGX metrics again use `27.25%` annual risk-free and `247` trading days
+  - full suite passes (`52 passed`) on both branches
+
 ## Mar 2, 2026
 
 ### 1. `evaluate.py` — PostgreSQL boolean type mismatch
