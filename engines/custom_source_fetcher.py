@@ -681,7 +681,7 @@ def fetch_all_active_sources() -> List[Dict]:
     results = []
     try:
         cur = conn.cursor()
-        sql = "SELECT * FROM custom_news_sources WHERE is_active = TRUE ORDER BY id"
+        sql = f"SELECT * FROM custom_news_sources WHERE is_active = {'TRUE' if is_postgres else '1'} ORDER BY id"
         if is_postgres:
             cur.execute(sql)
         else:

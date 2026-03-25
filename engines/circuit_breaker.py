@@ -6,7 +6,7 @@ import logging
 import os
 from decimal import Decimal, ROUND_HALF_UP
 
-from database import get_connection
+from database import get_connection, sql_bool
 
 logger = logging.getLogger(__name__)
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -24,7 +24,7 @@ def apply_circuit_breaker(portfolio_type: str, config, allocation):
             SELECT pp.max_drawdown_pct
             FROM portfolio_performance pp
             JOIN model_portfolios mp ON pp.portfolio_id = mp.id
-            WHERE mp.portfolio_type = {_ph(1)} AND mp.is_active = TRUE
+            WHERE mp.portfolio_type = {_ph(1)} AND mp.is_active = {sql_bool(True)}
             ORDER BY pp.snapshot_date DESC
             LIMIT 1
             """,

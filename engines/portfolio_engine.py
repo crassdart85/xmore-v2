@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Dict, List
 
-from database import get_connection
+from database import get_connection, is_postgres, sql_bool, sql_today
 from engines.portfolio_config import (
     AGGRESSIVE_CONFIG,
     BALANCED_CONFIG,
@@ -20,7 +20,7 @@ from engines.portfolio_config import (
 )
 
 logger = logging.getLogger(__name__)
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = is_postgres()
 
 
 def _ph(idx: int) -> str:
@@ -85,12 +85,12 @@ def collect_active_signals() -> List[Signal]:
             COALESCE(tr.stop_loss_price, 0) AS stop_loss_price,
             COALESCE(tr.target_price, 0) AS target_price,
             COALESCE(s.sector_en, 'Unknown') AS sector,
-            CASE WHEN s.id IS NULL THEN FALSE ELSE TRUE END AS is_egx30
+            CASE WHEN s.id IS NULL THEN {sql_bool(False)} ELSE {sql_bool(True)} END AS is_egx30
         FROM trade_recommendations tr
         LEFT JOIN egx30_stocks s ON tr.symbol = s.symbol
         WHERE tr.action IN ({_ph(1)}, {_ph(2)}, {_ph(3)})
-          AND tr.recommendation_date = CURRENT_DATE
-        ORDER BY tr.priority DESC NULLS LAST, tr.confidence DESC NULLS LAST
+          AND tr.recommendation_date = {sql_today()}
+        ORDER BY (tr.priority IS NULL), tr.priority DESC, (tr.confidence IS NULL), tr.confidence DESC
     """
 
     with get_connection() as conn:
@@ -280,8 +280,7 @@ def validate_and_publish(portfolio_type: str, allocation: PortfolioAllocation, c
                 f"""
                 INSERT INTO model_portfolios
                 (portfolio_type, total_stocks, cash_pct, is_active, valid_until, generation_metadata)
-                VALUES ({_ph(1)}, {_ph(2)}, {_ph(3)}, TRUE, {_ph(4)}, {_ph(5)})
-                RETURNING id
+                VALUES ({_ph(1)}, {_ph(2)}, {_ph(3)}, {sql_bool(True)}, {_ph(4)}, {_ph(5)})
                 """,
                 (
                     portfolio_type,
@@ -291,7 +290,7 @@ def validate_and_publish(portfolio_type: str, allocation: PortfolioAllocation, c
                     json.dumps(allocation.metadata),
                 ),
             )
-            portfolio_id = cursor.fetchone()[0]
+            portfolio_id = cursor.fetchone()[0] if DATABASE_URL else cursor.lastrowid
 
             for alloc in allocation.allocations:
                 signal = alloc["signal"]

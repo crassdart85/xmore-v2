@@ -28,11 +28,46 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 # DATABASE CONNECTION
 # ============================================
 
+def is_postgres() -> bool:
+    """Return True when the active backend is PostgreSQL."""
+    return bool(DATABASE_URL)
+
+
 def _adapt_sql(sql):
     """Convert SQLite-style ? placeholders to PostgreSQL-style %s when using PostgreSQL."""
-    if DATABASE_URL:
+    if is_postgres():
         return sql.replace('?', '%s')
     return sql
+
+
+def sql_bool(value: bool) -> str:
+    """Return a portable SQL boolean literal for the active backend."""
+    return "TRUE" if value and is_postgres() else "FALSE" if is_postgres() else "1" if value else "0"
+
+
+def sql_today() -> str:
+    """Return a portable SQL expression for the current date."""
+    return "CURRENT_DATE" if is_postgres() else "date('now')"
+
+
+def sql_now() -> str:
+    """Return a portable SQL expression for the current timestamp."""
+    return "NOW()" if is_postgres() else "datetime('now')"
+
+
+def sql_days_ago(column_expr: str, *, placeholder: Optional[str] = None, days: Optional[int] = None) -> str:
+    """Build a portable date filter like `column >= today - N days`."""
+    if (placeholder is None) == (days is None):
+        raise ValueError("Provide exactly one of placeholder or days")
+
+    if is_postgres():
+        if days is not None:
+            return f"{column_expr} >= CURRENT_DATE - INTERVAL '{int(days)} days'"
+        return f"{column_expr} >= CURRENT_DATE - ({placeholder} * INTERVAL '1 day')"
+
+    if days is not None:
+        return f"{column_expr} >= date('now', '-{int(days)} days')"
+    return f"{column_expr} >= date('now', '-' || {placeholder} || ' days')"
 
 def _safe_add_column(cursor, table, column, col_type):
     """Add a column if it doesn't exist, handling PG transaction semantics.
@@ -1226,14 +1261,10 @@ def get_statistics() -> Dict[str, Any]:
         stats['latest_date'] = date_range['latest']
         
         # Recent data quality issues
-        if DATABASE_URL:
-            date_expr = "CURRENT_DATE - INTERVAL '7 days'"
-        else:
-            date_expr = "DATE('now', '-7 days')"
         cursor.execute(f"""
             SELECT COUNT(*) as count
             FROM data_quality_log
-            WHERE date >= {date_expr} AND resolved = 0
+            WHERE {sql_days_ago('date', days=7)} AND resolved = {sql_bool(False)}
         """)
         stats['recent_issues'] = cursor.fetchone()['count']
         

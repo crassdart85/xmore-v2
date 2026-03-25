@@ -7,7 +7,7 @@ import logging
 import os
 from datetime import datetime
 
-from database import get_connection
+from database import get_connection, is_postgres, sql_bool, sql_today
 from engines.circuit_breaker import apply_circuit_breaker
 from engines.performance_metrics import get_performance_summary
 from engines.portfolio_engine import (
@@ -21,7 +21,7 @@ from engines.portfolio_engine import (
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = is_postgres()
 
 REBALANCE_DAYS = {"conservative": 30, "balanced": 14, "aggressive": 7}
 
@@ -50,7 +50,7 @@ def should_rebalance(portfolio_type: str) -> bool:
 def update_daily_performance():
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, portfolio_type FROM model_portfolios WHERE is_active = TRUE")
+        cursor.execute(f"SELECT id, portfolio_type FROM model_portfolios WHERE is_active = {sql_bool(True)}")
         portfolios = cursor.fetchall()
 
         for row in portfolios:
@@ -122,7 +122,7 @@ def update_daily_performance():
                 INSERT INTO portfolio_performance
                 (portfolio_id, snapshot_date, total_return_pct, daily_return_pct, egx30_return_pct, alpha_pct,
                  sharpe_ratio, max_drawdown_pct, win_rate_pct)
-                VALUES ({_ph(1)}, CURRENT_DATE, {_ph(2)}, {_ph(3)}, {_ph(4)}, {_ph(5)}, {_ph(6)}, {_ph(7)}, {_ph(8)})
+                VALUES ({_ph(1)}, {sql_today()}, {_ph(2)}, {_ph(3)}, {_ph(4)}, {_ph(5)}, {_ph(6)}, {_ph(7)}, {_ph(8)})
                 ON CONFLICT (portfolio_id, snapshot_date) DO UPDATE SET
                     total_return_pct = EXCLUDED.total_return_pct,
                     daily_return_pct = EXCLUDED.daily_return_pct,
