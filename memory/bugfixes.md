@@ -2,6 +2,19 @@
 
 ## Mar 25, 2026
 
+### Full branch validation and live smoke baseline
+- **Check**:
+  - `main`: `npm run check`, `pytest` -> `52 passed`
+  - `xmore-ksa`: `npm run check`, `pytest` -> `52 passed`
+  - live smoke passed against both Render deployments
+- **Confirmed live endpoints**:
+  - `/api/performance-v2/export-summary`
+  - `/api/intelligence/changes`
+- **Operational note**:
+  - `main` does not currently define npm script `smoke:url`; use direct endpoint checks or the KSA smoke runner for cross-branch production validation
+- **Observed behavior**:
+  - `/api/health` returns `404` on both deployments; treat that as current expected behavior, not a regression
+
 ### KSA workflow runtime failures from unsupported CLI flags
 - **Error**:
   - `collect_data.py: error: unrecognized arguments: --market KSA`

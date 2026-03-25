@@ -14,6 +14,17 @@
   - branch-aware checkout for direct KSA workflow runs
   - a default-branch scheduler for GitHub cron
 
+## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
+- Local checks passed on both branches:
+  - frontend check
+  - Python test suite (`52 passed`)
+- Live smoke passed against:
+  - `https://xmore-project.onrender.com`
+  - `https://xmore-ksa.onrender.com`
+- Confirmed `/api/intelligence/changes` and `/api/performance-v2/export-summary` are responding on both deployments.
+- Note: `/api/health` currently returns `404` on both deployments because no health endpoint exists.
+- Note: `main` does not currently define `web-ui` npm script `smoke:url`; cross-branch live validation used the KSA smoke runner plus direct endpoint checks.
+
 ## Key File Paths
 - `web-ui/server.js` â€” Express app, all API endpoints
 - `web-ui/init-db.js` â€” PostgreSQL table creation + full EGX stock seed (~190)
