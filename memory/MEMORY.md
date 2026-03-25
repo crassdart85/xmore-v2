@@ -15,6 +15,18 @@
   - this is now the source of truth for scheduled KSA automation while `main` remains default
 - Takeaway: branch-aware checkout and default-branch dispatching are both required for multi-branch automation in this repo.
 
+## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
+- Verified deployed/live behavior after the workflow runtime command fixes.
+- Local checks passed on both worktrees:
+  - frontend check
+  - Python test suite (`52 passed`)
+- Live smoke passed against:
+  - `https://xmore-project.onrender.com`
+  - `https://xmore-ksa.onrender.com`
+- Confirmed `/api/intelligence/changes` and `/api/performance-v2/export-summary` return valid responses on both deployments.
+- Note: `/api/health` returns `404` on both sites because that route is not implemented.
+- Note: `main` does not currently have `web-ui` npm script `smoke:url`; live validation used the KSA smoke script plus direct endpoint fetches.
+
 ## Key File Paths
 - `web-ui/server.js` â€” Express app, all API endpoints
 - `web-ui/init-db.js` â€” PostgreSQL table creation + full EGX stock seed (~190)

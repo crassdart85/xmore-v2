@@ -5,6 +5,26 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 
 **Last Updated**: March 25, 2026
 
+## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
+- Verified current branch heads:
+  - `main` at `ac0d2ef20d2a4b649e16dfbe18a9c5f2ebfc6cda`
+  - `xmore-ksa` at `bf2fe8fb9d3b5a8e04bad4aab1c09bf92b78f53e`
+- Local validation passed on both branches:
+  - `npm run check`
+  - `pytest` -> `52 passed`
+- Live production smoke passed against both deployments:
+  - `https://xmore-project.onrender.com`
+  - `https://xmore-ksa.onrender.com`
+- Confirmed live endpoints returning data on both deployments:
+  - `/api/performance-v2/export-summary`
+  - `/api/intelligence/changes`
+  - dashboard landing page
+- Operational note:
+  - `main` currently does not expose `web-ui` npm script `smoke:url`
+  - KSA branch smoke runner was used to validate both deployed URLs, plus direct endpoint fetch checks
+- Known live behavior:
+  - `/api/health` returns `404` on both deployments because no health route is currently defined
+
 ## Mar 25, 2026 - KSA Workflow Runtime CLI Alignment
 - GitHub accepted the workflow YAML, but the KSA jobs still failed at runtime because the workflow commands no longer matched the branch-specialized scripts.
 - Fixed `.github/workflows/ksa-branch-scheduled.yml` on `main` to match the current KSA branch entry points:
