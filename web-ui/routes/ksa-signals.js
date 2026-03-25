@@ -33,12 +33,12 @@ router.get('/signals/latest', async (req, res) => {
     try {
         const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, confidence,
-                   bull_score, bear_score, agent_agreement, timestamp,
+                   bull_score, bear_score, agent_agreement, prediction_date AS timestamp,
                    drivers_json, risk_level, expected_move, signal_label, liquidity_score
             FROM consensus_results
             WHERE market_id = 'KSA'
               AND symbol LIKE '%.SR'
-            ORDER BY timestamp DESC
+            ORDER BY prediction_date DESC
             LIMIT 20
         `);
         const result = rows.map(r => ({
@@ -57,12 +57,12 @@ router.get('/signals/latest', async (req, res) => {
 router.get('/signals/today', async (req, res) => {
     try {
         const dateClause = isPostgres
-            ? `DATE(timestamp) = CURRENT_DATE`
-            : `DATE(timestamp) = DATE('now')`;
+            ? `prediction_date = CURRENT_DATE`
+            : `prediction_date = DATE('now')`;
         const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, confidence,
-                   bull_score, bear_score, agent_agreement, timestamp,
-                   drivers_json, risk_level, expected_move, regime_flag,
+                   bull_score, bear_score, agent_agreement, prediction_date AS timestamp,
+                   drivers_json, risk_level, expected_move,
                    signal_label, liquidity_score
             FROM consensus_results
             WHERE market_id = 'KSA'
@@ -164,12 +164,13 @@ router.get('/signals/:ticker/history', async (req, res) => {
     const ticker = req.params.ticker.toUpperCase();
     try {
         const rows = await dbAll(`
-            SELECT symbol, final_signal, conviction, xmore_score, timestamp,
-                   bull_score, bear_score, agent_agreement, regime_flag
+            SELECT symbol, final_signal, conviction, xmore_score,
+                   prediction_date AS timestamp,
+                   bull_score, bear_score, agent_agreement
             FROM consensus_results
             WHERE market_id = 'KSA'
               AND symbol = ${ph(1)}
-            ORDER BY timestamp DESC
+            ORDER BY prediction_date DESC
             LIMIT 60
         `, [ticker]);
         res.json({ available: true, ticker, history: rows });
@@ -203,7 +204,6 @@ router.get('/execution/:ticker', async (req, res) => {
             SELECT close, date
             FROM prices
             WHERE symbol = ${ph(1)}
-              AND market_id = 'KSA'
             ORDER BY date DESC
             LIMIT 1
         `, [ticker]);

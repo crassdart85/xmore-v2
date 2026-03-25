@@ -919,6 +919,10 @@ async function initializeDatabase() {
     try { await pool.query('ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1'); } catch(_) {}
     try { await pool.query('ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5'); } catch(_) {}
 
+    // KSA multi-market columns
+    try { await pool.query("ALTER TABLE prices ADD COLUMN IF NOT EXISTS market_id TEXT"); } catch(_) {}
+    try { await pool.query("ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS signal_date DATE"); } catch(_) {}
+
     // Table: Price Alerts
     await pool.query(`
       CREATE TABLE IF NOT EXISTS price_alerts (

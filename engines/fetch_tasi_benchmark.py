@@ -65,8 +65,8 @@ def _upsert_prices(rows: list[dict]) -> int:
         for row in rows:
             if is_pg:
                 cur.execute("""
-                    INSERT INTO prices (symbol, date, open, high, low, close, volume, market_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 'KSA')
+                    INSERT INTO prices (symbol, date, open, high, low, close, volume)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (symbol, date) DO UPDATE SET
                         open   = EXCLUDED.open,
                         high   = EXCLUDED.high,
@@ -79,8 +79,8 @@ def _upsert_prices(rows: list[dict]) -> int:
                 ))
             else:
                 cur.execute("""
-                    INSERT OR REPLACE INTO prices (symbol, date, open, high, low, close, volume, market_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 'KSA')
+                    INSERT OR REPLACE INTO prices (symbol, date, open, high, low, close, volume)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, (
                     row['symbol'], row['date'],
                     row['open'], row['high'], row['low'], row['close'], row['volume'],
@@ -104,7 +104,6 @@ def _fetch_existing_prices(symbols: list[str], start_date: str, end_date: str) -
             SELECT symbol, date, close
             FROM prices
             WHERE symbol IN ({placeholders})
-              AND market_id = 'KSA'
               AND CAST(date AS DATE) >= CAST({ph} AS DATE)
               AND CAST(date AS DATE) <= CAST({ph} AS DATE)
             ORDER BY symbol, CAST(date AS DATE) ASC

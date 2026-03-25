@@ -213,7 +213,7 @@ router.get('/summary', async (req, res) => {
         try {
             const fresh = await dbGet(`
                 SELECT GREATEST(
-                    COALESCE((SELECT MAX(date) FROM prices WHERE market_id = 'KSA'), '1970-01-01'::date),
+                    COALESCE((SELECT MAX(date) FROM prices WHERE symbol LIKE '%.SR'), '1970-01-01'::date),
                     COALESCE((SELECT MAX(updated_at) FROM trade_recommendations WHERE market_id = 'KSA'), '1970-01-01'::date),
                     COALESCE('${lastUpdated || '1970-01-01'}'::date, '1970-01-01'::date)
                 ) AS freshest
@@ -222,7 +222,7 @@ router.get('/summary', async (req, res) => {
         } catch (_) {
             // SQLite fallback
             try {
-                const p  = await dbGet(`SELECT MAX(date) AS d FROM prices WHERE market_id = 'KSA'`).catch(() => null);
+                const p  = await dbGet(`SELECT MAX(date) AS d FROM prices WHERE symbol LIKE '%.SR'`).catch(() => null);
                 const ur = await dbGet(`SELECT MAX(updated_at) AS d FROM trade_recommendations WHERE market_id = 'KSA'`).catch(() => null);
                 const candidates = [lastUpdated, p?.d, ur?.d].filter(Boolean).sort();
                 if (candidates.length) lastUpdated = candidates[candidates.length - 1];
