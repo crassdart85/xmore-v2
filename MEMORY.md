@@ -3,7 +3,21 @@
 ## Project Overview
 Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
 
-**Last Updated**: March 20, 2026
+**Last Updated**: March 25, 2026
+
+## Mar 25, 2026 - Workflow Branch Alignment + KSA Default-Branch Scheduler
+- Fixed GitHub Actions branch checkout drift across workflow files:
+  - `.github/workflows/scheduled-tasks.yml`
+  - `.github/workflows/backfill-predictions.yml`
+  - `.github/workflows/run-backtest.yml`
+- Replaced hard-coded `actions/checkout` refs (`main`) with `${{ github.ref_name }}` so manual and branch-scoped runs execute the branch that triggered the workflow.
+- Added `.github/workflows/ksa-branch-scheduled.yml` on `main` to work around GitHub's scheduled-workflow constraint:
+  - GitHub cron only loads workflows from the default branch.
+  - The new scheduler lives on `main` but checks out `xmore-ksa` in every KSA job.
+  - This lets KSA intraday/news/post-market/nightly/DCF/catchup jobs run on schedule without changing the repository default branch.
+- Important operational rule:
+  - Keep KSA cron orchestration on `main` unless `xmore-ksa` becomes the default branch.
+  - Keep direct KSA branch workflows branch-aware (`${{ github.ref_name }}`) for manual runs and future default-branch changes.
 
 ## Mar 20, 2026 — Hamburger Menu Cleanup + Time Machine Validation
 - **Hamburger menu icon removal**: Stripped all emoji icon prefixes from mobile menu items across all 6 pages (`landing.html`, `session.html`, `pro.html`, `track-record.html`, `index.html`, `docs.html`)

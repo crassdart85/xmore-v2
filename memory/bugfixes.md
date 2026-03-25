@@ -1,5 +1,19 @@
 # Xmore Bug Fix Log
 
+## Mar 25, 2026
+
+### GitHub Actions branch checkout drift / default-branch scheduler gap
+- **Error**: workflows on both EGY and KSA branches were forcing `actions/checkout` to `ref: main` or `ref: xmore-ksa`, causing branch-dispatch runs to execute the wrong code.
+- **Cause**:
+  - workflow YAML had hard-coded checkout refs
+  - GitHub scheduled workflows only load from the repository default branch
+- **Fix**:
+  - branch-owned workflows now use `${{ github.ref_name }}`
+  - added `main` workflow `.github/workflows/ksa-branch-scheduled.yml` that runs on the KSA cron schedule but checks out `xmore-ksa`
+- **Pattern**:
+  - use `${{ github.ref_name }}` for normal branch-aware workflow execution
+  - use a default-branch dispatcher when scheduled automation must target a non-default branch
+
 ## Mar 2, 2026
 
 ### 1. `evaluate.py` — PostgreSQL boolean type mismatch

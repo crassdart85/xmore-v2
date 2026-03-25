@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -109,7 +109,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -156,7 +156,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -230,7 +230,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -268,7 +268,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -352,7 +352,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref_name }}
           fetch-depth: 1
 
       - uses: actions/setup-python@v5
@@ -416,7 +416,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -458,7 +458,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -482,7 +482,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -506,7 +506,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -530,7 +530,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -555,7 +555,7 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -580,7 +580,7 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -604,7 +604,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-        with: { ref: main, fetch-depth: 1 }
+        with: { ref: ${{ github.ref_name }}, fetch-depth: 1 }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

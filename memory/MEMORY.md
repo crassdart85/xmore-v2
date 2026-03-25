@@ -6,6 +6,15 @@
 - **Database**: SQLite (local dev), PostgreSQL (production on Render)
 - **Frontend**: Vanilla JS, CSS â€” bilingual EN/AR dashboard
 
+## Mar 25, 2026 - Workflow Branch Alignment
+- Main-branch workflow files no longer hard-code `ref: main` in `actions/checkout`.
+- `scheduled-tasks.yml`, `backfill-predictions.yml`, and `run-backtest.yml` now use `${{ github.ref_name }}` so manual/branch runs use the branch that triggered them.
+- Added `.github/workflows/ksa-branch-scheduled.yml` on `main`:
+  - required because GitHub scheduled workflows only run from the default branch
+  - each job explicitly checks out `xmore-ksa`
+  - this is now the source of truth for scheduled KSA automation while `main` remains default
+- Takeaway: branch-aware checkout and default-branch dispatching are both required for multi-branch automation in this repo.
+
 ## Key File Paths
 - `web-ui/server.js` â€” Express app, all API endpoints
 - `web-ui/init-db.js` â€” PostgreSQL table creation + full EGX stock seed (~190)
