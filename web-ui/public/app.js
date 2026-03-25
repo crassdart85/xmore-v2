@@ -3200,6 +3200,7 @@ function renderConsensusCard(item) {
                 <span class="consensus-signal-badge signal-${signalKey}">${signalText}</span>
                 ${signalLabelBadge}
                 ${riskAdjusted ? '<span class="risk-adjusted-badge" title="Risk-adjusted">⚠️</span>' : ''}
+                <button class="exec-trade-btn" onclick="openExecModal('${item.symbol}')" title="Simulate trade">Trade ▶</button>
             </div>
         </div>
 

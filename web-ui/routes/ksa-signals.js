@@ -178,6 +178,158 @@ router.get('/signals/:ticker/history', async (req, res) => {
     }
 });
 
+// GET /api/ksa/execution/:ticker — stop loss, target, pivot levels for sim UI
+router.get('/execution/:ticker', async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    try {
+        // Latest evaluated trade rec with price levels
+        const rec = await dbGet(`
+            SELECT symbol, recommendation_date,
+                   close_price, stop_loss_price, stop_loss_pct,
+                   target_price, target_pct, risk_reward_ratio,
+                   buy_guide, pivot, r1, r2, s1, s2, patterns,
+                   signal_type, confidence, conviction, xmore_score
+            FROM trade_recommendations
+            WHERE symbol = ${ph(1)}
+              AND market_id = 'KSA'
+              AND symbol LIKE '%.SR'
+              AND close_price IS NOT NULL
+            ORDER BY recommendation_date DESC
+            LIMIT 1
+        `, [ticker]);
+
+        // Latest price (may be fresher than trade rec)
+        const latestPrice = await dbGet(`
+            SELECT close, date
+            FROM prices
+            WHERE symbol = ${ph(1)}
+              AND market_id = 'KSA'
+            ORDER BY date DESC
+            LIMIT 1
+        `, [ticker]);
+
+        if (!rec && !latestPrice) {
+            return res.json({ available: false, ticker });
+        }
+
+        const entry = parseFloat(latestPrice?.close || rec?.close_price || 0);
+        const stopLossPrice = parseFloat(rec?.stop_loss_price || 0) || (entry > 0 ? parseFloat((entry * 0.97).toFixed(2)) : null);
+        const targetPrice   = parseFloat(rec?.target_price || 0) || (entry > 0 ? parseFloat((entry * 1.06).toFixed(2)) : null);
+        const stopPct       = parseFloat(rec?.stop_loss_pct || 0) || (stopLossPrice && entry ? ((stopLossPrice - entry) / entry * 100) : -3);
+        const targetPct     = parseFloat(rec?.target_pct || 0) || (targetPrice && entry ? ((targetPrice - entry) / entry * 100) : 6);
+        const rr            = parseFloat(rec?.risk_reward_ratio || 0) || (stopPct && targetPct ? Math.abs(targetPct / stopPct).toFixed(2) : null);
+
+        return res.json({
+            available:     true,
+            ticker,
+            signal:        rec?.signal_type || null,
+            conviction:    rec?.conviction || null,
+            confidence:    parseFloat(rec?.confidence || 0),
+            xmore_score:   parseFloat(rec?.xmore_score || 0),
+            buy_guide:     rec?.buy_guide || null,
+            // Price levels
+            entry_price:   entry,
+            stop_loss:     stopLossPrice,
+            stop_loss_pct: parseFloat(stopPct.toFixed(2)),
+            target_price:  targetPrice,
+            target_pct:    parseFloat(targetPct.toFixed(2)),
+            risk_reward:   rr ? parseFloat(Number(rr).toFixed(2)) : null,
+            // Pivots
+            pivot: parseFloat(rec?.pivot || 0) || null,
+            r1:    parseFloat(rec?.r1 || 0) || null,
+            r2:    parseFloat(rec?.r2 || 0) || null,
+            s1:    parseFloat(rec?.s1 || 0) || null,
+            s2:    parseFloat(rec?.s2 || 0) || null,
+            patterns:      rec?.patterns || null,
+            as_of:         latestPrice?.date || rec?.recommendation_date || null,
+            currency:      'SAR',
+        });
+    } catch (e) {
+        console.error('[KSA] /execution/:ticker error:', e);
+        res.status(500).json({ error: 'Failed to load execution data' });
+    }
+});
+
+
+// GET /api/ksa/context/:ticker — sentiment × signal context flag
+router.get('/context/:ticker', async (req, res) => {
+    const ticker = req.params.ticker.toUpperCase();
+    try {
+        // Latest consensus signal
+        const cs = await dbGet(`
+            SELECT final_signal, confidence, xmore_score, signal_label,
+                   drivers_json, risk_level, expected_move
+            FROM consensus_results
+            WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
+              AND symbol = ${ph(1)}
+            ORDER BY prediction_date DESC
+            LIMIT 1
+        `, [ticker]);
+
+        // Latest sentiment score
+        const sent = await dbGet(`
+            SELECT avg_sentiment, sentiment_label, article_count, date
+            FROM sentiment_scores
+            WHERE symbol = ${ph(1)}
+            ORDER BY date DESC
+            LIMIT 1
+        `, [ticker]);
+
+        const signal = (cs?.final_signal || 'HOLD').toUpperCase();
+        const sentVal = parseFloat(sent?.avg_sentiment || 0);
+        const sentLabel = sent?.sentiment_label || 'neutral';
+
+        // Compute context flag: signal direction × sentiment alignment
+        let contextFlag = null;
+        let contextClass = 'neutral';
+        if (signal === 'BUY') {
+            if (sentVal > 0.2)        { contextFlag = 'Sentiment Confirms ↑'; contextClass = 'bullish'; }
+            else if (sentVal < -0.2)  { contextFlag = 'Sentiment Headwind ⚠';  contextClass = 'warning'; }
+            else                       { contextFlag = 'Neutral News';           contextClass = 'neutral'; }
+        } else if (signal === 'SELL') {
+            if (sentVal < -0.2)       { contextFlag = 'Sentiment Confirms ↓'; contextClass = 'bearish'; }
+            else if (sentVal > 0.2)   { contextFlag = 'Contrarian Signal ⚠';   contextClass = 'warning'; }
+            else                       { contextFlag = 'Neutral News';           contextClass = 'neutral'; }
+        } else {
+            contextFlag  = 'Monitoring';
+            contextClass = 'neutral';
+        }
+
+        // Recent news events (last 3 articles for event overlay)
+        let recentNews = [];
+        try {
+            recentNews = await dbAll(`
+                SELECT title, published_at, source, url
+                FROM news_items
+                WHERE symbol = ${ph(1)}
+                ORDER BY published_at DESC
+                LIMIT 3
+            `, [ticker]);
+        } catch (_) { /* table may not exist */ }
+
+        return res.json({
+            available:     true,
+            ticker,
+            signal,
+            context_flag:  contextFlag,
+            context_class: contextClass,
+            sentiment: {
+                score:   sentVal,
+                label:   sentLabel,
+                articles: parseInt(sent?.article_count || 0),
+                as_of:   sent?.date || null,
+            },
+            recent_news: recentNews,
+            drivers: (() => { try { return JSON.parse(cs?.drivers_json || '[]'); } catch { return []; } })(),
+        });
+    } catch (e) {
+        console.error('[KSA] /context/:ticker error:', e);
+        res.status(500).json({ error: 'Failed to load context data' });
+    }
+});
+
+
 // GET /api/ksa/health
 router.get('/health', async (req, res) => {
     try {

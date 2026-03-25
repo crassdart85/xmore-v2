@@ -472,7 +472,7 @@ function fillMoversTable(tableId, rows, csMap) {
     const lblHtml = cs.signal_label ? `<span class="pro-signal-label">${escHtml(cs.signal_label)}</span>` : '';
 
     return `<tr>
-      <td class="sym-cell">${escHtml(label)}</td>
+      <td class="sym-cell">${escHtml(label)}<button class="exec-trade-btn" style="margin-left:6px" onclick="openExecModal('${escHtml(sym)}')" title="Simulate trade">▶</button></td>
       <td class="chg-cell">${escHtml(fmtClose(p.close))}</td>
       <td class="chg-cell ${chgCls}">${escHtml(fmtChg(p.change_pct))}</td>
       <td class="sig-cell">${signalBadge(cs.prediction)}${lblHtml}</td>

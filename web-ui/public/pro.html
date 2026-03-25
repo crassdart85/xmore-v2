@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="base.css">
+  <link rel="stylesheet" href="style.css">
   <title>XmorePro — Tadawul Overview</title>
   <link rel="stylesheet" href="pro.css">
   <link rel="stylesheet" href="assistant-widget.css">
@@ -284,8 +285,21 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="xmore-toast.js"></script>
+  <script src="ksa-execution.js"></script>
   <script src="pro.js"></script>
   <script src="assistant-widget.js"></script>
+
+  <!-- Execution simulation modal (shared with index.html) -->
+  <div id="execModal" class="exec-modal-overlay" style="display:none" onclick="if(event.target===this)closeExecModal()">
+    <div class="exec-modal">
+      <div class="exec-modal-header">
+        <div class="exec-modal-ticker" id="execTicker">—</div>
+        <div class="exec-modal-subtitle">Derayah Execution Simulation <span class="exec-sim-badge">SIM</span></div>
+        <button class="exec-modal-close" onclick="closeExecModal()">&times;</button>
+      </div>
+      <div id="execModalBody"><div class="exec-loading">Loading execution data…</div></div>
+    </div>
+  </div>
 </body>
 </html>
 
