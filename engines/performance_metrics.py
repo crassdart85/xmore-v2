@@ -18,14 +18,13 @@ from database import get_connection
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-# EGX-correct risk parameters
+# EGX reporting basis should not inherit cross-market compatibility aliases.
+EGX_RISK_FREE_RATE_ANNUAL = 0.2725
+EGX_TRADING_DAYS_PER_YEAR = 247
+
 try:
-    from config.execution_config import (
-        EGX_RISK_FREE_RATE_ANNUAL, EGX_TRADING_DAYS_PER_YEAR, EGX_ROUND_TRIP_RATE,
-    )
+    from config.execution_config import EGX_ROUND_TRIP_RATE
 except ImportError:
-    EGX_RISK_FREE_RATE_ANNUAL = 0.2725
-    EGX_TRADING_DAYS_PER_YEAR = 247
     EGX_ROUND_TRIP_RATE = 0.00725  # 0.725% round-trip baseline
 
 # Daily risk-free rate: (1 + annual) ^ (1/247) - 1

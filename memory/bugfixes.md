@@ -14,6 +14,17 @@
   - branch-aware checkout for dispatch/manual runs
   - default-branch dispatcher for scheduled non-default-branch automation
 
+### Performance metrics importing KSA compatibility aliases as EGX defaults
+- **Error**: shared Sharpe test failed because default metrics basis resolved to:
+  - annual risk-free `0.05`
+  - trading days `252`
+- **Cause**: `engines/performance_metrics.py` imported legacy `EGX_*` names from `config/execution_config.py`, where they had been remapped for KSA compatibility.
+- **Fix**:
+  - pinned EGX reporting defaults directly inside `engines/performance_metrics.py`
+  - retained import of `EGX_ROUND_TRIP_RATE` only
+- **Result**:
+  - performance metrics test suite passes on both branches (`52 passed`)
+
 ## Mar 2, 2026
 
 ### 1. `evaluate.py` — PostgreSQL boolean type mismatch
