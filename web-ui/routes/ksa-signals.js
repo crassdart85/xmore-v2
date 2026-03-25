@@ -16,10 +16,22 @@ const simFilter = () => isPostgres
     ? `(is_simulated = FALSE OR is_simulated IS NULL)`
     : `(is_simulated = 0 OR is_simulated IS NULL)`;
 
+function dbAll(query, params = []) {
+    return new Promise((resolve, reject) => {
+        db.all(query, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+    });
+}
+
+function dbGet(query, params = []) {
+    return new Promise((resolve, reject) => {
+        db.get(query, params, (err, row) => err ? reject(err) : resolve(row || null));
+    });
+}
+
 // GET /api/ksa/signals/latest — last 20 KSA signals
 router.get('/signals/latest', async (req, res) => {
     try {
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, confidence,
                    bull_score, bear_score, agent_agreement, timestamp,
                    drivers_json, risk_level, expected_move
@@ -46,7 +58,7 @@ router.get('/signals/today', async (req, res) => {
         const dateClause = isPostgres
             ? `DATE(timestamp) = CURRENT_DATE`
             : `DATE(timestamp) = DATE('now')`;
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, confidence,
                    bull_score, bear_score, agent_agreement, timestamp,
                    drivers_json, risk_level, expected_move, regime_flag
@@ -69,7 +81,7 @@ router.get('/signals/today', async (req, res) => {
 // GET /api/ksa/performance/summary — KSA win rate, Sharpe, profit factor
 router.get('/performance/summary', async (req, res) => {
     try {
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT actual_next_day_return, benchmark_1d_return, was_correct,
                    alpha_1d, recommendation_date
             FROM trade_recommendations
@@ -128,7 +140,7 @@ router.get('/performance/summary', async (req, res) => {
 // GET /api/ksa/regime — current TASI regime
 router.get('/regime', async (req, res) => {
     try {
-        const row = await db.get(`
+        const row = await dbGet(`
             SELECT regime_label_en, regime_label_ar, regime_confidence,
                    n_regimes, trading_date
             FROM regime_log
@@ -147,7 +159,7 @@ router.get('/regime', async (req, res) => {
 router.get('/signals/:ticker/history', async (req, res) => {
     const ticker = req.params.ticker.toUpperCase();
     try {
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, timestamp,
                    bull_score, bear_score, agent_agreement, regime_flag
             FROM consensus_results
@@ -165,7 +177,7 @@ router.get('/signals/:ticker/history', async (req, res) => {
 // GET /api/ksa/health
 router.get('/health', async (req, res) => {
     try {
-        const row = await db.get(`SELECT COUNT(*) AS cnt FROM consensus_results WHERE market_id = 'KSA'`);
+        const row = await dbGet(`SELECT COUNT(*) AS cnt FROM consensus_results WHERE market_id = 'KSA'`);
         res.json({ status: 'ok', market: 'KSA', total_signals: Number(row?.cnt || 0) });
     } catch (e) {
         res.status(500).json({ status: 'error', error: e.message });

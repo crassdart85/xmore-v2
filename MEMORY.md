@@ -5,6 +5,23 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 
 **Last Updated**: March 25, 2026
 
+## Mar 25, 2026 - KSA Track Record Route + API Alignment
+- Found that the KSA deployment was serving the generic `/track-record` page, which is wired to EGX endpoints and showed EGX data on `xmore-ksa.onrender.com`.
+- Fixed KSA track record routing and data wiring:
+  - `web-ui/server.js`
+    - `/track-record` now redirects to `/ksa/track-record` on the KSA deployment
+  - `web-ui/public/ksa-track-record.js`
+    - switched data fetches from missing `/api/ksa/performance/*` paths to implemented `/api/ksa/track-record/*` paths
+  - `web-ui/routes/ksa-signals.js`
+  - `web-ui/routes/ksa-track-record.js`
+    - replaced invalid `await db.all(...)` / `await db.get(...)` usage with local promise wrappers around the callback-style DB adapter from `server.js`
+- Result:
+  - the public KSA track record route now points at the KSA page instead of the EGX page
+  - KSA API handlers no longer fail just because of callback/promise mismatch
+- Operational rule:
+  - on the KSA deployment, never point `/track-record` at the generic EGX page
+  - route handlers mounted under Express must match the callback-style DB adapter unless they explicitly wrap it in promises
+
 ## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
 - Verified current branch heads:
   - `main` at `ac0d2ef20d2a4b649e16dfbe18a9c5f2ebfc6cda`

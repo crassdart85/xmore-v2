@@ -14,6 +14,17 @@
   - branch-aware checkout for direct KSA workflow runs
   - a default-branch scheduler for GitHub cron
 
+## Mar 25, 2026 - KSA Track Record Route + API Alignment
+- The public `/track-record` URL on the KSA deployment was accidentally serving the generic EGX track-record page.
+- That caused live EGX leakage on `xmore-ksa.onrender.com/track-record`, including EGX descriptions, EGX risk-free basis, and `.CA` symbols.
+- Fixes applied:
+  - `/track-record` now redirects to `/ksa/track-record`
+  - `ksa-track-record.js` now calls `/api/ksa/track-record/*` endpoints for summary, equity curve, prediction log, and agent breakdown
+  - KSA route handlers now wrap the callback-style DB adapter in promises before using `await`
+- Takeaway:
+  - KSA public pages must never reuse the generic EGX `/track-record` route
+  - Node route modules in this repo need promise wrappers around `db.all/db.get` if they want `async/await`
+
 ## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
 - Local checks passed on both branches:
   - frontend check

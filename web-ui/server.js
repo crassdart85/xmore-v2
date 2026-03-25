@@ -1563,7 +1563,7 @@ app.get('/landing', (req, res) => {
 });
 
 app.get('/track-record', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'track-record.html'));
+  res.redirect(302, '/ksa/track-record');
 });
 
 // Root redirect → KSA dashboard (this is the KSA deployment)

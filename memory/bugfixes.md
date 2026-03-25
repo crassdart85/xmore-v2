@@ -2,6 +2,31 @@
 
 ## Mar 25, 2026
 
+### KSA deployment `/track-record` serving EGX data
+- **Error**:
+  - `https://xmore-ksa.onrender.com/track-record` displayed EGX track-record content and `.CA` symbols
+  - live API evidence included EGX description text, CBE risk-free rate, and EGX top stocks from `/api/track-record/*`
+- **Cause**:
+  - `web-ui/server.js` served generic `track-record.html` at `/track-record`
+  - that page calls generic EGX endpoints under `/api/track-record/*`
+- **Fix**:
+  - changed KSA deployment route so `/track-record` redirects to `/ksa/track-record`
+  - KSA page now uses KSA endpoints under `/api/ksa/track-record/*`
+- **Pattern**:
+  - on market-specific deployments, public vanity routes must resolve to market-specific pages, not shared generic investor pages
+
+### KSA route handlers using `await` on callback-style DB methods
+- **Error**:
+  - KSA API endpoints returned `500/502` even when the SQL itself was reasonable
+- **Cause**:
+  - `web-ui/routes/ksa-signals.js` and `web-ui/routes/ksa-track-record.js` used `await db.all(...)` / `await db.get(...)`
+  - but `server.js` exposes `db.all/get/run` as callback-style methods, not promise-returning methods
+- **Fix**:
+  - added local `dbAll()` and `dbGet()` promise wrappers in both route files
+  - switched all awaited calls to those wrappers
+- **Pattern**:
+  - if a route module uses `async/await`, wrap callback DB adapters first; do not await callback APIs directly
+
 ### Full branch validation and live smoke baseline
 - **Check**:
   - `main`: `npm run check`, `pytest` -> `52 passed`

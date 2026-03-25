@@ -16,6 +16,18 @@ const simFilter = () => isPostgres
     ? `(is_simulated = FALSE OR is_simulated IS NULL)`
     : `(is_simulated = 0 OR is_simulated IS NULL)`;
 
+function dbAll(query, params = []) {
+    return new Promise((resolve, reject) => {
+        db.all(query, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+    });
+}
+
+function dbGet(query, params = []) {
+    return new Promise((resolve, reject) => {
+        db.get(query, params, (err, row) => err ? reject(err) : resolve(row || null));
+    });
+}
+
 // Shared helpers
 const toNum  = v => Number(v || 0);
 const mean   = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
@@ -40,7 +52,7 @@ const maxDrawdown  = arr => {
 // GET /api/ksa/track-record/summary
 router.get('/track-record/summary', async (req, res) => {
     try {
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT actual_next_day_return, benchmark_1d_return, was_correct,
                    alpha_1d, recommendation_date
             FROM trade_recommendations
@@ -84,7 +96,7 @@ router.get('/track-record/summary', async (req, res) => {
 // GET /api/ksa/track-record/equity-curve
 router.get('/track-record/equity-curve', async (req, res) => {
     try {
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT recommendation_date, actual_next_day_return, benchmark_1d_return
             FROM trade_recommendations
             WHERE market_id = 'KSA'
@@ -120,7 +132,7 @@ router.get('/track-record/equity-curve', async (req, res) => {
 // GET /api/ksa/track-record/agent-breakdown
 router.get('/track-record/agent-breakdown', async (req, res) => {
     try {
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT agent_name,
                    COUNT(*) AS total,
                    SUM(CASE WHEN was_correct ${isPostgres ? '= TRUE' : '= 1'} THEN 1 ELSE 0 END) AS correct,
@@ -155,13 +167,13 @@ router.get('/track-record/predictions', async (req, res) => {
     const offset  = (page - 1) * perPage;
 
     try {
-        const countRow = await db.get(`
+        const countRow = await dbGet(`
             SELECT COUNT(*) AS cnt FROM trade_recommendations
             WHERE market_id = 'KSA' AND ${simFilter()}
         `);
         const total = Number(countRow?.cnt || 0);
 
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT recommendation_date, symbol, agent_name, signal_type,
                    actual_next_day_return, was_correct, alpha_1d,
                    xmore_score, conviction, notes
@@ -192,7 +204,7 @@ router.get('/track-record/signals/batch', async (req, res) => {
 
     try {
         const placeholders = ids.map((_, i) => ph(i + 1)).join(',');
-        const rows = await db.all(`
+        const rows = await dbAll(`
             SELECT id, symbol, final_signal, conviction, xmore_score, timestamp,
                    bull_score, bear_score, agent_agreement
             FROM consensus_results

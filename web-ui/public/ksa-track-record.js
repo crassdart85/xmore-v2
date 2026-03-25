@@ -289,7 +289,7 @@ async function loadKpis() {
       : null;
 
     if (!data) {
-      const res = await fetch('/api/ksa/performance/summary');
+      const res = await fetch('/api/ksa/track-record/summary');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       data = await res.json();
     }
@@ -387,7 +387,7 @@ async function loadEquityCurve() {
   if (!container) return;
 
   try {
-    const res = await fetch('/api/ksa/performance/equity-curve');
+    const res = await fetch('/api/ksa/track-record/equity-curve');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -467,7 +467,7 @@ async function loadEquityCurve() {
 /* ── Load Prediction Log ─────────────────────────────────────── */
 async function loadPredictionLog() {
   try {
-    const res = await fetch('/api/ksa/performance/log?limit=500');
+    const res = await fetch('/api/ksa/track-record/predictions?per_page=500&page=1');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
@@ -617,7 +617,7 @@ window.exportCsv = exportCsv;
 /* ── Load Agent Breakdown ────────────────────────────────────── */
 async function loadAgentBreakdown() {
   try {
-    const res = await fetch('/api/ksa/performance/agents');
+    const res = await fetch('/api/ksa/track-record/agent-breakdown');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
