@@ -758,5 +758,10 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - KSA market switcher now points the EGX button to `https://xmore-project.onrender.com/`
   - legacy `/ksa` and `/ksa/track-record` paths remain only as redirects for compatibility
   - updated `web-ui/server.js`, `web-ui/public/ksa-dashboard.html`, and `web-ui/public/ksa-track-record.html`
+- KSA track-record now uses the full public track-record page stack instead of the slim KSA-only variant:
+  - `/track-record` now serves `web-ui/public/track-record.html`
+  - `web-ui/routes/track-record.js` was hardened for KSA-only data (`market_id = 'KSA'`)
+  - EGX joins/labels/risk-free assumptions were replaced with KSA/TASI equivalents
+  - agent, prediction log, sector, regime, and distribution endpoints now read KSA-compatible columns
 - Remaining audit gap:
   - backtests are now materially friction-aware, but they still do not simulate the full stop-loss lifecycle with explicit gap-through-stop execution behavior end-to-end.

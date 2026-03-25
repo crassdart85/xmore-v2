@@ -197,3 +197,15 @@
   - `/ksa` and `/ksa/track-record` now redirect back to the root-native URLs
   - `web-ui/public/ksa-dashboard.html` and `web-ui/public/ksa-track-record.html` links were updated to use `/` and `/track-record`
 - **Verification**: `node --check web-ui/server.js`, `node --check web-ui/public/ksa-dashboard.js`, and `node --check web-ui/public/ksa-track-record.js` all passed locally.
+
+### KSA `/track-record` was thinner and visually different from EGX
+- **Symptom**: KSA `/track-record` showed a reduced card layout, far fewer sections, and missing agent/sector/regime content compared with the richer EGX track-record page.
+- **Cause**:
+  - the KSA deployment was serving a separate slim page (`ksa-track-record.html`) instead of the main `track-record.html` stack
+  - the full `web-ui/routes/track-record.js` implementation still had EGX-specific assumptions (`egx30_stocks`, CBE risk-free text, EGX description, `action`-based queries)
+- **Fix**:
+  - `web-ui/server.js` now serves `track-record.html` at `/track-record` on the KSA deployment
+  - `web-ui/routes/track-record.js` now filters all public track-record queries to `market_id = 'KSA'`
+  - joins were switched from `egx30_stocks` to `ksa_stocks`
+  - summary/equity/agent/prediction/distribution/sector/regime endpoints were rewritten to use KSA-compatible columns and TASI/SAIBOR assumptions
+- **Verification**: `node --check web-ui/routes/track-record.js` and `node --check web-ui/server.js` passed locally.

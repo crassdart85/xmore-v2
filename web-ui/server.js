@@ -1635,7 +1635,7 @@ app.get('/landing', (req, res) => {
 });
 
 app.get('/track-record', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'ksa-track-record.html'));
+  res.sendFile(path.join(__dirname, 'public', 'track-record.html'));
 });
 
 // Root serves the KSA dashboard directly on the KSA deployment.

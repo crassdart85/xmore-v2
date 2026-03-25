@@ -350,5 +350,9 @@
   - the EGX market-switch button now goes to the separate EGX deployment host
   - `/ksa` and `/ksa/track-record` now redirect to the root-native equivalents
   - public KSA HTML links were updated to stop using `/ksa` as the canonical page prefix
+- KSA public track-record is now aligned to the richer full-page implementation:
+  - `web-ui/server.js` now serves `track-record.html` at `/track-record`
+  - `web-ui/routes/track-record.js` now filters `market_id = 'KSA'`
+  - KSA sector/regime/agent/prediction queries were rewritten to stop depending on EGX-only tables and columns
 - Remaining known gap:
   - stop-loss/gap-through-stop lifecycle simulation is still not a full explicit backtest execution model.

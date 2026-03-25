@@ -34,12 +34,14 @@ function isTableMissing(err) {
 function ph(n)        { return isPostgres ? `$${n}` : '?'; }
 function boolTrue()   { return isPostgres ? 'TRUE' : '1'; }
 function boolFalse()  { return isPostgres ? 'FALSE' : '0'; }
+function marketFilter(alias = '') {
+    const p = alias ? `${alias}.` : '';
+    return `${p}market_id = 'KSA'`;
+}
 
 // Filters applied to every data query on this page
 function liveFilter() {
-    return isPostgres
-        ? '(is_live = TRUE OR is_live IS NULL)'
-        : '(is_live = 1 OR is_live IS NULL)';
+    return marketFilter();
 }
 function dateWindow(days, col = 'recommendation_date') {
     return isPostgres
@@ -50,6 +52,8 @@ function round(expr) {
     return isPostgres ? `ROUND(${expr}::numeric, 4)` : `ROUND(${expr}, 4)`;
 }
 const DEFAULT_ROUND_TRIP_COST_PCT = 0.725;
+const KSA_TRADING_DAYS = 250;
+const KSA_DAILY_RF = Math.pow(1.0489, 1 / KSA_TRADING_DAYS) - 1;
 
 function toNum(v) {
     const n = Number(v);
@@ -86,23 +90,8 @@ function calcMaxDrawdownAbs(returnsArr) {
     return maxDd;
 }
 
-function perTradeCostPct(row) {
-    const rtc = toNum(row?.round_trip_cost_egp);
-    const pve = toNum(row?.position_value_egp);
-    if (pve > 0) return (rtc / pve) * 100;
-    return DEFAULT_ROUND_TRIP_COST_PCT;
-}
-
-function costPctSql(alias = '') {
-    const p = alias ? `${alias}.` : '';
-    return `CASE
-        WHEN ${p}round_trip_cost_egp IS NOT NULL
-         AND ${p}position_value_egp IS NOT NULL
-         AND ${p}position_value_egp > 0
-        THEN (${p}round_trip_cost_egp / ${p}position_value_egp) * 100
-        ELSE ${DEFAULT_ROUND_TRIP_COST_PCT}
-    END`;
-}
+function perTradeCostPct() { return DEFAULT_ROUND_TRIP_COST_PCT; }
+function costPctSql() { return `${DEFAULT_ROUND_TRIP_COST_PCT}`; }
 
 // â”€â”€ KPI helper: accuracy + alpha + sharpe + beat + PF + max DD â”€
 async function kpiForWindow(days) {
@@ -113,12 +102,11 @@ async function kpiForWindow(days) {
                 actual_next_day_return,
                 benchmark_1d_return,
                 alpha_1d,
-                was_correct,
-                round_trip_cost_egp,
-                position_value_egp
+                was_correct
             FROM trade_recommendations
             WHERE was_correct IS NOT NULL
-            AND ${liveFilter()}
+            AND ${marketFilter()}
+            AND actual_next_day_return IS NOT NULL
             AND ${dateWindow(days)}
             ORDER BY recommendation_date ASC
         `);
@@ -137,11 +125,10 @@ async function kpiForWindow(days) {
         );
         const alphaNet = returnsNet.map((r, i) => r - bench[i]);
 
-        const cbeDailyRf = Math.pow(1.2725, 1 / 247) - 1;
         const calcSharpe = arr => {
             const m = mean(arr), s = stdev(arr);
             if (s <= 0) return 0;
-            return ((m / 100) - cbeDailyRf) / (s / 100) * Math.sqrt(247);
+            return ((m / 100) - KSA_DAILY_RF) / (s / 100) * Math.sqrt(KSA_TRADING_DAYS);
         };
         const calcSortino = arr => {
             const m = mean(arr);
@@ -149,11 +136,11 @@ async function kpiForWindow(days) {
             if (!downside.length) return 99.9;
             const ds = stdev(downside);
             if (ds <= 0) return 99.9;
-            return ((m / 100) - cbeDailyRf) / (ds / 100) * Math.sqrt(247);
+            return ((m / 100) - KSA_DAILY_RF) / (ds / 100) * Math.sqrt(KSA_TRADING_DAYS);
         };
         const calcVol = arr => {
             const s = stdev(arr);
-            return s > 0 ? (s / 100) * Math.sqrt(247) : 0;
+            return s > 0 ? (s / 100) * Math.sqrt(KSA_TRADING_DAYS) : 0;
         };
 
         const beatNet = alphaNet.filter(a => a > 0).length;
@@ -215,7 +202,7 @@ router.get('/summary', async (req, res) => {
                 MAX(recommendation_date) AS last_signal_date,
                 MAX(updated_at) AS last_updated
             FROM trade_recommendations
-            WHERE ${liveFilter()}
+            WHERE ${marketFilter()}
         `);
 
         // Fresher "last updated" â€” use latest across prices + consensus + evaluations
@@ -224,11 +211,8 @@ router.get('/summary', async (req, res) => {
         try {
             const fresh = await dbGet(`
                 SELECT GREATEST(
-                    COALESCE((SELECT MAX(date) FROM prices), '1970-01-01'::date),
-                    COALESCE((SELECT MAX(prediction_date) FROM consensus_results), '1970-01-01'::date),
-                    COALESCE((SELECT MAX(evaluated_at) FROM stock_signal_evals), '1970-01-01'::date),
-                    COALESCE((SELECT MAX(signal_date) FROM scored_signals), '1970-01-01'::date),
-                    COALESCE((SELECT MAX(updated_at) FROM trade_recommendations), '1970-01-01'::date),
+                    COALESCE((SELECT MAX(date) FROM prices WHERE market_id = 'KSA'), '1970-01-01'::date),
+                    COALESCE((SELECT MAX(updated_at) FROM trade_recommendations WHERE market_id = 'KSA'), '1970-01-01'::date),
                     COALESCE('${lastUpdated || '1970-01-01'}'::date, '1970-01-01'::date)
                 ) AS freshest
             `);
@@ -236,12 +220,9 @@ router.get('/summary', async (req, res) => {
         } catch (_) {
             // SQLite fallback
             try {
-                const p  = await dbGet(`SELECT MAX(date) AS d FROM prices`);
-                const c  = await dbGet(`SELECT MAX(prediction_date) AS d FROM consensus_results`);
-                const se = await dbGet(`SELECT MAX(evaluated_at) AS d FROM stock_signal_evals`).catch(() => null);
-                const ss = await dbGet(`SELECT MAX(signal_date) AS d FROM scored_signals`).catch(() => null);
-                const ur = await dbGet(`SELECT MAX(updated_at) AS d FROM trade_recommendations`).catch(() => null);
-                const candidates = [lastUpdated, p?.d, c?.d, se?.d, ss?.d, ur?.d].filter(Boolean).sort();
+                const p  = await dbGet(`SELECT MAX(date) AS d FROM prices WHERE market_id = 'KSA'`).catch(() => null);
+                const ur = await dbGet(`SELECT MAX(updated_at) AS d FROM trade_recommendations WHERE market_id = 'KSA'`).catch(() => null);
+                const candidates = [lastUpdated, p?.d, ur?.d].filter(Boolean).sort();
                 if (candidates.length) lastUpdated = candidates[candidates.length - 1];
             } catch (_2) {}
         }
@@ -251,7 +232,7 @@ router.get('/summary', async (req, res) => {
         try {
             const sc = await dbGet(`
                 SELECT COUNT(*) AS cnt FROM trade_recommendations
-                WHERE ${liveFilter()}
+                WHERE ${marketFilter()}
                 AND is_simulated = ${boolTrue()}
             `);
             simCount = parseInt(sc?.cnt || 0);
@@ -270,7 +251,11 @@ router.get('/summary', async (req, res) => {
         let currentRegime = 'UNKNOWN';
         try {
             const reg = await dbGet(`
-                SELECT regime FROM regime_log ORDER BY date DESC LIMIT 1
+                SELECT regime_label_en AS regime
+                FROM regime_log
+                WHERE market_id = 'KSA'
+                ORDER BY trading_date DESC
+                LIMIT 1
             `);
             if (reg?.regime) currentRegime = reg.regime;
         } catch (_) {}
@@ -278,7 +263,7 @@ router.get('/summary', async (req, res) => {
         // Distinct symbols covered
         let symbolsCovered = 190;
         try {
-            const sc2 = await dbGet(`SELECT COUNT(DISTINCT symbol) AS cnt FROM trade_recommendations WHERE ${liveFilter()}`);
+            const sc2 = await dbGet(`SELECT COUNT(DISTINCT symbol) AS cnt FROM trade_recommendations WHERE ${marketFilter()}`);
             if (sc2?.cnt) symbolsCovered = parseInt(sc2.cnt);
         } catch (_) {}
 
@@ -286,14 +271,14 @@ router.get('/summary', async (req, res) => {
 
         return res.json({
             platform:             'Xmore2',
-            description:          'Market Intelligence for the Egyptian Exchange',
+            description:          'Market Intelligence for the Saudi Exchange (Tadawul)',
             reporting_basis:      'net_of_transaction_costs',
             live_since:           counts?.live_since || null,
             last_updated:         lastUpdated || null,
             total_live_signals:   liveCount,
             symbols_covered:      symbolsCovered,
             current_regime:       currentRegime,
-            risk_free_rate_applied: '27.25% (CBE)',
+            risk_free_rate_applied: '4.89% (SAIBOR 3M)',
             kpi_windows: {
                 '30d':  w30,
                 '60d':  w60,
@@ -331,7 +316,7 @@ router.get('/equity-curve', async (req, res) => {
                 ${round('AVG(benchmark_1d_return)')}    AS egx30
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
-            AND ${liveFilter()}
+            AND ${marketFilter()}
             AND ${dateWindow(days)}
             GROUP BY recommendation_date
             ORDER BY recommendation_date ASC
@@ -396,18 +381,65 @@ router.get('/equity-curve', async (req, res) => {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 router.get('/agents', async (req, res) => {
     try {
-        const rows = await dbAll(`
-            SELECT
-                snapshot_date, agent_name,
-                predictions_30d, correct_30d, win_rate_30d, avg_confidence_30d,
-                predictions_90d, correct_90d, win_rate_90d
-            FROM agent_performance_daily
-            WHERE snapshot_date = (SELECT MAX(snapshot_date) FROM agent_performance_daily)
-            ORDER BY win_rate_30d DESC NULLS LAST
-        `);
+        const [rows30, rows90, snap] = await Promise.all([
+            dbAll(`
+                SELECT agent_name, COUNT(*) AS predictions_30d,
+                       SUM(CASE WHEN was_correct = ${boolTrue()} THEN 1 ELSE 0 END) AS correct_30d,
+                       AVG(confidence) AS avg_confidence_30d
+                FROM trade_recommendations
+                WHERE ${marketFilter()}
+                  AND actual_next_day_return IS NOT NULL
+                  AND agent_name IS NOT NULL
+                  AND ${dateWindow(30)}
+                GROUP BY agent_name
+            `),
+            dbAll(`
+                SELECT agent_name, COUNT(*) AS predictions_90d,
+                       SUM(CASE WHEN was_correct = ${boolTrue()} THEN 1 ELSE 0 END) AS correct_90d
+                FROM trade_recommendations
+                WHERE ${marketFilter()}
+                  AND actual_next_day_return IS NOT NULL
+                  AND agent_name IS NOT NULL
+                  AND ${dateWindow(90)}
+                GROUP BY agent_name
+            `),
+            dbGet(`
+                SELECT MAX(recommendation_date) AS snapshot_date
+                FROM trade_recommendations
+                WHERE ${marketFilter()}
+            `)
+        ]);
+
+        const merged = new Map();
+        rows30.forEach(r => {
+            merged.set(r.agent_name, {
+                agent_name: r.agent_name,
+                predictions_30d: parseInt(r.predictions_30d) || 0,
+                correct_30d: parseInt(r.correct_30d) || 0,
+                avg_confidence_30d: parseFloat(r.avg_confidence_30d) || 0,
+                predictions_90d: 0,
+                correct_90d: 0,
+            });
+        });
+        rows90.forEach(r => {
+            const entry = merged.get(r.agent_name) || {
+                agent_name: r.agent_name,
+                predictions_30d: 0,
+                correct_30d: 0,
+                avg_confidence_30d: 0,
+            };
+            entry.predictions_90d = parseInt(r.predictions_90d) || 0;
+            entry.correct_90d = parseInt(r.correct_90d) || 0;
+            merged.set(r.agent_name, entry);
+        });
+        const rows = [...merged.values()].map(r => ({
+            ...r,
+            win_rate_30d: r.predictions_30d > 0 ? ((r.correct_30d / r.predictions_30d) * 100) : 0,
+            win_rate_90d: r.predictions_90d > 0 ? ((r.correct_90d / r.predictions_90d) * 100) : 0,
+        })).sort((a, b) => b.win_rate_30d - a.win_rate_30d);
 
         return res.json({
-            snapshot_date: rows[0]?.snapshot_date || null,
+            snapshot_date: snap?.snapshot_date || null,
             agents: rows.map(r => ({
                 agent:              r.agent_name,
                 predictions_30d:    parseInt(r.predictions_30d) || 0,
@@ -453,9 +485,9 @@ router.get('/top-stocks', async (req, res) => {
                     : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 1)`
                 }                                            AS win_rate
             FROM trade_recommendations tr
-            ${isPostgres ? 'LEFT JOIN egx30_stocks s ON tr.symbol = s.symbol' : ''}
+            ${isPostgres ? "LEFT JOIN ksa_stocks s ON tr.symbol = s.symbol AND s.market_id = 'KSA'" : ''}
             WHERE tr.was_correct IS NOT NULL
-            AND ${isPostgres ? '(tr.is_live = TRUE OR tr.is_live IS NULL)' : '(tr.is_live = 1 OR tr.is_live IS NULL)'}
+            AND ${marketFilter('tr')}
             AND ${dateWindow(days, 'tr.recommendation_date')}
             GROUP BY tr.symbol${isPostgres ? ', s.name_en, s.sector_en' : ''}
             HAVING COUNT(*) >= 3
@@ -574,12 +606,12 @@ router.get('/predictions', async (req, res) => {
         const offset  = (page - 1) * limit;
 
         const conds = [
-            liveFilter().replace(/\b(is_live)\b/g, 'tr.is_live'),
+            marketFilter('tr'),
             dateWindow(days, 'tr.recommendation_date'),
         ];
         const params = [];
 
-        if (signal)  { conds.push(`(tr.action = ${ph(params.length + 1)} OR cr.final_signal = ${ph(params.length + 1)})`); params.push(signal); }
+        if (signal)  { conds.push(`UPPER(tr.signal_type) = UPPER(${ph(params.length + 1)})`); params.push(signal); }
         if (symbol)  { conds.push(`tr.symbol = ${ph(params.length + 1)}`); params.push(symbol); }
         if (outcome === 'WIN')     conds.push(`tr.was_correct = ${boolTrue()}`);
         if (outcome === 'LOSS')    conds.push(`tr.was_correct = ${boolFalse()}`);
@@ -591,7 +623,6 @@ router.get('/predictions', async (req, res) => {
         const countRow = await dbGet(`
             SELECT COUNT(*) AS cnt
             FROM trade_recommendations tr
-            LEFT JOIN consensus_results cr ON cr.symbol = tr.symbol AND cr.prediction_date = tr.recommendation_date
             WHERE ${where}
         `, params);
 
@@ -603,21 +634,19 @@ router.get('/predictions', async (req, res) => {
                 tr.recommendation_date AS date,
                 tr.symbol,
                 ${isPostgres ? 's.name_en,' : ''}
-                COALESCE(cr.final_signal, tr.action)    AS signal,
+                tr.signal_type                          AS signal,
                 tr.confidence,
-                tr.close_price AS entry_price,
-                tr.target_price,
-                tr.stop_loss_price AS stop_price,
+                NULL AS entry_price,
+                NULL AS target_price,
+                NULL AS stop_price,
                 tr.actual_next_day_return                AS actual_return,
                 tr.benchmark_1d_return                   AS benchmark_return,
                 tr.alpha_1d                              AS alpha,
                 tr.was_correct,
-                tr.is_live,
                 tr.is_simulated,
-                cr.conviction
+                tr.conviction
             FROM trade_recommendations tr
-            ${isPostgres ? 'LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol' : ''}
-            LEFT JOIN consensus_results cr ON cr.symbol = tr.symbol AND cr.prediction_date = tr.recommendation_date
+            ${isPostgres ? "LEFT JOIN ksa_stocks s ON s.symbol = tr.symbol AND s.market_id = 'KSA'" : ''}
             WHERE ${where}
             ORDER BY tr.recommendation_date DESC
             LIMIT ${ph(params.length + 1)} OFFSET ${ph(params.length + 2)}
@@ -648,7 +677,7 @@ router.get('/predictions', async (req, res) => {
                 actual_return:    r.actual_return != null ? parseFloat(r.actual_return) : null,
                 benchmark_return: r.benchmark_return != null ? parseFloat(r.benchmark_return) : null,
                 alpha:            r.alpha != null ? parseFloat(r.alpha) : null,
-                is_live:          r.is_live === true || r.is_live === 1 || r.is_live === 't',
+                is_live:          !(r.is_simulated === true || r.is_simulated === 1 || r.is_simulated === 't'),
                 is_simulated:     r.is_simulated === true || r.is_simulated === 1 || r.is_simulated === 't',
                 conviction:       r.conviction || null,
             })),
@@ -672,29 +701,28 @@ router.get('/predictions/export', async (req, res) => {
         const symbol = (req.query.symbol || '').toUpperCase();
 
         const conds = [
-            liveFilter().replace(/\b(is_live)\b/g, 'tr.is_live'),
+            marketFilter('tr'),
             dateWindow(days, 'tr.recommendation_date'),
         ];
         const params = [];
 
-        if (signal) { conds.push(`tr.action = ${ph(params.length + 1)}`); params.push(signal); }
+        if (signal) { conds.push(`UPPER(tr.signal_type) = UPPER(${ph(params.length + 1)})`); params.push(signal); }
         if (symbol) { conds.push(`tr.symbol = ${ph(params.length + 1)}`); params.push(symbol); }
 
         const rows = await dbAll(`
             SELECT
                 tr.recommendation_date AS date,
                 tr.symbol,
-                COALESCE(cr.final_signal, tr.action) AS signal,
+                tr.signal_type AS signal,
                 tr.confidence,
-                tr.close_price      AS entry_price,
-                tr.target_price,
-                tr.stop_loss_price  AS stop_price,
+                NULL AS entry_price,
+                NULL AS target_price,
+                NULL AS stop_price,
                 tr.actual_next_day_return AS actual_return,
                 tr.benchmark_1d_return    AS benchmark_return,
                 tr.alpha_1d         AS alpha,
                 tr.was_correct
             FROM trade_recommendations tr
-            LEFT JOIN consensus_results cr ON cr.symbol = tr.symbol AND cr.prediction_date = tr.recommendation_date
             WHERE ${conds.join(' AND ')}
             ORDER BY tr.recommendation_date DESC
             LIMIT 5000
@@ -741,34 +769,38 @@ router.get('/signal-distribution', async (req, res) => {
   try {
     // Overall counts
     const counts = await dbAll(`
-      SELECT action,
+      SELECT signal_type,
              COUNT(*) AS total,
              SUM(CASE WHEN was_correct = ${boolTrue()} THEN 1 ELSE 0 END) AS correct
       FROM trade_recommendations
-      WHERE recommendation_date >= ${isPostgres
+      WHERE ${marketFilter()}
+        AND recommendation_date >= ${isPostgres
         ? `NOW() - INTERVAL '${days} days'`
         : `date('now', '-${days} days')`}
-        AND action IN ('BUY','SELL','HOLD')
-      GROUP BY action
+        AND signal_type IN ('BUY','SELL','HOLD')
+      GROUP BY signal_type
     `);
     // Daily signal counts for the last 30 days (for trend line)
     const daily = await dbAll(`
       SELECT recommendation_date AS date,
-             SUM(CASE WHEN action='BUY'  THEN 1 ELSE 0 END) AS buy_count,
-             SUM(CASE WHEN action='SELL' THEN 1 ELSE 0 END) AS sell_count,
-             SUM(CASE WHEN action='HOLD' THEN 1 ELSE 0 END) AS hold_count,
+             SUM(CASE WHEN signal_type='BUY'  THEN 1 ELSE 0 END) AS buy_count,
+             SUM(CASE WHEN signal_type='SELL' THEN 1 ELSE 0 END) AS sell_count,
+             SUM(CASE WHEN signal_type='HOLD' THEN 1 ELSE 0 END) AS hold_count,
+             COUNT(*) AS total,
              COUNT(*) AS total_count
       FROM trade_recommendations
-      WHERE recommendation_date >= ${isPostgres
+      WHERE ${marketFilter()}
+        AND recommendation_date >= ${isPostgres
         ? `NOW() - INTERVAL '30 days'`
         : `date('now', '-30 days')`}
+        AND signal_type IN ('BUY','SELL','HOLD')
       GROUP BY recommendation_date
       ORDER BY recommendation_date ASC
     `);
     const totals = { BUY: 0, SELL: 0, HOLD: 0 };
     const wins   = { BUY: 0, SELL: 0, HOLD: 0 };
     for (const r of counts) {
-      const k = r.action;
+      const k = r.signal_type;
       totals[k] = parseInt(r.total)   || 0;
       wins[k]   = parseInt(r.correct) || 0;
     }
@@ -795,17 +827,18 @@ router.get('/sector-accuracy', async (req, res) => {
       rows = await dbAll(`
         SELECT COALESCE(s.sector_en, 'Other') AS sector,
                COUNT(*) AS signal_count,
-               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
-                        WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
+               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.signal_type='BUY'  THEN 1
+                        WHEN tr.actual_next_day_return < 0 AND tr.signal_type='SELL' THEN 1
                         ELSE 0 END) AS win_count,
                ${round(`AVG(tr.actual_next_day_return - (${costPctSql('tr')}))`)} AS avg_return,
                ${round(`AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')}))`)} AS avg_alpha,
                ${round('AVG(tr.actual_next_day_return)')} AS avg_return_gross,
                ${round('AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return))')} AS avg_alpha_gross
         FROM trade_recommendations tr
-        LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol
-        WHERE tr.recommendation_date >= NOW() - INTERVAL '${days} days'
-          AND tr.action IN ('BUY','SELL')
+        LEFT JOIN ksa_stocks s ON s.symbol = tr.symbol AND s.market_id = 'KSA'
+        WHERE ${marketFilter('tr')}
+          AND tr.recommendation_date >= NOW() - INTERVAL '${days} days'
+          AND tr.signal_type IN ('BUY','SELL')
           AND tr.actual_next_day_return IS NOT NULL
         GROUP BY COALESCE(s.sector_en, 'Other')
         HAVING COUNT(*) >= 3
@@ -816,17 +849,18 @@ router.get('/sector-accuracy', async (req, res) => {
       rows = await dbAll(`
         SELECT COALESCE(s.sector_en, 'Other') AS sector,
                COUNT(*) AS signal_count,
-               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
-                        WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
+               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.signal_type='BUY'  THEN 1
+                        WHEN tr.actual_next_day_return < 0 AND tr.signal_type='SELL' THEN 1
                         ELSE 0 END) AS win_count,
                ROUND(AVG(tr.actual_next_day_return - (${costPctSql('tr')})),4) AS avg_return,
                ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')})),4) AS avg_alpha,
                ROUND(AVG(tr.actual_next_day_return),4) AS avg_return_gross,
                ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return)),4) AS avg_alpha_gross
         FROM trade_recommendations tr
-        LEFT JOIN egx30_stocks s ON s.symbol = tr.symbol
-        WHERE tr.recommendation_date >= date('now', '-${days} days')
-          AND tr.action IN ('BUY','SELL')
+        LEFT JOIN ksa_stocks s ON s.symbol = tr.symbol
+        WHERE ${marketFilter('tr')}
+          AND tr.recommendation_date >= date('now', '-${days} days')
+          AND tr.signal_type IN ('BUY','SELL')
           AND tr.actual_next_day_return IS NOT NULL
         GROUP BY COALESCE(s.sector_en, 'Other')
         HAVING COUNT(*) >= 3
@@ -862,38 +896,40 @@ router.get('/regime-stats', async (req, res) => {
     let rows;
     if (isPostgres) {
       rows = await dbAll(`
-        SELECT COALESCE(rl.regime, 'Unknown') AS regime,
+        SELECT COALESCE(rl.regime_label_en, 'Unknown') AS regime,
                COUNT(*) AS signal_count,
-               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
-                        WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
+               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.signal_type='BUY'  THEN 1
+                        WHEN tr.actual_next_day_return < 0 AND tr.signal_type='SELL' THEN 1
                         ELSE 0 END) AS win_count,
                ${round(`AVG(tr.actual_next_day_return - (${costPctSql('tr')}))`)} AS avg_return,
                ${round(`AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')}))`)} AS avg_alpha,
                ${round('AVG(tr.actual_next_day_return)')} AS avg_return_gross,
                ${round('AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return))')} AS avg_alpha_gross
         FROM trade_recommendations tr
-        LEFT JOIN regime_log rl ON rl.date = tr.recommendation_date
-        WHERE tr.action IN ('BUY','SELL')
+        LEFT JOIN regime_log rl ON rl.trading_date = tr.recommendation_date AND rl.market_id = 'KSA'
+        WHERE ${marketFilter('tr')}
+          AND tr.signal_type IN ('BUY','SELL')
           AND tr.actual_next_day_return IS NOT NULL
-        GROUP BY COALESCE(rl.regime, 'Unknown')
+        GROUP BY COALESCE(rl.regime_label_en, 'Unknown')
         ORDER BY signal_count DESC
       `);
     } else {
       rows = await dbAll(`
-        SELECT COALESCE(rl.regime, 'Unknown') AS regime,
+        SELECT COALESCE(rl.regime_label_en, 'Unknown') AS regime,
                COUNT(*) AS signal_count,
-               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.action='BUY'  THEN 1
-                        WHEN tr.actual_next_day_return < 0 AND tr.action='SELL' THEN 1
+               SUM(CASE WHEN tr.actual_next_day_return > 0 AND tr.signal_type='BUY'  THEN 1
+                        WHEN tr.actual_next_day_return < 0 AND tr.signal_type='SELL' THEN 1
                         ELSE 0 END) AS win_count,
                ROUND(AVG(tr.actual_next_day_return - (${costPctSql('tr')})),4) AS avg_return,
                ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return) - (${costPctSql('tr')})),4) AS avg_alpha,
                ROUND(AVG(tr.actual_next_day_return),4) AS avg_return_gross,
                ROUND(AVG(COALESCE(tr.alpha_1d, tr.actual_next_day_return - tr.benchmark_1d_return)),4) AS avg_alpha_gross
         FROM trade_recommendations tr
-        LEFT JOIN regime_log rl ON rl.date = tr.recommendation_date
-        WHERE tr.action IN ('BUY','SELL')
+        LEFT JOIN regime_log rl ON rl.trading_date = tr.recommendation_date
+        WHERE ${marketFilter('tr')}
+          AND tr.signal_type IN ('BUY','SELL')
           AND tr.actual_next_day_return IS NOT NULL
-        GROUP BY COALESCE(rl.regime, 'Unknown')
+        GROUP BY COALESCE(rl.regime_label_en, 'Unknown')
         ORDER BY signal_count DESC
       `);
     }
@@ -971,7 +1007,7 @@ router.get('/signals/batch', async (req, res) => {
                  alpha_1d AS alpha,
                  was_correct AS hit
           FROM trade_recommendations
-          WHERE symbol = ${ph(1)} AND recommendation_date = ${ph(2)}
+          WHERE ${marketFilter()} AND symbol = ${ph(1)} AND recommendation_date = ${ph(2)}
           LIMIT 1
         `, [symbol, date]);
         if (!row) return null;
