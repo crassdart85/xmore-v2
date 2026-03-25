@@ -94,7 +94,7 @@ jobs:
           EOF
 
       - name: Collect KSA intraday prices
-        run: python collect_data.py --prices-only --market KSA
+        run: python collect_data.py --prices-only
 
       - name: Summary
         if: always()
@@ -147,7 +147,7 @@ jobs:
 
       - name: News RAG ingestion
         continue-on-error: true
-        run: python news/ingest_cli.py --market KSA
+        run: python news/ingest_cli.py
 
       - name: Summary
         if: always()
@@ -212,15 +212,15 @@ jobs:
           EOF
 
       - name: Collect KSA close prices
-        run: python collect_data.py --prices-only --market KSA
+        run: python collect_data.py --prices-only
 
       - name: Collect KSA post-market news
         continue-on-error: true
-        run: python collect_data.py --news-only --market KSA
+        run: python collect_data.py --news-only
 
       - name: Analyze KSA sentiment (Gemini)
         continue-on-error: true
-        run: python sentiment_gemini.py --market KSA
+        run: python sentiment_gemini.py
 
       - name: Run KSA signal agents
         if: steps.holiday.outputs.is_holiday != 'true'
@@ -229,7 +229,7 @@ jobs:
         run: python run_agents_ksa.py
 
       - name: Evaluate KSA prediction accuracy
-        run: python evaluate.py --market KSA
+        run: python evaluate.py
 
       - name: Summary
         if: always()
@@ -274,7 +274,7 @@ jobs:
 
       - name: Generate KSA portfolios
         continue-on-error: true
-        run: python engines/generate_portfolios.py --market KSA
+        run: python engines/generate_portfolios.py
 
       - name: Summary
         if: always()
@@ -307,7 +307,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Run KSA DCF engine — all stocks (bull/base/bear)
-        run: python agents/dcf/ksa_dcf_engine.py --force
+        run: python -m agents.dcf.ksa_dcf_engine --force
 
       - name: Publish DCF deep-value summary to WhatsApp
         continue-on-error: true
@@ -348,7 +348,7 @@ jobs:
       - run: pip install -r requirements.txt
 
       - name: Evaluate KSA predictions (catchup)
-        run: python evaluate.py --market KSA
+        run: python evaluate.py
 
       - name: Evaluate KSA performance metrics
         continue-on-error: true
