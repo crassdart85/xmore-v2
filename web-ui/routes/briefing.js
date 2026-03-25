@@ -89,7 +89,9 @@ router.get('/today', optionalAuth, async (req, res) => {
                        tr.bull_score, tr.bear_score
                 FROM trade_recommendations tr
                 JOIN egx30_stocks s ON tr.symbol = s.symbol
-                WHERE tr.user_id = $1 AND ${dateFilter}
+                WHERE tr.user_id = $1
+                  AND tr.symbol LIKE '%.SR'
+                  AND ${dateFilter}
                 ORDER BY tr.priority DESC
             `, [userId]);
 
@@ -113,7 +115,9 @@ router.get('/today', optionalAuth, async (req, res) => {
                        ${daysHeldExpr} AS days_held
                 FROM user_positions up
                 JOIN egx30_stocks s ON up.symbol = s.symbol
-                WHERE up.user_id = $1 AND up.status = 'OPEN'
+                WHERE up.user_id = $1
+                  AND up.symbol LIKE '%.SR'
+                  AND up.status = 'OPEN'
                 ORDER BY up.entry_date ASC
             `, [userId]);
 
@@ -168,7 +172,9 @@ router.get('/today', optionalAuth, async (req, res) => {
                 FROM consensus_results c
                 JOIN egx30_stocks s ON c.symbol = s.symbol
                 JOIN user_watchlist w ON w.stock_id = s.id
-                WHERE w.user_id = $1 AND ${heatmapDateFilter}
+                WHERE w.user_id = $1
+                  AND c.symbol LIKE '%.SR'
+                  AND ${heatmapDateFilter}
                 ORDER BY c.confidence DESC
             `, [userId, briefingDate]);
 

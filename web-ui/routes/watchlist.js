@@ -88,6 +88,7 @@ router.get('/watchlist', authMiddleware, async (req, res) => {
           SELECT final_signal, conviction, agent_agreement
           FROM consensus_results
           WHERE symbol = s.symbol
+            AND symbol LIKE '%.SR'
           ORDER BY prediction_date DESC
           LIMIT 1
         ) cr ON true
@@ -103,9 +104,9 @@ router.get('/watchlist', authMiddleware, async (req, res) => {
           (SELECT prediction FROM predictions WHERE symbol = s.symbol ORDER BY target_date DESC LIMIT 1) AS latest_prediction,
           (SELECT confidence FROM predictions WHERE symbol = s.symbol ORDER BY target_date DESC LIMIT 1) AS latest_confidence,
           (SELECT target_date FROM predictions WHERE symbol = s.symbol ORDER BY target_date DESC LIMIT 1) AS prediction_date,
-          (SELECT final_signal FROM consensus_results WHERE symbol = s.symbol ORDER BY prediction_date DESC LIMIT 1) AS consensus_signal,
-          (SELECT conviction FROM consensus_results WHERE symbol = s.symbol ORDER BY prediction_date DESC LIMIT 1) AS conviction,
-          (SELECT agent_agreement FROM consensus_results WHERE symbol = s.symbol ORDER BY prediction_date DESC LIMIT 1) AS agent_agreement
+          (SELECT final_signal FROM consensus_results WHERE symbol = s.symbol AND symbol LIKE '%.SR' ORDER BY prediction_date DESC LIMIT 1) AS consensus_signal,
+          (SELECT conviction FROM consensus_results WHERE symbol = s.symbol AND symbol LIKE '%.SR' ORDER BY prediction_date DESC LIMIT 1) AS conviction,
+          (SELECT agent_agreement FROM consensus_results WHERE symbol = s.symbol AND symbol LIKE '%.SR' ORDER BY prediction_date DESC LIMIT 1) AS agent_agreement
         FROM user_watchlist w
         JOIN egx30_stocks s ON w.stock_id = s.id
         WHERE w.user_id = ?

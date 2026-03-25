@@ -4,7 +4,7 @@
  * GET  /api/screening/top-picks          — today's best 5 stocks (cached 1 h)
  * GET  /api/screening/sector-focus       — top 3 sectors by buy-signal strength
  * GET  /api/screening/ranked-signals     — BUY signals sorted by confidence + win-rate
- * POST /api/screening/portfolio-builder  — build a portfolio for a given EGP budget
+ * POST /api/screening/portfolio-builder  — build a portfolio for a given SAR budget
  */
 
 const { spawn } = require('child_process');
@@ -13,8 +13,8 @@ const path = require('path');
 const express = require('express');
 const router = express.Router();
 
-// Float tolerance used for budget and risk constraint validation (in EGP)
-const BUDGET_TOLERANCE_EGP = 1.0;
+// Float tolerance used for budget and risk constraint validation (in SAR)
+const BUDGET_TOLERANCE_EGP = 1.0; // kept as-is for internal math, unit is SAR
 
 let db;
 let isPostgres = false;
@@ -278,6 +278,7 @@ router.get('/ranked-signals', async (req, res) => {
                 )
             ) p ON p.symbol = cr.symbol
             WHERE cr.prediction_date = ${ph1}
+              AND cr.symbol LIKE '%.SR'
               AND cr.final_signal IN ('BUY', 'STRONG_BUY', 'UP')
               AND cr.risk_action NOT IN ('BLOCK')
             ORDER BY cr.confidence DESC,
@@ -323,22 +324,23 @@ router.get('/ranked-signals', async (req, res) => {
 // ─── POST /portfolio-builder ──────────────────────────────────────────────────
 
 /**
- * Build an EGP-denominated portfolio from active BUY signals.
+ * Build a SAR-denominated portfolio from active KSA BUY signals.
  *
  * Body (JSON):
- *   budgetEGP            {number}  — total budget in EGP (required)
+ *   budgetSAR            {number}  — total budget in SAR (required; budgetEGP accepted as alias)
  *   riskTolerancePercent {number}  — max % of budget to risk (default 5)
  *   date                 {string}  — signal date override (default today)
  */
 router.post('/portfolio-builder', express.json(), async (req, res) => {
     try {
-        const { budgetEGP, riskTolerancePercent = 5, date: signalDate } = req.body || {};
+        const { budgetSAR, budgetEGP, riskTolerancePercent = 5, date: signalDate } = req.body || {};
+        const rawBudget = budgetSAR ?? budgetEGP;
 
-        if (!budgetEGP || isNaN(Number(budgetEGP)) || Number(budgetEGP) <= 0) {
-            return res.status(400).json({ error: 'budgetEGP must be a positive number' });
+        if (!rawBudget || isNaN(Number(rawBudget)) || Number(rawBudget) <= 0) {
+            return res.status(400).json({ error: 'budgetSAR must be a positive number' });
         }
 
-        const budget    = Number(budgetEGP);
+        const budget    = Number(rawBudget);
         const riskPct   = Math.min(Math.max(Number(riskTolerancePercent) || 5, 0.5), 30);
         const today     = signalDate || new Date().toISOString().slice(0, 10);
         const maxRisk   = budget * riskPct / 100;
@@ -382,6 +384,7 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
                 )
             ) p ON p.symbol = cr.symbol
             WHERE cr.prediction_date = ${ph1}
+              AND cr.symbol LIKE '%.SR'
               AND cr.final_signal IN ('BUY', 'STRONG_BUY', 'UP')
               AND cr.risk_action NOT IN ('BLOCK')
               AND p.close > 0
@@ -396,27 +399,41 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
         if (!candidates || candidates.length === 0) {
             return res.json({
                 status:     'no_signals',
-                budget_egp: budget,
+                budget_sar: budget,
                 positions:  [],
                 summary:    { total_invested: 0, total_risk: 0, position_count: 0 },
             });
         }
 
         // Sector map (inline — avoid Python round-trip for performance)
+        // KSA Tadawul universe (.SR symbols)
         const SECTOR_MAP = {
-            'COMI.CA': 'Banking',    'HRHO.CA': 'Financial Services',
-            'FWRY.CA': 'Fintech',    'CIEB.CA': 'Banking',
-            'TMGH.CA': 'Real Estate','ORAS.CA': 'Construction',
-            'PHDC.CA': 'Real Estate','MNHD.CA': 'Real Estate',
-            'OCDI.CA': 'Real Estate','SWDY.CA': 'Electrical Equipment',
-            'ETEL.CA': 'Telecommunications','ESRS.CA': 'Steel',
-            'IRON.CA': 'Steel',      'ORWE.CA': 'Chemicals',
-            'POUL.CA': 'Food & Beverage','ISPH.CA': 'Healthcare',
-            'EAST.CA': 'Food & Beverage','ABUK.CA': 'Tobacco',
-            'ALCN.CA': 'Industrial', 'ELKA.CA': 'Textiles',
-            'SKPC.CA': 'Petrochemicals','AMOC.CA': 'Oil & Gas',
-            'SGIO.CA': 'Tourism',    'SCEM.CA': 'Cement',
-            'EKHO.CA': 'Chemicals',  'CLHO.CA': 'Ports & Shipping',
+            '1180.SR': 'Banking',        '1120.SR': 'Banking',
+            '1140.SR': 'Banking',        '1010.SR': 'Banking',
+            '1020.SR': 'Banking',        '1030.SR': 'Banking',
+            '1050.SR': 'Banking',        '1060.SR': 'Banking',
+            '1080.SR': 'Banking',        '1150.SR': 'Banking',
+            '1170.SR': 'Banking',        '1160.SR': 'Insurance',
+            '2222.SR': 'Energy',         '2100.SR': 'Energy',
+            '2010.SR': 'Petrochemicals', '2020.SR': 'Petrochemicals',
+            '2030.SR': 'Petrochemicals', '2060.SR': 'Petrochemicals',
+            '2080.SR': 'Petrochemicals', '2090.SR': 'Petrochemicals',
+            '7010.SR': 'Telecom',        '7020.SR': 'Telecom',
+            '7030.SR': 'Telecom',        '4003.SR': 'Retail',
+            '4001.SR': 'Retail',         '4190.SR': 'Retail',
+            '4240.SR': 'Retail',         '4321.SR': 'Retail',
+            '4050.SR': 'Food & Beverages','4061.SR': 'Food & Beverages',
+            '4020.SR': 'Real Estate',    '4040.SR': 'Real Estate',
+            '4100.SR': 'Real Estate',    '4150.SR': 'Real Estate',
+            '2110.SR': 'Materials',      '2120.SR': 'Industrials',
+            '2130.SR': 'Building Materials','2140.SR': 'Industrials',
+            '2150.SR': 'Industrials',    '3001.SR': 'Building Materials',
+            '3002.SR': 'Building Materials','3003.SR': 'Building Materials',
+            '4002.SR': 'Healthcare',     '4005.SR': 'Healthcare',
+            '4007.SR': 'Healthcare',     '4009.SR': 'Healthcare',
+            '8010.SR': 'Insurance',      '8020.SR': 'Insurance',
+            '8030.SR': 'Insurance',      '4030.SR': 'Transportation',
+            '4031.SR': 'Transportation',
         };
 
         const sectorCounts = {};
@@ -434,7 +451,7 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
         if (selected.length === 0) {
             return res.json({
                 status:     'no_eligible_signals',
-                budget_egp: budget,
+                budget_sar: budget,
                 positions:  [],
                 summary:    { total_invested: 0, total_risk: 0, position_count: 0 },
             });
@@ -456,16 +473,16 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
             const riskPerSh = entry - stopLoss;
 
             let qty = Math.max(1, Math.floor(allocPerPos / entry));
-            let entryEGP = parseFloat((qty * entry).toFixed(2));
-            let riskEGP  = parseFloat((qty * riskPerSh).toFixed(2));
+            let entrySAR = parseFloat((qty * entry).toFixed(2));
+            let riskSAR  = parseFloat((qty * riskPerSh).toFixed(2));
 
             // Clamp to remaining budget
-            if (totalInvested + entryEGP > budget + BUDGET_TOLERANCE_EGP) {
+            if (totalInvested + entrySAR > budget + BUDGET_TOLERANCE_EGP) {
                 const remaining = budget - totalInvested;
                 if (remaining < entry) break;
                 qty = Math.max(1, Math.floor(remaining / entry));
-                entryEGP = parseFloat((qty * entry).toFixed(2));
-                riskEGP  = parseFloat((qty * riskPerSh).toFixed(2));
+                entrySAR = parseFloat((qty * entry).toFixed(2));
+                riskSAR  = parseFloat((qty * riskPerSh).toFixed(2));
             }
 
             positions.push({
@@ -476,19 +493,19 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
                 recent_win_rate: parseFloat(sig.recent_win_rate || 0.5),
                 qty,
                 entry_price:     entry,
-                entry_egp:       entryEGP,
+                entry_sar:       entrySAR,
                 stop_loss:       stopLoss,
                 target,
-                risk_egp:        riskEGP,
+                risk_sar:        riskSAR,
             });
 
-            totalInvested += entryEGP;
-            totalRisk     += riskEGP;
+            totalInvested += entrySAR;
+            totalRisk     += riskSAR;
         }
 
         res.json({
             status:               'ok',
-            budget_egp:           budget,
+            budget_sar:           budget,
             risk_tolerance_pct:   riskPct,
             signal_date:          today,
             positions,
@@ -496,7 +513,7 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
                 position_count:        positions.length,
                 total_invested:        parseFloat(totalInvested.toFixed(2)),
                 cash_remaining:        parseFloat((budget - totalInvested).toFixed(2)),
-                total_risk_egp:        parseFloat(totalRisk.toFixed(2)),
+                total_risk_sar:        parseFloat(totalRisk.toFixed(2)),
                 budget_constraint_met: totalInvested <= budget + BUDGET_TOLERANCE_EGP,
                 risk_constraint_met:   totalRisk <= maxRisk + BUDGET_TOLERANCE_EGP,
             },
