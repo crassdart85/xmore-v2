@@ -258,8 +258,10 @@ table { border-collapse: collapse; width: 100%; }
   font-weight: 700;
 }
 
+.ksa-ticker-item .ticker-sym  { margin-right: 3px; }
 .ksa-ticker-item .ticker-up   { color: var(--positive); }
 .ksa-ticker-item .ticker-down { color: var(--negative); }
+.ksa-ticker-sep { color: var(--text-muted, #555); opacity: 0.5; }
 
 @keyframes ticker-scroll {
   0%   { transform: translateX(0); }

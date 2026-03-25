@@ -155,7 +155,7 @@
         // Amount ↔ slider sync
         function syncDisplay() {
             const val = parseInt(amountInput.value) || 50000;
-            if (display) display.textContent = formatEGP(val) + ' EGP';
+            if (display) display.textContent = formatEGP(val) + ' SAR';
         }
 
         if (slider) {
@@ -282,18 +282,18 @@
         const final = document.getElementById('tmFinalAmount');
         const badge = document.getElementById('tmReturnBadge');
 
-        if (invested) invested.textContent = formatEGP(sim.input_amount) + ' EGP';
+        if (invested) invested.textContent = formatEGP(sim.input_amount) + ' SAR';
         if (final) {
             if (typeof CountUp !== 'undefined' || (typeof countUp !== 'undefined')) {
                 animateCounter(final, sim.input_amount, sim.final_value);
             } else {
-                final.textContent = formatEGP(sim.final_value) + ' EGP';
+                final.textContent = formatEGP(sim.final_value) + ' SAR';
             }
             final.className = 'tm-final ' + (isProfit ? 'tm-profit' : 'tm-loss');
         }
         if (badge) {
             const sign = isProfit ? '+' : '';
-            badge.textContent = `${sign}${sim.total_return_pct}% (${sign}${formatEGP(sim.total_return_egp)} EGP)`;
+            badge.textContent = `${sign}${sim.total_return_pct}% (${sign}${formatEGP(sim.total_return_egp)} SAR)`;
             badge.className = 'tm-hero-return ' + (isProfit ? 'tm-badge-profit' : 'tm-badge-loss');
         }
 
@@ -382,7 +382,7 @@
         });
         xmoreSeries.setData(curve.map(p => ({ time: p.date, value: p.value })));
 
-        // EGX30 benchmark (gray dashed)
+        // TASI benchmark (gray dashed)
         const hasEgx = curve.some(p => p.egx30_value !== null);
         if (hasEgx) {
             const egxSeries = chart.addLineSeries({
@@ -473,7 +473,7 @@
             <thead><tr>
                 <th>${_t('tmMonth') || 'Month'}</th>
                 <th>Xmore</th>
-                <th>EGX30</th>
+                <th>TASI</th>
             </tr></thead><tbody>`;
 
         for (const m of months) {
@@ -511,20 +511,20 @@
             return `
             <div class="tm-trade-card ${isWin ? 'tm-trade-win' : 'tm-trade-loss'}">
                 <div class="tm-trade-header">
-                    <span class="tm-trade-symbol">${esc(tr.stock_symbol.replace('.CA', ''))}</span>
+                    <span class="tm-trade-symbol">${esc(tr.stock_symbol.replace('.SR', ''))}</span>
                     <span class="tm-trade-return ${isWin ? 'tm-pos' : 'tm-neg'}">${isWin ? '+' : ''}${tr.return_pct}%</span>
                 </div>
                 <div class="tm-trade-name">${esc(name)}</div>
                 <div class="tm-trade-details">
-                    <span>${_t('tmBought')}: ${tr.buy_price} EGP</span>
-                    <span>${_t('tmSold')}: ${tr.sell_price} EGP</span>
+                    <span>${_t('tmBought')}: ${tr.buy_price} SAR</span>
+                    <span>${_t('tmSold')}: ${tr.sell_price} SAR</span>
                 </div>
                 <div class="tm-trade-meta">
                     <span>${tr.buy_date} &rarr; ${tr.sell_date}</span>
                     <span>${tr.holding_days} ${_t('tmDays')}</span>
                 </div>
                 <div class="tm-trade-profit ${isWin ? 'tm-pos' : 'tm-neg'}">
-                    ${isWin ? '+' : ''}${formatEGP(tr.profit_egp)} EGP
+                    ${isWin ? '+' : ''}${formatEGP(tr.profit_egp)} SAR
                 </div>
             </div>`;
         }).join('');
@@ -547,7 +547,7 @@
                     <div class="tm-timeline-date">${ev.date}</div>
                     <div class="tm-timeline-event">
                         <span class="tm-timeline-badge ${isBuy ? 'tm-badge-buy' : 'tm-badge-sell'}">${ev.event}</span>
-                        <span class="tm-timeline-stock">${esc(ev.stock.replace('.CA', ''))}</span>
+                        <span class="tm-timeline-stock">${esc(ev.stock.replace('.SR', ''))}</span>
                     </div>
                     <div class="tm-timeline-reason">${esc(reason || '')}</div>
                 </div>
@@ -558,7 +558,7 @@
     // ─── Utilities ───────────────────────────────────────────
     function formatEGP(n) {
         if (n === null || n === undefined) return '-';
-        return new Intl.NumberFormat('en-EG', {
+        return new Intl.NumberFormat('en-SA', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         }).format(Math.round(n));
@@ -596,7 +596,7 @@
                 return;
             }
         } catch (e) { /* fallback */ }
-        el.textContent = formatEGP(to) + ' EGP';
+        el.textContent = formatEGP(to) + ' SAR';
     }
 
     // ================================================================
@@ -616,7 +616,7 @@
                 symbol:  s.symbol,
                 name_en: s.name_en || s.name_ar || s.symbol,
                 name_ar: s.name_ar || s.name_en || s.symbol,
-                display: s.symbol.replace('.CA', ''),
+                display: s.symbol.replace('.SR', ''),
             }));
             fcStocksLoaded = true;
             search.addEventListener('focus', () => {
@@ -691,7 +691,7 @@
         const counter   = document.getElementById('fcSelectionCount');
         if (!container) return;
         container.innerHTML = fcSelectedSymbols.map(s => {
-            const display = escHtml(s.symbol.replace('.CA', ''));
+            const display = escHtml(s.symbol.replace('.SR', ''));
             return `<span class="fc-tag" data-symbol="${s.symbol}">
                 ${display}<button class="fc-tag-remove" type="button" aria-label="Remove ${display}">×</button>
             </span>`;
@@ -726,7 +726,7 @@
         // Amount ↔ slider sync
         function syncFcDisplay() {
             const val = parseInt(amountInput.value) || 50000;
-            if (display) display.textContent = formatEGP(val) + ' EGP';
+            if (display) display.textContent = formatEGP(val) + ' SAR';
         }
         if (slider) {
             slider.addEventListener('input', () => { amountInput.value = slider.value; syncFcDisplay(); });
@@ -833,7 +833,7 @@
         const stage2Label = document.getElementById('fcStage2Label');
         if (stage2Label) {
             stage2Label.textContent = isAuto
-                ? (_t('fcStage2Auto') || 'Scanning EGX30 stocks...')
+                ? (_t('fcStage2Auto') || 'Scanning TASI stocks...')
                 : (_t('fcStage2Manual') || 'Computing model parameters...');
         }
 
@@ -883,7 +883,7 @@
         const _t = typeof t === 'function' ? t : (k) => k;
 
         if (!amount || amount < 1000) {
-            if (typeof showToast === 'function') showToast('error', _t('tmInvalidAmount') || 'Enter a valid amount (min 1,000 EGP).');
+            if (typeof showToast === 'function') showToast('error', _t('tmInvalidAmount') || 'Enter a valid amount (min 1,000 SAR).');
             return;
         }
 
@@ -991,7 +991,7 @@
 
         const lang = (typeof currentLang !== 'undefined') ? currentLang : 'en';
         const _t = typeof t === 'function' ? t : (k) => k;
-        const fmtEGP = (v) => v !== null && v !== undefined ? formatEGP(v) + ' EGP' : '—';
+        const fmtEGP = (v) => v !== null && v !== undefined ? formatEGP(v) + ' SAR' : '—';
         const fmtPct = (v) => v !== null && v !== undefined
             ? (v >= 0 ? '+' : '') + v.toFixed(2) + '%' : '—';
 
@@ -1002,7 +1002,7 @@
         if (banner && d.auto_selected) {
             const name = lang === 'ar' ? (d.auto_symbol_name_ar || d.auto_symbol_name_en) : (d.auto_symbol_name_en || d.auto_symbol_name_ar);
             if (chosenName) chosenName.textContent = name || d.symbol;
-            if (chosenSym)  chosenSym.textContent  = '(' + d.symbol.replace('.CA', '') + ')';
+            if (chosenSym)  chosenSym.textContent  = '(' + d.symbol.replace('.SR', '') + ')';
             banner.style.display = 'flex';
         } else if (banner) {
             banner.style.display = 'none';
@@ -1051,7 +1051,7 @@
                         duration: 1.5,
                         separator: ',',
                         decimal: '.',
-                        suffix: ' EGP'
+                        suffix: ' SAR'
                     }).start();
                     animated = true;
                 }
@@ -1086,7 +1086,7 @@
         // Plain-English interpretation card
         const interpretEl = document.getElementById('fcInterpret');
         if (interpretEl) {
-            const sym = d.symbol ? d.symbol.replace('.CA', '') : '';
+            const sym = d.symbol ? d.symbol.replace('.SR', '') : '';
             const horizon = d.band_data ? d.band_data.length - 1 : '?';
             const retPct = d.expected_return_pct >= 0
                 ? '+' + d.expected_return_pct.toFixed(1) + '%'
@@ -1293,11 +1293,11 @@
         });
 
         const fmtPct = (v) => v != null ? (v >= 0 ? '+' : '') + Number(v).toFixed(1) + '%' : '—';
-        const fmtEGP = (v) => v != null ? formatEGP(v) + ' EGP' : '—';
+        const fmtEGP = (v) => v != null ? formatEGP(v) + ' SAR' : '—';
         const retCls = (v) => v != null && v >= 0 ? 'tm-pos' : 'tm-neg';
 
         const rows = sorted.map((d, i) => {
-            const sym = (d.symbol || '').replace('.CA', '');
+            const sym = (d.symbol || '').replace('.SR', '');
             if (d.ok === false || !d.expected_value) {
                 // Show the actual reason from the API if available
                 const reason = d.error

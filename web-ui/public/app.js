@@ -1821,11 +1821,12 @@ async function loadTradingViewTicker() {
         } else {
             changeHtml = `<span style="opacity:.45">—</span>`;
         }
-        return `<span class="ksa-ticker-item"><span class="ticker-sym">${label}</span>${changeHtml}</span>`;
+        return `<span class="ksa-ticker-item"><span class="ticker-sym">${label}</span>&nbsp;${changeHtml}</span>`;
     });
 
-    // Duplicate for seamless loop
-    const inner = items.join('') + items.join('');
+    // Duplicate for seamless loop — separator between items
+    const sep = '<span class="ksa-ticker-sep">&nbsp;&nbsp;·&nbsp;&nbsp;</span>';
+    const inner = items.join(sep) + sep + items.join(sep);
     container.innerHTML = `<div class="ksa-ticker-tape"><div class="ksa-ticker-inner">${inner}</div></div>`;
 }
 
