@@ -729,7 +729,7 @@ app.get('/api/intelligence/changes', optionalAuth, async (req, res) => {
     const limit = Math.min(parseInt(req.query.limit, 10) || 8, 20);
 
     const latestDates = await dbAllAsync(
-      `SELECT DISTINCT prediction_date FROM consensus_results ORDER BY prediction_date DESC LIMIT 2`,
+      `SELECT DISTINCT prediction_date FROM consensus_results WHERE symbol LIKE '%.SR' ORDER BY prediction_date DESC LIMIT 2`,
       []
     ).catch(err => isTableMissing(err) ? [] : Promise.reject(err));
 
@@ -743,14 +743,14 @@ app.get('/api/intelligence/changes', optionalAuth, async (req, res) => {
         `SELECT symbol, prediction_date, final_signal, conviction, confidence,
                 calibrated_confidence, expected_edge_pct, ranking_score, xmore_score
          FROM consensus_results
-         WHERE prediction_date = ${datePh}`,
+         WHERE prediction_date = ${datePh} AND symbol LIKE '%.SR'`,
         [currentDate]
       ).catch(err => isTableMissing(err) ? [] : Promise.reject(err));
       const previousRows = previousDate ? await dbAllAsync(
         `SELECT symbol, prediction_date, final_signal, conviction, confidence,
                 calibrated_confidence, expected_edge_pct, ranking_score, xmore_score
          FROM consensus_results
-         WHERE prediction_date = ${datePh}`,
+         WHERE prediction_date = ${datePh} AND symbol LIKE '%.SR'`,
         [previousDate]
       ).catch(err => isTableMissing(err) ? [] : Promise.reject(err)) : [];
 
@@ -1050,6 +1050,7 @@ app.get('/api/consensus', (req, res) => {
          display_json, risk_assessment_json, calibration_meta_json, weight_profile_json,
          drivers_json, risk_level, expected_move, enrichment_regime
        FROM consensus_results
+       WHERE symbol LIKE '%.SR'
        ORDER BY symbol, prediction_date DESC`
     : `SELECT c.symbol, c.prediction_date, c.final_signal, c.conviction, c.confidence, c.xmore_score,
          c.calibrated_confidence, c.expected_edge_pct, c.ranking_score,
@@ -1061,6 +1062,7 @@ app.get('/api/consensus', (req, res) => {
        INNER JOIN (
          SELECT symbol, MAX(prediction_date) as max_date
          FROM consensus_results
+         WHERE symbol LIKE '%.SR'
          GROUP BY symbol
        ) latest ON c.symbol = latest.symbol AND c.prediction_date = latest.max_date
        ORDER BY c.symbol`;
@@ -1174,6 +1176,7 @@ app.get('/api/risk/overview', (req, res) => {
          symbol, final_signal, conviction, risk_action, risk_score,
          bull_score, bear_score, risk_assessment_json
        FROM consensus_results
+       WHERE symbol LIKE '%.SR'
        ORDER BY symbol, prediction_date DESC`
     : `SELECT c.symbol, c.final_signal, c.conviction, c.risk_action, c.risk_score,
          c.bull_score, c.bear_score, c.risk_assessment_json
@@ -1181,6 +1184,7 @@ app.get('/api/risk/overview', (req, res) => {
        INNER JOIN (
          SELECT symbol, MAX(prediction_date) as max_date
          FROM consensus_results
+         WHERE symbol LIKE '%.SR'
          GROUP BY symbol
        ) latest ON c.symbol = latest.symbol AND c.prediction_date = latest.max_date
        ORDER BY c.symbol`;
