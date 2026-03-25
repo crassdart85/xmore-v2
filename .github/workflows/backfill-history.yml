@@ -64,7 +64,8 @@ jobs:
             $DRY_FLAG
 
       - name: Retrain ML models after backfill
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        # Only retrain on EGX backfill — KSA retraining runs from the xmore-ksa branch config
+        if: ${{ github.event.inputs.dry_run != 'true' && github.event.inputs.market == 'EGX' }}
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
