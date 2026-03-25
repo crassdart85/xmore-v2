@@ -717,7 +717,7 @@ router.get('/full-report', async (req, res) => {
             const m = mean(arr);
             return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1));
         };
-        const TRADING_DAYS = 247, EGX_RF = 0.2725;
+        const TRADING_DAYS = 250, EGX_RF = 0.06;
         const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
 
         const allRGross  = rows.map(r => toNum(r.actual_next_day_return));
@@ -788,7 +788,7 @@ router.get('/export-summary', async (req, res) => {
         const toNum = v => Number(v || 0);
         const mean  = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
         const stdev = arr => { if (arr.length < 2) return 0; const m = mean(arr); return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1)); };
-        const TRADING_DAYS = 247, EGX_RF = 0.2725;
+        const TRADING_DAYS = 250, EGX_RF = 0.06;
         const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
         const allRGross = rows.map(r => toNum(r.actual_next_day_return));
         const costs = rows.map(perTradeCostPct);
@@ -864,10 +864,10 @@ router.get('/export-summary', async (req, res) => {
 <body>
 <div class="header">
   <div>
-    <h1>Xmore2 â€” EGX Trading Performance</h1>
-    <div style="color:#6b7280;font-size:11px">Performance Report Â· ${periodStart} â†’ ${periodEnd} Â· ${rows.length} resolved predictions</div>
+    <h1>Xmore2 â€” Tadawul Trading Performance</h1>
+    <div style=”color:#6b7280;font-size:11px”>Performance Report Â· ${periodStart} â†’ ${periodEnd} Â· ${rows.length} resolved predictions</div>
   </div>
-  <div class="header-meta">Generated: ${genDate}<br>Risk-free rate: CBE 27.25%</div>
+  <div class=”header-meta”>Generated: ${genDate}<br>Risk-free rate: SAMA 6.00%</div>
 </div>
 ${warn}
 <h2>Return Quality (Net of Transaction Costs)</h2>
@@ -888,7 +888,7 @@ ${warn}
 ${svgEquity}
 <h2>Benchmark Comparison</h2>
 <table>
-  <thead><tr><th>Metric</th><th>Xmore2</th><th>EGX30 Benchmark</th></tr></thead>
+  <thead><tr><th>Metric</th><th>Xmore2</th><th>TASI Benchmark</th></tr></thead>
   <tbody>
     <tr><td>Total Return (Net)</td><td class="${Number(totalRet) >= 0 ? 'highlight' : ''}">${fmtPct(totalRet)}</td><td>${fmtPct(benchTotal)}</td></tr>
     <tr><td>Total Return (Gross, secondary)</td><td>${fmtPct(totalRetGross)}</td><td>${fmtPct(benchTotal)}</td></tr>

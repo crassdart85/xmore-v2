@@ -428,36 +428,36 @@ Answer concisely and cite the source where relevant.`;
     }
 });
 
-// â”€â”€ Static EGX market knowledge (injected into every /chat prompt) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ Static KSA market knowledge (injected into every /chat prompt) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const EGX_MARKET_KNOWLEDGE = `
-EGYPTIAN EXCHANGE (EGX) â€” REFERENCE KNOWLEDGE
-==============================================
-The Egyptian Exchange (EGX) is the stock exchange of Egypt, one of the oldest in the region,
-established in 1883. It is headquartered in Cairo with a branch in Alexandria.
+SAUDI EXCHANGE (TADAWUL) â€” REFERENCE KNOWLEDGE
+================================================
+The Saudi Exchange (Tadawul / ØªØ¯Ø§ÙˆÙ„) is the national stock exchange of Saudi Arabia,
+one of the largest exchanges in the Middle East and MENA region.
 
 Key Facts:
-- Full name: Egyptian Exchange (Ø§Ù„Ø¨ÙˆØ±ØµØ© Ø§Ù„Ù…ØµØ±ÙŠØ©)
-- Website: https://www.egx.com.eg
-- Currency: Egyptian Pound (EGP / Ø¬Ù†ÙŠÙ‡ Ù…ØµØ±ÙŠ)
-- Trading days: Sunday â€“ Thursday (Friday/Saturday are weekends in Egypt)
-- Trading hours: 10:00 â€“ 14:30 Cairo time (UTC+2)
-- Pre-open session: 09:30 â€“ 10:00
+- Full name: Saudi Exchange (ØªØ¯Ø§ÙˆÙ„ â€” Tadawul)
+- Currency: Saudi Riyal (SAR / Ø±ÙŠØ§Ù„ Ø³Ø¹ÙˆØ¯ÙŠ)
+- Trading days: Monday â€” Friday (Friday: 12:00â€”15:30 only; Saturday/Sunday are weekends)
+- Trading hours: 10:00 â€” 15:00 AST (UTC+3); Friday session 12:00â€”15:30
+- Pre-open session: 09:30 â€” 10:00
 - Settlement: T+2
-- Main indices: EGX30 (top 30 by liquidity/activity), EGX70 (mid-cap), EGX100 (combined), EGX20 Capped
-- Symbol format: TICKER.CA  (e.g., COMI.CA for CIB, SWDY.CA for El-Sewedy Electric)
-- Regulator: Financial Regulatory Authority (FRA â€” Ø§Ù„Ù‡ÙŠØ¦Ø© Ø§Ù„Ø¹Ø§Ù…Ø© Ù„Ù„Ø±Ù‚Ø§Ø¨Ø© Ø§Ù„Ù…Ø§Ù„ÙŠØ©)
-- ~250+ companies listed across 15+ sectors
+- Main indices: TASI (All Share), NOMU (parallel market / SME)
+- Symbol format: TICKER.SR  (e.g., 2222.SR for Saudi Aramco, 1120.SR for Al Rajhi Bank)
+- Regulator: Capital Market Authority (CMA â€” Ù‡ÙŠØ¦Ø© Ø§Ù„Ø³ÙˆÙ‚ Ø§Ù„Ù…Ø§Ù„ÙŠØ©)
+- Risk-free rate: SAMA repo rate (~6%) used for Sharpe/Sortino calculations
+- ~230+ companies listed across 20+ sectors
 
-Major Sectors on EGX:
-Banking, Real Estate & Construction, Telecommunications, Food & Beverage,
-Chemicals & Petrochemicals, Steel & Industrial, Ports & Logistics,
-Healthcare, Fintech, Textiles, Energy, Cement, Tourism & Hospitality
+Major Sectors on Tadawul:
+Banking & Financial Services, Energy & Petrochemicals, Materials (Basic Materials),
+Telecommunication Services, Consumer Discretionary, Consumer Staples, Utilities,
+Healthcare, Real Estate, Industrial & Capital Goods, Food & Beverages, Insurance
 
 XMORE PLATFORM â€” METHODOLOGY & DATA SOURCES:
 - Multi-signal stack: ML (LightGBM per-symbol), RSI (adaptive periods), MA (adaptive periods), Sentiment (Gemini + recency decay), Volume, Risk agents
 - Consensus engine: 4-layer pipeline â€” Layer 1 (agent vote), Layer 2 (weighted average), Layer 3 (risk filter), Layer 4 (regime gate: Crisis blocks UP signals; Turbulent downgrades conviction)
-- Market regime detection: Gaussian HMM on EGX30 price history â€” states: Calm, Turbulent, Crisis
+- Market regime detection: MA/volatility regime on TASI price history â€” states: Calm, Turbulent, Crisis
 - Walk-forward validation: 90-day train / 20-day test / 10-day step rolling windows across all 6 agents, validated weekly
 - Confidence gating: signals with max(probability) < 60% are converted to HOLD before publication
 - Live knowledge sources injected into this response:
@@ -507,7 +507,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 const lines = stocks.map(s =>
                     `  ${s.symbol.padEnd(12)} ${s.name_en} (${s.name_ar}) â€” ${s.sector_en || 'N/A'}`
                 ).join('\n');
-                stockReferenceBlock = `\nLISTED EGX STOCKS (${stocks.length} companies):\n${lines}`;
+                stockReferenceBlock = `\nLISTED KSA STOCKS â€" TADAWUL (${stocks.length} companies):\n${lines}`;
             }
         } catch (_e) {
             // Table may not exist in older schema â€” skip silently

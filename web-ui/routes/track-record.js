@@ -157,7 +157,8 @@ async function kpiForWindow(days) {
             directional_accuracy:  total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
 
             // Primary (net)
-            alpha_vs_egx30:        parseFloat(mean(alphaNet).toFixed(4)),
+            alpha_vs_tasi:         parseFloat(mean(alphaNet).toFixed(4)),
+            alpha_vs_egx30:        parseFloat(mean(alphaNet).toFixed(4)), // legacy compat
             avg_return_1d:         parseFloat(mean(returnsNet).toFixed(4)),
             avg_alpha_1d:          parseFloat(mean(alphaNet).toFixed(4)),
             sharpe_ratio:          parseFloat(calcSharpe(returnsNet).toFixed(2)),
@@ -170,7 +171,8 @@ async function kpiForWindow(days) {
             cost_drag_total_pct:   parseFloat(costsPct.reduce((a, b) => a + b, 0).toFixed(2)),
 
             // Secondary (gross)
-            alpha_vs_egx30_gross:  parseFloat(mean(alphaGross).toFixed(4)),
+            alpha_vs_tasi_gross:   parseFloat(mean(alphaGross).toFixed(4)),
+            alpha_vs_egx30_gross:  parseFloat(mean(alphaGross).toFixed(4)), // legacy compat
             avg_return_1d_gross:   parseFloat(mean(returnsGross).toFixed(4)),
             avg_alpha_1d_gross:    parseFloat(mean(alphaGross).toFixed(4)),
             sharpe_ratio_gross:    parseFloat(calcSharpe(returnsGross).toFixed(2)),
