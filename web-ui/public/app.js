@@ -1783,38 +1783,50 @@ function closeSentimentModal() {
 // TRADINGVIEW WIDGETS (Task 5)
 // ============================================
 
-function loadTradingViewTicker() {
+async function loadTradingViewTicker() {
     const container = document.getElementById('tv-ticker-tape');
     if (!container) return;
 
-    const locale = currentLang === 'ar' ? 'ar_AE' : 'en';
-    const colorTheme = currentTheme;
+    const TICKER_SYMBOLS = [
+        { symbol: 'TASI', label: 'TASI' },
+        { symbol: '2222.SR', label: 'Aramco' },
+        { symbol: '2010.SR', label: 'SABIC' },
+        { symbol: '1120.SR', label: 'Al Rajhi' },
+        { symbol: '7010.SR', label: 'STC' },
+        { symbol: '1150.SR', label: 'Alinma' },
+        { symbol: '1180.SR', label: 'SNB' },
+        { symbol: '2082.SR', label: 'ACWA' },
+    ];
 
-    container.innerHTML = '';
-    const widgetDiv = document.createElement('div');
-    widgetDiv.className = 'tradingview-widget-container__widget';
-    container.appendChild(widgetDiv);
+    // Fetch latest prices for all KSA symbols
+    let prices = {};
+    try {
+        const res = await fetch('/api/prices');
+        if (res.ok) {
+            const data = await res.json();
+            (Array.isArray(data) ? data : (data.prices || [])).forEach(p => { prices[p.symbol] = p; });
+        }
+    } catch (e) { /* no prices — show names only */ }
 
-    const script = document.createElement('script');
-    script.type = 'text/javascript';
-    script.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
-    script.async = true;
-    script.textContent = JSON.stringify({
-        symbols: [
-            { proName: 'TADAWUL:TASI', title: 'TASI' },
-            { proName: 'TADAWUL:2222', title: 'Aramco' },
-            { proName: 'TADAWUL:2010', title: 'SABIC' },
-            { proName: 'TADAWUL:1120', title: 'Al Rajhi' },
-            { proName: 'TADAWUL:7010', title: 'STC' },
-            { proName: 'TADAWUL:1150', title: 'Alinma' },
-        ],
-        showSymbolLogo: true,
-        colorTheme: colorTheme,
-        isTransparent: true,
-        displayMode: 'adaptive',
-        locale: locale
+    const items = TICKER_SYMBOLS.map(({ symbol, label }) => {
+        const p = prices[symbol];
+        const close = p?.close ?? p?.price ?? null;
+        const change = p?.change_pct ?? p?.change ?? null;
+        let changeHtml = '';
+        if (close != null) {
+            const pct = change != null ? Number(change).toFixed(2) : null;
+            const cls = pct != null ? (Number(pct) >= 0 ? 'ticker-up' : 'ticker-down') : '';
+            const arrow = pct != null ? (Number(pct) >= 0 ? '▲' : '▼') : '';
+            changeHtml = `<span class="${cls}">${Number(close).toFixed(2)}${pct != null ? ` ${arrow}${Math.abs(Number(pct))}%` : ''}</span>`;
+        } else {
+            changeHtml = `<span style="opacity:.45">—</span>`;
+        }
+        return `<span class="ksa-ticker-item"><span class="ticker-sym">${label}</span>${changeHtml}</span>`;
     });
-    container.appendChild(script);
+
+    // Duplicate for seamless loop
+    const inner = items.join('') + items.join('');
+    container.innerHTML = `<div class="ksa-ticker-tape"><div class="ksa-ticker-inner">${inner}</div></div>`;
 }
 
 // Lazy-load TradingView mini chart for a stock card
@@ -1994,10 +2006,11 @@ async function loadIntelligencePulse() {
                 ? `${item.current_signal} ${t('fromLabel')} ${item.previous_signal || '—'}`
                 : `${item.current_signal} | ${t('expectedEdgeLabel')} ${Number(item.current_expected_edge_pct || 0).toFixed(2)}%`;
             const deltaClass = Number(item.edge_delta_pct || 0) >= 0 ? 'change-delta-pos' : 'change-delta-neg';
+            const displayName = getCompanyName(item.symbol);
             return `
                 <div class="change-line">
                     <div class="change-line-top">
-                        <span class="change-line-symbol">${item.symbol}</span>
+                        <span class="change-line-symbol" title="${item.symbol}">${displayName}</span>
                         <span class="quality-pill ${item.signal_changed ? 'quality-pill-watch' : 'quality-pill-fresh'}">${t('signalsLabel')}</span>
                     </div>
                     <div class="change-line-meta">${signalText}</div>
@@ -2008,10 +2021,11 @@ async function loadIntelligencePulse() {
 
         const forecastLines = (changesData.forecast_changes || []).slice(0, 2).map(item => {
             const deltaClass = Number(item.delta_expected_return_pct || 0) >= 0 ? 'change-delta-pos' : 'change-delta-neg';
+            const displayName = getCompanyName(item.symbol);
             return `
                 <div class="change-line">
                     <div class="change-line-top">
-                        <span class="change-line-symbol">${item.symbol}</span>
+                        <span class="change-line-symbol" title="${item.symbol}">${displayName}</span>
                         <span class="quality-pill quality-pill-unknown">${t('forecastsLabel')}</span>
                     </div>
                     <div class="change-line-meta">${item.portfolio_name}</div>
