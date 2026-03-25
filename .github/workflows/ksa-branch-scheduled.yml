@@ -82,7 +82,7 @@ jobs:
           EOF
 
       - name: Collect KSA intraday prices
-        run: python collect_data.py --prices-only --market KSA
+        run: python collect_data.py --prices-only
 
   ksa-intraday-news:
     if: github.event.schedule == '0 7,9,11 * * 0,1,2,3,4' || github.event_name == 'workflow_dispatch'
@@ -129,7 +129,7 @@ jobs:
 
       - name: News RAG ingestion
         continue-on-error: true
-        run: python news/ingest_cli.py --market KSA
+        run: python news/ingest_cli.py
 
   ksa-post-market-pipeline:
     if: github.event.schedule == '15 12 * * 0,1,2,3,4' || github.event_name == 'workflow_dispatch'
@@ -189,15 +189,15 @@ jobs:
           EOF
 
       - name: Collect KSA close prices
-        run: python collect_data.py --prices-only --market KSA
+        run: python collect_data.py --prices-only
 
       - name: Collect KSA post-market news
         continue-on-error: true
-        run: python collect_data.py --news-only --market KSA
+        run: python collect_data.py --news-only
 
       - name: Analyze KSA sentiment
         continue-on-error: true
-        run: python sentiment_gemini.py --market KSA
+        run: python sentiment_gemini.py
 
       - name: Run KSA signal agents
         if: steps.holiday.outputs.is_holiday != 'true'
@@ -206,7 +206,7 @@ jobs:
         run: python run_agents_ksa.py
 
       - name: Evaluate KSA prediction accuracy
-        run: python evaluate.py --market KSA
+        run: python evaluate.py
 
   ksa-nightly-pipeline:
     needs: [ksa-post-market-pipeline]
@@ -240,7 +240,7 @@ jobs:
 
       - name: Generate KSA portfolios
         continue-on-error: true
-        run: python engines/generate_portfolios.py --market KSA
+        run: python engines/generate_portfolios.py
 
   ksa-weekly-dcf:
     if: github.event.schedule == '0 0 * * 6' || github.event_name == 'workflow_dispatch'
@@ -268,7 +268,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run KSA DCF engine
-        run: python agents/dcf/ksa_dcf_engine.py --force
+        run: python -m agents.dcf.ksa_dcf_engine --force
 
       - name: Publish DCF summary to WhatsApp
         continue-on-error: true
@@ -304,7 +304,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Evaluate KSA predictions
-        run: python evaluate.py --market KSA
+        run: python evaluate.py
 
       - name: Evaluate KSA performance metrics
         continue-on-error: true

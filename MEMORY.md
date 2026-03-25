@@ -5,6 +5,19 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 
 **Last Updated**: March 25, 2026
 
+## Mar 25, 2026 - KSA Workflow Runtime CLI Alignment
+- GitHub accepted the workflow YAML, but the KSA jobs still failed at runtime because the workflow commands no longer matched the branch-specialized scripts.
+- Fixed `.github/workflows/ksa-branch-scheduled.yml` on `main` to match the current KSA branch entry points:
+  - removed unsupported `--market KSA` from `collect_data.py`
+  - removed unsupported `--market KSA` from `evaluate.py`
+  - removed unsupported `--market KSA` from `news/ingest_cli.py`
+  - removed unsupported `--market KSA` from `sentiment_gemini.py`
+  - removed unsupported `--market KSA` from `engines/generate_portfolios.py`
+  - changed `python agents/dcf/ksa_dcf_engine.py --force` to `python -m agents.dcf.ksa_dcf_engine --force`
+- Operational rule:
+  - on `xmore-ksa`, most pipeline scripts are already market-specialized; do not add `--market KSA` unless the script actually exposes that CLI flag
+  - prefer module execution for nested package entry points when GitHub Actions cannot resolve package imports from file-path execution
+
 ## Mar 25, 2026 - Workflow Branch Alignment + KSA Default-Branch Scheduler
 - Fixed GitHub Actions branch checkout drift across workflow files:
   - `.github/workflows/scheduled-tasks.yml`

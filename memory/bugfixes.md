@@ -2,6 +2,23 @@
 
 ## Mar 25, 2026
 
+### KSA workflow runtime failures from unsupported CLI flags
+- **Error**:
+  - `collect_data.py: error: unrecognized arguments: --market KSA`
+  - `evaluate.py: error: unrecognized arguments: --market KSA`
+  - KSA News RAG and sentiment/portfolio steps had the same latent mismatch pattern
+  - `ModuleNotFoundError: No module named 'agents'` from `python agents/dcf/ksa_dcf_engine.py --force`
+- **Cause**:
+  - KSA workflows were written as if shared scripts exposed a `--market KSA` switch
+  - on `xmore-ksa`, those scripts are already branch-specialized and do not expose that CLI
+  - the DCF engine was invoked by file path, which broke package imports on GitHub runners
+- **Fix**:
+  - removed unsupported `--market KSA` flags from the KSA workflow commands
+  - switched DCF execution to module form: `python -m agents.dcf.ksa_dcf_engine --force`
+- **Pattern**:
+  - before adding market flags to scheduled jobs, validate the script's argparse surface with `--help`
+  - use `python -m package.module` for package-based entry points in CI when imports depend on repo-root module resolution
+
 ### GitHub Actions branch checkout drift / default-branch scheduler gap
 - **Error**: workflows on both EGY and KSA branches were forcing `actions/checkout` to `ref: main` or `ref: xmore-ksa`, causing branch-dispatch runs to execute the wrong code.
 - **Cause**:
