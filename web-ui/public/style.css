@@ -6172,21 +6172,43 @@ button:active, .btn:active, .tab-btn:active {
 }
 
 @media (max-width: 480px) {
-    /* Sub-nav: smaller buttons */
-    .etf-subnav { gap: 3px; padding: 3px; }
-    .etf-subnav-btn { font-size: 11px; padding: 5px 10px; }
+    /* Sub-nav: compact + fade-right scroll hint */
+    .etf-subnav {
+        gap: 3px;
+        padding: 3px;
+        border-radius: 8px;
+        -webkit-mask-image: linear-gradient(to right, black 75%, transparent 100%);
+        mask-image: linear-gradient(to right, black 75%, transparent 100%);
+    }
+    .etf-subnav-btn {
+        font-size: 11px;
+        padding: 5px 9px;
+        min-width: 0;
+        border-radius: 6px;
+    }
+    /* Hide badge counts on non-active tabs to save space */
+    .etf-subnav-btn:not(.active) .etf-subnav-badge { display: none; }
 
     /* Toolbar: stack search above view toggle */
-    .etf-toolbar { flex-wrap: wrap; }
+    .etf-toolbar { flex-wrap: wrap; gap: 6px; }
     .etf-search-input { width: 100%; flex: none; }
     .etf-view-toggle { align-self: flex-end; }
+
+    /* Panel header: wrap on very small screens */
+    .etf-panel-header { flex-wrap: wrap; gap: 6px; }
+    .etf-panel-title { font-size: 13px; }
 
     /* Card grid: 1 column */
     .etf-grid { grid-template-columns: 1fr; gap: 8px; }
     .etf-card { padding: 12px 14px; }
 
     /* Card name: allow wrap on small screens */
-    .etf-card-name { white-space: normal; }
+    .etf-card-name { white-space: normal; font-size: 11px; }
+
+    /* Card rows: tighter spacing */
+    .etf-card-row { padding: 4px 0; font-size: 11px; }
+    .etf-label { font-size: 10px; }
+    .etf-value { font-size: 11px; }
 
     /* Table: hide 3rd+ columns */
     .etf-data-table th:nth-child(n+3),
