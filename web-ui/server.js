@@ -217,6 +217,7 @@ async function buildConsensusCalibrationState() {
       FROM evaluations e
       JOIN predictions p ON p.id = e.prediction_id
       WHERE e.agent_name = 'Consensus'
+        AND e.symbol LIKE '%.SR'
         AND p.confidence IS NOT NULL
       ORDER BY e.evaluated_at DESC
       LIMIT 1200
@@ -278,6 +279,7 @@ async function buildExpectedEdgeState() {
       SELECT symbol, prediction, actual_change_pct, was_correct
       FROM evaluations
       WHERE agent_name = 'Consensus'
+        AND symbol LIKE '%.SR'
         AND actual_change_pct IS NOT NULL
       ORDER BY evaluated_at DESC
       LIMIT 2500
@@ -465,7 +467,8 @@ app.get('/api/predictions', (req, res) => {
   const query = `
     SELECT symbol, agent_name, prediction, confidence, metadata, prediction_date, target_date
     FROM predictions
-    WHERE prediction_date = (SELECT MAX(prediction_date) FROM predictions)
+    WHERE symbol LIKE '%.SR'
+      AND prediction_date = (SELECT MAX(prediction_date) FROM predictions WHERE symbol LIKE '%.SR')
     ORDER BY symbol, agent_name
   `;
 
@@ -493,6 +496,7 @@ app.get('/api/performance', (req, res) => {
       SUM(CASE WHEN was_correct = ${boolTrue} THEN 1 ELSE 0 END) as correct_predictions,
       ROUND(AVG(CASE WHEN was_correct = ${boolTrue} THEN 1.0 ELSE 0.0 END) * 100, 1) as accuracy
     FROM evaluations
+    WHERE symbol LIKE '%.SR'
     GROUP BY agent_name
   `;
 
@@ -539,6 +543,7 @@ app.get('/api/performance/detailed', (req, res) => {
                        WHEN prediction = 'DOWN' THEN 0.0 END) * 100, 1) as win_rate_sell,
       MIN(actual_change_pct) as max_drawdown
     FROM evaluations
+    WHERE symbol LIKE '%.SR'
   `, [], (err, row) => {
     if (err || !row) {
       results.overall = {
@@ -567,6 +572,7 @@ app.get('/api/performance/detailed', (req, res) => {
       SUM(CASE WHEN was_correct = ${boolTrue} THEN 1 ELSE 0 END) as correct,
       ROUND(AVG(CASE WHEN was_correct = ${boolTrue} THEN 1.0 ELSE 0.0 END) * 100, 1) as accuracy
     FROM evaluations
+    WHERE symbol LIKE '%.SR'
     GROUP BY agent_name
     ORDER BY accuracy DESC
   `, [], (err, rows) => {
@@ -590,6 +596,7 @@ app.get('/api/performance/detailed', (req, res) => {
       ROUND(AVG(CASE WHEN was_correct = ${boolTrue} THEN 1.0 ELSE 0.0 END) * 100, 1) as accuracy,
       ROUND(AVG(actual_change_pct), 4) as avg_return
     FROM evaluations
+    WHERE symbol LIKE '%.SR'
     GROUP BY symbol
     ORDER BY accuracy DESC
   `, [], (err, rows) => {
@@ -618,6 +625,7 @@ app.get('/api/performance/detailed', (req, res) => {
       ROUND(AVG(e.actual_change_pct), 4) as avg_return
     FROM evaluations e
     JOIN predictions p ON e.prediction_id = p.id
+    WHERE e.symbol LIKE '%.SR'
     GROUP BY ${monthExtract}
     ORDER BY month DESC
     LIMIT 12
@@ -673,12 +681,14 @@ app.get('/api/sentiment', (req, res) => {
   const query = DATABASE_URL
     ? `SELECT DISTINCT ON (symbol) symbol, date, avg_sentiment, sentiment_label, article_count
        FROM sentiment_scores
+       WHERE symbol LIKE '%.SR'
        ORDER BY symbol, date DESC`
     : `SELECT s.symbol, s.date, s.avg_sentiment, s.sentiment_label, s.article_count
        FROM sentiment_scores s
        INNER JOIN (
          SELECT symbol, MAX(date) as max_date
          FROM sentiment_scores
+         WHERE symbol LIKE '%.SR'
          GROUP BY symbol
        ) latest ON s.symbol = latest.symbol AND s.date = latest.max_date
        ORDER BY s.symbol`;
@@ -1018,6 +1028,7 @@ app.get('/api/evaluations', (req, res) => {
       p.target_date
     FROM evaluations e
     JOIN predictions p ON e.prediction_id = p.id
+    WHERE e.symbol LIKE '%.SR'
     ORDER BY p.target_date DESC, e.symbol, e.agent_name
     LIMIT 100
   `;
