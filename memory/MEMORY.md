@@ -6,6 +6,14 @@
 - **Database**: SQLite (local dev), PostgreSQL (production on Render)
 - **Frontend**: Vanilla JS, CSS â€” bilingual EN/AR dashboard
 
+## Mar 25, 2026 - Workflow Branch Alignment
+- KSA workflow files now use `${{ github.ref_name }}` instead of hard-coded checkout refs.
+- This fixes manual/workflow-dispatch runs executing the wrong branch contents.
+- Scheduled KSA automation still depends on the default branch, so the production cron entrypoint now lives on `main` and checks out `xmore-ksa`.
+- Takeaway: KSA automation needs two layers:
+  - branch-aware checkout for direct KSA workflow runs
+  - a default-branch scheduler for GitHub cron
+
 ## Key File Paths
 - `web-ui/server.js` â€” Express app, all API endpoints
 - `web-ui/init-db.js` â€” PostgreSQL table creation + full EGX stock seed (~190)

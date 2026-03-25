@@ -3,7 +3,21 @@
 ## Project Overview
 Stock trading prediction system with web dashboard. Uses multiple AI agents to predict stock movements.
 
-**Last Updated**: March 20, 2026
+**Last Updated**: March 25, 2026
+
+## Mar 25, 2026 - Workflow Branch Alignment
+- Fixed GitHub Actions checkout behavior in KSA workflow files:
+  - `.github/workflows/ksa-daily-pipeline.yml`
+  - `.github/workflows/scheduled-tasks.yml`
+  - `.github/workflows/backfill-predictions.yml`
+  - `.github/workflows/run-backtest.yml`
+- Replaced hard-coded refs (`main`, `xmore-ksa`) with `${{ github.ref_name }}` so manual runs execute the actual triggering branch.
+- Important GitHub limitation:
+  - scheduled workflows only run from the repository default branch
+  - KSA cron execution is therefore dispatched from `main` via `.github/workflows/ksa-branch-scheduled.yml`, which checks out `xmore-ksa`
+- Operational rule:
+  - keep branch-local KSA workflows branch-aware for manual runs
+  - keep default-branch KSA scheduling in sync with `xmore-ksa` workflow logic
 
 ## Mar 20, 2026 — Hamburger Menu Cleanup + Time Machine Validation
 - **Hamburger menu icon removal**: Stripped all emoji icon prefixes from mobile menu items across all 6 pages (`landing.html`, `session.html`, `pro.html`, `track-record.html`, `index.html`, `docs.html`)
