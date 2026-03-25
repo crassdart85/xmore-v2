@@ -7,6 +7,7 @@
   <title>Xmore - EGX Session Sheet</title>
   <link rel="stylesheet" href="session.css">
   <link rel="stylesheet" href="assistant-widget.css">
+  <script>(function(){var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
 </head>
 <body>
 
@@ -41,6 +42,7 @@
       <button class="s-auth-btn s-auth-btn--primary" id="sLoginBtn" onclick="sShowModal()">Sign In</button>
     </div>
     <button class="s-lang-btn" id="sLangBtn" onclick="toggleLang()">عر</button>
+    <button id="themeBtn" class="theme-btn" title="Toggle dark mode" onclick="sToggleTheme()"><span class="icon-sun">&#9728;</span><span class="icon-moon">&#9790;</span></button>
   </header>
 
   <!-- Auth Modal -->
@@ -191,6 +193,19 @@ function toggleLang() {
   renderTable(window._SessionData || []);
   renderIndexCards(window._indexData || []);
 }
+
+let _sTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+function _sApplyTheme() {
+  document.documentElement.setAttribute('data-theme', _sTheme);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.title = _sTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+}
+function sToggleTheme() {
+  _sTheme = _sTheme === 'light' ? 'dark' : 'light';
+  localStorage.setItem('theme', _sTheme);
+  _sApplyTheme();
+}
+_sApplyTheme();
 
 function applyLang() {
   document.getElementById('sBack').textContent       = t('back');

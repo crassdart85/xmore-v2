@@ -7,6 +7,7 @@
   <title>XmorePro — EGX Overview</title>
   <link rel="stylesheet" href="pro.css">
   <link rel="stylesheet" href="assistant-widget.css">
+  <script>(function(){var t=localStorage.getItem('theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
 </head>
 <body>
 
@@ -46,6 +47,8 @@
     </div>
     <!-- Language toggle -->
     <button class="pro-lang-btn" id="proLangBtn" onclick="proToggleLang()" aria-label="Switch language">عر</button>
+    <!-- Theme toggle -->
+    <button id="themeBtn" class="theme-btn" title="Toggle dark mode" onclick="proToggleTheme()"><span class="icon-sun">&#9728;</span><span class="icon-moon">&#9790;</span></button>
     <span class="pro-date" id="proDate"></span>
   </header>
 

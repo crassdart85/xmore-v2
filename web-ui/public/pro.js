@@ -84,6 +84,20 @@ function proToggleLang() {
 
 proApplyLang();
 
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+let _PRO_THEME = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+function _proApplyTheme() {
+  document.documentElement.setAttribute('data-theme', _PRO_THEME);
+  const btn = document.getElementById('themeBtn');
+  if (btn) btn.title = _PRO_THEME === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+}
+function proToggleTheme() {
+  _PRO_THEME = _PRO_THEME === 'light' ? 'dark' : 'light';
+  localStorage.setItem('theme', _PRO_THEME);
+  _proApplyTheme();
+}
+_proApplyTheme();
+
 function displaySymbol(symbol) {
   return String(symbol || '').replace(/\.(CA|SR)$/i, '');
 }
