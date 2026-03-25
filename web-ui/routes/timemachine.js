@@ -105,7 +105,7 @@ router.post('/simulate', async (req, res) => {
         }
         const numAmount = parseFloat(amount);
         if (isNaN(numAmount) || numAmount < 5000 || numAmount > 10000000) {
-            return sendSimulationError(res, 400, 'Amount must be between 5,000 and 10,000,000 EGP.', 'المبلغ يجب أن يكون بين ٥٬٠٠٠ و ١٠٬٠٠٠٬٠٠٠ جنيه.');
+            return sendSimulationError(res, 400, 'Amount must be between 5,000 and 10,000,000 SAR.', 'المبلغ يجب أن يكون بين ٥٬٠٠٠ و ١٠٬٠٠٠٬٠٠٠ ريال.');
         }
         const normalizedStart = normalizeSimulationDateInput(start_date);
         const todayUtc = new Date();

@@ -56,7 +56,7 @@ def main():
         start_date = input_data['start_date']
         end_date = datetime.now().strftime('%Y-%m-%d')
 
-        logger.info(f"Time Machine: {amount:,.0f} EGP from {start_date} to {end_date}")
+        logger.info(f"Time Machine: {amount:,.0f} SAR from {start_date} to {end_date}")
 
         # Validate start date
         start_dt = datetime.strptime(start_date, '%Y-%m-%d')

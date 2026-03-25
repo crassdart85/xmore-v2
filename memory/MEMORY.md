@@ -25,6 +25,18 @@
   - KSA public pages must never reuse the generic EGX `/track-record` route
   - Node route modules in this repo need promise wrappers around `db.all/db.get` if they want `async/await`
 
+## Mar 25, 2026 - KSA Time Machine UI Alignment
+- Time Machine on the KSA deployment had mixed market language:
+  - page shell was KSA/TASI
+  - some investment labels and validation copy still said `EGP`
+  - legacy benchmark fields named `egx30_*` were still feeding the rendered chart/table path
+- Fixes applied:
+  - KSA translations now use `SAR` / `ريال` for Time Machine amount and validation labels
+  - frontend normalizes legacy benchmark payload fields into benchmark/TASI display fields before rendering
+  - Time Machine route validation and Python log output now use SAR wording
+- Takeaway:
+  - KSA UI can tolerate backward-compatible payload names internally, but the rendered UX must remain market-correct
+
 ## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
 - Local checks passed on both branches:
   - frontend check

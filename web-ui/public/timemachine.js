@@ -59,6 +59,45 @@
         return parsed.toISOString().slice(0, 10);
     }
 
+    function getBenchmarkCurveValue(point) {
+        return point?.benchmark_value ?? point?.tasi_value ?? point?.egx30_value ?? null;
+    }
+
+    function getBenchmarkReturn(point) {
+        return point?.benchmark_return_pct ?? point?.tasi_return_pct ?? point?.egx30_return_pct ?? null;
+    }
+
+    function normalizeSimulationPayload(sim) {
+        if (!sim || typeof sim !== 'object') return sim;
+
+        const benchmark = sim.benchmark || {};
+        sim.benchmark = {
+            ...benchmark,
+            benchmark_return_pct: benchmark.benchmark_return_pct ?? benchmark.tasi_return_pct ?? benchmark.egx30_return_pct ?? null,
+            benchmark_final_value: benchmark.benchmark_final_value ?? benchmark.tasi_final_value ?? benchmark.egx30_final_value ?? null,
+            alpha_pct: benchmark.alpha_pct ?? null,
+            alpha_value: benchmark.alpha_value ?? benchmark.alpha_egp ?? null,
+            label: benchmark.label || 'TASI',
+            currency: benchmark.currency || 'SAR',
+        };
+
+        if (Array.isArray(sim.equity_curve)) {
+            sim.equity_curve = sim.equity_curve.map((point) => ({
+                ...point,
+                benchmark_value: getBenchmarkCurveValue(point),
+            }));
+        }
+
+        if (Array.isArray(sim.monthly_breakdown)) {
+            sim.monthly_breakdown = sim.monthly_breakdown.map((point) => ({
+                ...point,
+                benchmark_return_pct: getBenchmarkReturn(point),
+            }));
+        }
+
+        return sim;
+    }
+
     // ─── Public entry point (called by switchToTab) ───────────
     function bootstrapTimeMachine() {
         if (tmBootstrapped) return;
@@ -247,7 +286,7 @@
                 throw new Error(msg);
             }
 
-            renderResults(data.simulation);
+            renderResults(normalizeSimulationPayload(data.simulation));
         } catch (err) {
             console.error('Simulation error:', err);
             const esc = typeof escapeHtml === 'function' ? escapeHtml : (s) => s;
@@ -310,11 +349,13 @@
         }
 
         // Key metrics
+        const benchmark = sim.benchmark || {};
+        const alphaPct = benchmark.alpha_pct;
         setMetric('tmAlpha',
-            sim.benchmark.alpha_pct !== null
-                ? `${sim.benchmark.alpha_pct >= 0 ? '+' : ''}${sim.benchmark.alpha_pct}%`
+            alphaPct !== null && alphaPct !== undefined
+                ? `${alphaPct >= 0 ? '+' : ''}${alphaPct}%`
                 : 'N/A',
-            sim.benchmark.alpha_pct !== null ? sim.benchmark.alpha_pct >= 0 : undefined
+            alphaPct !== null && alphaPct !== undefined ? alphaPct >= 0 : undefined
         );
         setMetric('tmAnnualized',
             `${sim.annualized_return_pct >= 0 ? '+' : ''}${sim.annualized_return_pct}%`,
@@ -383,16 +424,16 @@
         xmoreSeries.setData(curve.map(p => ({ time: p.date, value: p.value })));
 
         // TASI benchmark (gray dashed)
-        const hasEgx = curve.some(p => p.egx30_value !== null);
-        if (hasEgx) {
-            const egxSeries = chart.addLineSeries({
+        const hasBenchmark = curve.some(p => getBenchmarkCurveValue(p) !== null);
+        if (hasBenchmark) {
+            const benchmarkSeries = chart.addLineSeries({
                 color: '#9ca3af',
                 lineWidth: 1,
                 lineStyle: LightweightCharts.LineStyle.Dashed
             });
-            egxSeries.setData(
-                curve.filter(p => p.egx30_value !== null)
-                     .map(p => ({ time: p.date, value: p.egx30_value }))
+            benchmarkSeries.setData(
+                curve.filter(p => getBenchmarkCurveValue(p) !== null)
+                     .map(p => ({ time: p.date, value: getBenchmarkCurveValue(p) }))
             );
         }
 
@@ -423,7 +464,7 @@
         ctx.clearRect(0, 0, W, H);
 
         const allValues = curve.map(p => p.value)
-            .concat(curve.filter(p => p.egx30_value != null).map(p => p.egx30_value));
+            .concat(curve.filter(p => getBenchmarkCurveValue(p) != null).map(p => getBenchmarkCurveValue(p)));
         const minV = Math.min(...allValues) * 0.98;
         const maxV = Math.max(...allValues) * 1.02;
 
@@ -438,17 +479,18 @@
         });
         ctx.stroke();
 
-        const hasEgx = curve.some(p => p.egx30_value != null);
-        if (hasEgx) {
+        const hasBenchmark = curve.some(p => getBenchmarkCurveValue(p) != null);
+        if (hasBenchmark) {
             ctx.strokeStyle = '#9ca3af';
             ctx.lineWidth = 1;
             ctx.setLineDash([5, 3]);
             ctx.beginPath();
             let started = false;
             curve.forEach((p, i) => {
-                if (p.egx30_value == null) return;
-                if (!started) { ctx.moveTo(x(i), y(p.egx30_value)); started = true; }
-                else ctx.lineTo(x(i), y(p.egx30_value));
+                const benchmarkValue = getBenchmarkCurveValue(p);
+                if (benchmarkValue == null) return;
+                if (!started) { ctx.moveTo(x(i), y(benchmarkValue)); started = true; }
+                else ctx.lineTo(x(i), y(benchmarkValue));
             });
             ctx.stroke();
             ctx.setLineDash([]);
@@ -478,12 +520,13 @@
 
         for (const m of months) {
             const xCls = m.return_pct >= 0 ? 'tm-pos' : 'tm-neg';
-            const eCls = m.egx30_return_pct !== null && m.egx30_return_pct >= 0 ? 'tm-pos' : 'tm-neg';
+            const benchmarkReturn = getBenchmarkReturn(m);
+            const eCls = benchmarkReturn !== null && benchmarkReturn >= 0 ? 'tm-pos' : 'tm-neg';
             html += `<tr>
                 <td>${m.month}</td>
                 <td class="${xCls}">${m.return_pct >= 0 ? '+' : ''}${m.return_pct}%</td>
-                <td class="${eCls}">${m.egx30_return_pct !== null
-                    ? (m.egx30_return_pct >= 0 ? '+' : '') + m.egx30_return_pct + '%'
+                <td class="${eCls}">${benchmarkReturn !== null
+                    ? (benchmarkReturn >= 0 ? '+' : '') + benchmarkReturn + '%'
                     : '-'}</td>
             </tr>`;
         }

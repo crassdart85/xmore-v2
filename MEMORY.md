@@ -5,6 +5,21 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 
 **Last Updated**: March 25, 2026
 
+## Mar 25, 2026 - KSA Time Machine UI Alignment
+- Fixed KSA Time Machine user-facing leakage where the UI was still exposing EGX-era wording and benchmark field names.
+- Updated KSA Time Machine UI in:
+  - `web-ui/public/app.js`
+  - `web-ui/public/timemachine.js`
+  - `web-ui/routes/timemachine.js`
+  - `engines/timemachine.py`
+- Changes:
+  - investment amount labels and validation copy now use `SAR` / `ريال`
+  - Time Machine subtitle keeps TASI framing without user-visible EGX wording
+  - frontend now normalizes legacy benchmark payload fields like `egx30_value` / `egx30_return_pct` into a benchmark/TASI view before rendering charts and tables
+  - simulation validation and server-side logs now refer to SAR instead of EGP
+- Operational rule:
+  - for KSA deployment UI, payload compatibility with legacy field names is acceptable internally, but user-visible labels must always present TASI/SAR terminology
+
 ## Mar 25, 2026 - KSA Track Record Route + API Alignment
 - Found that the KSA deployment was serving the generic `/track-record` page, which is wired to EGX endpoints and showed EGX data on `xmore-ksa.onrender.com`.
 - Fixed KSA track record routing and data wiring:

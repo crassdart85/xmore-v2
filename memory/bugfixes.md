@@ -2,6 +2,21 @@
 
 ## Mar 25, 2026
 
+### KSA Time Machine UI still exposing EGX-era wording and field names
+- **Error**:
+  - Time Machine on KSA still showed `Investment Amount (EGP)` and EGP validation text
+  - rendered benchmark logic still consumed legacy `egx30_*` payload fields directly
+- **Cause**:
+  - KSA dashboard reused a partially ported Time Machine frontend
+  - backend simulation payload still exposes legacy EGX-shaped benchmark keys
+- **Fix**:
+  - updated KSA translation strings to `SAR` / `ريال`
+  - normalized legacy benchmark payload fields into generic benchmark/TASI values before chart and table rendering
+  - updated Time Machine route validation copy and Python log wording to SAR
+- **Pattern**:
+  - when reusing a cross-market feature, separate payload compatibility from rendered UX
+  - legacy API field names can be shimmed in the frontend, but market-specific text must be corrected explicitly
+
 ### KSA deployment `/track-record` serving EGX data
 - **Error**:
   - `https://xmore-ksa.onrender.com/track-record` displayed EGX track-record content and `.CA` symbols
