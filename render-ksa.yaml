@@ -3,8 +3,8 @@ services:
   - type: web
     name: xmore-ksa-dashboard
     env: node
-    buildCommand: cd web-ui && npm install
-    startCommand: node web-ui/init-db-ksa.js && node web-ui/server.js
+    buildCommand: cd web-ui && npm install && node init-db-ksa.js
+    startCommand: node web-ui/server.js
     envVars:
       - key: DATABASE_URL
         fromDatabase:
