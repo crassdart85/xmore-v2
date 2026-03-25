@@ -57,6 +57,7 @@ router.get('/track-record/summary', async (req, res) => {
                    alpha_1d, recommendation_date
             FROM trade_recommendations
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             ORDER BY recommendation_date ASC
@@ -100,6 +101,7 @@ router.get('/track-record/equity-curve', async (req, res) => {
             SELECT recommendation_date, actual_next_day_return, benchmark_1d_return
             FROM trade_recommendations
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             ORDER BY recommendation_date ASC
@@ -139,6 +141,7 @@ router.get('/track-record/agent-breakdown', async (req, res) => {
                    AVG(actual_next_day_return) AS avg_return
             FROM trade_recommendations
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             GROUP BY agent_name
@@ -169,7 +172,7 @@ router.get('/track-record/predictions', async (req, res) => {
     try {
         const countRow = await dbGet(`
             SELECT COUNT(*) AS cnt FROM trade_recommendations
-            WHERE market_id = 'KSA' AND ${simFilter()}
+            WHERE market_id = 'KSA' AND symbol LIKE '%.SR' AND ${simFilter()}
         `);
         const total = Number(countRow?.cnt || 0);
 
@@ -179,6 +182,7 @@ router.get('/track-record/predictions', async (req, res) => {
                    xmore_score, conviction, notes
             FROM trade_recommendations
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND ${simFilter()}
             ORDER BY recommendation_date DESC
             LIMIT ${ph(1)} OFFSET ${ph(2)}
@@ -209,6 +213,7 @@ router.get('/track-record/signals/batch', async (req, res) => {
                    bull_score, bear_score, agent_agreement
             FROM consensus_results
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND id IN (${placeholders})
         `, ids);
         res.json({ signals: rows });

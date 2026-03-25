@@ -36,7 +36,7 @@ function boolTrue()   { return isPostgres ? 'TRUE' : '1'; }
 function boolFalse()  { return isPostgres ? 'FALSE' : '0'; }
 function marketFilter(alias = '') {
     const p = alias ? `${alias}.` : '';
-    return `${p}market_id = 'KSA'`;
+    return `${p}market_id = 'KSA' AND ${p}symbol LIKE '%.SR'`;
 }
 
 // Filters applied to every data query on this page

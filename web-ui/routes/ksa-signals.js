@@ -37,6 +37,7 @@ router.get('/signals/latest', async (req, res) => {
                    drivers_json, risk_level, expected_move, signal_label, liquidity_score
             FROM consensus_results
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
             ORDER BY timestamp DESC
             LIMIT 20
         `);
@@ -65,6 +66,7 @@ router.get('/signals/today', async (req, res) => {
                    signal_label, liquidity_score
             FROM consensus_results
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND ${dateClause}
             ORDER BY xmore_score DESC
         `);
@@ -87,6 +89,7 @@ router.get('/performance/summary', async (req, res) => {
                    alpha_1d, recommendation_date
             FROM trade_recommendations
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             ORDER BY recommendation_date ASC
