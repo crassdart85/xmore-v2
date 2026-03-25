@@ -126,22 +126,58 @@ if (DATABASE_URL) {
   const { Pool } = require('pg');
   const pool = new Pool({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
+  function queryRows(query, params = []) {
+    return pool.query(query, params).then(result => result.rows);
+  }
+
+  function queryRow(query, params = []) {
+    return pool.query(query, params).then(result => result.rows[0] || null);
+  }
+
+  function queryRun(query, params = []) {
+    return pool.query(query, params);
+  }
+
   db = {
     _isPostgres: true,
     all: (query, params, callback) => {
-      pool.query(query, params)
-        .then(result => callback(null, result.rows))
-        .catch(err => callback(err));
+      if (typeof params === 'function') {
+        callback = params;
+        params = [];
+      }
+      if (typeof callback === 'function') {
+        queryRows(query, params)
+          .then(rows => callback(null, rows))
+          .catch(err => callback(err));
+        return;
+      }
+      return queryRows(query, params);
     },
     get: (query, params, callback) => {
-      pool.query(query, params)
-        .then(result => callback(null, result.rows[0] || null))
-        .catch(err => callback(err));
+      if (typeof params === 'function') {
+        callback = params;
+        params = [];
+      }
+      if (typeof callback === 'function') {
+        queryRow(query, params)
+          .then(row => callback(null, row))
+          .catch(err => callback(err));
+        return;
+      }
+      return queryRow(query, params);
     },
     run: (query, params, callback) => {
-      pool.query(query, params)
-        .then(result => callback(null, result))
-        .catch(err => callback(err));
+      if (typeof params === 'function') {
+        callback = params;
+        params = [];
+      }
+      if (typeof callback === 'function') {
+        queryRun(query, params)
+          .then(result => callback(null, result))
+          .catch(err => callback(err));
+        return;
+      }
+      return queryRun(query, params);
     }
   };
 
@@ -168,9 +204,45 @@ if (DATABASE_URL) {
 
     db = {
       _isPostgres: false,
-      all: (query, params, callback) => sqliteDb.all(query, params, callback),
-      get: (query, params, callback) => sqliteDb.get(query, params, callback),
-      run: (query, params, callback) => sqliteDb.run(query, params, callback)
+      all: (query, params, callback) => {
+        if (typeof params === 'function') {
+          callback = params;
+          params = [];
+        }
+        if (typeof callback === 'function') {
+          return sqliteDb.all(query, params, callback);
+        }
+        return new Promise((resolve, reject) => {
+          sqliteDb.all(query, params, (err, rows) => err ? reject(err) : resolve(rows || []));
+        });
+      },
+      get: (query, params, callback) => {
+        if (typeof params === 'function') {
+          callback = params;
+          params = [];
+        }
+        if (typeof callback === 'function') {
+          return sqliteDb.get(query, params, callback);
+        }
+        return new Promise((resolve, reject) => {
+          sqliteDb.get(query, params, (err, row) => err ? reject(err) : resolve(row || null));
+        });
+      },
+      run: (query, params, callback) => {
+        if (typeof params === 'function') {
+          callback = params;
+          params = [];
+        }
+        if (typeof callback === 'function') {
+          return sqliteDb.run(query, params, callback);
+        }
+        return new Promise((resolve, reject) => {
+          sqliteDb.run(query, params, function onRun(err) {
+            if (err) reject(err);
+            else resolve(this);
+          });
+        });
+      }
     };
   } catch (err) {
     console.warn('âš ï¸  SQLite not available (this is normal on Render). Using PostgreSQL only.');

@@ -2,6 +2,42 @@
 
 ## Mar 25, 2026
 
+### KSA production crash from callback-only DB adapter
+- **Error**:
+  - Render logs showed:
+    - `TypeError: Cannot read properties of undefined (reading 'length')`
+    - followed by `TypeError: callback is not a function` in `web-ui/server.js`
+- **Cause**:
+  - the shared DB adapter in `web-ui/server.js` only supported callback-style calls
+  - some KSA routes and services used promise-style `await db.all(...)` / `await db.get(...)`
+  - under PostgreSQL, that caused the adapter to call an undefined callback and crash the process
+- **Fix**:
+  - upgraded the DB adapter to support both callback and promise usage in PostgreSQL and SQLite modes
+  - this also covers KSA routes that still use direct promise-style access, such as DCF handlers
+- **Pattern**:
+  - in this repo, route code already mixes callback and async/await styles; the adapter must tolerate both instead of assuming one convention
+
+### KSA init-db warnings from missing `market_id` on shared tables
+- **Error**:
+  - init logs showed repeated warnings like `DDL skipped: column "market_id" does not exist`
+- **Cause**:
+  - some shared tables can already exist from older schema versions without `market_id`
+  - KSA startup then tried to create indexes on `market_id`
+- **Fix**:
+  - `web-ui/init-db-ksa.js` now runs `ALTER TABLE ... ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'` before creating those indexes
+- **Pattern**:
+  - when a branch overlays market partitioning onto shared tables, add idempotent backfill migrations before creating market-specific indexes
+
+### Missing `JWT_SECRET` causing restart-driven session invalidation
+- **Error**:
+  - production boot used an ephemeral random fallback secret when `JWT_SECRET` was missing
+- **Cause**:
+  - auth middleware generated a new random secret on every restart
+- **Fix**:
+  - production fallback is now stable-derived from deployment-specific env inputs, so restarts no longer rotate the fallback secret
+- **Pattern**:
+  - explicit `JWT_SECRET` is still preferred, but production fallbacks should be stable if the app must continue booting
+
 ### KSA Time Machine UI still exposing EGX-era wording and field names
 - **Error**:
   - Time Machine on KSA still showed `Investment Amount (EGP)` and EGP validation text

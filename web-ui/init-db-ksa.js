@@ -39,6 +39,19 @@ async function safeCreateIndex(db, sql) {
   }
 }
 
+async function safeExec(db, sql) {
+  try {
+    await db.query('BEGIN');
+    await db.query("SET LOCAL lock_timeout = '5s'");
+    await db.query('SET LOCAL statement_timeout = 0');
+    await db.query(sql);
+    await db.query('COMMIT');
+  } catch (e) {
+    try { await db.query('ROLLBACK'); } catch (_) {}
+    console.warn(`âš ï¸  DDL skipped: ${e.message.split('\n')[0]}`);
+  }
+}
+
 async function initializeDatabase() {
   console.log('🔧 Initializing KSA PostgreSQL database (Tadawul)...');
 
@@ -89,6 +102,7 @@ async function initializeDatabase() {
         created_at          TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_tr_ksa_symbol ON trade_recommendations(symbol, recommendation_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_tr_ksa_market ON trade_recommendations(market_id, recommendation_date DESC)');
 
@@ -105,6 +119,7 @@ async function initializeDatabase() {
         created_at  TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await safeExec(pool, `ALTER TABLE signals ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_signals_ksa ON signals(market_id, symbol, date DESC)');
 
     await pool.query(`
@@ -123,6 +138,7 @@ async function initializeDatabase() {
         created_at       TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await safeExec(pool, `ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_consensus_ksa ON consensus_results(market_id, symbol, date DESC)');
 
     await pool.query(`
@@ -141,6 +157,7 @@ async function initializeDatabase() {
         created_at       TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await safeExec(pool, `ALTER TABLE news ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_ksa ON news(market_id, date DESC)');
 
     await pool.query(`
@@ -156,6 +173,7 @@ async function initializeDatabase() {
         created_at       TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_regime_ksa ON regime_log(market_id, date DESC)');
 
     await pool.query(`
@@ -170,6 +188,7 @@ async function initializeDatabase() {
         UNIQUE(date, agent_name, market_id)
       )
     `);
+    await safeExec(pool, `ALTER TABLE agent_performance_daily ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
 
     // ── KSA-specific tables ───────────────────────────────────────────────
     console.log('📋 Creating KSA-specific tables...');

@@ -5,6 +5,20 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 
 **Last Updated**: March 25, 2026
 
+## Mar 25, 2026 - KSA Production Crash Hardening
+- Fixed a production crash class on the KSA deployment where the unified DB adapter in `web-ui/server.js` only supported callback-style usage, but several KSA routes were using `await db.all(...)` / `await db.get(...)`.
+- Hardened `web-ui/server.js` so both PostgreSQL and SQLite adapters now support:
+  - callback style: `db.all(query, params, cb)`
+  - promise style: `await db.all(query, params)`
+- This prevents `TypeError: callback is not a function` from crashing the process when a route uses promise-style access.
+- Also hardened:
+  - `web-ui/middleware/auth.js`
+    - production fallback secret is now stable-derived instead of ephemeral, so missing `JWT_SECRET` no longer invalidates sessions on every restart
+  - `web-ui/init-db-ksa.js`
+    - shared tables now backfill `market_id` with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` before creating KSA market-scoped indexes
+- Operational rule:
+  - the shared DB adapter must be treated as dual-mode going forward because the KSA codebase already mixes callback and async/await route styles
+
 ## Mar 25, 2026 - KSA Time Machine UI Alignment
 - Fixed KSA Time Machine user-facing leakage where the UI was still exposing EGX-era wording and benchmark field names.
 - Updated KSA Time Machine UI in:

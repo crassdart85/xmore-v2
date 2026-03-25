@@ -37,6 +37,17 @@
 - Takeaway:
   - KSA UI can tolerate backward-compatible payload names internally, but the rendered UX must remain market-correct
 
+## Mar 25, 2026 - KSA Production Crash Hardening
+- Root issue from Render logs:
+  - `TypeError: callback is not a function` in `web-ui/server.js`
+  - triggered when KSA routes used promise-style `await db.all(...)` against a callback-only DB adapter
+- Fixes applied:
+  - `web-ui/server.js` DB adapter now supports both callback and promise styles for `all/get/run` in PostgreSQL and SQLite modes
+  - `web-ui/init-db-ksa.js` now backfills missing `market_id` columns on shared tables before creating KSA market-scoped indexes
+  - `web-ui/middleware/auth.js` now uses a stable derived fallback secret in production if `JWT_SECRET` is missing
+- Takeaway:
+  - the KSA app already mixes route styles, so the DB adapter itself must be robust to both usage patterns
+
 ## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
 - Local checks passed on both branches:
   - frontend check
