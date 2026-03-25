@@ -344,5 +344,11 @@
   - Python compile checks on audit-touched engine/db/dashboard files passed.
   - `node --check` passed for performance/track-record/init-db JS files.
   - `python -m pytest tests/test_execution_realism.py -q` passed (`12 passed`).
+- KSA deployment routing is now root-native:
+  - `/` serves `ksa-dashboard.html`
+  - `/track-record` serves `ksa-track-record.html`
+  - the EGX market-switch button now goes to the separate EGX deployment host
+  - `/ksa` and `/ksa/track-record` now redirect to the root-native equivalents
+  - public KSA HTML links were updated to stop using `/ksa` as the canonical page prefix
 - Remaining known gap:
   - stop-loss/gap-through-stop lifecycle simulation is still not a full explicit backtest execution model.

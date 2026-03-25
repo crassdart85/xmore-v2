@@ -752,5 +752,11 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - `node --check web-ui/public/track-record.js`
   - `node --check web-ui/init-db.js`
   - `python -m pytest tests/test_execution_realism.py -q` -> `12 passed`
+- KSA deployment URL split corrected:
+  - `https://xmore-ksa.onrender.com/` is now the canonical KSA dashboard route
+  - `https://xmore-ksa.onrender.com/track-record` is now the canonical KSA track-record route
+  - KSA market switcher now points the EGX button to `https://xmore-project.onrender.com/`
+  - legacy `/ksa` and `/ksa/track-record` paths remain only as redirects for compatibility
+  - updated `web-ui/server.js`, `web-ui/public/ksa-dashboard.html`, and `web-ui/public/ksa-track-record.html`
 - Remaining audit gap:
   - backtests are now materially friction-aware, but they still do not simulate the full stop-loss lifecycle with explicit gap-through-stop execution behavior end-to-end.

@@ -1635,20 +1635,20 @@ app.get('/landing', (req, res) => {
 });
 
 app.get('/track-record', (req, res) => {
-  res.redirect(302, '/ksa/track-record');
+  res.sendFile(path.join(__dirname, 'public', 'ksa-track-record.html'));
 });
 
-// Root redirect → KSA dashboard (this is the KSA deployment)
+// Root serves the KSA dashboard directly on the KSA deployment.
 app.get('/', (req, res) => {
-  res.redirect(301, '/ksa');
-});
-
-// KSA pages
-app.get('/ksa', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ksa-dashboard.html'));
 });
+
+// Legacy KSA-prefixed routes redirect to the root-native paths.
+app.get('/ksa', (req, res) => {
+  res.redirect(301, '/');
+});
 app.get('/ksa/track-record', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'ksa-track-record.html'));
+  res.redirect(301, '/track-record');
 });
 
 app.use((err, req, res, next) => {

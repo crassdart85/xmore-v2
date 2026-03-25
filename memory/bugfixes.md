@@ -185,3 +185,15 @@
   3) docs fallback localStorage('docs-lang')
   4) document language / browser fallback
 - **Result**: Arabic docs now open RTL automatically and remain synced with site language.
+
+## Mar 25, 2026
+### KSA deployment incorrectly used `/ksa` as the public UI prefix
+- **Symptom**: `https://xmore-ksa.onrender.com/` redirected to `/ksa`, and `/track-record` redirected to `/ksa/track-record`, which made the KSA deployment look like a namespaced sub-app instead of its own root site.
+- **Cause**: `web-ui/server.js` kept KSA pages behind compatibility redirects that were appropriate for a shared host, but wrong for the dedicated KSA deployment.
+- **Fix**:
+  - `/` now serves `ksa-dashboard.html` directly
+  - `/track-record` now serves `ksa-track-record.html` directly
+  - the EGX market-switch links on KSA pages now point to `https://xmore-project.onrender.com/`
+  - `/ksa` and `/ksa/track-record` now redirect back to the root-native URLs
+  - `web-ui/public/ksa-dashboard.html` and `web-ui/public/ksa-track-record.html` links were updated to use `/` and `/track-record`
+- **Verification**: `node --check web-ui/server.js`, `node --check web-ui/public/ksa-dashboard.js`, and `node --check web-ui/public/ksa-track-record.js` all passed locally.
