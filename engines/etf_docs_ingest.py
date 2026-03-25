@@ -81,12 +81,12 @@ def _get_instrument_id(conn, ticker: str, exchange: str):
     is_pg = bool(os.getenv('DATABASE_URL'))
     ph = '%s' if is_pg else '?'
     cur = conn.cursor()
-    cur.execute(_adapt_sql(f"SELECT {'instrument_id' if is_pg else 'id'} FROM instrument WHERE exchange={ph} AND symbol={ph}"),
+    cur.execute(_adapt_sql(f"SELECT id FROM instrument WHERE exchange={ph} AND symbol={ph}"),
                 (exchange, ticker))
     row = cur.fetchone()
     if row is None:
         return None
-    return row[0] if not hasattr(row, 'keys') else (row.get('instrument_id') or row.get('id'))
+    return row[0] if not hasattr(row, 'keys') else row.get('id')
 
 
 def _upsert_doc(conn, is_pg: bool, doc: dict, instrument_id, content_hash: str | None,
@@ -103,11 +103,13 @@ def _upsert_doc(conn, is_pg: bool, doc: dict, instrument_id, content_hash: str |
               content_hash = EXCLUDED.content_hash,
               storage_uri  = EXCLUDED.storage_uri,
               fetched_at   = NOW()
-            RETURNING doc_id
+            RETURNING id
         """, (instrument_id, doc['doc_type'], doc['title'], doc.get('publisher'),
               doc.get('language', 'en'), doc['url'], content_hash, storage_uri))
         row = cur.fetchone()
-        return row[0] if row else None
+        if row is None:
+            return None
+        return row[0] if not hasattr(row, 'keys') else row.get('id')
     else:
         cur.execute(f"""
             INSERT OR REPLACE INTO rag_document
@@ -126,7 +128,7 @@ def _enqueue_embedding(conn, is_pg: bool, doc_id: int):
     cur = conn.cursor()
     # Only enqueue if no PENDING/RUNNING job already exists
     cur.execute(_adapt_sql(
-        f"SELECT {'job_id' if is_pg else 'id'} FROM rag_embedding_job "
+        f"SELECT id FROM rag_embedding_job "
         f"WHERE doc_id={ph} AND status IN ('PENDING','RUNNING')"
     ), (doc_id,))
     if cur.fetchone():
@@ -146,7 +148,7 @@ def run():
 
     with get_connection() as conn:
         cur = conn.cursor()
-        doc_pk = 'doc_id' if is_pg else 'id'
+        doc_pk = 'id'
         cur.execute(_adapt_sql(
             f"SELECT {doc_pk} AS id, url, title, doc_type FROM rag_document WHERE fetched_at IS NULL"
         ))

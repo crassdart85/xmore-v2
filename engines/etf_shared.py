@@ -160,10 +160,12 @@ def get_or_create_instrument(conn, symbol: str, exchange: str, defaults: Optiona
                                END,
                   issuer     = COALESCE(EXCLUDED.issuer, instrument.issuer),
                   updated_at = EXCLUDED.updated_at
-            RETURNING instrument_id
+            RETURNING id
         """, (type_, region, symbol, isin, name, exchange, currency, country, issuer, underlying_index, today))
         row = cur.fetchone()
-        return row['instrument_id'] if row else None
+        if row is None:
+            return None
+        return row['id'] if hasattr(row, 'keys') else row[0]
     else:
         cur.execute(f"""
             INSERT OR IGNORE INTO instrument

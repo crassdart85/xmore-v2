@@ -13,9 +13,11 @@ import os
 from datetime import datetime, date
 from typing import Dict, Any, List, Optional
 
+from database import is_postgres, sql_bool
+
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = is_postgres()
 
 # Sector rotation scoring constants
 # Volatility (daily std of returns) is typically ~0.01–0.05; multiplying by 100
@@ -26,7 +28,7 @@ MAX_VOLATILITY_PENALTY = 5.0
 
 def _ph(n: int) -> str:
     """Return the correct placeholder for the active DB backend."""
-    return f"${n}" if DATABASE_URL else "?"
+    return "%s" if DATABASE_URL else "?"
 
 
 def _conviction_to_score(conviction: Optional[str]) -> float:
@@ -420,7 +422,7 @@ def get_ranked_signals(conn, signal_date: Optional[str] = None, limit: int = 30)
     # Win rate from last 20 evaluated predictions per symbol
     win_rate_subquery = """
         SELECT symbol,
-               CAST(SUM(CASE WHEN was_correct = 1 THEN 1 ELSE 0 END) AS REAL)
+               CAST(SUM(CASE WHEN was_correct = {true_value} THEN 1 ELSE 0 END) AS REAL)
                    / NULLIF(COUNT(*), 0) AS recent_win_rate
         FROM (
             SELECT symbol, was_correct,
@@ -430,7 +432,7 @@ def get_ranked_signals(conn, signal_date: Optional[str] = None, limit: int = 30)
         ) ranked
         WHERE rn <= 20
         GROUP BY symbol
-    """
+    """.format(true_value=sql_bool(True))
 
     # Days since signal calculation
     days_old_expr = (

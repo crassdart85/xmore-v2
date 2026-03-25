@@ -14,9 +14,9 @@ Supports:
 import math
 import os
 from datetime import datetime, timezone
-from database import get_connection
+from database import get_connection, is_postgres, sql_bool, sql_days_ago
 
-DATABASE_URL = os.getenv('DATABASE_URL')
+DATABASE_URL = is_postgres()
 
 # EGX-correct risk parameters
 try:
@@ -96,18 +96,11 @@ def get_performance_summary(
             params.append(user_id)
 
         if live_only:
-            if DATABASE_URL:
-                conditions.append("tr.is_live = TRUE")
-                conditions.append("(tr.is_simulated = FALSE OR tr.is_simulated IS NULL)")
-            else:
-                conditions.append("(tr.is_live = 1 OR tr.is_live IS NULL)")
-                conditions.append("(tr.is_simulated = 0 OR tr.is_simulated IS NULL)")
+            conditions.append(f"(tr.is_live = {sql_bool(True)} OR tr.is_live IS NULL)")
+            conditions.append(f"(tr.is_simulated = {sql_bool(False)} OR tr.is_simulated IS NULL)")
 
         if days:
-            if DATABASE_URL:
-                conditions.append(f"tr.recommendation_date >= CURRENT_DATE - {_ph(len(params)+1)}::integer")
-            else:
-                conditions.append(f"tr.recommendation_date >= date('now', '-' || {_ph(len(params)+1)} || ' days')")
+            conditions.append(sql_days_ago("tr.recommendation_date", placeholder=_ph(len(params) + 1)))
             params.append(days)
 
         if action_filter:
@@ -399,11 +392,11 @@ def get_stock_performance(days: int = 90) -> list:
         cursor = conn.cursor()
 
         if DATABASE_URL:
-            live_filter = "tr.is_live = TRUE AND (tr.is_simulated = FALSE OR tr.is_simulated IS NULL)"
-            date_filter = "tr.recommendation_date >= CURRENT_DATE - %s"
+            live_filter = f"(tr.is_live = {sql_bool(True)} OR tr.is_live IS NULL) AND (tr.is_simulated = {sql_bool(False)} OR tr.is_simulated IS NULL)"
+            date_filter = sql_days_ago("tr.recommendation_date", placeholder="%s")
         else:
-            live_filter = "(tr.is_live = 1 OR tr.is_live IS NULL) AND (tr.is_simulated = 0 OR tr.is_simulated IS NULL)"
-            date_filter = "tr.recommendation_date >= date('now', '-' || ? || ' days')"
+            live_filter = f"(tr.is_live = {sql_bool(True)} OR tr.is_live IS NULL) AND (tr.is_simulated = {sql_bool(False)} OR tr.is_simulated IS NULL)"
+            date_filter = sql_days_ago("tr.recommendation_date", placeholder="?")
 
         # Try joining with egx30_stocks for names; fallback if table not available
         try:
@@ -411,10 +404,10 @@ def get_stock_performance(days: int = 90) -> list:
                 SELECT
                     tr.symbol, s.name_en, s.sector_en,
                     COUNT(*) AS total_recs,
-                    SUM(CASE WHEN tr.was_correct = {'TRUE' if DATABASE_URL else '1'} THEN 1 ELSE 0 END) AS correct,
+                    SUM(CASE WHEN tr.was_correct = {sql_bool(True)} THEN 1 ELSE 0 END) AS correct,
                     {'ROUND(AVG(tr.actual_next_day_return)::numeric, 3)' if DATABASE_URL else 'ROUND(AVG(tr.actual_next_day_return), 3)'} AS avg_return,
                     {'ROUND(AVG(tr.alpha_1d)::numeric, 3)' if DATABASE_URL else 'ROUND(AVG(tr.alpha_1d), 3)'} AS avg_alpha,
-                    {'ROUND((SUM(CASE WHEN tr.was_correct = TRUE THEN 1 ELSE 0 END))::numeric / NULLIF(COUNT(*), 0) * 100, 1)' if DATABASE_URL else 'ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 1)'} AS win_rate
+                    {'ROUND((SUM(CASE WHEN tr.was_correct = TRUE THEN 1 ELSE 0 END))::numeric / NULLIF(COUNT(*), 0) * 100, 1)' if DATABASE_URL else 'ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0) * 100, 1)'} AS win_rate
                 FROM trade_recommendations tr
                 LEFT JOIN egx30_stocks s ON tr.symbol = s.symbol
                 WHERE tr.was_correct IS NOT NULL
@@ -446,13 +439,13 @@ def get_equity_curve(user_id: int = None, days: int = 180) -> dict:
         params = []
 
         if DATABASE_URL:
-            conditions.append("tr.is_live = TRUE")
-            conditions.append("(tr.is_simulated = FALSE OR tr.is_simulated IS NULL)")
-            conditions.append(f"tr.recommendation_date >= CURRENT_DATE - {_ph(1)}::integer")
+            conditions.append(f"(tr.is_live = {sql_bool(True)} OR tr.is_live IS NULL)")
+            conditions.append(f"(tr.is_simulated = {sql_bool(False)} OR tr.is_simulated IS NULL)")
+            conditions.append(sql_days_ago("tr.recommendation_date", placeholder=_ph(1)))
         else:
-            conditions.append("(tr.is_live = 1 OR tr.is_live IS NULL)")
-            conditions.append("(tr.is_simulated = 0 OR tr.is_simulated IS NULL)")
-            conditions.append(f"tr.recommendation_date >= date('now', '-' || {_ph(1)} || ' days')")
+            conditions.append(f"(tr.is_live = {sql_bool(True)} OR tr.is_live IS NULL)")
+            conditions.append(f"(tr.is_simulated = {sql_bool(False)} OR tr.is_simulated IS NULL)")
+            conditions.append(sql_days_ago("tr.recommendation_date", placeholder=_ph(1)))
         params.append(days)
 
         if user_id:
@@ -712,20 +705,20 @@ def generate_full_metrics_report(db_connection, days: int = 90) -> dict:
     cursor = db_connection.cursor()
 
     if DATABASE_URL:
-        date_filter = f"recommendation_date >= CURRENT_DATE - {days}"
-        live_filter = "(is_live = TRUE OR is_live IS NULL)"
-        sim_filter  = "(is_simulated = FALSE OR is_simulated IS NULL)"
+        date_filter = sql_days_ago("recommendation_date", days=days)
+        live_filter = f"(is_live = {sql_bool(True)} OR is_live IS NULL)"
+        sim_filter  = f"(is_simulated = {sql_bool(False)} OR is_simulated IS NULL)"
     else:
-        date_filter = f"recommendation_date >= date('now', '-{days} days')"
-        live_filter = "(is_live = 1 OR is_live IS NULL)"
-        sim_filter  = "(is_simulated = 0 OR is_simulated IS NULL)"
+        date_filter = sql_days_ago("recommendation_date", days=days)
+        live_filter = f"(is_live = {sql_bool(True)} OR is_live IS NULL)"
+        sim_filter  = f"(is_simulated = {sql_bool(False)} OR is_simulated IS NULL)"
 
     # Count live vs simulated for data_transparency reporting
     try:
         cursor.execute(f"""
             SELECT
-                COUNT(*) FILTER (WHERE {sim_filter}) AS live_cnt,
-                COUNT(*) FILTER (WHERE is_simulated = {'TRUE' if DATABASE_URL else '1'}) AS sim_cnt,
+                SUM(CASE WHEN {sim_filter} THEN 1 ELSE 0 END) AS live_cnt,
+                SUM(CASE WHEN is_simulated = {sql_bool(True)} THEN 1 ELSE 0 END) AS sim_cnt,
                 MIN(CASE WHEN {sim_filter} THEN recommendation_date END) AS earliest_live
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
@@ -870,15 +863,15 @@ def get_execution_filter_stats(days: int = 30) -> dict:
         cursor = conn.cursor()
         ph = '%s' if DATABASE_URL else '?'
         if DATABASE_URL:
-            date_part = f"recommendation_date >= CURRENT_DATE - {ph}::integer"
-            approved_val = "TRUE"
-            blocked_val  = "FALSE"
-            split_val    = "TRUE"
+            date_part = sql_days_ago("recommendation_date", placeholder=ph)
+            approved_val = sql_bool(True)
+            blocked_val  = sql_bool(False)
+            split_val    = sql_bool(True)
         else:
-            date_part = f"recommendation_date >= date('now', '-' || {ph} || ' days')"
-            approved_val = "1"
-            blocked_val  = "0"
-            split_val    = "1"
+            date_part = sql_days_ago("recommendation_date", placeholder=ph)
+            approved_val = sql_bool(True)
+            blocked_val  = sql_bool(False)
+            split_val    = sql_bool(True)
         try:
             rows = _query(cursor, f"""
                 SELECT
