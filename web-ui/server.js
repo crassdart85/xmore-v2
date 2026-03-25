@@ -1131,7 +1131,7 @@ app.get('/api/consensus', (req, res) => {
          risk_adjusted, agent_agreement, agents_agreeing, agents_total,
          majority_direction, bull_score, bear_score, risk_action, risk_score,
          display_json, risk_assessment_json, calibration_meta_json, weight_profile_json,
-         drivers_json, risk_level, expected_move, enrichment_regime
+         drivers_json, risk_level, expected_move, enrichment_regime, signal_label, liquidity_score
        FROM consensus_results
        WHERE symbol LIKE '%.SR'
        ORDER BY symbol, prediction_date DESC`
@@ -1140,7 +1140,7 @@ app.get('/api/consensus', (req, res) => {
          c.risk_adjusted, c.agent_agreement, c.agents_agreeing, c.agents_total,
          c.majority_direction, c.bull_score, c.bear_score, c.risk_action, c.risk_score,
          c.display_json, c.risk_assessment_json, c.calibration_meta_json, c.weight_profile_json,
-         c.drivers_json, c.risk_level, c.expected_move, c.enrichment_regime
+         c.drivers_json, c.risk_level, c.expected_move, c.enrichment_regime, c.signal_label, c.liquidity_score
        FROM consensus_results c
        INNER JOIN (
          SELECT symbol, MAX(prediction_date) as max_date
@@ -1203,7 +1203,7 @@ app.get('/api/consensus/:symbol', (req, res) => {
       bull_case_json, bear_case_json, risk_assessment_json,
       agent_signals_json, reasoning_chain_json, display_json,
       calibration_meta_json, weight_profile_json,
-      drivers_json, risk_level, expected_move, enrichment_regime
+      drivers_json, risk_level, expected_move, enrichment_regime, signal_label, liquidity_score
     FROM consensus_results
     WHERE symbol = ${placeholder}
     ORDER BY prediction_date DESC

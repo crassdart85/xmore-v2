@@ -34,7 +34,7 @@ router.get('/signals/latest', async (req, res) => {
         const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, confidence,
                    bull_score, bear_score, agent_agreement, timestamp,
-                   drivers_json, risk_level, expected_move
+                   drivers_json, risk_level, expected_move, signal_label, liquidity_score
             FROM consensus_results
             WHERE market_id = 'KSA'
             ORDER BY timestamp DESC
@@ -61,7 +61,8 @@ router.get('/signals/today', async (req, res) => {
         const rows = await dbAll(`
             SELECT symbol, final_signal, conviction, xmore_score, confidence,
                    bull_score, bear_score, agent_agreement, timestamp,
-                   drivers_json, risk_level, expected_move, regime_flag
+                   drivers_json, risk_level, expected_move, regime_flag,
+                   signal_label, liquidity_score
             FROM consensus_results
             WHERE market_id = 'KSA'
               AND ${dateClause}

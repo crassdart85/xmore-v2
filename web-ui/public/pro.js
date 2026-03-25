@@ -432,9 +432,10 @@ function renderMovers(prices, stocks, consensus) {
   const csMap = {};
   consensus.forEach(c => {
     csMap[c.symbol] = {
-      prediction:  c.final_signal || c.consensus_prediction || c.prediction,
-      confidence:  c.confidence,
-      xmore_score: c.xmore_score,
+      prediction:    c.final_signal || c.consensus_prediction || c.prediction,
+      confidence:    c.confidence,
+      xmore_score:   c.xmore_score,
+      signal_label:  c.signal_label || null,
     };
   });
 
@@ -468,12 +469,13 @@ function fillMoversTable(tableId, rows, csMap) {
     const conf   = cs.confidence ? parseFloat(cs.confidence).toFixed(0) + '%' : '—';
     const score  = cs.xmore_score != null ? parseFloat(cs.xmore_score).toFixed(0) : '—';
     const scoreCls = cs.xmore_score >= 70 ? 'green' : cs.xmore_score >= 45 ? '' : 'red';
+    const lblHtml = cs.signal_label ? `<span class="pro-signal-label">${escHtml(cs.signal_label)}</span>` : '';
 
     return `<tr>
       <td class="sym-cell">${escHtml(label)}</td>
       <td class="chg-cell">${escHtml(fmtClose(p.close))}</td>
       <td class="chg-cell ${chgCls}">${escHtml(fmtChg(p.change_pct))}</td>
-      <td class="sig-cell">${signalBadge(cs.prediction)}</td>
+      <td class="sig-cell">${signalBadge(cs.prediction)}${lblHtml}</td>
       <td class="conf-cell">${escHtml(conf)}</td>
       <td class="score-cell ${scoreCls}" title="Xmore Score">${escHtml(score)}</td>
     </tr>`;

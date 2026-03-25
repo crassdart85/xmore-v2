@@ -335,6 +335,23 @@ body {
 .pro-panel-note { font-size: 11px; color: var(--pro-muted); margin-left: 12px; }
 .score-cell { font-weight: 700; font-size: 13px; min-width: 46px; text-align: center; }
 
+/* Phase A: signal label pill in movers table */
+.pro-signal-label {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  background: rgba(102,126,234,0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(102,126,234,0.3);
+  margin-left: 4px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* ─── Macro brief panel ──────────────────────────────────────────────────── */
 .pro-macro-panel {
   background: var(--pro-surface);

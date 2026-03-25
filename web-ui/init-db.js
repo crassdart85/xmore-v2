@@ -249,11 +249,13 @@ async function initializeDatabase() {
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS weight_profile_json TEXT'); } catch (err) { /* already exists */ }
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibration_meta_json TEXT'); } catch (err) { /* already exists */ }
 
-    // Signal enrichment columns (drivers, risk_level, expected_move, enrichment_regime)
+    // Signal enrichment columns (drivers, risk_level, expected_move, enrichment_regime, signal_label, liquidity_score)
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS drivers_json TEXT'); } catch (err) { /* already exists */ }
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS risk_level TEXT'); } catch (err) { /* already exists */ }
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_move TEXT'); } catch (err) { /* already exists */ }
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS enrichment_regime TEXT'); } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS signal_label TEXT'); } catch (err) { /* already exists */ }
+    try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS liquidity_score TEXT'); } catch (err) { /* already exists */ }
 
     // Table: Backtest Results (walk-forward ML performance per symbol)
     await pool.query(`

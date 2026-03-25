@@ -286,6 +286,8 @@ def create_tables():
         _safe_add_column(cursor, "consensus_results", "risk_level", "TEXT")
         _safe_add_column(cursor, "consensus_results", "expected_move", "REAL")
         _safe_add_column(cursor, "consensus_results", "enrichment_regime", "TEXT")
+        _safe_add_column(cursor, "consensus_results", "signal_label", "TEXT")
+        _safe_add_column(cursor, "consensus_results", "liquidity_score", "TEXT")
 
         # Table: Backtest Results (walk-forward ML performance per symbol)
         cursor.execute(f"""

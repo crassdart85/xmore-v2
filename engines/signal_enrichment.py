@@ -324,6 +324,89 @@ def safe_expected_move(df: pd.DataFrame, signal: str) -> Optional[str]:
         return None
 
 
+# ─── Signal label ─────────────────────────────────────────────────────────────
+
+def generate_signal_label(signal: str, confidence, features: dict) -> str:
+    """
+    Map signal + feature state → a single human-readable label shown in the UI.
+
+    Labels are intentionally few (8) and mutually exclusive; the highest-priority
+    matching condition wins.
+
+    Returns one of:
+      BUY  → "Breakout Candidate" | "Accumulation Zone" | "Strong Momentum" | "Bullish Setup"
+      SELL → "Liquidity Trap"     | "High Risk Volatility" | "Distribution Zone" | "Bearish Setup"
+      HOLD → "Consolidation"      | "High Uncertainty"     | "Wait & Watch"
+    """
+    sig = (signal or "").upper().strip()
+    conf = float(confidence) if confidence is not None else 0.0
+    trend = features.get("trend_state", "sideways")
+    vol_beh = features.get("volume_behavior", "normal")
+    vol_lvl = features.get("volatility_level", "medium")
+    momentum = features.get("momentum_state", "neutral")
+
+    if sig == "BUY":
+        if vol_beh == "spike_buying" and trend == "uptrend":
+            return "Breakout Candidate"
+        if trend == "uptrend" and momentum in ("strong", "neutral") and vol_beh == "normal":
+            return "Accumulation Zone"
+        if momentum == "strong" and conf >= 0.75:
+            return "Strong Momentum"
+        return "Bullish Setup"
+
+    if sig == "SELL":
+        if trend == "downtrend" and vol_beh in ("spike_selling", "normal") and momentum == "weakening":
+            return "Liquidity Trap"
+        if vol_lvl == "high":
+            return "High Risk Volatility"
+        if vol_beh == "spike_selling":
+            return "Distribution Zone"
+        return "Bearish Setup"
+
+    # HOLD
+    if vol_lvl == "high":
+        return "High Uncertainty"
+    if vol_lvl == "low" and trend == "sideways":
+        return "Consolidation"
+    return "Wait & Watch"
+
+
+def compute_liquidity_score(df: pd.DataFrame, market_data: Optional[dict] = None) -> str:
+    """
+    Classify stock liquidity as "High" | "Medium" | "Low" based on
+    20-day average daily value traded (ADV = avg_volume × close_price).
+
+    Thresholds are calibrated for Tadawul (SAR-denominated):
+      High   : ADV > 50M SAR
+      Medium : 10M – 50M SAR
+      Low    : < 10M SAR
+    """
+    try:
+        adv_value = None
+        if market_data:
+            vol_avg = _safe_float(market_data.get("volume_20d_avg"))
+            close = _safe_float(market_data.get("close") or market_data.get("last_close"))
+            if vol_avg and close:
+                adv_value = vol_avg * close
+
+        if adv_value is None and df is not None and len(df) >= 5:
+            window = min(20, len(df))
+            avg_vol = _safe_float(df["volume"].iloc[-window:].mean())
+            last_close = _safe_float(df["close"].iloc[-1])
+            if avg_vol and last_close:
+                adv_value = avg_vol * last_close
+
+        if adv_value is None:
+            return "Unknown"
+        if adv_value > 50_000_000:
+            return "High"
+        if adv_value > 10_000_000:
+            return "Medium"
+        return "Low"
+    except Exception:
+        return "Unknown"
+
+
 # ─── Regime detection ─────────────────────────────────────────────────────────
 
 def detect_regime(features: dict) -> str:
@@ -359,6 +442,8 @@ def enrich_signal(consensus_result: dict, df: pd.DataFrame,
       expected_move      — str | None  e.g. "+2.1% to +4.3%", None if unavailable
       enrichment_regime  — str         "normal" | "high_volatility" | "low_liquidity"
       enrichment_features — dict       raw feature states (for debugging/API)
+      signal_label       — str         e.g. "Breakout Candidate", "Accumulation Zone"
+      liquidity_score    — str         "High" | "Medium" | "Low" | "Unknown"
 
     Never modifies: final_signal, confidence, conviction, or any pre-existing field.
     Falls back silently — pipeline always continues on failure.
@@ -370,6 +455,10 @@ def enrich_signal(consensus_result: dict, df: pd.DataFrame,
         consensus_result["expected_move"]       = safe_expected_move(df, signal)
         consensus_result["enrichment_regime"]   = detect_regime(features)
         consensus_result["enrichment_features"] = features
+        consensus_result["signal_label"]        = generate_signal_label(
+            signal, consensus_result.get("confidence"), features
+        )
+        consensus_result["liquidity_score"]     = compute_liquidity_score(df, market_data)
     except Exception as e:
         logger.warning(f"enrich_signal failed (non-fatal): {e}")
         consensus_result.setdefault("drivers",             ["Insufficient data for full analysis"])
@@ -377,6 +466,8 @@ def enrich_signal(consensus_result: dict, df: pd.DataFrame,
         consensus_result.setdefault("expected_move",       None)
         consensus_result.setdefault("enrichment_regime",   "normal")
         consensus_result.setdefault("enrichment_features", {})
+        consensus_result.setdefault("signal_label",        "—")
+        consensus_result.setdefault("liquidity_score",     "Unknown")
 
     return consensus_result
 

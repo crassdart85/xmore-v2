@@ -3182,6 +3182,13 @@ function renderConsensusCard(item) {
         riskBadgeText = '⚠️ FLAG';
     }
 
+    // Signal label + liquidity score (Phase A)
+    const signalLabel = item.signal_label || null;
+    const liquidityScore = item.liquidity_score || null;
+    const liquidityClass = liquidityScore === 'High' ? 'liq-high' : liquidityScore === 'Medium' ? 'liq-med' : liquidityScore === 'Low' ? 'liq-low' : 'liq-unknown';
+    const signalLabelBadge = signalLabel ? `<span class="signal-label-badge">${signalLabel}</span>` : '';
+    const liquidityBadge = liquidityScore && liquidityScore !== 'Unknown' ? `<span class="liquidity-badge ${liquidityClass}">${liquidityScore} Liq</span>` : '';
+
     return `
     <div class="consensus-card ${riskAction === 'BLOCK' ? 'consensus-card-blocked' : ''}">
         <div class="consensus-card-header">
@@ -3191,6 +3198,7 @@ function renderConsensusCard(item) {
             </div>
             <div class="consensus-card-signal">
                 <span class="consensus-signal-badge signal-${signalKey}">${signalText}</span>
+                ${signalLabelBadge}
                 ${riskAdjusted ? '<span class="risk-adjusted-badge" title="Risk-adjusted">⚠️</span>' : ''}
             </div>
         </div>
@@ -3211,6 +3219,7 @@ function renderConsensusCard(item) {
             <div class="consensus-edge-row">
                 <span class="consensus-edge-chip">${t('expectedEdgeLabel')}: ${expectedEdge.toFixed(2)}%</span>
                 <span class="consensus-calibration-text">${t('calibrationLabel')}: ${calibratedConfidence.toFixed(1)}%</span>
+                ${liquidityBadge}
             </div>
 
             <!-- Bull/Bear Bars -->
