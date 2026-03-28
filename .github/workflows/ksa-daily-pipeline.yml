@@ -19,6 +19,7 @@ on:
     - cron: '30 21 * * 0,1,2,3,4'               # nightly pipeline
     - cron: '0 0 * * 6'                          # weekly DCF (Saturday)
     - cron: '0 6,12,18 * * *'                    # catchup evaluation
+    - cron: '0 3 * * 6'                          # weekly DB cleanup (Saturday 03:00 UTC)
 
   workflow_dispatch:
     inputs:
@@ -376,3 +377,101 @@ jobs:
         run: |
           echo "=== KSA Catchup Evaluation ==="
           echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
+
+  # ── Job 7: Weekly DB cleanup ──────────────────────────────────────────────
+  ksa-weekly-cleanup:
+    if: github.event.schedule == '0 3 * * 6' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: xmore-ksa
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v4
+        with: { python-version: '3.11', cache: 'pip', cache-dependency-path: requirements.txt }
+
+      - run: pip install psycopg2-binary
+
+      - name: Purge stale consensus_results (> 120 days)
+        continue-on-error: true
+        run: |
+          python - <<'EOF'
+          import os, psycopg2
+          conn = psycopg2.connect(os.environ['DATABASE_URL'])
+          cur  = conn.cursor()
+          cur.execute("""
+            DELETE FROM consensus_results
+            WHERE market_id = 'KSA'
+              AND COALESCE(prediction_date, date) < CURRENT_DATE - INTERVAL '120 days'
+          """)
+          deleted = cur.rowcount
+          conn.commit()
+          cur.close(); conn.close()
+          print(f"[cleanup] consensus_results: deleted {deleted} rows older than 120 days")
+          EOF
+
+      - name: Purge stale news (> 90 days)
+        continue-on-error: true
+        run: |
+          python - <<'EOF'
+          import os, psycopg2
+          conn = psycopg2.connect(os.environ['DATABASE_URL'])
+          cur  = conn.cursor()
+          cur.execute("""
+            DELETE FROM news
+            WHERE market_id = 'KSA'
+              AND date < NOW() - INTERVAL '90 days'
+          """)
+          deleted = cur.rowcount
+          conn.commit()
+          cur.close(); conn.close()
+          print(f"[cleanup] news: deleted {deleted} rows older than 90 days")
+          EOF
+
+      - name: Purge triggered price_alerts (> 30 days)
+        continue-on-error: true
+        run: |
+          python - <<'EOF'
+          import os, psycopg2
+          conn = psycopg2.connect(os.environ['DATABASE_URL'])
+          cur  = conn.cursor()
+          cur.execute("""
+            DELETE FROM price_alerts
+            WHERE active = FALSE
+              AND triggered_at < NOW() - INTERVAL '30 days'
+          """)
+          deleted = cur.rowcount
+          conn.commit()
+          cur.close(); conn.close()
+          print(f"[cleanup] price_alerts: deleted {deleted} triggered rows older than 30 days")
+          EOF
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "=== KSA Weekly Cleanup ==="
+          echo "UTC: $(date -u '+%Y-%m-%d %H:%M:%S')"
+
+  # ── Job 8: Pipeline failure monitor ──────────────────────────────────────
+  ksa-failure-monitor:
+    needs: [ksa-post-market-pipeline, ksa-nightly-pipeline]
+    if: always() && (needs.ksa-post-market-pipeline.result == 'failure' || needs.ksa-nightly-pipeline.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Notify failure via Telegram
+        run: |
+          PM_RESULT="${{ needs.ksa-post-market-pipeline.result }}"
+          NP_RESULT="${{ needs.ksa-nightly-pipeline.result }}"
+          MSG="⚠️ *KSA Pipeline Failure*%0A"
+          MSG="${MSG}Post-market: ${PM_RESULT}%0A"
+          MSG="${MSG}Nightly: ${NP_RESULT}%0A"
+          MSG="${MSG}Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_ALERT_CHAT_ID }}" \
+            -d "text=${MSG}" \
+            -d "parse_mode=Markdown" || echo "Telegram notify skipped (token not configured)"

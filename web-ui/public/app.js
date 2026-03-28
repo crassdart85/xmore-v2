@@ -3377,8 +3377,13 @@ function _typeBadge(type) {
     return `<span class="etf-type-badge ${cls}">${label}</span>`;
 }
 function _etfClassify(i) {
-    const region = (i.region || '').toUpperCase();
-    if (region.includes('KSA') || region.includes('TADAWUL') || region.includes('SAR')) {
+    const region   = (i.region   || '').toUpperCase();
+    const exchange = (i.exchange || '').toUpperCase();
+    const currency = (i.currency || '').toUpperCase();
+    const isLocal  = region.includes('KSA') || region.includes('TADAWUL') || region.includes('SAUDI')
+                  || exchange === 'XSAU' || exchange === 'TADAWUL' || exchange.includes('SAUDI')
+                  || currency === 'SAR';
+    if (isLocal) {
         if (i.type === 'ETF') return 'etfs';
         if (_ETP_TYPES.has(i.type)) return 'etps';
         if (i.type === 'EQUITY_FUND') return 'equity-funds';

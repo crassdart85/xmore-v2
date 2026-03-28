@@ -539,9 +539,9 @@ def _run_consensus(
         cursor.execute(
             """
             INSERT INTO consensus_results
-                (symbol, signal_date, final_signal, conviction,
+                (symbol, prediction_date, date, final_signal, conviction,
                  xmore_score, market_id, signal_count, created_at)
-            VALUES (%s, CURRENT_DATE, %s, %s, %s, %s, %s, NOW())
+            VALUES (%s, CURRENT_DATE, CURRENT_DATE, %s, %s, %s, %s, %s, NOW())
             ON CONFLICT DO NOTHING
             """,
             (

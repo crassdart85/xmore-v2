@@ -146,7 +146,13 @@ async function initializeDatabase() {
       )
     `);
     await safeExec(pool, `ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
+    await safeExec(pool, `ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS prediction_date DATE`);
+    await safeExec(pool, `ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS conviction TEXT`);
+    await safeExec(pool, `ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS signal_count INTEGER`);
+    // Back-fill prediction_date from date for existing rows
+    await safeExec(pool, `UPDATE consensus_results SET prediction_date = date WHERE prediction_date IS NULL`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_consensus_ksa ON consensus_results(market_id, symbol, date DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_consensus_pred ON consensus_results(market_id, symbol, prediction_date DESC)');
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS news (
@@ -268,6 +274,21 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_events_ticker ON ksa_material_events(ticker, event_date DESC)');
 
     await pool.query(`
+      CREATE TABLE IF NOT EXISTS price_alerts (
+        id           SERIAL PRIMARY KEY,
+        user_id      INTEGER NOT NULL,
+        symbol       TEXT NOT NULL,
+        condition    TEXT NOT NULL CHECK (condition IN ('above','below')),
+        target_price NUMERIC(18,4) NOT NULL,
+        active       BOOLEAN DEFAULT TRUE,
+        triggered_at TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ DEFAULT NOW()
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_alerts_user ON price_alerts(user_id, active)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_alerts_symbol ON price_alerts(symbol, active)');
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS system_config (
         key        TEXT PRIMARY KEY,
         value      TEXT,
@@ -353,6 +374,71 @@ async function initializeDatabase() {
         sector_ar = EXCLUDED.sector_ar
     `);
     console.log('✅ Tadawul stocks seeded (51 companies)');
+
+    // ── RAG / knowledge-base tables ─────────────────────────────────────────
+    console.log('📚 Creating RAG knowledge-base tables...');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rag_document (
+        doc_id       BIGSERIAL PRIMARY KEY,
+        doc_type     TEXT NOT NULL DEFAULT 'knowledge',
+        title        TEXT NOT NULL,
+        publisher    TEXT,
+        language     TEXT DEFAULT 'en',
+        publish_date DATE,
+        url          TEXT NOT NULL DEFAULT '',
+        content_hash TEXT,
+        storage_uri  TEXT,
+        fetched_at   TIMESTAMPTZ,
+        ingested_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+        market_id    TEXT DEFAULT 'KSA',
+        UNIQUE(url, market_id)
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rag_embedding_job (
+        job_id        BIGSERIAL PRIMARY KEY,
+        doc_id        BIGINT NOT NULL REFERENCES rag_document(doc_id) ON DELETE CASCADE,
+        embed_model   TEXT NOT NULL DEFAULT 'text-embedding-005',
+        status        TEXT NOT NULL DEFAULT 'PENDING',
+        started_at    TIMESTAMPTZ,
+        finished_at   TIMESTAMPTZ,
+        error_message TEXT
+      )
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS rag_chunks (
+        chunk_id    BIGSERIAL PRIMARY KEY,
+        doc_id      BIGINT NOT NULL REFERENCES rag_document(doc_id) ON DELETE CASCADE,
+        chunk_index INTEGER NOT NULL,
+        chunk_text  TEXT NOT NULL,
+        embedding   vector(768),
+        market_id   TEXT DEFAULT 'KSA'
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_doc_market  ON rag_document(market_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc  ON rag_chunks(doc_id)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_job_status  ON rag_embedding_job(status)');
+
+    // Seed KSA knowledge-base entries (upsert on url+market_id)
+    const ksaDocs = [
+      { title: 'Saudi Exchange (Tadawul) Trading Rules Overview',        publisher: 'Tadawul', language: 'en', url: 'internal://ksa/tadawul-trading-rules', content_hash: 'ksa-001', content: `The Saudi Exchange (Tadawul) is the principal securities exchange in Saudi Arabia. Trading hours: 10:00–15:00 AST (UTC+3) Sunday to Thursday. The exchange is closed on Fridays and Saturdays and Saudi public holidays. The benchmark index is the Tadawul All Share Index (TASI). All securities are denominated in Saudi Riyal (SAR). Price movement limits: most equities have a daily move limit of ±10%. Settlement cycle: T+2. Short selling is permitted subject to CMA regulations. Foreign investors may hold up to 49% of most listed companies (Strategic 100% in some sectors with MISA approval). Minimum lot size: 1 share. Transaction costs include brokerage commission (~0.15–0.25%), CMA levy (0.0033%), Tadawul fee (0.0046%), plus 15% VAT on fees.` },
+      { title: 'SAMA Monetary Policy & SAR Peg', publisher: 'SAMA', language: 'en', url: 'internal://ksa/sama-monetary-policy', content_hash: 'ksa-002', content: `The Saudi Central Bank (SAMA) maintains the Saudi Riyal (SAR) peg to the US Dollar at a fixed rate of 3.75 SAR per USD (established 1986). Saudi Arabia does not conduct independent monetary policy; it mirrors US Federal Reserve decisions to maintain the peg. The key SAMA policy rate (repo rate) closely tracks the US Fed Funds rate. As of 2024–2025, the SAMA repo rate is approximately 5.5–6.0%. Saudi Arabia targets low inflation (~2–3%) supported by domestic fuel and utility subsidies. The country holds the world's largest official foreign exchange reserves after China and Japan (~$450 billion). Gold reserves are modest (~323 tonnes). Saudi Arabia is the world's largest crude oil exporter and OPEC's de facto leader; oil revenues dominate the fiscal budget.` },
+      { title: 'Saudi Vision 2030 & Market Structural Shifts',           publisher: 'PIF/MCI', language: 'en', url: 'internal://ksa/vision-2030-market', content_hash: 'ksa-003', content: `Saudi Vision 2030 targets reducing oil dependence: non-oil GDP contribution target 50%+ (up from ~40% in 2016). Key Vision 2030 sectors driving Tadawul listings: Tourism (NEOM, Red Sea, Diriyah), Logistics & Transport (KAEC, Riyadh Air), Healthcare & Pharma, Financial Services (fintech, insurance), Entertainment & Sports. The Public Investment Fund (PIF) is the sovereign wealth fund (~$900 billion AUM, target $2 trillion by 2030). PIF is both a direct investor and a driver of IPO activity on Tadawul. Saudi Aramco IPO (2019, 2022) at 8.5 trillion SAR market cap is the world's largest listed company. The Capital Market Authority (CMA) is the securities regulator. Tadawul introduced the Parallel Market (Nomu) for SME listings with lighter regulations.` },
+      { title: 'Tadawul Sector Breakdown & Key Stocks',                  publisher: 'Tadawul', language: 'en', url: 'internal://ksa/sector-breakdown', content_hash: 'ksa-004', content: `Tadawul main sectors by market cap: Energy (2222.SR Saudi Aramco — dominates at ~80% of total market cap), Petrochemicals (2010.SR SABIC), Banking (1180.SR Al Rajhi Bank, 1170.SR SNB, 1010.SR Riyad Bank, 1050.SR Saudi Fransi, 1060.SR SABB, 1080.SR Arab National Bank, 1150.SR Alinma), Telecom (7010.SR STC, 7020.SR Mobily), Real Estate (4020.SR Dar Al Arkan, 4100.SR Emaar EC), Insurance (8010.SR Tawuniya, 8020.SR BUPA Arabia), Healthcare (4002.SR Dallah, 4005.SR NMCC, 4007.SR Mouwasat), Retail (4190.SR Jarir, 4321.SR Al Othaim), Transportation (4031.SR Bahri). Banking sector average P/E: 15–18x. Energy sector (Aramco) average P/E: 14–17x. Market P/E at TASI level: approximately 18–22x. Dividend yields: Banking 3–5%, Energy (Aramco) ~3%.` },
+      { title: 'KSA Technical Analysis Context',                          publisher: 'Xmore', language: 'en', url: 'internal://ksa/technical-context', content_hash: 'ksa-005', content: `TASI (Tadawul All Share Index) base reference: ~12,000 points (2023 average). TASI 52-week range typically 10,500–13,500. Aramco (2222.SR) is the heaviest constituent (~80% weight) making TASI heavily correlated with oil prices and Saudi Aramco sentiment. Saudi banks (Al Rajhi, SNB, Riyad Bank) together contribute ~10–12% of TASI weight. Technical analysis works well on Tadawul liquid names (Aramco, Al Rajhi, SABIC, STC) with tight bid-ask spreads. Less liquid names (<1M SAR daily turnover) may exhibit false breakouts due to thin order books. ATR-based stops are effective: typical ATR for large-caps 0.5–1.5% daily, small-caps 1.5–3%. RSI overbought threshold 70, oversold 30 — same as global norms. Key support/resistance levels often align with round SAR numbers (e.g. 30 SAR, 50 SAR, 100 SAR for major stocks). Earnings seasons: quarterly, typically 1–2 weeks after quarter end. Ex-dividend dates affect price technically; dividend announcements can move stocks 2–5%.` },
+      { title: 'Shariah Compliance & Islamic Finance on Tadawul',         publisher: 'CMA', language: 'en', url: 'internal://ksa/shariah-compliance', content_hash: 'ksa-006', content: `Approximately 85–90% of Tadawul-listed companies are classified as Shariah-compliant by the major Islamic screening bodies (Tadawul/Fikra, AAOIFI, S&P Shariah). Shariah-compliant status excludes: interest-bearing financial institutions (conventional banks are generally non-compliant), companies deriving >5% revenue from prohibited activities (alcohol, pork, conventional insurance, weapons). Most Saudi banks are structured as fully Islamic banks (Al Rajhi, Alinma, Bank Albilad) or dual-window (SNB, Riyad Bank). The Saudi Tadawul provides a list of Shariah-compliant equities updated semi-annually. Shariah-compliant ETFs and sukuk are actively listed. Xmore system marks is_banking=true for Saudi bank stocks; analysts should consider Islamic finance metrics (Return on Islamic Assets, Murabaha margin) rather than NIM for these.` },
+    ];
+
+    for (const doc of ksaDocs) {
+      const { content, ...meta } = doc;
+      await pool.query(`
+        INSERT INTO rag_document (doc_type, title, publisher, language, url, content_hash, market_id, fetched_at)
+        VALUES ('knowledge', $1, $2, $3, $4, $5, 'KSA', NOW())
+        ON CONFLICT (url, market_id) DO NOTHING
+      `, [meta.title, meta.publisher, meta.language, meta.url, meta.content_hash]);
+    }
+    console.log('✅ KSA RAG knowledge-base seeded (6 documents)');
 
     console.log('\n✅ KSA database initialization complete!');
     console.log('📈 Market: Saudi Exchange (Tadawul) — تداول');
