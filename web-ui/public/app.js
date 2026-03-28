@@ -526,7 +526,7 @@ const TRANSLATIONS = {
 
         // Rates tab
         tabRates: 'Rates',
-        ratesBrief: 'Live USD/EGP exchange rate, gold prices, and 30-day history charts.',
+        ratesBrief: 'Live USD/SAR exchange rate, gold prices, and 30-day history charts.',
         ratesHistoryTitle: '30-Day History',
 
         // Alerts
@@ -545,15 +545,15 @@ const TRANSLATIONS = {
         compAgentsAgree: 'Agents Agree',
         compBullScore: 'Bull Score',
         compBearScore: 'Bear Score',
-        compPrice: 'Price (EGP)',
+        compPrice: 'Price (SAR)',
         compDayChange: 'Day Change',
         compVolume: 'Volume',
         compBrief: 'Market Brief',
 
         // Portfolio totals
-        ptlCostLabel: 'Invested (EGP)',
-        ptlValueLabel: 'Market Value (EGP)',
-        ptlPnlLabel: 'P&L (EGP)',
+        ptlCostLabel: 'Invested (SAR)',
+        ptlValueLabel: 'Market Value (SAR)',
+        ptlPnlLabel: 'P&L (SAR)',
         ptlRetLabel: 'Return %',
 
         // Multi-horizon
@@ -916,7 +916,7 @@ const TRANSLATIONS = {
 
         // Rates tab
         tabRates: 'الأسعار',
-        ratesBrief: 'سعر صرف الدولار/الجنيه وأسعار الذهب ورسوم بيانية لـ 30 يوم.',
+        ratesBrief: 'سعر صرف الدولار/ريال وأسعار الذهب ورسوم بيانية لـ 30 يوم.',
         ratesHistoryTitle: 'السجل - 30 يوم',
 
         // Alerts
@@ -935,15 +935,15 @@ const TRANSLATIONS = {
         compAgentsAgree: 'توافق الوكلاء',
         compBullScore: 'نقاط الصعود',
         compBearScore: 'نقاط الهبوط',
-        compPrice: 'السعر (جنيه)',
+        compPrice: 'السعر (ريال)',
         compDayChange: 'تغير اليوم',
         compVolume: 'الحجم',
         compBrief: 'ملخص ذكي',
 
         // Portfolio totals
-        ptlCostLabel: 'المستثمر (جنيه)',
-        ptlValueLabel: 'القيمة السوقية (جنيه)',
-        ptlPnlLabel: 'الربح/الخسارة (جنيه)',
+        ptlCostLabel: 'المستثمر (ريال)',
+        ptlValueLabel: 'القيمة السوقية (ريال)',
+        ptlPnlLabel: 'الربح/الخسارة (ريال)',
         ptlRetLabel: 'العائد %',
 
         // Multi-horizon
@@ -1306,7 +1306,7 @@ function getGlobalSearchItems() {
         { en: 'Results', ar: 'النتائج', target: 'results', aliases: 'evaluations actual realized outcomes backtest validation compare predicted actual تقييم تحقق نتائج فعلية مقارنة المتوقع الفعلي' },
         { en: 'Prices', ar: 'الأسعار', target: 'prices', aliases: 'market prices last price volume quote quotes tape feed سعر أسعار حجم تداول أسعار السوق' },
         { en: 'Time Machine', ar: 'آلة الزمن', target: 'timemachine', aliases: 'what if back in time historical simulate past future path investment timeline ماذا لو ماضي تاريخي محاكاة الاستثمار الجدول الزمني' },
-        { en: 'Rates', ar: 'الأسعار العالمية', target: 'rates', aliases: 'usd egp fx dollar gold 24k 21k 18k pound currency macro rates foreign exchange دولار جنيه ذهب 24 21 18 جنيه ذهب عملات فوركس ماكرو' },
+        { en: 'Rates', ar: 'الأسعار العالمية', target: 'rates', aliases: 'usd sar fx dollar gold 24k 21k currency macro rates foreign exchange دولار ريال ذهب 24 21 عملات فوركس ماكرو' },
         { en: 'ETFs', ar: 'صناديق الاستثمار', target: 'etf', aliases: 'ETF ETP exchange traded fund exchange-traded fund fund صندوق مؤشرات صناديق المؤشرات صناديق متداولة' },
     ].map(item => {
         const enLabel = item.en;
@@ -3377,11 +3377,14 @@ function _typeBadge(type) {
     return `<span class="etf-type-badge ${cls}">${label}</span>`;
 }
 function _etfClassify(i) {
-    if (!i.region || !i.region.includes('EGX')) return 'global-etfs';
-    if (i.type === 'ETF') return 'etfs';
-    if (_ETP_TYPES.has(i.type)) return 'etps';
-    if (i.type === 'EQUITY_FUND') return 'equity-funds';
-    return 'etps';
+    const region = (i.region || '').toUpperCase();
+    if (region.includes('KSA') || region.includes('TADAWUL') || region.includes('SAR')) {
+        if (i.type === 'ETF') return 'etfs';
+        if (_ETP_TYPES.has(i.type)) return 'etps';
+        if (i.type === 'EQUITY_FUND') return 'equity-funds';
+        return 'etps';
+    }
+    return 'global-etfs';
 }
 
 async function loadEtfTab() {
@@ -3452,7 +3455,6 @@ function _etfBuildCard(i, group) {
     const pctCls = _pctClass(i.pct_change);
 
     if (group === 'global-etfs') {
-        const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
         return `<div class="etf-card" onclick="showEtf${t('etfHoldings')}('${i.symbol}')">
             <div class="etf-card-header">
                 <div class="etf-card-symbol-row">
@@ -3462,7 +3464,6 @@ function _etfBuildCard(i, group) {
                 <span class="etf-exchange">${i.exchange || ''}</span>
             </div>
             <div class="etf-card-name" title="${i.name || ''}">${i.name || ''}</div>
-            <div class="etf-card-row"><span class="etf-label">${t('etfEgyptExposure')}</span><span class="etf-value">${egyptPct}</span></div>
             <div class="etf-card-row"><span class="etf-label">${t('etfPrice')}</span><span class="etf-value">${price}</span></div>
             <div class="etf-card-row"><span class="etf-label">${t('etfChange')}</span><span class="etf-value ${pctCls}">${pct}</span></div>
             <div class="etf-card-row"><span class="etf-label">${t('etfNav')}</span><span class="etf-value">${_fmtNum(i.nav_value)}</span></div>
@@ -3517,20 +3518,18 @@ function _etfBuildTable(instruments, group) {
     const cell = (label, html, cls) =>
         `<td data-label="${label}"${cls ? ` class="${cls}"` : ''}>${html}</td>`;
     if (group === 'global-etfs') {
-        headers = [t('mhSymbol'), t('etfName'), t('etfExchange'), t('etfEgyptExposure'), t('etfPrice'), t('etfChange'), t('etfNav'), t('etfPremDisc')];
+        headers = [t('mhSymbol'), t('etfName'), t('etfExchange'), t('etfPrice'), t('etfChange'), t('etfNav'), t('etfPremDisc')];
         rowFn = i => {
             const pct = _fmtPct(i.pct_change);
             const pctCls = _pctClass(i.pct_change);
-            const egyptPct = i.weight_pct != null ? parseFloat(i.weight_pct).toFixed(1) + '%' : '—';
             return `<tr onclick="showEtfHoldings('${i.symbol}')" style="cursor:pointer">
                 ${cell(headers[0], `<strong>${i.symbol}</strong>`)}
                 ${cell(headers[1], `<span style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;" title="${i.name||''}">${i.name||'—'}</span>`)}
                 ${cell(headers[2], i.exchange||'—', 'cell-muted')}
-                ${cell(headers[3], egyptPct)}
-                ${cell(headers[4], _fmtNum(i.close_price||i.last_price))}
-                ${cell(headers[5], pct, pctCls)}
-                ${cell(headers[6], _fmtNum(i.nav_value))}
-                ${cell(headers[7], _pdLabel(i.premium_discount), _pdClass(i.premium_discount))}
+                ${cell(headers[3], _fmtNum(i.close_price||i.last_price))}
+                ${cell(headers[4], pct, pctCls)}
+                ${cell(headers[5], _fmtNum(i.nav_value))}
+                ${cell(headers[6], _pdLabel(i.premium_discount), _pdClass(i.premium_discount))}
             </tr>`;
         };
     } else if (group === 'etps') {
@@ -3677,19 +3676,19 @@ function closeEtfModal() {
 }
 
 // ============================================================
-// PORTFOLIO — enhanced with EGP P&L + sector breakdown
+// PORTFOLIO — SAR P&L + sector breakdown
 // ============================================================
 
 function renderPortfolioTotals(totals) {
     const strip = document.getElementById('portfolioTotals');
     if (!strip || !totals) return;
-    const fmt = n => n != null ? Number(n).toLocaleString('en-EG', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—';
-    const pnl = totals.total_pnl_egp;
+    const fmt = n => n != null ? Number(n).toLocaleString('en-SA', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : '—';
+    const pnl = totals.total_pnl_sar;
     const ret = totals.total_return_pct;
-    document.getElementById('ptlCost').textContent = fmt(totals.total_cost_egp) + ' EGP';
-    document.getElementById('ptlValue').textContent = fmt(totals.total_value_egp) + ' EGP';
+    document.getElementById('ptlCost').textContent = fmt(totals.total_cost_sar) + ' SAR';
+    document.getElementById('ptlValue').textContent = fmt(totals.total_value_sar) + ' SAR';
     const pnlEl = document.getElementById('ptlPnl');
-    pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmt(pnl) + ' EGP';
+    pnlEl.textContent = (pnl >= 0 ? '+' : '') + fmt(pnl) + ' SAR';
     pnlEl.style.color = pnl >= 0 ? 'var(--bullish)' : 'var(--bearish)';
     const retEl = document.getElementById('ptlRet');
     retEl.textContent = (ret >= 0 ? '+' : '') + Number(ret).toFixed(2) + '%';
@@ -3893,28 +3892,23 @@ async function loadRatesTab() {
 
         // Live cards
         const rateItems = [
-            { label: 'USD / EGP', value: live.USD_EGP, key: 'usd_egp', icon: '💵' },
-            { label: 'Gold 24K / gram', value: live.GOLD_24K_EGP_G, key: 'gold_24k_egp_g', icon: '🥇', suffix: 'EGP' },
-            { label: 'Gold 21K / gram', value: live.GOLD_21K_EGP_G, key: 'gold_21k_egp_g', icon: '🏅', suffix: 'EGP' },
-            { label: 'Gold Pound', value: live.GOLD_POUND_EGP, key: 'gold_pound_egp', icon: '💰', suffix: 'EGP' },
-            { label: 'Gold 18K / gram', value: live.GOLD_18K_EGP_G, key: null, icon: '🔶', suffix: 'EGP' },
-            { label: 'USD / SAR', value: live.USD_SAR, key: null, icon: '🇸🇦' },
-            { label: 'SAR / EGP', value: live.SAR_EGP, key: null, icon: '↔️' },
+            { label: 'USD / SAR', value: live.USD_SAR, key: 'usd_sar', icon: '🇸🇦' },
+            { label: 'Gold 24K / gram', value: live.GOLD_24K_SAR_G, key: 'gold_24k_sar_g', icon: '🥇', suffix: 'SAR' },
+            { label: 'Gold 21K / gram', value: live.GOLD_21K_SAR_G, key: 'gold_21k_sar_g', icon: '🏅', suffix: 'SAR' },
         ];
         cardsEl.innerHTML = rateItems.filter(r => r.value != null).map(r => `
             <div class="rate-card">
                 <span class="rate-icon">${r.icon}</span>
                 <span class="rate-label">${r.label}</span>
-                <span class="rate-value">${parseFloat(r.value).toLocaleString('en-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${r.suffix ? ' ' + r.suffix : ''}</span>
+                <span class="rate-value">${parseFloat(r.value).toLocaleString('en-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${r.suffix ? ' ' + r.suffix : ''}</span>
             </div>`).join('');
 
         // History sparkline charts
         if (!chartsEl || !history.length) return;
         const sparkDefs = [
-            { label: 'USD/EGP Rate', key: 'usd_egp', color: '#3b82f6' },
-            { label: 'Gold 24K (EGP/g)', key: 'gold_24k_egp_g', color: '#f59e0b' },
-            { label: 'Gold 21K (EGP/g)', key: 'gold_21k_egp_g', color: '#d97706' },
-            { label: 'Gold Pound (EGP)', key: 'gold_pound_egp', color: '#b45309' },
+            { label: 'USD/SAR Rate', key: 'usd_sar', color: '#3b82f6' },
+            { label: 'Gold 24K (SAR/g)', key: 'gold_24k_sar_g', color: '#f59e0b' },
+            { label: 'Gold 21K (SAR/g)', key: 'gold_21k_sar_g', color: '#d97706' },
         ];
         chartsEl.innerHTML = sparkDefs.map(d => `
             <div class="rate-chart-card">

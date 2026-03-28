@@ -236,10 +236,10 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
             const ret = entry > 0 && current > 0
                 ? ((current - entry) / entry * 100).toFixed(2)
                 : 0;
-            const cost_egp = +(entry * qty).toFixed(2);
-            const value_egp = current > 0 ? +(current * qty).toFixed(2) : null;
-            const pnl_egp = value_egp != null ? +(value_egp - cost_egp).toFixed(2) : null;
-            return { ...p, quantity: qty, unrealized_return_pct: ret, cost_egp, value_egp, pnl_egp };
+            const cost_sar = +(entry * qty).toFixed(2);
+            const value_sar = current > 0 ? +(current * qty).toFixed(2) : null;
+            const pnl_sar = value_sar != null ? +(value_sar - cost_sar).toFixed(2) : null;
+            return { ...p, quantity: qty, unrealized_return_pct: ret, cost_sar, value_sar, pnl_sar };
         });
 
         // Closed positions
@@ -288,21 +288,21 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
         const avg_loss = losing.length > 0 ? losing.reduce((sum, p) => sum + (p.return_pct || 0), 0) / losing.length : 0;
 
         // Portfolio totals
-        const totalCostEgp = openPositions.reduce((s, p) => s + (p.cost_egp || 0), 0);
-        const totalValueEgp = openPositions.reduce((s, p) => s + (p.value_egp || p.cost_egp || 0), 0);
-        const totalPnlEgp = totalValueEgp - totalCostEgp;
-        const totalReturnPct = totalCostEgp > 0 ? +((totalPnlEgp / totalCostEgp) * 100).toFixed(2) : 0;
+        const totalCostSar = openPositions.reduce((s, p) => s + (p.cost_sar || 0), 0);
+        const totalValueSar = openPositions.reduce((s, p) => s + (p.value_sar || p.cost_sar || 0), 0);
+        const totalPnlSar = totalValueSar - totalCostSar;
+        const totalReturnPct = totalCostSar > 0 ? +((totalPnlSar / totalCostSar) * 100).toFixed(2) : 0;
 
-        // Sector breakdown (by cost_egp)
+        // Sector breakdown (by cost_sar)
         const sectorMap = {};
         for (const p of openPositions) {
             const sec = p.sector_en || 'Other';
-            sectorMap[sec] = (sectorMap[sec] || 0) + (p.cost_egp || 0);
+            sectorMap[sec] = (sectorMap[sec] || 0) + (p.cost_sar || 0);
         }
         const sector_breakdown = Object.entries(sectorMap)
             .map(([sector, cost]) => ({
                 sector,
-                weight_pct: totalCostEgp > 0 ? +((cost / totalCostEgp) * 100).toFixed(1) : 0
+                weight_pct: totalCostSar > 0 ? +((cost / totalCostSar) * 100).toFixed(1) : 0
             }))
             .sort((a, b) => b.weight_pct - a.weight_pct);
 
@@ -310,9 +310,9 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
             open_positions: openPositions,
             closed_positions: closedResult.rows,
             totals: {
-                total_cost_egp: +totalCostEgp.toFixed(2),
-                total_value_egp: +totalValueEgp.toFixed(2),
-                total_pnl_egp: +totalPnlEgp.toFixed(2),
+                total_cost_sar: +totalCostSar.toFixed(2),
+                total_value_sar: +totalValueSar.toFixed(2),
+                total_pnl_sar: +totalPnlSar.toFixed(2),
                 total_return_pct: totalReturnPct,
             },
             sector_breakdown,

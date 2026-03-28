@@ -370,7 +370,7 @@ function renderActionsToday(actions) {
                 <div class="action-card-name">${name}</div>
                 <div class="action-card-meta">
                     ${a.confidence}% · ${a.conviction || ''}
-                    ${a.close_price ? ` · EGP ${a.close_price.toFixed(2)}` : ''}
+                    ${a.close_price ? ` · SAR ${a.close_price.toFixed(2)}` : ''}
                 </div>
                 ${reason ? `<div class="action-card-reason">${reason}</div>` : ''}
             </div>

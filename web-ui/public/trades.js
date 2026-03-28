@@ -375,9 +375,9 @@ function renderPortfolio() {
                         <th>${tt('pt_entry_price')}</th>
                         <th>Qty</th>
                         <th>${tt('pt_current_price')}</th>
-                        <th>Cost (EGP)</th>
-                        <th>Value (EGP)</th>
-                        <th>P&amp;L (EGP)</th>
+                        <th>Cost (SAR)</th>
+                        <th>Value (SAR)</th>
+                        <th>P&amp;L (SAR)</th>
                         <th>${tt('pt_pnl')}</th>
                     </tr>
                 </thead>
@@ -385,10 +385,10 @@ function renderPortfolio() {
                     ${open.map(p => {
                         const name = isArabic() ? (p.name_ar || p.name_en) : p.name_en;
                         const qty = p.quantity || 1;
-                        const costEgp = p.cost_egp != null ? p.cost_egp.toFixed(0) : '-';
-                        const valueEgp = p.value_egp != null ? p.value_egp.toFixed(0) : '-';
-                        const pnlEgp = p.pnl_egp != null ? p.pnl_egp.toFixed(0) : '-';
-                        const pnlClass = (p.pnl_egp || 0) >= 0 ? 'pos' : 'neg';
+                        const costSar = p.cost_sar != null ? p.cost_sar.toFixed(0) : '-';
+                        const valueSar = p.value_sar != null ? p.value_sar.toFixed(0) : '-';
+                        const pnlSar = p.pnl_sar != null ? p.pnl_sar.toFixed(0) : '-';
+                        const pnlClass = (p.pnl_sar || 0) >= 0 ? 'pos' : 'neg';
                         return `
                         <tr>
                             <td><strong>${escapeHtml(p.symbol)}</strong>${name ? `<br><small class="company-name">${escapeHtml(name)}</small>` : ''}</td>
@@ -396,9 +396,9 @@ function renderPortfolio() {
                             <td>${p.entry_price.toFixed(2)}</td>
                             <td>${qty}</td>
                             <td>${p.current_price ? p.current_price.toFixed(2) : '-'}</td>
-                            <td>${costEgp}</td>
-                            <td>${valueEgp}</td>
-                            <td class="${pnlClass}">${pnlEgp}</td>
+                            <td>${costSar}</td>
+                            <td>${valueSar}</td>
+                            <td class="${pnlClass}">${pnlSar}</td>
                             <td class="${p.unrealized_return_pct >= 0 ? 'pos' : 'neg'}">
                                 ${p.unrealized_return_pct}%
                             </td>

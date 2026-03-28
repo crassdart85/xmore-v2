@@ -725,6 +725,7 @@ app.get('/api/prices', (req, res) => {
          ROUND((p.close - p.open)::numeric, 4)                          AS change,
          ROUND(((p.close - p.open) / NULLIF(p.open, 0) * 100)::numeric, 2) AS change_pct
        FROM prices p
+       WHERE p.symbol LIKE '%.SR'
        ORDER BY p.symbol, p.date DESC`
     : `SELECT p.symbol, p.date,
          p.open, p.high, p.low, p.close, p.volume,
@@ -734,6 +735,7 @@ app.get('/api/prices', (req, res) => {
        INNER JOIN (
          SELECT symbol, MAX(date) AS max_date
          FROM prices
+         WHERE symbol LIKE '%.SR'
          GROUP BY symbol
        ) latest ON p.symbol = latest.symbol AND p.date = latest.max_date
        ORDER BY p.symbol`;
@@ -1453,20 +1455,16 @@ app.get('/api/fx-rates', async (req, res) => {
       });
       const xauUsd = goldRaw?.chart?.result?.[0]?.meta?.regularMarketPrice;
       if (xauUsd && xauUsd > 0) {
-        const gold24K = (xauUsd / TROY_OZ_TO_GRAMS) * egp;
+        const gold24KSar = (xauUsd / TROY_OZ_TO_GRAMS) * sar;
         goldData = {
           XAU_USD:         +xauUsd.toFixed(2),
-          GOLD_24K_EGP_G:  +gold24K.toFixed(2),
-          GOLD_21K_EGP_G:  +(gold24K * 21 / 24).toFixed(2),
-          GOLD_18K_EGP_G:  +(gold24K * 18 / 24).toFixed(2),
-          GOLD_POUND_EGP:  +(gold24K * 21 / 24 * 8).toFixed(2),
+          GOLD_24K_SAR_G:  +gold24KSar.toFixed(2),
+          GOLD_21K_SAR_G:  +(gold24KSar * 21 / 24).toFixed(2),
         };
       }
     } catch (_) { /* gold fetch failed â€” omit gold fields */ }
     _fxCache = {
-      USD_EGP: +egp.toFixed(2),
       USD_SAR: +sar.toFixed(4),
-      SAR_EGP: +(egp / sar).toFixed(4),
       ...goldData,
       updated: new Date().toISOString(),
     };
@@ -1474,15 +1472,10 @@ app.get('/api/fx-rates', async (req, res) => {
     // Store in fx_rates_history (one row per day, upsert)
     const today = new Date().toISOString().split('T')[0];
     const histSql = db._isPostgres
-      ? `INSERT INTO fx_rates_history (date, usd_egp, usd_sar, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp)
-         VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (date) DO UPDATE SET
-         usd_egp=EXCLUDED.usd_egp, usd_sar=EXCLUDED.usd_sar, xau_usd=EXCLUDED.xau_usd,
-         gold_24k_egp_g=EXCLUDED.gold_24k_egp_g, gold_21k_egp_g=EXCLUDED.gold_21k_egp_g,
-         gold_pound_egp=EXCLUDED.gold_pound_egp`
-      : `INSERT OR REPLACE INTO fx_rates_history (date, usd_egp, usd_sar, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp)
-         VALUES (?,?,?,?,?,?,?)`;
-    db.run(histSql, [today, _fxCache.USD_EGP, _fxCache.USD_SAR, goldData.XAU_USD || null,
-      goldData.GOLD_24K_EGP_G || null, goldData.GOLD_21K_EGP_G || null, goldData.GOLD_POUND_EGP || null],
+      ? `INSERT INTO fx_rates_history (date, usd_sar, xau_usd) VALUES ($1,$2,$3)
+         ON CONFLICT (date) DO UPDATE SET usd_sar=EXCLUDED.usd_sar, xau_usd=EXCLUDED.xau_usd`
+      : `INSERT OR REPLACE INTO fx_rates_history (date, usd_sar, xau_usd) VALUES (?,?,?)`;
+    db.run(histSql, [today, _fxCache.USD_SAR, goldData.XAU_USD || null],
       () => {}); // fire-and-forget
     res.json(_fxCache);
   } catch (err) {
@@ -1497,16 +1490,20 @@ app.get('/api/fx-rates', async (req, res) => {
 app.get('/api/fx-rates/history', (req, res) => {
   const days = Math.min(90, parseInt(req.query.days) || 30);
   const sql = DATABASE_URL
-    ? `SELECT date, usd_egp, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp
-       FROM fx_rates_history ORDER BY date DESC LIMIT $1`
-    : `SELECT date, usd_egp, xau_usd, gold_24k_egp_g, gold_21k_egp_g, gold_pound_egp
-       FROM fx_rates_history ORDER BY date DESC LIMIT ?`;
+    ? `SELECT date, usd_sar, xau_usd FROM fx_rates_history ORDER BY date DESC LIMIT $1`
+    : `SELECT date, usd_sar, xau_usd FROM fx_rates_history ORDER BY date DESC LIMIT ?`;
+  const TROY_OZ_TO_GRAMS = 31.1035;
   db.all(sql, [days], (err, rows) => {
     if (err) {
       if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) return res.json([]);
       return res.status(500).json({ error: err.message });
     }
-    res.json((rows || []).reverse()); // oldest first for charts
+    const enriched = (rows || []).map(r => ({
+      ...r,
+      gold_24k_sar_g: r.xau_usd && r.usd_sar ? +((r.xau_usd / TROY_OZ_TO_GRAMS) * r.usd_sar).toFixed(2) : null,
+      gold_21k_sar_g: r.xau_usd && r.usd_sar ? +((r.xau_usd / TROY_OZ_TO_GRAMS) * r.usd_sar * 21 / 24).toFixed(2) : null,
+    }));
+    res.json(enriched.reverse()); // oldest first for charts
   });
 });
 
