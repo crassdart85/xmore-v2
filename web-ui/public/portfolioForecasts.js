@@ -43,7 +43,7 @@
     }
 
     function escHtml(s) {
-        return String(s ? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     function apiHeaders() {
@@ -221,8 +221,8 @@
                 const probW = prob != null ? Math.min(100, Math.max(0, prob)) : 50;
 
                 // Range bar: map worst→best to 0–100%, mark expected position
-                const rangeMin = Math.min(worst ? -20, -5);
-                const rangeMax = Math.max(best  ?  20,  5);
+                const rangeMin = Math.min(worst ?? -20, -5);
+                const rangeMax = Math.max(best  ??  20,  5);
                 const rangeSpan = rangeMax - rangeMin || 1;
                 function toRangePct(v) {
                     return Math.min(100, Math.max(0, ((v - rangeMin) / rangeSpan) * 100)).toFixed(1);
@@ -234,7 +234,7 @@
 
                 // Progress / actual result row
                 let progressHtml = '';
-                const elapsed   = r.days_elapsed ? 0;
+                const elapsed   = r.days_elapsed ?? 0;
                 const progressW = horizonDays > 0 ? Math.min(100, Math.round((elapsed / horizonDays) * 100)) : 0;
 
                 if (evaluated) {
