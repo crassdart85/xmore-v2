@@ -782,10 +782,10 @@ app.get('/api/sentiment', (req, res) => {
 // 5. Get system stats
 app.get('/api/stats', (req, res) => {
   const queries = {
-    totalPrices: 'SELECT COUNT(*) as count FROM prices',
-    totalPredictions: 'SELECT COUNT(*) as count FROM predictions',
-    stocksTracked: 'SELECT COUNT(DISTINCT symbol) as count FROM prices',
-    latestDate: 'SELECT MAX(date) as date FROM prices'
+    totalPrices: "SELECT COUNT(*) as count FROM prices WHERE symbol LIKE '%.SR'",
+    totalPredictions: "SELECT COUNT(*) as count FROM consensus_results WHERE symbol LIKE '%.SR'",
+    stocksTracked: "SELECT COUNT(DISTINCT symbol) as count FROM prices WHERE symbol LIKE '%.SR'",
+    latestDate: "SELECT MAX(date) as date FROM prices WHERE symbol LIKE '%.SR'"
   };
 
   const stats = {};

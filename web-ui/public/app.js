@@ -2411,7 +2411,7 @@ function renderPredictionTable(grouped, symbols, tableId) {
 
         html += `
             <tr data-search="${searchText}" data-signal="${consensusKey}" data-conviction="${convictionLabel}" data-sector="${sector}" data-conf="${Math.round(convictionValue)}" class="group-start pred-stock-row">
-                <td data-label="${labels.stock}" class="stock-cell"><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                <td data-label="${labels.stock}" class="stock-cell"><strong>${companyName}</strong><br><small class="company-name">${symbol.replace('.SR','')}</small></td>
                 <td data-label="${labels.signal}"><span class="signal-${consensusKey}">${t(consensusKey)}</span></td>
                 <td data-label="${labels.agreement}">${agreeCount}/${predictions.length} (${agreementPct}%)</td>
                 <td data-label="${labels.conviction}">${convictionValue.toFixed(1)}%</td>
@@ -2680,7 +2680,7 @@ function renderPerStockTable(perStock) {
         const accuracyClass = stats.accuracy >= 60 ? 'high' : stats.accuracy >= 40 ? 'medium' : 'low';
         html += `
             <tr>
-                <td data-label="${labels.stock}"><strong>${symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                <td data-label="${labels.stock}"><strong>${companyName}</strong><br><small class="company-name">${symbol.replace('.SR','')}</small></td>
                 <td data-label="${labels.accuracy}">
                     <div class="accuracy-bar">
                         <div class="accuracy-fill accuracy-${accuracyClass}" style="width: ${stats.accuracy}%">${stats.accuracy}%</div>
@@ -2838,8 +2838,8 @@ async function loadEvaluations() {
             html += `
                 <article class="result-stock-card ${toneClass}">
                     <div class="result-stock-header">
-                        <div class="result-stock-symbol">${symbol}</div>
-                        <div class="result-stock-company">${companyName}</div>
+                        <div class="result-stock-symbol">${companyName}</div>
+                        <div class="result-stock-company">${symbol.replace('.SR','')}</div>
                     </div>
                     <div class="result-stock-table-wrap">
                         <table class="result-stock-table table-cards">
@@ -2946,7 +2946,7 @@ async function loadPrices() {
             const companyName = getCompanyName(stock.symbol);
             html += `
                 <tr>
-                    <td data-label="${labels.stock}" class="stock-cell"><strong>${stock.symbol}</strong><br><small class="company-name">${companyName}</small></td>
+                    <td data-label="${labels.stock}" class="stock-cell"><strong>${companyName}</strong><br><small class="company-name">${stock.symbol.replace('.SR','')}</small></td>
                     <td data-label="${labels.date}" class="prices-date-col">${formatDate(stock.date)}</td>
                     <td data-label="${labels.close}" class="price-cell">${parseFloat(stock.close).toFixed(2)}</td>
                     <td data-label="${labels.volume}" class="volume-cell">${parseInt(stock.volume).toLocaleString()}</td>
