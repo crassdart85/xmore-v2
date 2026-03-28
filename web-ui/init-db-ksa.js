@@ -412,13 +412,22 @@ async function initializeDatabase() {
         doc_id      BIGINT NOT NULL REFERENCES rag_document(doc_id) ON DELETE CASCADE,
         chunk_index INTEGER NOT NULL,
         chunk_text  TEXT NOT NULL,
-        embedding   vector(768),
+        embedding_json TEXT,
         market_id   TEXT DEFAULT 'KSA'
       )
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_doc_market  ON rag_document(market_id)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc  ON rag_chunks(doc_id)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_job_status  ON rag_embedding_job(status)');
+    // Optional pgvector — adds embedding_vec column if extension is available
+    try {
+      await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
+      await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS embedding_vec vector(768)');
+      await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_vec ON rag_chunks USING ivfflat (embedding_vec vector_cosine_ops) WITH (lists = 100)');
+      console.log('✅ pgvector extension + column ready');
+    } catch (_) {
+      console.log('⚠️  pgvector not available — using embedding_json fallback');
+    }
 
     // Seed KSA knowledge-base entries (upsert on url+market_id)
     const ksaDocs = [
