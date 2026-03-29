@@ -1242,6 +1242,25 @@ async function initializeDatabase() {
       if (res.rowCount > 0) console.log(`✅ Reclassified ${res.rowCount} EGX commodity fund(s) → COMMODITY_ETP`);
     } catch(e) { console.log('⚠️  Commodity ETP migration skipped:', e.message); }
 
+    // Migration: purge KSA (.SR) stocks that leaked into the EGY database.
+    // EGX symbols always end in .CA — anything ending in .SR belongs to Tadawul.
+    try {
+      const tables = [
+        { table: 'scored_signals',     col: 'symbol' },
+        { table: 'prices',             col: 'symbol' },
+        { table: 'predictions',        col: 'symbol' },
+        { table: 'consensus_results',  col: 'symbol' },
+        { table: 'stock_signal_evals', col: 'symbol' },
+        { table: 'trade_recommendations', col: 'symbol' },
+      ];
+      for (const { table, col } of tables) {
+        try {
+          const r = await pool.query(`DELETE FROM ${table} WHERE ${col} LIKE '%.SR'`);
+          if (r.rowCount > 0) console.log(`✅ Purged ${r.rowCount} KSA (.SR) rows from ${table}`);
+        } catch (_) { /* table may not exist yet */ }
+      }
+    } catch(e) { console.log('⚠️  KSA purge migration skipped:', e.message); }
+
     console.log('✅ Database initialized successfully!');
 
     // Get stats
