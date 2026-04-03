@@ -44,8 +44,9 @@ except ImportError:
 # Allocation parameters
 KELLY_FRACTION         = 0.25   # Use 25% of full Kelly (conservative)
 MAX_TOTAL_EXPOSURE     = 0.80   # No more than 80% of portfolio deployed at once
-DEFAULT_POSITION_PCT   = 0.08   # Fallback when no history available
-MIN_KELLY_F            = 0.01   # Floor: never allocate less than 1%
+DEFAULT_POSITION_PCT   = 0.05   # Fallback when no history available
+MIN_KELLY_F            = 0.005  # Floor: 0.5% minimum
+MAX_POSITION_PCT       = 0.05   # Hard cap per position: 5% (was 10%)
 HISTORY_DAYS           = 30     # Rolling window for win-rate stats
 
 
@@ -195,12 +196,14 @@ class KellyAllocator:
                 stats["avg_loss_pct"],
             )
 
-            # Confidence-aware modulation keeps Kelly responsive to current signal quality.
+            # Confidence multiplier: scales position by distance from 50% confidence.
+            # At 65% confidence → 0.30×; at 80% → 0.60×; at 100% → 1.0×.
+            # This prevents over-sizing on marginal signals near the gate threshold.
             try:
                 confidence = float(sig.get("confidence", 50) or 50)
             except Exception:
                 confidence = 50.0
-            conf_mult = min(max(confidence / 70.0, 0.70), 1.20)
+            conf_mult = max(0.10, (confidence - 50.0) / 50.0)
             f = min(max(f * conf_mult, MIN_KELLY_F), MAX_POSITION_PCT)
             raw_f.append(f)
 

@@ -1067,6 +1067,7 @@ def execute():
                     risk_config=risk_cfg,
                     dynamic_weights=dynamic_weights,
                     market_regime=market_regime,
+                    db_conn=conn,
                 )
 
                 calibration_meta = _apply_confidence_calibration(
@@ -1132,6 +1133,21 @@ def execute():
                         consensus_result.get('final_signal', 'HOLD'),
                         market_data
                     )
+
+                # ── Tier 2: Transaction Cost Gate ──────────────────────────
+                # Kill signals whose expected move is too small to clear
+                # round-trip costs. EGX typical spread + impact ≈ 50 bps;
+                # require ≥1.5% net move to justify action.
+                _ROUND_TRIP_COST_PCT = 0.50   # 50 bps as a percentage
+                _MIN_NET_MOVE_PCT    = 1.50   # 1.5 % minimum net expected move
+                if consensus_result.get('final_signal') in ('UP', 'DOWN'):
+                    em_pct = consensus_result.get('expected_move_pct')
+                    if em_pct is not None and em_pct < (_ROUND_TRIP_COST_PCT + _MIN_NET_MOVE_PCT):
+                        print(f"  💸 [{stock}] Cost gate: ATR {em_pct:.2f}% < {_ROUND_TRIP_COST_PCT + _MIN_NET_MOVE_PCT:.2f}% threshold → HOLD")
+                        consensus_result['final_signal'] = 'HOLD'
+                        consensus_result['conviction']   = 'LOW'
+                        consensus_result['risk_adjusted'] = True
+                        consensus_result.setdefault('risk_assessment', {})['action'] = 'COST_GATED'
 
                 # Store consensus result
                 _store_consensus(conn, stock, today, consensus_result)

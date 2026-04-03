@@ -108,6 +108,27 @@ def run_evaluation(pipeline_run_id: str = None):
             except Exception as e:
                 print(f"[Evaluate] Performance views skipped: {e}")
 
+        # 6. IC monitoring — Spearman correlation of signals vs outcomes
+        try:
+            ic_results = compute_ic()
+            if ic_results:
+                avg_ic = sum(r['ic'] for r in ic_results) / len(ic_results)
+                print(f"[Evaluate] IC computed for {len(ic_results)} symbols, avg IC={avg_ic:.4f}")
+            else:
+                print("[Evaluate] IC: insufficient resolved outcomes yet")
+        except Exception as e:
+            print(f"[Evaluate] IC monitoring skipped: {e}")
+
+        # 7. Concept drift detection — flag stale models
+        try:
+            stale = detect_model_drift()
+            if stale:
+                print(f"[Evaluate] Drift detected for {len(stale)} symbols: {stale}")
+            else:
+                print("[Evaluate] No model drift detected")
+        except Exception as e:
+            print(f"[Evaluate] Drift detection skipped: {e}")
+
         print("[Evaluate] Evaluation complete.")
     except Exception as e:
         print(f"[Evaluate] Error during evaluation: {e}")
@@ -504,6 +525,215 @@ def refresh_performance_views():
                     pass
             print(f"[Evaluate] Warning: Could not refresh materialized view: {e}")
             return False
+
+
+# ─── IC MONITORING ────────────────────────────────────────────
+
+def compute_ic(days: int = 20) -> list:
+    """
+    Compute Information Coefficient (Spearman rank correlation) between
+    consensus signal direction and actual next-day return.
+
+    IC > 0.05 = informative signal; IC < 0.02 = noise; IC < 0 = anti-predictive.
+    Stores result in signal_ic_log table (created in init-db.js).
+
+    Returns list of dicts: {symbol, ic, ic_date, sample_count}
+    """
+    try:
+        from scipy.stats import spearmanr
+    except ImportError:
+        return []
+
+    results = []
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Ensure table exists (graceful if missing)
+        try:
+            _ensure_ic_log_table(cursor)
+        except Exception:
+            pass
+
+        # Fetch resolved signals in the window
+        sql = f"""
+            SELECT symbol,
+                   CASE final_signal WHEN 'UP' THEN 1 WHEN 'DOWN' THEN -1 ELSE 0 END AS direction,
+                   actual_next_day_return
+            FROM trade_recommendations
+            WHERE actual_next_day_return IS NOT NULL
+              AND recommendation_date >= {_interval(days)}
+              AND final_signal IN ('UP', 'DOWN', 'HOLD')
+        """
+        # trade_recommendations may not have final_signal; fall back to action
+        try:
+            rows = _query(cursor, sql)
+        except Exception:
+            sql2 = f"""
+                SELECT symbol,
+                       CASE action WHEN 'BUY' THEN 1 WHEN 'SELL' THEN -1 ELSE 0 END AS direction,
+                       actual_next_day_return
+                FROM trade_recommendations
+                WHERE actual_next_day_return IS NOT NULL
+                  AND recommendation_date >= {_interval(days)}
+            """
+            rows = _query(cursor, sql2)
+
+        if not rows:
+            return results
+
+        # Group by symbol, compute per-symbol IC
+        from collections import defaultdict
+        by_sym = defaultdict(list)
+        for r in rows:
+            by_sym[r['symbol']].append((float(r['direction'] or 0),
+                                        float(r['actual_next_day_return'] or 0)))
+
+        today_str = _query(cursor, "SELECT CURRENT_DATE AS d")[0]['d'] if DATABASE_URL \
+                    else _query(cursor, "SELECT date('now') AS d")[0]['d']
+
+        for symbol, pairs in by_sym.items():
+            if len(pairs) < 5:
+                continue
+            directions = [p[0] for p in pairs]
+            returns    = [p[1] for p in pairs]
+            if len(set(directions)) < 2:
+                continue
+            try:
+                ic, _ = spearmanr(directions, returns)
+                if ic is None or (hasattr(ic, '__class__') and 'nan' in str(ic).lower()):
+                    continue
+                ic = round(float(ic), 4)
+            except Exception:
+                continue
+
+            # Store in IC log
+            ph = _ph(1)
+            try:
+                if DATABASE_URL:
+                    cursor.execute("""
+                        INSERT INTO signal_ic_log (symbol, ic_date, ic, sample_count, window_days)
+                        VALUES (%s, CURRENT_DATE, %s, %s, %s)
+                        ON CONFLICT (symbol, ic_date) DO UPDATE SET
+                            ic = EXCLUDED.ic, sample_count = EXCLUDED.sample_count
+                    """, [symbol, ic, len(pairs), days])
+                else:
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO signal_ic_log
+                        (symbol, ic_date, ic, sample_count, window_days)
+                        VALUES (?, date('now'), ?, ?, ?)
+                    """, [symbol, ic, len(pairs), days])
+            except Exception:
+                pass
+
+            results.append({'symbol': symbol, 'ic': ic,
+                            'ic_date': str(today_str), 'sample_count': len(pairs)})
+
+    return results
+
+
+def _ensure_ic_log_table(cursor):
+    """Create signal_ic_log table if missing (runtime safety net)."""
+    if DATABASE_URL:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS signal_ic_log (
+                id SERIAL PRIMARY KEY,
+                symbol TEXT NOT NULL,
+                ic_date DATE NOT NULL,
+                ic REAL,
+                sample_count INTEGER DEFAULT 0,
+                window_days INTEGER DEFAULT 20,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, ic_date)
+            )
+        """)
+    else:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS signal_ic_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                symbol TEXT NOT NULL,
+                ic_date DATE NOT NULL,
+                ic REAL,
+                sample_count INTEGER DEFAULT 0,
+                window_days INTEGER DEFAULT 20,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(symbol, ic_date)
+            )
+        """)
+
+
+# ─── CONCEPT DRIFT DETECTION ──────────────────────────────────
+
+def detect_model_drift(window: int = 20, baseline_window: int = 60,
+                       drop_threshold: float = 0.10,
+                       max_model_age_days: int = 60) -> list:
+    """
+    Page-Hinkley test for concept drift in model accuracy.
+
+    Flags a symbol as drifted if:
+      1. Rolling accuracy dropped > drop_threshold vs the 60-day baseline, OR
+      2. Model file is older than max_model_age_days
+
+    Returns list of drifted symbols. Callers can delete model files to force retrain.
+    """
+    import os
+    import glob
+
+    stale = []
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Per-symbol rolling accuracy vs baseline
+        sql = f"""
+            SELECT symbol,
+                   AVG(CASE WHEN was_correct THEN 1.0 ELSE 0.0 END) AS recent_acc,
+                   COUNT(*) AS cnt
+            FROM trade_recommendations
+            WHERE was_correct IS NOT NULL
+              AND recommendation_date >= {_interval(window)}
+            GROUP BY symbol
+            HAVING COUNT(*) >= 5
+        """
+        recent_rows = _query(cursor, sql)
+
+        sql_base = f"""
+            SELECT symbol,
+                   AVG(CASE WHEN was_correct THEN 1.0 ELSE 0.0 END) AS base_acc
+            FROM trade_recommendations
+            WHERE was_correct IS NOT NULL
+              AND recommendation_date >= {_interval(baseline_window)}
+            GROUP BY symbol
+            HAVING COUNT(*) >= 15
+        """
+        baseline_rows = {r['symbol']: float(r['base_acc'] or 0)
+                        for r in _query(cursor, sql_base)}
+
+    for row in recent_rows:
+        sym = row['symbol']
+        recent_acc = float(row['recent_acc'] or 0)
+        base_acc = baseline_rows.get(sym)
+        if base_acc is not None and (base_acc - recent_acc) > drop_threshold:
+            stale.append(sym)
+
+    # Also flag models older than max_model_age_days
+    model_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
+    if os.path.isdir(model_dir):
+        import time
+        now = time.time()
+        max_age_sec = max_model_age_days * 86400
+        for pkl in glob.glob(os.path.join(model_dir, '*_predictor.pkl')):
+            age = now - os.path.getmtime(pkl)
+            if age > max_age_sec:
+                sym = os.path.basename(pkl).replace('_predictor.pkl', '').replace('_', '.')
+                if sym not in stale:
+                    stale.append(sym)
+                # Remove stale model to force retrain on next pipeline run
+                try:
+                    os.remove(pkl)
+                except Exception:
+                    pass
+
+    return stale
 
 
 # ─── STANDALONE EXECUTION ─────────────────────────────────────
