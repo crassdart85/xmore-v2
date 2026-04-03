@@ -36,7 +36,8 @@ except ImportError:
 
 from agents.agent_base import BaseAgent, AgentSignal
 from features import (add_technical_indicators, add_sentiment_features,
-                      add_macro_features, get_feature_columns, log_feature_importance)
+                      add_macro_features, add_crosssectional_features,
+                      get_feature_columns, log_feature_importance)
 from database import get_connection
 
 class PurgedTimeSeriesSplit:
@@ -233,10 +234,11 @@ def _tune_lgbm_params(X: pd.DataFrame, y: pd.Series) -> Optional[dict]:
 class MLAgent(BaseAgent):
     def __init__(self):
         super().__init__("ML_RandomForest")
-        self._model_cache: dict = {}   # {symbol: {'model': m, 'feature_names': [...], 'regime_models': {...}}}
+        self._model_cache: dict = {}   # {symbol: {'model': m, 'feature_names': [...], 'regime_models': {...}, 'model_10d': ...}}
         self.model = None
         self.feature_names = None
         self._regime_models: Dict[str, Any] = {}
+        self._model_10d = None
         self._last_probs = None
         self._last_top_features = None
         self._last_training_accuracy = None
@@ -268,13 +270,15 @@ class MLAgent(BaseAgent):
             self.model = data.get('model')
             self.feature_names = data.get('feature_names', get_feature_columns())
             self._regime_models = data.get('regime_models', {})
+            self._model_10d = data.get('model_10d')
             logger.info(f"[{symbol}] Model loaded from {path} (trained {trained_at})")
         except Exception as e:
             logger.error(f"[{symbol}] Error loading model: {e}")
 
     def save_model(self, model, feature_names: list, symbol: str = '',
                    best_params: Optional[dict] = None,
-                   regime_models: Optional[Dict[str, Any]] = None):
+                   regime_models: Optional[Dict[str, Any]] = None,
+                   model_10d=None):
         """Save symbol-specific model with metadata."""
         os.makedirs(MODEL_DIR, exist_ok=True)
         path = _model_path(symbol) if symbol else os.path.join(MODEL_DIR, 'stock_predictor.pkl')
@@ -284,6 +288,7 @@ class MLAgent(BaseAgent):
             'trained_at':    datetime.now().isoformat(),
             'best_params':   best_params,   # Cached Optuna params; None = use defaults
             'regime_models': regime_models or {},
+            'model_10d':     model_10d,     # 10-day horizon model (None if too little data)
         }
         joblib.dump(data, path)
         logger.info(f"[{symbol}] Model saved to {path}")
@@ -350,6 +355,24 @@ class MLAgent(BaseAgent):
         df = add_sentiment_features(df, news_df)
         df = add_macro_features(df, macro_df)
 
+        # ── Cross-sectional features: stock vs EGX30 index ────────────────
+        index_df = pd.DataFrame()
+        try:
+            with get_connection() as conn:
+                cur = conn.cursor()
+                # EGX30 proxy: use COMI.CA (most liquid, high correlation with index)
+                cur.execute("""
+                    SELECT date, close FROM prices
+                    WHERE symbol = 'COMI.CA'
+                    ORDER BY date
+                """)
+                rows = cur.fetchall()
+                cols = [d[0] for d in cur.description] if cur.description else []
+                index_df = pd.DataFrame([dict(zip(cols, r)) for r in rows])
+        except Exception as exc:
+            logger.debug(f"[{symbol}] Failed to load index proxy: {exc}")
+        df = add_crosssectional_features(df, index_df if len(index_df) > 20 else None)
+
         all_features = get_feature_columns()
         available_features = [f for f in all_features
                               if f in df.columns and not df[f].isna().all()]
@@ -363,24 +386,26 @@ class MLAgent(BaseAgent):
             self.model = None
             self.feature_names = None
             self._regime_models = {}
+            self._model_10d = None
             self.load_model(symbol)
             if self.model is not None:
                 self._model_cache[symbol] = {
                     'model': self.model, 'feature_names': self.feature_names,
-                    'regime_models': self._regime_models,
+                    'regime_models': self._regime_models, 'model_10d': self._model_10d,
                 }
         else:
             cached = self._model_cache[symbol]
             self.model = cached['model']
             self.feature_names = cached['feature_names']
             self._regime_models = cached.get('regime_models', {})
+            self._model_10d = cached.get('model_10d')
 
         if self.model is None:
             self.model, self.feature_names = self._train_model(df, available_features, symbol)
             if self.model is not None:
                 self._model_cache[symbol] = {
                     'model': self.model, 'feature_names': self.feature_names,
-                    'regime_models': self._regime_models,
+                    'regime_models': self._regime_models, 'model_10d': self._model_10d,
                 }
 
         if self.model is None:
@@ -393,7 +418,7 @@ class MLAgent(BaseAgent):
             if self.model is not None:
                 self._model_cache[symbol] = {
                     'model': self.model, 'feature_names': self.feature_names,
-                    'regime_models': self._regime_models,
+                    'regime_models': self._regime_models, 'model_10d': self._model_10d,
                 }
             features = available_features
 
@@ -414,8 +439,34 @@ class MLAgent(BaseAgent):
             if active_model is not self.model:
                 logger.debug(f"[{symbol}] Using '{current_regime}' regime sub-model")
 
-            prediction = active_model.predict(X)[0]
-            probs = active_model.predict_proba(X)[0]
+            probs_5d = active_model.predict_proba(X)[0]
+
+            # Blend 5d and 10d horizon probabilities (60%/40% weight).
+            # The 10d model captures multi-day trend persistence; the 5d model
+            # is more reactive. Blending reduces noise from short-term reversals.
+            if self._model_10d is not None:
+                try:
+                    probs_10d = self._model_10d.predict_proba(X)[0]
+                    # Align class order (both models trained on same y encoding)
+                    classes_5d  = list(active_model.classes_)
+                    classes_10d = list(self._model_10d.classes_)
+                    # Pad any missing class with 0
+                    blended = np.zeros(3)
+                    for cls_i in range(3):
+                        p5  = probs_5d[classes_5d.index(cls_i)]  if cls_i in classes_5d  else 0.0
+                        p10 = probs_10d[classes_10d.index(cls_i)] if cls_i in classes_10d else 0.0
+                        blended[cls_i] = 0.60 * p5 + 0.40 * p10
+                    blended /= blended.sum()  # renormalize
+                    probs = blended
+                    prediction = int(np.argmax(probs))
+                except Exception as _blend_err:
+                    logger.debug(f"[{symbol}] 10d blend failed: {_blend_err}")
+                    probs = probs_5d
+                    prediction = int(active_model.predict(X)[0])
+            else:
+                probs = probs_5d
+                prediction = int(active_model.predict(X)[0])
+
             confidence = float(max(probs))
 
             # Build probs dict for predict_signal
@@ -508,11 +559,15 @@ class MLAgent(BaseAgent):
             return self._train_model_rf_fallback(df, features, symbol)
 
         df = df.copy()
-        df['future_return'] = df['close'].shift(-5) / df['close'] - 1
+        df['future_return']     = df['close'].shift(-5)  / df['close'] - 1
+        df['future_return_10d'] = df['close'].shift(-10) / df['close'] - 1
         df['target'] = df['future_return'].apply(
             lambda x: 2 if x > UP_THRESHOLD else (0 if x < DOWN_THRESHOLD else 1)
         )
-        train_df = df.dropna(subset=['target'] + features).copy()
+        df['target_10d'] = df['future_return_10d'].apply(
+            lambda x: 2 if x > UP_THRESHOLD else (0 if x < DOWN_THRESHOLD else 1)
+        )
+        train_df = df.dropna(subset=['target', 'target_10d'] + features).copy()
 
         if len(train_df) < 30:
             logger.warning(f"[{symbol}] Not enough data ({len(train_df)} rows) — HOLD")
@@ -610,6 +665,23 @@ class MLAgent(BaseAgent):
             warnings.simplefilter('ignore')
             final_model.fit(X_sel, y, sample_weight=sample_weights)
 
+        # ── 10-day horizon model ──────────────────────────────────────────
+        # Trained on the same selected features + focal weights but with the
+        # 10-day forward return as target.  Adds a longer-horizon perspective
+        # that captures multi-day trends not visible in a 5-day window.
+        model_10d = None
+        y_10d = train_df['target_10d'].astype(int)
+        if len(train_df) >= 50:
+            try:
+                model_10d = _make_lgbm(**best_params)
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    model_10d.fit(X_sel, y_10d, sample_weight=sample_weights)
+                logger.info(f"[{symbol}] 10-day horizon model trained on {len(train_df)} rows")
+            except Exception as _e:
+                logger.debug(f"[{symbol}] 10-day model training failed: {_e}")
+                model_10d = None
+
         # ── Regime-conditional sub-models ─────────────────────────────────
         regime_models: Dict[str, Any] = {}
         regime_labels = _compute_regime_labels(train_df)
@@ -634,7 +706,8 @@ class MLAgent(BaseAgent):
 
         log_feature_importance(final_model, selected, symbol=symbol, top_n=10)
         self.save_model(final_model, selected, symbol=symbol,
-                        best_params=best_params or None, regime_models=regime_models)
+                        best_params=best_params or None, regime_models=regime_models,
+                        model_10d=model_10d)
 
         return final_model, selected
 
