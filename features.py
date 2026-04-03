@@ -261,6 +261,93 @@ def _add_garch_inspired_features(df):
     return df
 
 
+def add_crosssectional_features(df, index_df=None):
+    """
+    Add cross-sectional momentum features: stock return vs EGX30 index return.
+
+    These features tell the model whether the stock is outperforming or
+    underperforming the broader market — pure-alpha signals that the
+    single-stock technical indicators cannot capture.
+
+    Features added:
+      rs_5d     — (stock_ret_5d - index_ret_5d)   : 5-day relative strength
+      rs_10d    — (stock_ret_10d - index_ret_10d)  : 10-day relative strength
+      rs_20d    — (stock_ret_20d - index_ret_20d)  : 20-day relative strength
+      beta_20d  — rolling 20-day beta vs index     : systematic risk exposure
+      alpha_5d  — excess return above beta-adjusted: pure alpha proxy
+
+    When index_df is None (no index data available) all features are set to 0.
+
+    Args:
+        df:        Stock OHLCV DataFrame with 'close' column.
+        index_df:  Optional DataFrame with 'date' and 'close' for EGX30 index.
+    """
+    xs_cols = ['rs_5d', 'rs_10d', 'rs_20d', 'beta_20d', 'alpha_5d']
+
+    if index_df is None or len(index_df) == 0:
+        for col in xs_cols:
+            df[col] = 0.0
+        return df
+
+    try:
+        idx = index_df.copy()
+        if 'date' not in idx.columns or 'close' not in idx.columns:
+            for col in xs_cols:
+                df[col] = 0.0
+            return df
+
+        idx['date'] = pd.to_datetime(idx['date'], errors='coerce').dt.strftime('%Y-%m-%d')
+        idx = idx.dropna(subset=['date']).sort_values('date')
+        idx['idx_ret_5d']  = idx['close'].pct_change(5)
+        idx['idx_ret_10d'] = idx['close'].pct_change(10)
+        idx['idx_ret_20d'] = idx['close'].pct_change(20)
+        idx['idx_ret_1d']  = idx['close'].pct_change(1)
+
+        df = df.copy()
+        date_col = 'date' if 'date' in df.columns else None
+        if date_col is None:
+            for col in xs_cols:
+                df[col] = 0.0
+            return df
+
+        df_dates = pd.to_datetime(df[date_col], errors='coerce').dt.strftime('%Y-%m-%d')
+        df['_date_str'] = df_dates
+        df = df.merge(
+            idx[['date', 'idx_ret_5d', 'idx_ret_10d', 'idx_ret_20d', 'idx_ret_1d']],
+            left_on='_date_str', right_on='date',
+            how='left', suffixes=('', '_idx')
+        )
+        df = df.drop(columns=['_date_str', 'date_idx'], errors='ignore')
+
+        stock_ret_5d  = df['close'].pct_change(5)
+        stock_ret_10d = df['close'].pct_change(10)
+        stock_ret_20d = df['close'].pct_change(20)
+        stock_ret_1d  = df['close'].pct_change(1)
+
+        df['rs_5d']  = stock_ret_5d  - df['idx_ret_5d'].fillna(0)
+        df['rs_10d'] = stock_ret_10d - df['idx_ret_10d'].fillna(0)
+        df['rs_20d'] = stock_ret_20d - df['idx_ret_20d'].fillna(0)
+
+        # Rolling beta: cov(stock_1d, idx_1d) / var(idx_1d)  over 20 days
+        idx_1d = df['idx_ret_1d'].fillna(0)
+        cov20  = stock_ret_1d.rolling(20, min_periods=10).cov(idx_1d)
+        var20  = idx_1d.rolling(20, min_periods=10).var().replace(0, np.nan)
+        df['beta_20d'] = (cov20 / var20).fillna(1.0).clip(-3, 3)
+
+        # Alpha proxy: stock 5d return minus beta × index 5d return
+        df['alpha_5d'] = stock_ret_5d - df['beta_20d'] * df['idx_ret_5d'].fillna(0)
+
+        df[xs_cols] = df[xs_cols].fillna(0.0)
+
+    except Exception as e:
+        logger.warning(f"add_crosssectional_features failed: {e}")
+        for col in xs_cols:
+            if col not in df.columns:
+                df[col] = 0.0
+
+    return df
+
+
 def add_macro_features(df, macro_df):
     """
     Merge macro context (Brent crude, USD/EGP rate, EM equity) into the stock price DataFrame.
@@ -405,6 +492,8 @@ def get_feature_columns():
         'brent_return_5d', 'usdegp_return_5d', 'eem_return_5d',
         # Sentiment
         'sentiment_score',
+        # Cross-sectional momentum (stock vs EGX30 index)
+        'rs_5d', 'rs_10d', 'rs_20d', 'beta_20d', 'alpha_5d',
     ]
 
 
