@@ -995,7 +995,21 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_scored_date   ON scored_signals(signal_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_scored_symbol ON scored_signals(symbol)');
 
-    console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals) ready');
+    // signal_ic_log — Information Coefficient monitoring (Spearman rank IC per symbol)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS signal_ic_log (
+        id            SERIAL PRIMARY KEY,
+        computed_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+        window_days   INTEGER NOT NULL,
+        symbol        TEXT,
+        ic_value      REAL NOT NULL,
+        sample_size   INTEGER NOT NULL
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_date   ON signal_ic_log(computed_at DESC)');
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_symbol ON signal_ic_log(symbol)');
+
+    console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals, signal_ic_log) ready');
 
     // Seed KSA stocks (Tadawul) — disable statement_timeout for INSERT
     await pool.query("SET statement_timeout = 0");

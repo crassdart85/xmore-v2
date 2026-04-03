@@ -1,10 +1,12 @@
 """
-Consensus Engine — 3-Layer Orchestrator.
+Consensus Engine — 5-Layer Orchestrator.
 
 Orchestrates:
-  Layer 1: Signal Agents  →  collect structured predictions
-  Layer 2: Bull/Bear      →  build cases FOR and AGAINST the majority
-  Layer 3: Risk Agent     →  gate the final output
+  Layer 1: Signal Agents   →  collect structured predictions
+  Layer 2: Bull/Bear       →  build cases FOR and AGAINST the majority
+  Layer 3: Risk Agent      →  gate the final output
+  Layer 4: Regime Filter   →  suppress directional signals in Crisis/Turbulent
+  Layer 5: Meta-Learner    →  confidence calibration via stacked LR on agent history
 
 Produces a single, risk-adjusted consensus signal per stock with
 full reasoning chain and bilingual display text.
@@ -16,6 +18,12 @@ from typing import Dict, Any, Optional, List
 
 from agents.bull_bear_evaluator import build_bull_case, build_bear_case, get_majority_prediction
 from agents.risk_agent import evaluate_risk
+
+try:
+    from engines.meta_learner import get_meta_learner as _get_meta_learner
+    _META_AVAILABLE = True
+except ImportError:
+    _META_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -171,15 +179,17 @@ def run_consensus(symbol: str,
                   portfolio_signals: Optional[List[Dict[str, Any]]] = None,
                   risk_config: Optional[Dict[str, Any]] = None,
                   dynamic_weights: Optional[Dict[str, float]] = None,
-                  market_regime: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                  market_regime: Optional[Dict[str, Any]] = None,
+                  db_conn=None) -> Dict[str, Any]:
     """
-    Full 4-layer consensus pipeline for a single stock.
+    Full 5-layer consensus pipeline for a single stock.
 
     Layers:
       1. Signal Agents     — individual structured predictions (passed in)
       2. Bull/Bear         — construct cases for/against majority direction
       3. Risk Gating       — evaluate_risk() blocks/downgrades dangerous signals
-      4. Regime Filter     — HMM market regime blocks ALL directional signals in Crisis/Turbulent
+      4. Regime Filter     — market regime blocks ALL directional signals in Crisis/Turbulent
+      5. Meta-Learner      — confidence calibration via stacked LogisticRegression
 
     Args:
         symbol:              Stock ticker (e.g. "COMI.CA")
@@ -191,6 +201,7 @@ def run_consensus(symbol: str,
         risk_config:         Override risk thresholds
         dynamic_weights:     Accuracy-adjusted agent weights
         market_regime:       RegimeState.to_dict() from _detect_market_regime()
+        db_conn:             Optional DB connection for meta-learner lazy training
 
     Returns:
         Comprehensive consensus result dictionary.
@@ -275,6 +286,27 @@ def run_consensus(symbol: str,
         if regime_flag:
             logger.info(f"[{symbol}] Regime gate: {regime_flag}")
 
+    # ── Layer 5: Meta-Learner Confidence Calibration ──
+    meta_adj = {'scale': 1.0, 'p_correct': 0.5, 'source': 'disabled'}
+    if _META_AVAILABLE and final_signal in ('UP', 'DOWN'):
+        try:
+            meta_adj = _get_meta_learner().adjust(
+                agent_signals,
+                bull_case['bull_score'], bear_case['bear_score'],
+                agreement_ratio, market_regime, db_conn=db_conn
+            )
+            scale = meta_adj['scale']
+            if scale != 1.0:
+                weighted_confidence = round(min(100.0, max(0.0, weighted_confidence * scale)), 1)
+                xmore_score = round(min(100.0, max(0.0, xmore_score * scale)), 1)
+                logger.debug(
+                    "[%s] Meta-learner: P(correct)=%.2f → scale=%.2f; "
+                    "conf→%.1f xmore→%.1f",
+                    symbol, meta_adj['p_correct'], scale, weighted_confidence, xmore_score
+                )
+        except Exception as _e:
+            logger.debug("[%s] Meta-learner adjustment skipped: %s", symbol, _e)
+
     # ── Build Reasoning Chain ──
     reasoning_chain = _build_reasoning_chain(
         symbol, agent_signals, consensus_signal, bull_case, bear_case,
@@ -325,6 +357,9 @@ def run_consensus(symbol: str,
         "market_regime": market_regime,
         "regime_flag": regime_flag,
 
+        # Meta-learner calibration
+        "meta_learner": meta_adj,
+
         # Individual signals
         "agent_signals": agent_signals,
 
@@ -368,6 +403,7 @@ def _empty_result(symbol, timestamp):
         },
         "risk_action": "PASS",
         "risk_score": 0,
+        "meta_learner": {"scale": 1.0, "p_correct": 0.5, "source": "fallback"},
         "agent_signals": [],
         "reasoning_chain": [],
         "display": {

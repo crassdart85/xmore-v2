@@ -524,6 +524,7 @@ def _run_consensus(
             agent_signals=signals,
             market_data=market_data,
             market_regime=regime_for_consensus,
+            db_conn=conn,
         )
         if consensus:
             result.update(consensus)
@@ -740,6 +741,27 @@ def execute(args) -> None:
 
             # Run consensus engine
             consensus = _run_consensus(ticker, signals, market_data, regime, conn)
+
+            # ── Signal enrichment (drivers, risk_level, ATR%) ─────────────
+            try:
+                from engines.signal_enrichment import enrich_signal
+                consensus = enrich_signal(consensus, df, consensus.get("final_signal", "HOLD"), market_data)
+            except Exception as _e:
+                logger.debug(f"[KSA] {ticker}: enrichment skipped: {_e}")
+
+            # ── Tier 2 transaction cost gate (Tadawul ~38 bps RT) ─────────
+            # Kill directional signals whose expected move can't clear costs.
+            _TADAWUL_RT_COST_PCT = 0.40   # 38.2 bps round-trip, rounded up
+            _MIN_NET_MOVE_PCT    = 1.50   # minimum net expected move
+            if consensus.get("final_signal") in ("UP", "DOWN"):
+                em_pct = consensus.get("expected_move_pct")
+                if em_pct is not None and em_pct < (_TADAWUL_RT_COST_PCT + _MIN_NET_MOVE_PCT):
+                    logger.info(
+                        f"[KSA] {ticker}: cost gate: ATR {em_pct:.2f}% < "
+                        f"{_TADAWUL_RT_COST_PCT + _MIN_NET_MOVE_PCT:.2f}% threshold → HOLD"
+                    )
+                    consensus["final_signal"] = "HOLD"
+                    consensus["conviction"]   = "LOW"
 
             # Store to DB (skip in dry-run mode)
             if not args.dry_run:

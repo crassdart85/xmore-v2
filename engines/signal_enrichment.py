@@ -453,6 +453,7 @@ def enrich_signal(consensus_result: dict, df: pd.DataFrame,
         consensus_result["drivers"]             = generate_drivers(features)
         consensus_result["risk_level"]          = safe_risk_label(features)
         consensus_result["expected_move"]       = safe_expected_move(df, signal)
+        consensus_result["expected_move_pct"]   = _compute_atr_pct(df)
         consensus_result["enrichment_regime"]   = detect_regime(features)
         consensus_result["enrichment_features"] = features
         consensus_result["signal_label"]        = generate_signal_label(
@@ -464,6 +465,7 @@ def enrich_signal(consensus_result: dict, df: pd.DataFrame,
         consensus_result.setdefault("drivers",             ["Insufficient data for full analysis"])
         consensus_result.setdefault("risk_level",          "Medium")
         consensus_result.setdefault("expected_move",       None)
+        consensus_result.setdefault("expected_move_pct",   None)
         consensus_result.setdefault("enrichment_regime",   "normal")
         consensus_result.setdefault("enrichment_features", {})
         consensus_result.setdefault("signal_label",        "—")
@@ -473,6 +475,25 @@ def enrich_signal(consensus_result: dict, df: pd.DataFrame,
 
 
 # ─── Internal helpers ─────────────────────────────────────────────────────────
+
+def _compute_atr_pct(df: pd.DataFrame) -> Optional[float]:
+    """Return ATR(14) as a percentage of close price, for the cost gate."""
+    try:
+        if df is None or len(df) < 15:
+            return None
+        close_val = _safe_float(df.iloc[-1].get('close'))
+        if close_val is None or close_val <= 0:
+            return None
+        high, low, prev_close = df['high'], df['low'], df['close'].shift(1)
+        tr = pd.concat([(high - low).abs(), (high - prev_close).abs(),
+                         (low - prev_close).abs()], axis=1).max(axis=1)
+        atr = _safe_float(tr.rolling(14).mean().iloc[-1])
+        if atr is None or atr <= 0:
+            return None
+        return round((atr / close_val) * 100, 3)
+    except Exception:
+        return None
+
 
 def _safe_float(val) -> Optional[float]:
     """Convert value to float, returning None on failure or non-finite result."""

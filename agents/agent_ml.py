@@ -34,12 +34,74 @@ except ImportError:
         "Install lightgbm for best performance (faster training and better accuracy)."
     )
 
-from sklearn.model_selection import TimeSeriesSplit
-
 from agents.agent_base import BaseAgent, AgentSignal
 from features import (add_technical_indicators, add_sentiment_features,
                       add_macro_features, get_feature_columns, log_feature_importance)
 from database import get_connection
+
+class PurgedTimeSeriesSplit:
+    """
+    Walk-forward CV with a purge gap between each train and test fold.
+    The 5-day return label creates overlap across consecutive rows, so the
+    `purge_gap` most recent training rows are dropped to prevent leakage.
+    """
+    def __init__(self, n_splits: int = 5, purge_gap: int = 5):
+        self.n_splits  = n_splits
+        self.purge_gap = purge_gap
+
+    def split(self, X, y=None, groups=None):
+        n         = len(X)
+        indices   = np.arange(n)
+        fold_size = n // (self.n_splits + 1)
+        for i in range(self.n_splits):
+            test_start = (i + 1) * fold_size
+            test_end   = min(test_start + fold_size, n)
+            train_end  = test_start - self.purge_gap
+            if train_end < 10 or test_end > n:
+                continue
+            yield indices[:train_end], indices[test_start:test_end]
+
+
+def _compute_regime_labels(df: pd.DataFrame) -> np.ndarray:
+    """
+    Classify each row as 'calm' or 'turbulent' using MA20 / vol20 rules.
+    Matches the deterministic regime detector in run_agents.py.
+    """
+    close  = df['close'].values.astype(float)
+    n      = len(close)
+    labels = np.full(n, 'calm', dtype=object)
+    for i in range(20, n):
+        window = close[i - 20:i]
+        ma20   = float(window.mean())
+        if ma20 <= 0:
+            continue
+        pct_returns = np.diff(window) / window[:-1]
+        vol20 = float(np.std(pct_returns))
+        price = close[i]
+        if price < ma20 and ((price / ma20 - 1 < -0.03) or (vol20 > 0.025)):
+            labels[i] = 'turbulent'
+    return labels
+
+
+def _detect_current_regime(df: pd.DataFrame) -> str:
+    """Return current regime ('calm' or 'turbulent') from the last row of OHLCV data."""
+    try:
+        close = df['close'].values.astype(float)
+        if len(close) < 20:
+            return 'calm'
+        window = close[-20:]
+        ma20   = float(window.mean())
+        if ma20 <= 0:
+            return 'calm'
+        pct_returns = np.diff(window) / window[:-1]
+        vol20 = float(np.std(pct_returns))
+        price = close[-1]
+        if price < ma20 and ((price / ma20 - 1 < -0.03) or (vol20 > 0.025)):
+            return 'turbulent'
+    except Exception:
+        pass
+    return 'calm'
+
 
 MODEL_DIR = 'models'
 MODEL_MAX_AGE_DAYS = 7    # Force retrain if saved model is older than this
@@ -171,9 +233,10 @@ def _tune_lgbm_params(X: pd.DataFrame, y: pd.Series) -> Optional[dict]:
 class MLAgent(BaseAgent):
     def __init__(self):
         super().__init__("ML_RandomForest")
-        self._model_cache: dict = {}   # {symbol: {'model': m, 'feature_names': [...]}}
+        self._model_cache: dict = {}   # {symbol: {'model': m, 'feature_names': [...], 'regime_models': {...}}}
         self.model = None
         self.feature_names = None
+        self._regime_models: Dict[str, Any] = {}
         self._last_probs = None
         self._last_top_features = None
         self._last_training_accuracy = None
@@ -204,12 +267,14 @@ class MLAgent(BaseAgent):
                     return
             self.model = data.get('model')
             self.feature_names = data.get('feature_names', get_feature_columns())
+            self._regime_models = data.get('regime_models', {})
             logger.info(f"[{symbol}] Model loaded from {path} (trained {trained_at})")
         except Exception as e:
             logger.error(f"[{symbol}] Error loading model: {e}")
 
     def save_model(self, model, feature_names: list, symbol: str = '',
-                   best_params: Optional[dict] = None):
+                   best_params: Optional[dict] = None,
+                   regime_models: Optional[Dict[str, Any]] = None):
         """Save symbol-specific model with metadata."""
         os.makedirs(MODEL_DIR, exist_ok=True)
         path = _model_path(symbol) if symbol else os.path.join(MODEL_DIR, 'stock_predictor.pkl')
@@ -218,6 +283,7 @@ class MLAgent(BaseAgent):
             'feature_names': feature_names,
             'trained_at':    datetime.now().isoformat(),
             'best_params':   best_params,   # Cached Optuna params; None = use defaults
+            'regime_models': regime_models or {},
         }
         joblib.dump(data, path)
         logger.info(f"[{symbol}] Model saved to {path}")
@@ -296,21 +362,25 @@ class MLAgent(BaseAgent):
         if symbol not in self._model_cache:
             self.model = None
             self.feature_names = None
+            self._regime_models = {}
             self.load_model(symbol)
             if self.model is not None:
                 self._model_cache[symbol] = {
-                    'model': self.model, 'feature_names': self.feature_names
+                    'model': self.model, 'feature_names': self.feature_names,
+                    'regime_models': self._regime_models,
                 }
         else:
             cached = self._model_cache[symbol]
             self.model = cached['model']
             self.feature_names = cached['feature_names']
+            self._regime_models = cached.get('regime_models', {})
 
         if self.model is None:
             self.model, self.feature_names = self._train_model(df, available_features, symbol)
             if self.model is not None:
                 self._model_cache[symbol] = {
-                    'model': self.model, 'feature_names': self.feature_names
+                    'model': self.model, 'feature_names': self.feature_names,
+                    'regime_models': self._regime_models,
                 }
 
         if self.model is None:
@@ -322,7 +392,8 @@ class MLAgent(BaseAgent):
             self.model, self.feature_names = self._train_model(df, available_features, symbol)
             if self.model is not None:
                 self._model_cache[symbol] = {
-                    'model': self.model, 'feature_names': self.feature_names
+                    'model': self.model, 'feature_names': self.feature_names,
+                    'regime_models': self._regime_models,
                 }
             features = available_features
 
@@ -336,8 +407,15 @@ class MLAgent(BaseAgent):
 
         try:
             X = last_row[features]
-            prediction = self.model.predict(X)[0]
-            probs = self.model.predict_proba(X)[0]
+
+            # Use regime sub-model if available for the current market state
+            current_regime = _detect_current_regime(df)
+            active_model = self._regime_models.get(current_regime) or self.model
+            if active_model is not self.model:
+                logger.debug(f"[{symbol}] Using '{current_regime}' regime sub-model")
+
+            prediction = active_model.predict(X)[0]
+            probs = active_model.predict_proba(X)[0]
             confidence = float(max(probs))
 
             # Build probs dict for predict_signal
@@ -349,10 +427,10 @@ class MLAgent(BaseAgent):
 
             # Top features by gain
             try:
-                if hasattr(self.model, 'booster_'):
-                    importances = self.model.booster_.feature_importance(importance_type='gain')
+                if hasattr(active_model, 'booster_'):
+                    importances = active_model.booster_.feature_importance(importance_type='gain')
                 else:
-                    importances = self.model.feature_importances_
+                    importances = active_model.feature_importances_
                 feat_importance = sorted(
                     zip(features, importances), key=lambda x: x[1], reverse=True
                 )[:5]
@@ -418,12 +496,13 @@ class MLAgent(BaseAgent):
 
     def _train_model(self, df: pd.DataFrame, features: list, symbol: str = ''):
         """
-        Two-pass training:
-          Pass 1 — Optuna hyperparameter search (25 trials, cached in model file).
-                   Uses cached params on subsequent 7-day retrains — runs once.
-          Pass 2 — Walk-forward validation (TimeSeriesSplit, 5 folds) using tuned
-                   params, then feature selection by gain importance, then final
-                   retrain on all data with selected features.
+        Three-pass training with CPCV, focal weighting, and regime sub-models:
+
+          Pass 1 — Optuna HPO (25 trials, cached once per symbol).
+          Pass 2 — Purged walk-forward CV (CPCV, 5-day purge gap) to collect
+                   OOF probabilities for focal sample weighting.
+          Pass 3 — Final model on all data with focal weights + feature selection.
+                   Also trains Calm/Turbulent regime sub-models on data subsets.
         """
         if not LGBM_AVAILABLE:
             return self._train_model_rf_fallback(df, features, symbol)
@@ -443,7 +522,6 @@ class MLAgent(BaseAgent):
         y = train_df['target'].astype(int)
 
         # ── Pass 1: Optuna hyperparameter search ──────────────────────────
-        # Load cached params first; only run Optuna if none exist yet
         best_params = self._load_cached_params(symbol) or {}
         if not best_params and len(train_df) >= 60:
             logger.info(f"[{symbol}] Running Optuna ({OPTUNA_N_TRIALS} trials)...")
@@ -454,15 +532,19 @@ class MLAgent(BaseAgent):
             else:
                 logger.info(f"[{symbol}] Optuna unavailable — using defaults")
 
-        # ── Pass 2: Walk-forward validation with tuned params ─────────────
+        # ── Pass 2: Purged walk-forward CV (CPCV) ─────────────────────────
+        # 5-day purge gap prevents leakage from the 5-day forward-return label.
         n_splits = min(5, len(X) // 10)
         if n_splits < 2:
             n_splits = 2
 
-        tscv = TimeSeriesSplit(n_splits=n_splits)
+        tscv = PurgedTimeSeriesSplit(n_splits=n_splits, purge_gap=5)
         scores = []
         best_model = None
         best_score = 0.0
+
+        # OOF probability of the correct class (for focal weighting)
+        oof_p_correct = np.full(len(X), 0.5)
 
         for train_idx, test_idx in tscv.split(X):
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
@@ -472,6 +554,7 @@ class MLAgent(BaseAgent):
             with warnings.catch_warnings():
                 warnings.simplefilter('ignore')
                 model.fit(X_train, y_train)
+
             score = model.score(X_test, y_test)
             scores.append(score)
 
@@ -479,7 +562,29 @@ class MLAgent(BaseAgent):
                 best_score = score
                 best_model = model
 
-        avg_score = float(np.mean(scores))
+            # Collect OOF probs: p_correct = P(true class)
+            test_probs = model.predict_proba(X_test)
+            classes = list(model.classes_)
+            for local_i, (true_lbl, prob_row) in enumerate(zip(y_test.values, test_probs)):
+                if true_lbl in classes:
+                    oof_p_correct[test_idx[local_i]] = float(prob_row[classes.index(true_lbl)])
+
+        if not scores:
+            logger.warning(f"[{symbol}] No valid CV folds — using full data fallback")
+            n_splits = 2
+            from sklearn.model_selection import TimeSeriesSplit as _TSCV
+            for train_idx, test_idx in _TSCV(n_splits=n_splits).split(X):
+                model = _make_lgbm(**best_params)
+                with warnings.catch_warnings():
+                    warnings.simplefilter('ignore')
+                    model.fit(X.iloc[train_idx], y.iloc[train_idx])
+                score = model.score(X.iloc[test_idx], y.iloc[test_idx])
+                scores.append(score)
+                if score > best_score:
+                    best_score = score
+                    best_model = model
+
+        avg_score = float(np.mean(scores)) if scores else 0.0
         self._last_training_accuracy = avg_score
         self._last_samples_used = len(train_df)
         logger.info(
@@ -490,19 +595,46 @@ class MLAgent(BaseAgent):
         if best_model is None:
             return None, None
 
-        # ── Feature selection + final retrain ─────────────────────────────
+        # ── Feature selection ─────────────────────────────────────────────
         selected = _select_top_features(best_model, features, top_n=_TOP_N_FEATURES)
         if len(selected) < len(features):
             logger.info(f"[{symbol}] Features: {len(features)} → {len(selected)}")
+
+        # ── Focal sample weights: w = (1 - p_correct)^gamma ──────────────
+        FOCAL_GAMMA = 2.0
+        sample_weights = np.clip((1.0 - oof_p_correct) ** FOCAL_GAMMA, 0.01, 1.0)
 
         X_sel = train_df[selected]
         final_model = _make_lgbm(**best_params)
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            final_model.fit(X_sel, y)
+            final_model.fit(X_sel, y, sample_weight=sample_weights)
+
+        # ── Regime-conditional sub-models ─────────────────────────────────
+        regime_models: Dict[str, Any] = {}
+        regime_labels = _compute_regime_labels(train_df)
+        for regime_name in ('calm', 'turbulent'):
+            pos_indices = np.where(regime_labels == regime_name)[0]
+            if len(pos_indices) < 20:
+                logger.debug(
+                    f"[{symbol}] Regime '{regime_name}': {len(pos_indices)} rows — skipping sub-model"
+                )
+                continue
+            X_r  = X_sel.iloc[pos_indices]
+            y_r  = y.iloc[pos_indices]
+            sw_r = sample_weights[pos_indices]
+            r_model = _make_lgbm(**best_params)
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                r_model.fit(X_r, y_r, sample_weight=sw_r)
+            regime_models[regime_name] = r_model
+            logger.info(f"[{symbol}] Regime sub-model '{regime_name}' trained on {len(pos_indices)} rows")
+
+        self._regime_models = regime_models
 
         log_feature_importance(final_model, selected, symbol=symbol, top_n=10)
-        self.save_model(final_model, selected, symbol=symbol, best_params=best_params or None)
+        self.save_model(final_model, selected, symbol=symbol,
+                        best_params=best_params or None, regime_models=regime_models)
 
         return final_model, selected
 
