@@ -1,5 +1,5 @@
 # Business Requirements Document — Xmore KSA (Tadawul)
-**Version:** 1.0 | **Date:** March 2026 | **Status:** Active
+**Version:** 1.1 | **Date:** April 2026 | **Status:** Active
 
 ---
 
@@ -98,6 +98,11 @@ Saudi retail investors lack affordable, systematic tools for Tadawul equity anal
 | `engines/fetch_tasi_benchmark.py` | TASI daily prices; 3-strategy: EODHD → proxy; stores as `TASI.INDX` |
 | `engines/evaluate_performance.py` | `EGX30_SYMBOLS = ['TASI.INDX', '^TASI', '2222.SR']` on KSA branch |
 | `engines/timemachine_data.py` + `timemachine_engine.py` | 41 .SR symbols, `^TASI` key, `TASI_BASE=12000` |
+| `engines/agent_weights.py` | Softmax dynamic agent weights (T=2.0, floor 5%) + audit log |
+| `engines/event_detector.py` | News event detection (SAMA, CMA, TASI rebalance) → targeted sentiment refresh |
+| `engines/job_locks.py` | Advisory TTL-based pipeline locking |
+| `engines/macro_data.py` | MacroDataProvider: SAMA rate, USD/SAR, CPI, GDP → composite risk score |
+| `web-ui/services/openbbMcpBridge.js` | MCP bridge: live quotes (SAR) + macro context for RAG chat |
 | `backfill_history.py` | Bulk historical price backfill |
 | `render-ksa.yaml` | Render deployment config for KSA |
 
@@ -128,6 +133,33 @@ Each trading day the pipeline runs six specialised agents in sequence:
 ### 8.3 Market Regime Detection
 
 `_detect_market_regime()` uses MA/volatility analysis. Result written to `regime_log` after each detection run. **`regime_flag` column does NOT exist in `consensus_results`** — never SELECT it.
+
+### 8.4 Dynamic Agent Weighting (April 2026)
+
+`engines/agent_weights.py` replaces static equal weights with softmax-based dynamic weights computed from recent 30-day directional accuracy. Temperature=2.0, floor=5%. Weight history logged to `agent_weights_log` table.
+
+### 8.5 Regime Feedback into Agents (April 2026)
+
+`engines/regime_model.py` `get_current_regime()` returns bull/bear/high_vol labels. `REGIME_SIGNAL_MODIFIERS` in `run_agents.py` applies per-regime bias adjustments and threshold gates before consensus.
+
+### 8.6 Event-Triggered Sentiment Refresh (April 2026)
+
+`engines/event_detector.py` (`EventDetector`) scans recent news before the agent pipeline runs. Detects:
+- SAMA rate decisions (affects all stocks)
+- Earnings announcements (affects mentioned symbols)
+- CMA regulatory actions (suspensions, delistings)
+- TASI/MT30 index rebalances
+- Opening price gaps >3%
+
+Triggers targeted `collect_sentiment()` for affected symbols.
+
+### 8.7 Calibrated Evaluation Metrics (April 2026)
+
+`evaluate.py` now computes multi-metric scoring: magnitude score, Brier calibration, signal strength, and actual return. `evaluate_performance.py` computes IC via Spearman rank correlation. Exposed via `/api/track-record/summary`.
+
+### 8.8 OpenBB MCP Bridge (April 2026)
+
+`web-ui/services/openbbMcpBridge.js` enriches the RAG chat with live Tadawul quotes (SAR) and KSA macro context (SAMA rate, USD/SAR). "Live data" badge (EN/AR) on enriched responses.
 
 ---
 
@@ -170,7 +202,7 @@ Runs on `xmore-ksa` branch. Same schedule as EGX branch adapted for Tadawul mark
 | `intraday-news-update` | `0 7,9,11 * * 0-4` | |
 | `post-market-pipeline` | `30 12 * * 0-4` | 90m timeout |
 | `daily-pipeline` | `0 22 * * 0-5` | 60m timeout |
-| `catchup-evaluation` | `0 6,12,18 * * *` | 30m timeout |
+| `catchup-evaluation` | `0 6,18 * * *` + `15 12 * * *` | 30m timeout; 12:15 staggers past price-update |
 | `etf-egx-all` | `30 13 * * 0-4` | KSA ETFs |
 | `etf-global-prices` | `30 21 * * 1-5` | |
 | `etf-rag-embedding` | `15 6,10,14,20 * * *` | 4×/day |
@@ -257,6 +289,11 @@ All server.js queries filter `WHERE symbol LIKE '%.SR'` (predictions, evaluation
 | KSA-only columns on `trade_recommendations` | `signal_type`, `xmore_score`, `notes` — added via ALTER TABLE in `init-db-ksa.js` |
 | `run_agents_ksa.py` | Writes `signal_type` (not legacy `signal` column) |
 | TASI benchmark | Stored as symbol `TASI.INDX`; fallback to `^TASI` / `2222.SR` proxy |
+| `agent_weights_log` | Softmax weight audit trail (added April 2026 via `init-db-ksa.js`) |
+| `macro_indicators` | SAMA rate, USD/SAR, CPI, GDP cached by MacroDataProvider |
+| `job_locks` | Advisory pipeline locking (TTL-based) |
+| `evaluations` new columns | `magnitude_score`, `calibration_score`, `signal_strength`, `actual_return` |
+| `predictions` new column | `confidence_score` (consensus confidence from softmax weights) |
 
 ---
 

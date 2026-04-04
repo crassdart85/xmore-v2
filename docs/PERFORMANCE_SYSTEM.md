@@ -4,8 +4,8 @@
 
 | Field | Details |
 |-------|---------|
-| **Version** | 1.0 |
-| **Date** | February 12, 2026 |
+| **Version** | 2.0 |
+| **Date** | April 4, 2026 |
 | **Status** | Implemented |
 
 ---
@@ -31,6 +31,9 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 |-------|---------|
 | `prediction_audit_log` | Logs every modification to outcome fields on trade_recommendations |
 | `agent_performance_daily` | Stores daily snapshots of per-agent rolling accuracy (30d, 90d) |
+| `agent_weights_log` | Audit trail for softmax dynamic agent weights (agent_name, weight, accuracy, sample_size, computed_at) |
+| `macro_indicators` | Cached Egypt macro data: CBE rate, USD/EGP, CPI YoY, GDP growth (indicator, value, period, source, fetched_at) |
+| `job_locks` | Advisory locking for pipeline coordination (job_name, locked_at, expires_at) |
 
 ### 2.2 Altered Columns (trade_recommendations)
 
@@ -41,6 +44,21 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | `benchmark_5d_return` | REAL | EGX30 5-day return |
 | `alpha_5d` | REAL | Alpha for 5-day window |
 | `is_live` | BOOLEAN | TRUE for live predictions, FALSE for backtests |
+
+### 2.2b Altered Columns (predictions)
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `confidence_score` | REAL | Consensus confidence from softmax-weighted agent agreement |
+
+### 2.2c Altered Columns (evaluations) — Migration 014
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `magnitude_score` | REAL | Direction-sign × min(abs(actual_return)/5.0, 1.0) — rewards magnitude of correct calls |
+| `calibration_score` | REAL | 1 − (confidence − outcome)² — Brier-style calibration measure |
+| `signal_strength` | REAL | confidence × direction_sign — signed conviction metric for IC computation |
+| `actual_return` | REAL | Raw actual return used for signal-strength correlation |
 
 ### 2.3 Altered Columns (user_positions)
 
@@ -58,9 +76,12 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | **Materialized View** | `mv_performance_global` for fast global stats (refreshed daily) |
 | **Refresh Function** | `refresh_performance_views()` — called by evaluation engine |
 
-### 2.5 Migration File
+### 2.5 Migration Files
 
-- `web-ui/migrations/007_performance_benchmark.sql` — Full migration script
+- `web-ui/migrations/007_performance_benchmark.sql` — Performance benchmark columns
+- `web-ui/migrations/013_agent_weights.sql` — `agent_weights_log` table + `confidence_score` on predictions
+- `web-ui/migrations/014_evaluation_metrics.sql` — Calibrated metric columns on evaluations
+- `web-ui/migrations/015_job_locks.sql` — `job_locks` table for advisory pipeline locking
 
 ---
 
@@ -84,6 +105,7 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | `update_agent_accuracy_snapshot()` | Inserts daily agent accuracy into `agent_performance_daily` (PG only) |
 | `refresh_performance_views()` | Refreshes `mv_performance_global` materialized view (PG only) |
 | `get_benchmark_return(date, window)` | Fetches EGX30 return for a date + window combination |
+| `compute_information_coefficient(lookback_days)` | Spearman rank correlation between signal_strength and actual_return over a rolling window |
 
 **Helpers**:
 - `get_connection()` — from `database.py`
@@ -326,4 +348,42 @@ The system enforces a **100-trade minimum** for statistical credibility. Until t
 
 ---
 
-*Last Updated: February 12, 2026*
+---
+
+## 9. Dynamic Agent Weighting
+
+### 9.1 engines/agent_weights.py
+
+Replaces static equal-weight consensus with accuracy-driven softmax weights.
+
+| Parameter | Value |
+|-----------|-------|
+| `SOFTMAX_TEMPERATURE` | 2.0 |
+| `MIN_WEIGHT` | 0.05 (5% floor) |
+| Lookback window | 30 days |
+
+**Flow:**
+1. Query recent directional accuracy per agent from evaluations
+2. Apply softmax with temperature scaling: `w_i = exp(acc_i / T) / Σ exp(acc_j / T)`
+3. Apply floor (5%) and renormalize
+4. Log weights to `agent_weights_log` for audit trail
+5. `weighted_consensus(signals, weights)` produces consensus signal + confidence score
+
+### 9.2 Information Coefficient (IC)
+
+`compute_information_coefficient()` in `evaluate_performance.py` computes the Spearman rank correlation between `signal_strength` and `actual_return` over a rolling window. Exposed via `/api/track-record/summary` as the `ic` field.
+
+### 9.3 Calibrated Metrics
+
+The evaluation pipeline (`evaluate.py`) now computes four metrics per prediction:
+
+| Metric | Formula | Purpose |
+|--------|---------|---------|
+| `magnitude_score` | `direction_sign × min(abs(actual_return)/5.0, 1.0)` | Rewards large correct moves, penalizes large wrong moves |
+| `calibration_score` | `1 − (confidence − outcome)²` | Brier-style: measures how well confidence matches reality |
+| `signal_strength` | `confidence × direction_sign` | Signed conviction for IC rank correlation |
+| `actual_return` | Raw return | Source data for all derived metrics |
+
+---
+
+*Last Updated: April 4, 2026*
