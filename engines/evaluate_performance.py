@@ -726,8 +726,57 @@ def detect_model_drift(window: int = 20, baseline_window: int = 60,
     return stale
 
 
+def compute_information_coefficient(lookback_days: int = 60) -> dict:
+    """
+    IC = Spearman rank correlation between signal_strength and actual_return
+    across all evaluated predictions with calibrated metrics.
+
+    IC > 0.05 = weak positive edge
+    IC > 0.10 = meaningful edge (institutional threshold)
+    IC > 0.15 = strong edge
+
+    Returns {'ic': float, 'p_value': float, 'sample_size': int}
+    """
+    try:
+        from scipy.stats import spearmanr
+    except ImportError:
+        return {'ic': None, 'p_value': None, 'sample_size': 0, 'error': 'scipy not installed'}
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        sql = f"""
+            SELECT signal_strength, actual_return
+            FROM evaluations
+            WHERE signal_strength IS NOT NULL
+              AND actual_return IS NOT NULL
+              AND evaluated_at >= {_interval(lookback_days)}
+        """
+        rows = _query(cursor, sql)
+        if not rows or len(rows) < 10:
+            return {'ic': None, 'p_value': None, 'sample_size': len(rows or []),
+                    'error': 'insufficient data'}
+
+        strengths = [float(r['signal_strength']) for r in rows]
+        returns = [float(r['actual_return']) for r in rows]
+
+        ic, p_val = spearmanr(strengths, returns)
+        return {
+            'ic': round(float(ic), 4),
+            'p_value': round(float(p_val), 4),
+            'sample_size': len(rows),
+        }
+
+
 # ─── STANDALONE EXECUTION ─────────────────────────────────────
 
 if __name__ == "__main__":
     run_evaluation(pipeline_run_id=f"manual_run")
-    print("✅ Performance evaluation complete.")
+
+    ic_result = compute_information_coefficient()
+    if ic_result.get('ic') is not None:
+        print(f"IC = {ic_result['ic']:.4f} (p={ic_result['p_value']:.4f}, n={ic_result['sample_size']})")
+    else:
+        print(f"IC: {ic_result.get('error', 'N/A')}")
+
+    print("Performance evaluation complete.")

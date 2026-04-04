@@ -1009,7 +1009,51 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_date   ON signal_ic_log(computed_at DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_symbol ON signal_ic_log(symbol)');
 
-    console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals, signal_ic_log) ready');
+    // agent_weights_log — audit trail for softmax dynamic agent weights
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS agent_weights_log (
+        id          SERIAL PRIMARY KEY,
+        agent_name  TEXT NOT NULL,
+        weight      REAL NOT NULL,
+        accuracy    REAL,
+        sample_size INTEGER NOT NULL DEFAULT 0,
+        computed_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_agent_weights_log_date ON agent_weights_log(computed_at DESC)');
+
+    // confidence_score on predictions (consensus confidence)
+    await safeDDL(pool, 'ALTER TABLE predictions ADD COLUMN IF NOT EXISTS confidence_score REAL');
+
+    // Calibrated evaluation metrics on evaluations table
+    await safeDDL(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS magnitude_score REAL');
+    await safeDDL(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS calibration_score REAL');
+    await safeDDL(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS signal_strength REAL');
+    await safeDDL(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS actual_return REAL');
+
+    // macro_indicators — cached Egypt macro data (CBE rate, USD/EGP, CPI, GDP)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS macro_indicators (
+        id          SERIAL PRIMARY KEY,
+        indicator   TEXT NOT NULL,
+        value       REAL NOT NULL,
+        period      TEXT NOT NULL,
+        source      TEXT NOT NULL,
+        fetched_at  TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_macro_indicator ON macro_indicators(indicator, fetched_at DESC)');
+
+    // job_locks — advisory locking to prevent concurrent pipeline steps
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS job_locks (
+        job_name    TEXT PRIMARY KEY,
+        locked_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+        expires_at  TIMESTAMP NOT NULL
+      )
+    `);
+
+    console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals, signal_ic_log, agent_weights_log, job_locks) ready');
 
     // Seed KSA stocks (Tadawul) — disable statement_timeout for INSERT
     await pool.query("SET statement_timeout = 0");

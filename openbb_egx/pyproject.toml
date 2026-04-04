@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openbb-egx"
+version = "0.1.0"
+description = "OpenBB data provider for the Egyptian Exchange (EGX)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "aiohttp>=3.8",
+    "pydantic>=2.0",
+    "pandas>=1.5",
+    "yfinance>=0.2.18",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio", "aioresponses"]
+
+[tool.setuptools.packages.find]
+include = ["openbb_egx*"]

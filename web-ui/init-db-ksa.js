@@ -463,6 +463,51 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_date   ON signal_ic_log(computed_at DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_symbol ON signal_ic_log(symbol)');
 
+    // ── Agent Weights Log ─────────────────────────────────────────────────
+    console.log('⚖️  Creating agent_weights_log table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS agent_weights_log (
+        id SERIAL PRIMARY KEY,
+        agent_name TEXT NOT NULL,
+        weight REAL NOT NULL,
+        accuracy REAL,
+        sample_size INTEGER NOT NULL DEFAULT 0,
+        computed_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_agent_weights_log_date ON agent_weights_log(computed_at DESC)');
+
+    // confidence_score on predictions (consensus confidence) + calibrated evaluation columns
+    await safeExec(pool, 'ALTER TABLE predictions ADD COLUMN IF NOT EXISTS confidence_score REAL');
+    await safeExec(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS magnitude_score REAL');
+    await safeExec(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS calibration_score REAL');
+    await safeExec(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS signal_strength REAL');
+    await safeExec(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS actual_return REAL');
+
+    // ── Macro Indicators ─────────────────────────────────────────────────
+    console.log('🌐 Creating macro_indicators table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS macro_indicators (
+        id SERIAL PRIMARY KEY,
+        indicator TEXT NOT NULL,
+        value REAL NOT NULL,
+        period TEXT,
+        source TEXT,
+        fetched_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )
+    `);
+    await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_macro_indicator ON macro_indicators(indicator, fetched_at DESC)');
+
+    // ── Job Locks ────────────────────────────────────────────────────────
+    console.log('🔒 Creating job_locks table...');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS job_locks (
+        job_name TEXT PRIMARY KEY,
+        locked_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        expires_at TIMESTAMP NOT NULL
+      )
+    `);
+
     console.log('\n✅ KSA database initialization complete!');
     console.log('📈 Market: Saudi Exchange (Tadawul) — تداول');
     console.log('💱 Currency: SAR (Saudi Riyal)');

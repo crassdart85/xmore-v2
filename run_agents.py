@@ -132,6 +132,87 @@ def _compute_market_data(df):
     return market
 
 
+# ── Regime-conditioned signal modifiers ──────────────────────────────────────
+
+REGIME_SIGNAL_MODIFIERS = {
+    'bull': {
+        'bias': 0.1,           # +10% to BUY confidence in bull regime
+        'sell_threshold': 0.7, # Require higher confidence to issue SELL
+    },
+    'bear': {
+        'bias': -0.1,          # Penalize BUY confidence in bear regime
+        'buy_threshold': 0.7,  # Require higher confidence to issue BUY
+    },
+    'high_vol': {
+        'bias': 0.0,           # No directional bias
+        'hold_expansion': 0.15, # Expand HOLD band — prefer HOLD in high vol
+    },
+    'unknown': {
+        'bias': 0.0,           # No modification if regime unknown
+    },
+}
+
+
+def _apply_regime_modifiers(agent_signals: list, market_regime: Optional[dict]) -> list:
+    """
+    Modify raw agent signal confidences based on the current market regime.
+    This is applied BEFORE consensus — adjusts individual agent outputs.
+
+    Maps the market_regime dict (from _detect_market_regime) into the
+    regime modifier system. Current approach uses Calm→bull, Turbulent→high_vol.
+    """
+    if not market_regime or not agent_signals:
+        return agent_signals
+
+    label = market_regime.get('regime_label_en', 'Calm')
+    # Map existing Calm/Turbulent labels to bull/bear/high_vol
+    if label == 'Calm':
+        regime_key = 'bull'
+    elif label == 'Turbulent':
+        regime_key = 'high_vol'
+    elif label == 'Crisis':
+        regime_key = 'bear'
+    else:
+        regime_key = 'unknown'
+
+    mods = REGIME_SIGNAL_MODIFIERS.get(regime_key, REGIME_SIGNAL_MODIFIERS['unknown'])
+    bias = mods.get('bias', 0.0)
+
+    modified = []
+    for sig in agent_signals:
+        sig = dict(sig)  # shallow copy
+        pred = sig.get('prediction', 'HOLD')
+        conf = sig.get('confidence', 50) / 100.0
+
+        # Apply bias
+        if pred == 'UP':
+            conf = max(0.0, min(1.0, conf + bias))
+            # In bear regime, require higher confidence for UP
+            buy_thresh = mods.get('buy_threshold')
+            if buy_thresh and conf < buy_thresh:
+                sig['prediction'] = 'HOLD'
+                sig['confidence'] = round(conf * 100, 1)
+                modified.append(sig)
+                continue
+        elif pred == 'DOWN':
+            conf = max(0.0, min(1.0, conf - bias))  # Opposite bias for DOWN
+            # In bull regime, require higher confidence for DOWN
+            sell_thresh = mods.get('sell_threshold')
+            if sell_thresh and conf < sell_thresh:
+                sig['prediction'] = 'HOLD'
+                sig['confidence'] = round(conf * 100, 1)
+                modified.append(sig)
+                continue
+        else:
+            # HOLD — high_vol expands HOLD tendency (no change needed, already HOLD)
+            pass
+
+        sig['confidence'] = round(conf * 100, 1)
+        modified.append(sig)
+
+    return modified
+
+
 def _detect_market_regime(conn) -> Optional[dict]:
     """
     Fit a Gaussian HMM on recent EGX30-representative returns to classify
@@ -871,10 +952,41 @@ def execute():
                     except Exception: pass
             # ──────────────────────────────────────────────────────────────
 
+            # ── Event-Triggered Sentiment Refresh ──────────────────────
+            # Scan recent news for high-impact events (CBE decisions, earnings,
+            # regulatory actions) and refresh sentiment for affected symbols
+            # BEFORE generating predictions.
+            event_triggered_symbols = set()
+            try:
+                from engines.event_detector import EventDetector
+                detector = EventDetector(conn)
+                events = detector.scan_and_refresh(lookback_hours=6)
+                if events:
+                    event_triggered_symbols = set(e[0] for e in events)
+                    print(f"[EVENT] {len(events)} high-impact event(s) detected: "
+                          f"{', '.join(f'{e[0]}({e[1]})' for e in events[:5])}")
+            except Exception as _ev_err:
+                print(f"[EVENT] Scan skipped: {_ev_err}")
+            # ──────────────────────────────────────────────────────────────
+
             # Load accuracy-adjusted weights once for the entire run
-            dynamic_weight_state = _load_dynamic_weight_state(conn)
-            dynamic_weights = dynamic_weight_state.get("weights") or _load_dynamic_weights(conn)
-            dynamic_weight_profiles = dynamic_weight_state.get("profiles") or {}
+            # Primary: softmax-based weights (logged to agent_weights_log)
+            try:
+                from engines.agent_weights import compute_agent_weights as _compute_softmax_weights
+                dynamic_weights = _compute_softmax_weights(conn, lookback_days=30)
+                print(f"Softmax agent weights (accuracy-adjusted): {dynamic_weights}")
+            except Exception as _sw_err:
+                logger.warning(f"Softmax weights failed, falling back: {_sw_err}")
+                dynamic_weights = None
+
+            # Fallback: existing multi-factor weight state
+            if not dynamic_weights:
+                dynamic_weight_state = _load_dynamic_weight_state(conn)
+                dynamic_weights = dynamic_weight_state.get("weights") or _load_dynamic_weights(conn)
+            else:
+                dynamic_weight_state = _load_dynamic_weight_state(conn)
+
+            dynamic_weight_profiles = dynamic_weight_state.get("profiles") if dynamic_weight_state else {}
             base_weights = getattr(config, 'AGENT_WEIGHTS', {})
             if dynamic_weights != base_weights:
                 print(f"Dynamic agent weights (accuracy-adjusted): {dynamic_weights}")
@@ -1050,6 +1162,10 @@ def execute():
                         market_data['garch_forecast_vol'] = garch_vol
                         print(f"  📐 GARCH forecast vol: {garch_vol:.2%} (hist 20d: {market_data.get('volatility_20d', 0):.2%})")
 
+                # ── Regime-Conditioned Signal Modification ──
+                # Adjust raw agent confidences based on regime before consensus
+                agent_signals = _apply_regime_modifiers(agent_signals, market_regime)
+
                 # ── Layers 2 & 3: Consensus Engine ──
                 consensus_result = run_consensus(
                     symbol=stock,
@@ -1063,6 +1179,24 @@ def execute():
                     db_conn=conn,
                 )
 
+                calibration_meta = _apply_confidence_calibration(
+                    consensus_result.get('confidence', 0),
+                    confidence_calibration
+                )
+                edge_meta = _estimate_expected_edge(
+                    stock,
+                    consensus_result.get('final_signal', 'HOLD'),
+                    calibration_meta,
+                    expected_edge_profiles
+                )
+                consensus_result['calibrated_confidence'] = calibration_meta.get('calibrated_confidence', 0)
+                consensus_result['expected_edge_pct'] = edge_meta.get('expected_edge_pct', 0)
+                consensus_result['ranking_score'] = edge_meta.get('ranking_score', 0)
+                consensus_result['event_triggered'] = stock in event_triggered_symbols
+                consensus_result['calibration_meta'] = {
+                    **calibration_meta,
+                    **edge_meta,
+                }
                 consensus_result['weight_profile'] = {
                     "weights": dynamic_weights,
                     "profiles": dynamic_weight_profiles,
@@ -1138,22 +1272,25 @@ def execute():
                 # Also store consensus as a "Consensus" prediction
                 consensus_signal = consensus_result.get('final_signal', 'HOLD')
                 consensus_confidence = consensus_result.get('confidence', 0)
+                # confidence_score = winning direction weight / total (0–1)
+                consensus_conf_score = consensus_result.get('agent_agreement', 0.0)
 
                 if os.getenv('DATABASE_URL'):
                     cursor.execute("""
                         INSERT INTO predictions
-                        (symbol, prediction_date, target_date, agent_name, prediction, confidence)
-                        VALUES (%s, %s, %s, %s, %s, %s)
+                        (symbol, prediction_date, target_date, agent_name, prediction, confidence, confidence_score)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
                         ON CONFLICT (symbol, prediction_date, target_date, agent_name)
                         DO UPDATE SET prediction = EXCLUDED.prediction,
-                                     confidence = EXCLUDED.confidence
-                    """, (stock, today, target, "Consensus", consensus_signal, consensus_confidence))
+                                     confidence = EXCLUDED.confidence,
+                                     confidence_score = EXCLUDED.confidence_score
+                    """, (stock, today, target, "Consensus", consensus_signal, consensus_confidence, consensus_conf_score))
                 else:
                     cursor.execute("""
                         INSERT OR REPLACE INTO predictions
-                        (symbol, prediction_date, target_date, agent_name, prediction, confidence)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    """, (stock, today, target, "Consensus", consensus_signal, consensus_confidence))
+                        (symbol, prediction_date, target_date, agent_name, prediction, confidence, confidence_score)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """, (stock, today, target, "Consensus", consensus_signal, consensus_confidence, consensus_conf_score))
 
                 # Display summary
                 bull_s = consensus_result.get('bull_score', 0)

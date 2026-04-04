@@ -460,6 +460,115 @@ class RegimeModel:
         return K * (K - 1) + (K - 1) + K * n_features + cov_par
 
 
+# ── Quick regime query (works with or without hmmlearn) ─────────────────────
+
+def get_current_regime(symbol: str, price_series: pd.Series) -> dict:
+    """
+    Return current regime classification for a given symbol.
+
+    Attempts HMM fit first (if hmmlearn is installed and >= 252 observations).
+    Falls back to deterministic MA/vol classification.
+
+    Returns:
+        {
+            'regime': int,                    # 0 or 1 (or 2 for 3-state)
+            'regime_label': str,              # 'bull' | 'bear' | 'high_vol' | 'calm' | 'unknown'
+            'regime_probability': float,      # P(current state) from HMM, or 0.80 for MA/vol
+            'regime_stable': bool,            # Same regime for last 5+ days
+            'vol_regime': float,              # Current regime mean vol (annualised)
+            'drift_regime': float,            # Current regime mean return (daily)
+        }
+
+    If fit fails: regime_label='unknown', regime_probability=0.0
+    """
+    result = {
+        'regime': 0,
+        'regime_label': 'unknown',
+        'regime_probability': 0.0,
+        'regime_stable': True,
+        'vol_regime': 0.0,
+        'drift_regime': 0.0,
+    }
+
+    if price_series is None or len(price_series) < 20:
+        return result
+
+    try:
+        # Compute daily log-returns
+        log_ret = np.log(price_series / price_series.shift(1)).dropna()
+
+        # Try HMM if installed and enough data
+        if HAS_HMMLEARN and len(log_ret) >= 252:
+            try:
+                model = RegimeModel(n_regimes=2, use_auto_select=True, seed=42)
+                state = model.fit(log_ret)
+
+                # Map HMM labels to bull/bear/high_vol
+                label = state.regime_label_en.lower()
+                if label == 'calm':
+                    regime_label = 'bull' if state.regime_means[state.current_regime] > 0 else 'bear'
+                elif label in ('turbulent', 'crisis'):
+                    regime_label = 'high_vol'
+                else:
+                    regime_label = label
+
+                # Check stability (same regime for last 5 days)
+                viterbi = model.get_viterbi_states()
+                regime_stable = True
+                if viterbi is not None and len(viterbi) >= 5:
+                    regime_stable = len(set(viterbi[-5:])) == 1
+
+                return {
+                    'regime': state.current_regime,
+                    'regime_label': regime_label,
+                    'regime_probability': state.regime_confidence,
+                    'regime_stable': regime_stable,
+                    'vol_regime': state.regime_vols[state.current_regime],
+                    'drift_regime': state.regime_means[state.current_regime],
+                }
+            except Exception as e:
+                logger.debug("HMM fit failed for %s, falling back to MA/vol: %s", symbol, e)
+
+        # Fallback: deterministic MA/vol classification
+        closes = price_series.dropna()
+        if len(closes) < 20:
+            return result
+
+        ma20 = float(closes.tail(20).mean())
+        price = float(closes.iloc[-1])
+        vol20 = float(closes.pct_change().dropna().tail(20).std())
+        vol_ann = vol20 * np.sqrt(252)
+        daily_ret = float(closes.pct_change().dropna().tail(20).mean())
+        bearish = price < ma20
+        deviation = (price / ma20) - 1
+
+        if bearish and (deviation < -0.03 or vol20 > 0.025):
+            regime_label = 'high_vol'
+            regime_idx = 1
+        elif daily_ret > 0 and not bearish:
+            regime_label = 'bull'
+            regime_idx = 0
+        elif bearish:
+            regime_label = 'bear'
+            regime_idx = 1
+        else:
+            regime_label = 'bull'
+            regime_idx = 0
+
+        return {
+            'regime': regime_idx,
+            'regime_label': regime_label,
+            'regime_probability': 0.80,
+            'regime_stable': True,  # MA/vol doesn't track day-over-day transitions
+            'vol_regime': vol_ann,
+            'drift_regime': daily_ret,
+        }
+
+    except Exception as e:
+        logger.warning("get_current_regime failed for %s: %s", symbol, e)
+        return result
+
+
 # ── Standalone smoke-test ─────────────────────────────────────────────────────
 
 if __name__ == "__main__":

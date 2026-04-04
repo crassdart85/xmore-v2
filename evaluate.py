@@ -10,6 +10,9 @@ from datetime import datetime, timedelta
 import config
 from database import get_connection
 import argparse
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Check if using PostgreSQL
 DATABASE_URL = os.getenv('DATABASE_URL')
@@ -34,24 +37,64 @@ def _update_rag_context_outcome(symbol: str, prediction_date: str, actual_outcom
     except Exception as e:
         pass  # Table may not exist on older installs — safe to ignore
 
+def evaluate_prediction(predicted_direction: str, predicted_confidence: float,
+                        actual_return: float) -> dict:
+    """
+    Multi-metric evaluation of a single prediction.
+
+    Returns dict with:
+      ok              — binary directional accuracy (backward compat)
+      magnitude_score — [-1, +1] reward correct+large, penalize wrong+large
+      calibration_score — 1 - Brier penalty (higher = better)
+      signal_strength — signed confidence for IC computation
+      actual_return   — realized % return
+    """
+    # 1. Binary directional accuracy
+    if predicted_direction == 'HOLD':
+        ok = abs(actual_return) < 2.0
+    else:
+        actual_outcome = 'UP' if actual_return >= config.MIN_MOVE_THRESHOLD else (
+            'DOWN' if actual_return <= -config.MIN_MOVE_THRESHOLD else 'FLAT')
+        ok = (predicted_direction == actual_outcome)
+
+    # 2. Magnitude-weighted score: correct + large move → high reward
+    direction_sign = 1 if ok else -1
+    magnitude_score = direction_sign * min(abs(actual_return) / 5.0, 1.0)
+
+    # 3. Brier-style confidence penalty
+    conf_norm = max(0.0, min(1.0, predicted_confidence / 100.0))
+    outcome = 1.0 if ok else 0.0
+    brier_score = (conf_norm - outcome) ** 2
+    calibration_score = 1.0 - brier_score
+
+    # 4. Signal strength for IC computation
+    if predicted_direction == 'UP':
+        signal_strength = conf_norm
+    elif predicted_direction == 'DOWN':
+        signal_strength = -conf_norm
+    else:
+        signal_strength = 0.0
+
+    return {
+        'ok': ok,
+        'magnitude_score': round(magnitude_score, 4),
+        'calibration_score': round(calibration_score, 4),
+        'signal_strength': round(signal_strength, 4),
+        'actual_return': round(actual_return, 4),
+    }
+
+
 def evaluate_predictions():
     """
     Compare resolved predictions against actual stock price movements.
-    
+
     Process:
     1. Identify predictions where the target_date has passed but no evaluation exists.
     2. Retrieve actual close prices for prediction_date and target_date.
     3. Calculate percentage change.
     4. Determine actual outcome (UP/DOWN/FLAT) based on MIN_MOVE_THRESHOLD.
     5. Compare prediction vs actual outcome.
-    6. Store result in 'evaluations' table.
-    
-    Example Evaluation Logic:
-    - User predicts "UP" for target date.
-    - Start Price: $100, End Price: $101.
-    - Change: +1%.
-    - If MIN_MOVE_THRESHOLD is 0.5%, Actual Outcome is "UP".
-    - Result: Correct (TRUE).
+    6. Store result in 'evaluations' table with calibrated metrics.
     """
     today = datetime.now().strftime('%Y-%m-%d')
     print(f"🧐 Evaluating predictions due by {today}...")
@@ -118,29 +161,28 @@ def evaluate_predictions():
             elif pct_change <= -config.MIN_MOVE_THRESHOLD:
                 actual_outcome = "DOWN"
             
-            # 5. Was it correct?
+            # 5. Multi-metric evaluation
             predicted = pred['prediction']
-            was_correct = False
-            if predicted == "HOLD":
-                # HOLD means "no significant move expected" — correct if stock stayed within ±2%.
-                # The old ±0.5% FLAT threshold was too tight: an agent that correctly avoided a
-                # 1.8% mover was counted as wrong. 2% matches the typical EGX noise floor.
-                was_correct = abs(pct_change) < 2.0
-            else:
-                was_correct = (predicted == actual_outcome)
-            
-            # 6. Store evaluation
+            predicted_confidence = float(pred.get('confidence', 50) or 50)
+            metrics = evaluate_prediction(predicted, predicted_confidence, pct_change)
+            was_correct = metrics['ok']
+
+            # 6. Store evaluation with calibrated metrics
             cursor.execute(_adapt_sql("""
                 INSERT INTO evaluations
-                (prediction_id, symbol, agent_name, prediction, actual_outcome, was_correct, actual_change_pct)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """), (int(pred['id']), symbol, pred['agent_name'], predicted, actual_outcome, bool(was_correct), float(pct_change)))
-            
+                (prediction_id, symbol, agent_name, prediction, actual_outcome, was_correct,
+                 actual_change_pct, magnitude_score, calibration_score, signal_strength, actual_return)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """), (int(pred['id']), symbol, pred['agent_name'], predicted, actual_outcome,
+                   bool(was_correct), float(pct_change),
+                   metrics['magnitude_score'], metrics['calibration_score'],
+                   metrics['signal_strength'], metrics['actual_return']))
+
             # Update RAG pattern-matching context with actual outcome
             _update_rag_context_outcome(symbol, str(pred['prediction_date']), actual_outcome, float(pct_change))
 
-            status_icon = "✅" if was_correct else "❌"
-            print(f"{status_icon} Evaluated {symbol} ({pred['agent_name']}): Pred {predicted} vs Actual {actual_outcome} ({pct_change:.2f}%)")
+            status_icon = "+" if was_correct else "-"
+            print(f"  {status_icon} {symbol} ({pred['agent_name']}): Pred {predicted} vs Actual {actual_outcome} ({pct_change:+.2f}%) mag={metrics['magnitude_score']:+.2f} cal={metrics['calibration_score']:.2f}")
 
 def evaluate_lookback(days_ago=7):
     """
@@ -466,7 +508,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evaluate Xmore2 Predictions')
     parser.add_argument('--lookback', action='store_true', help='Run look-back analysis for previous week')
     parser.add_argument('--days', type=int, default=7, help='Days ago for look-back (default: 7)')
+    parser.add_argument('--force', action='store_true', help='Ignore job locks and run anyway')
     args = parser.parse_args()
+
+    # Check if intraday-price-update is running — avoid evaluating against incomplete data
+    if not args.force:
+        try:
+            from engines.job_locks import is_lock_held
+            with get_connection() as _lc:
+                if is_lock_held(_lc, 'intraday-price-update'):
+                    print("⏳ Intraday price update in progress — skipping evaluation to avoid reading incomplete data.")
+                    print("   Re-run with --force to override.")
+                    import sys
+                    sys.exit(0)
+        except Exception:
+            pass  # Fail-open: if lock check fails, proceed with evaluation
 
     # Always run standard evaluation first to ensure latest data is processed
     evaluate_predictions()

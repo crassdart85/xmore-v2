@@ -10,7 +10,7 @@ name: Trading System Automation
 #  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
 #  14:00              Sun–Thu  egx-daily-snapshot             (backup EGX data export, 16:00 Cairo)
 #  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
-#  06,12,18:00        3×/day   catchup-evaluation             (resolve expired predictions → track-record data)
+#  06,12:15,18:00     3×/day   catchup-evaluation             (resolve expired predictions → track-record data)
 #  13:30              Sun–Thu  etf-egx-all (EGX ETF post-close: tape+nav+holdings+fv+pd)
 #  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
 #  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
@@ -35,7 +35,9 @@ on:
     - cron: '0 22 * * 0-5'
 
     # Catchup evaluation: 3× daily (fills actual_next_day_return for track-record page)
-    - cron: '0 6,12,18 * * *'
+    # 12:15 staggers past intraday-price-update (12:00) to avoid reading incomplete prices
+    - cron: '0 6,18 * * *'
+    - cron: '15 12 * * *'
 
     # ── ETF jobs (EGX post-close, Africa/Cairo UTC+2) ──
     # All EGX ETF scrapes combined in one trigger (15:30 Cairo = 13:30 UTC, Sun–Thu)
@@ -353,6 +355,20 @@ jobs:
         continue-on-error: true
         run: python sentiment_gemini.py
 
+      # Step 4b: Refresh macro indicators (CBE rate, USD/EGP, CPI, GDP)
+      - name: Refresh macro indicators
+        continue-on-error: true
+        run: |
+          python -c "
+          import asyncio
+          from database import get_connection
+          from engines.macro_data import MacroDataProvider
+          with get_connection() as conn:
+              provider = MacroDataProvider(conn)
+              results = asyncio.run(provider.refresh_all())
+              print(f'Macro refresh: {results}')
+          "
+
       # Step 5: Run 5-agent pipeline (RSI + MA + Volume + ML + Gemini LLM)
       # Also generates trade recommendations and daily briefing
       # OPTUNA_N_TRIALS=8 (reduced from 25) — cached params used when model file exists
@@ -375,7 +391,7 @@ jobs:
   # Resolves predictions whose target_date has passed between pipeline runs
   # ──────────────────────────────────────────────
   catchup-evaluation:
-    if: github.event.schedule == '0 6,12,18 * * *' || github.event_name == 'workflow_dispatch'
+    if: github.event.schedule == '0 6,18 * * *' || github.event.schedule == '15 12 * * *' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
