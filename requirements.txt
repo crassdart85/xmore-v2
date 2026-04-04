@@ -39,3 +39,5 @@ trafilatura>=1.8.0
 telethon>=1.42.0
 schedule>=1.2.0
 python-dateutil>=2.8.2
+aiohttp>=3.8.0
+-e ./openbb_egx

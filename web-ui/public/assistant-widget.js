@@ -28,7 +28,8 @@
             listeningLabel: 'Listening...',
             micErrorLabel: 'Microphone error. Try again.',
             micUnsupportedLabel: 'Voice input not supported in this browser',
-            fallbackError: 'Could not reach the assistant right now.'
+            fallbackError: 'Could not reach the assistant right now.',
+            liveData: 'Live data'
         },
         ar: {
             title: 'مساعد البحث',
@@ -48,7 +49,8 @@
             listeningLabel: 'جارٍ الاستماع...',
             micErrorLabel: 'خطأ في الميكروفون. حاول مرة أخرى.',
             micUnsupportedLabel: 'الإدخال الصوتي غير مدعوم في هذا المتصفح',
-            fallbackError: 'تعذر الاتصال بالمساعد الآن.'
+            fallbackError: 'تعذر الاتصال بالمساعد الآن.',
+            liveData: 'بيانات مباشرة'
         }
     };
 
@@ -164,13 +166,20 @@
         }
     }
 
-    function appendMessage(role, text, sources) {
+    function appendMessage(role, text, sources, enriched) {
         const messages = document.getElementById('xAssistantMessages');
         if (!messages) return;
 
         const msg = document.createElement('div');
         msg.className = `x-assistant-msg x-assistant-msg-${role}`;
         msg.textContent = text;
+
+        if (enriched && role === 'ai') {
+            const badge = document.createElement('span');
+            badge.className = 'x-assistant-live-badge';
+            badge.textContent = '\u{1F7E2} ' + t('liveData');
+            msg.appendChild(badge);
+        }
 
         if (Array.isArray(sources) && sources.length > 0) {
             const srcWrap = document.createElement('div');
@@ -378,7 +387,7 @@
                 appendMessage('ai', errMsg);
                 return;
             }
-            appendMessage('ai', data.answer || '', data.sources || []);
+            appendMessage('ai', data.answer || '', data.sources || [], !!data.openbb_enriched);
         } catch (_) {
             if (state.typingEl) state.typingEl.remove();
             state.typingEl = null;

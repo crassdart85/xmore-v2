@@ -14,6 +14,7 @@ const router = express.Router();
 const https = require('https');
 const { embedReports, embedNewsArticles } = require('../lib/embedReports');
 const { optionalAuth } = require('../middleware/auth');
+const { buildEnrichedSystemPrompt } = require('../services/openbbMcpBridge');
 
 let _db = null;
 let _isPostgres = false;
@@ -976,6 +977,20 @@ router.post('/chat', optionalAuth, async (req, res) => {
         const entityNote = resolvedEntities.length
             ? `\nResolved entities: ${resolvedEntities.map(e => `${e.symbol} (${e.type})`).join(', ')}`
             : '';
+        // Try to enrich with live data from OpenBB MCP bridge
+        let liveDataBlock = '';
+        let openbbEnriched = false;
+        try {
+            const knownSymbols = resolvedEntities.map(e => e.symbol);
+            const enrichResult = await buildEnrichedSystemPrompt(_db, question, knownSymbols);
+            if (enrichResult.enriched && enrichResult.prompt) {
+                liveDataBlock = enrichResult.prompt;
+                openbbEnriched = true;
+            }
+        } catch (_) {
+            // Fail silently — enrichment is best-effort
+        }
+
         const prompt = `You are an expert EGX financial market analyst with access to live market data.
 Use the live market data, stock reference, EGX knowledge, and knowledge base excerpts to answer questions.
 When discussing the user's portfolios, use the portfolio data provided â€” show actual vs forecast performance.
@@ -985,6 +1000,7 @@ ${symbolNote}
 ${entityNote}
 
 ${EGX_MARKET_KNOWLEDGE}
+${liveDataBlock}
 ${stockReferenceBlock}
 ${marketDataBlock ? '\n' + marketDataBlock : ''}
 ${portfolioBlock}
@@ -1000,6 +1016,7 @@ User question: ${question}`;
         res.json({
             answer,
             sources: uniqSources(sources, 12),
+            openbb_enriched: openbbEnriched,
             retrieval_meta: {
                 language: lang,
                 source_mode: sourceMode,

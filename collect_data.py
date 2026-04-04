@@ -586,7 +586,27 @@ if __name__ == "__main__":
 
         if args.prices_only:
             # Lightweight intraday price update — no news
+            # Acquire advisory lock so evaluate.py knows not to read incomplete prices
+            from engines.job_locks import acquire_lock, release_lock
+            _lock_conn = None
+            try:
+                from database import get_connection as _gc
+                _lock_conn = _gc().__enter__()
+                acquire_lock(_lock_conn, 'intraday-price-update', ttl_minutes=10)
+            except Exception:
+                pass  # Fail-open: don't block collection on lock issues
+
             p_count = collect_prices()
+
+            # Release lock after prices are written
+            if _lock_conn:
+                try:
+                    release_lock(_lock_conn, 'intraday-price-update')
+                    _lock_conn.commit()
+                    _lock_conn.close()
+                except Exception:
+                    pass
+
             duration = time.time() - start_time
             msg = f"[prices-only] Collected prices for {p_count} stocks."
             log_system_run("collect_data.py", "success", msg, duration)

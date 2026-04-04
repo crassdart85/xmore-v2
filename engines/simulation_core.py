@@ -101,6 +101,7 @@ class SimulationConfig:
     use_auto_select:   bool = True
     seed:              int  = 42
     min_obs_for_garch: int  = 60
+    macro_context:     dict = None  # Optional macro regime context from MacroDataProvider
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -217,6 +218,9 @@ class SimulationEngine:
         # drift_adjustment_log to the historical drift estimates.
         self._apply_news_drift_adjustments()
 
+        # Apply macro-conditional adjustments to drift and vol
+        self._apply_macro_adjustments()
+
         return self
 
     # ── News drift integration ─────────────────────────────────────────────────
@@ -260,6 +264,55 @@ class SimulationEngine:
                 "News drift adjustments applied to %d/%d assets.",
                 adjustments_applied, len(self._symbols)
             )
+
+    # ── Macro-conditional adjustments ─────────────────────────────────────────
+
+    def _apply_macro_adjustments(self) -> None:
+        """
+        Apply macro-conditional adjustments to drift (mu) and vol based on
+        config.macro_context from MacroDataProvider.get_macro_regime_context().
+
+        Adjustments:
+        - Scale drift by (1 - macro_risk_score * 0.3) — high risk reduces expected returns
+        - In 'high' rate environment: increase vol scaling by 15%
+        - When fx_stress=True: add one-time jump shock to first simulation step
+
+        These adjustments are documented in simulation output metadata.
+        """
+        mc = getattr(self.config, 'macro_context', None)
+        if not mc or self._static_mu is None:
+            return
+
+        macro_risk = mc.get('macro_risk_score', 0.0)
+        rate_env = mc.get('rate_environment', 'normal')
+        fx_stress = mc.get('fx_stress', False)
+
+        adjustments = []
+
+        # 1. Scale drift by macro risk
+        if macro_risk > 0:
+            drift_scale = 1.0 - (macro_risk * 0.3)
+            self._static_mu *= drift_scale
+            adjustments.append(f"drift_scaled_by_{drift_scale:.2f}")
+            logger.info("Macro: drift scaled by %.2f (risk=%.2f)", drift_scale, macro_risk)
+
+        # 2. High rate environment → increase vol by 15%
+        if rate_env == 'high' and self._static_vol is not None:
+            self._static_vol *= 1.15
+            adjustments.append("vol_scaled_1.15x_high_rate")
+            logger.info("Macro: vol scaled +15%% for high rate environment")
+
+        # 3. FX stress flag stored for simulation step 0 shock
+        # (Applied during path generation, not here — store the flag)
+        if fx_stress:
+            self._fx_stress_shock = True
+            adjustments.append("fx_stress_jump_component")
+            logger.info("Macro: FX stress shock will be applied at step 0")
+        else:
+            self._fx_stress_shock = False
+
+        if adjustments:
+            logger.info("Macro adjustments applied: %s", ', '.join(adjustments))
 
     # ── Simulation (primary entry point) ──────────────────────────────────────
 

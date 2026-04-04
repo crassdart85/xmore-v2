@@ -284,6 +284,42 @@ router.get('/summary', async (req, res) => {
 
         const liveCount = parseInt(counts?.total_live || 0);
 
+        // Information coefficient (latest from signal_ic_log)
+        let ic = null;
+        try {
+            const icRow = await dbGet(`
+                SELECT ic_value, sample_size, computed_at
+                FROM signal_ic_log
+                ORDER BY computed_at DESC LIMIT 1
+            `);
+            if (icRow && icRow.ic_value !== null) {
+                ic = {
+                    value: parseFloat(icRow.ic_value),
+                    sample_size: parseInt(icRow.sample_size || 0),
+                    computed_at: icRow.computed_at,
+                };
+            }
+        } catch (_) {}
+
+        // Calibrated evaluation metrics (magnitude + calibration averages)
+        let calibrated_metrics = null;
+        try {
+            const calRow = await dbGet(`
+                SELECT AVG(magnitude_score)    AS avg_magnitude,
+                       AVG(calibration_score)  AS avg_calibration,
+                       COUNT(*)                AS sample_size
+                FROM evaluations
+                WHERE magnitude_score IS NOT NULL
+            `);
+            if (calRow && calRow.sample_size > 0) {
+                calibrated_metrics = {
+                    avg_magnitude_score: parseFloat((calRow.avg_magnitude || 0).toFixed(4)),
+                    avg_calibration_score: parseFloat((calRow.avg_calibration || 0).toFixed(4)),
+                    sample_size: parseInt(calRow.sample_size),
+                };
+            }
+        } catch (_) {}
+
         return res.json({
             platform:             'Xmore2',
             description:          'Market Intelligence for the Egyptian Exchange',
@@ -294,6 +330,8 @@ router.get('/summary', async (req, res) => {
             symbols_covered:      symbolsCovered,
             current_regime:       currentRegime,
             risk_free_rate_applied: '27.25% (CBE)',
+            ic,
+            calibrated_metrics,
             kpi_windows: {
                 '30d':  w30,
                 '60d':  w60,
