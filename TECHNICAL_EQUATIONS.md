@@ -422,9 +422,27 @@ Used downstream by the Risk Agent and presented in the UI as a confidence gauge.
 
 ## 4. Consensus Engine
 
-> Source: [`agents/consensus_engine.py`](agents/consensus_engine.py) and [`agents/agent_consensus.py`](agents/agent_consensus.py)
+> Source: [`agents/consensus_engine.py`](agents/consensus_engine.py), [`agents/agent_consensus.py`](agents/agent_consensus.py), and [`engines/agent_weights.py`](engines/agent_weights.py)
 
-**Accuracy-Weighted Voting**
+### 4.1 Softmax Dynamic Weighting (Primary)
+
+> Source: [`engines/agent_weights.py`](engines/agent_weights.py)
+
+Each agent $a$ has a 30-day rolling directional accuracy:
+
+$$\text{acc}_a = \frac{\text{correct}_a}{\text{total}_a}$$
+
+**Softmax with temperature** ($T = 2.0$):
+
+$$w_a^{\text{raw}} = \frac{\exp(\text{acc}_a / T)}{\sum_j \exp(\text{acc}_j / T)}$$
+
+**Floor enforcement** ($w_{\min} = 0.05$):
+
+$$w_a = \max(w_a^{\text{raw}},\; w_{\min}), \qquad w_a \leftarrow \frac{w_a}{\sum_j w_j}$$
+
+Weight history logged to `agent_weights_log` table. Falls back to equal weights when insufficient evaluation data exists.
+
+### 4.2 Legacy Accuracy-Weighted Voting (Fallback)
 
 Each agent $a$ has a historical accuracy weight:
 
@@ -432,7 +450,7 @@ $$w_a = \max\!\left(\frac{\text{correct}_a}{\text{total}_a},\; 0.1\right)$$
 
 The 0.1 floor prevents any agent from being zeroed out. Equal weight $w_a = 0.5$ used when no evaluation history exists.
 
-**Vote Aggregation**
+### 4.3 Vote Aggregation
 
 $$S_{\text{UP}} = \sum_{a:\,\text{signal}_a=\text{UP}} w_a, \quad S_{\text{DOWN}} = \sum_{a:\,\text{signal}_a=\text{DOWN}} w_a, \quad S_{\text{HOLD}} = \sum_{a:\,\text{signal}_a=\text{HOLD}} w_a$$
 
@@ -441,6 +459,19 @@ $$\text{Consensus} = \arg\max(S_{\text{UP}},\; S_{\text{DOWN}},\; S_{\text{HOLD}
 **Confidence (Agreement Ratio)**
 
 $$\text{confidence}_{\text{consensus}} = \frac{|\{a : \text{signal}_a = \text{Consensus}\}|}{N_{\text{agents}}}$$
+
+### 4.4 Regime Signal Modifiers
+
+> Source: [`run_agents.py` → `REGIME_SIGNAL_MODIFIERS`](run_agents.py)
+
+Before consensus, agent signals are modified based on the current market regime from `get_current_regime()`:
+
+| Regime | Bias | Effect |
+|--------|------|--------|
+| Bull | +5% UP confidence | UP threshold lowered to 55% |
+| Bear | +5% DOWN confidence | DOWN threshold lowered to 55% |
+| High Vol | −10% all confidence | Directional thresholds raised to 70% |
+| Unknown | No bias | Default thresholds |
 
 ---
 
@@ -617,6 +648,62 @@ $$\text{accuracy}_a = \frac{\sum_t \text{was\_correct}_{a,t}}{N_{a,t}}$$
 
 ---
 
+### 8.1 Calibrated Evaluation Metrics
+
+> Source: [`evaluate.py` → `evaluate_prediction()`](evaluate.py)
+
+**Direction Sign**
+
+$$d_t = \begin{cases} +1 & \hat{y}_t = \text{Actual Outcome}_t \\ -1 & \text{otherwise} \end{cases}$$
+
+**Magnitude Score** (rewards size of correct calls)
+
+$$M_t = d_t \times \min\!\left(\frac{|\Delta_t|}{5.0},\; 1.0\right)$$
+
+Range: $[-1, +1]$. Correct UP call with 3% return → $+0.6$. Wrong call with 3% return → $-0.6$.
+
+**Brier Calibration Score**
+
+$$B_t = 1 - (\hat{p}_t - o_t)^2$$
+
+where $\hat{p}_t$ = predicted confidence (0–1) and $o_t = \mathbf{1}[\text{was\_correct}]$. Perfect calibration → $B = 1$.
+
+**Signal Strength** (for IC computation)
+
+$$\text{SS}_t = \hat{p}_t \times d_t$$
+
+Range: $[-1, +1]$. High positive = confident correct; high negative = confident wrong.
+
+### 8.2 Information Coefficient (IC)
+
+> Source: [`engines/evaluate_performance.py` → `compute_information_coefficient()`](engines/evaluate_performance.py)
+
+$$\text{IC} = \rho_S(\text{SS}_{1:N},\; \Delta_{1:N})$$
+
+Spearman rank correlation between signal strength and actual returns over a rolling lookback window (default 60 days). $\text{IC} > 0$ indicates the system's conviction directionally predicts returns.
+
+### 8.3 Macro Risk Score
+
+> Source: [`engines/macro_data.py` → `get_macro_regime_context()`](engines/macro_data.py)
+
+Composite risk score from four macro indicators:
+
+$$R_{\text{macro}} = \frac{R_{\text{rate}} + R_{\text{fx}} + R_{\text{inflation}} + R_{\text{growth}}}{4}$$
+
+where each component $R_i \in [0, 1]$ is a normalized risk measure:
+- $R_{\text{rate}}$: CBE interest rate vs thresholds (>18% → HIGH)
+- $R_{\text{fx}}$: USD/EGP depreciation stress
+- $R_{\text{inflation}}$: CPI YoY vs thresholds (>20% → HIGH)
+- $R_{\text{growth}}$: GDP growth momentum (inverted: low growth → high risk)
+
+**Macro-Adjusted Simulation** (`SimulationConfig`):
+
+$$\mu^{\text{adj}} = \mu \times (1 - R_{\text{macro}} \times 0.3)$$
+
+$$\sigma^{\text{adj}} = \sigma \times (1 + 0.15 \times \mathbf{1}[R_{\text{rate}} = \text{HIGH}])$$
+
+---
+
 ## 9. Circuit Breaker
 
 > Source: [`engines/circuit_breaker.py`](engines/circuit_breaker.py)
@@ -641,4 +728,4 @@ Positions are scaled proportionally so their relative weights remain unchanged b
 
 ---
 
-*Last updated: March 2026 — reflects production codebase at HEAD.*
+*Last updated: April 2026 — reflects production codebase at HEAD.*

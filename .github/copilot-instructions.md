@@ -50,13 +50,16 @@ Test files live in `tests/` and cover portfolio, backtest, metrics, and formatti
 
 ```
 agents/          Signal agents (inherit BaseAgent) + consensus + evaluators
-engines/         ETF signals, backtesting, briefing, performance, circuit breaker
-web-ui/          Express API + vanilla JS frontend (routes/, public/)
+engines/         ETF signals, backtesting, briefing, performance, circuit breaker,
+                 agent_weights, event_detector, job_locks, macro_data, regime_model
+openbb_egx/      OpenBB-compatible EGX data provider (Pydantic v2, async TradingView + yfinance)
+web-ui/          Express API + vanilla JS frontend (routes/, public/, services/)
+web-ui/services/ openbbMcpBridge.js — MCP bridge for RAG chat live data enrichment
 xmore_data/      Market-data provider layer (KSA-first Tadawul, legacy EGX support)
 xmore_news/      News ingestion pipelines
 xmore_sentiment/ Sentiment analysis (Gemini, VADER, TextBlob)
 models/          Trained ML models (.joblib)
-migrations/      DB schema versioning
+migrations/      DB schema versioning (013–015: agent weights, eval metrics, job locks)
 config/          Execution configuration
 ```
 

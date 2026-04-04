@@ -1,5 +1,5 @@
 # Business Requirements Document — Xmore (EGX)
-**Version:** 1.5 | **Date:** March 2026 | **Status:** Active
+**Version:** 1.6 | **Date:** April 2026 | **Status:** Active
 
 ---
 
@@ -88,6 +88,12 @@ Egyptian retail investors lack affordable, systematic tools for EGX equity analy
 | `engines/backtest_friction.py` | Friction-aware backtest helper |
 | `engines/pivot_engine.py` | Pivot levels, ATR, candlestick patterns |
 | `engines/backtest.py` | Walk-forward backtest (`--save` upserts to `backtest_results`) |
+| `engines/agent_weights.py` | Softmax dynamic agent weights (T=2.0, floor 5%) + audit log |
+| `engines/event_detector.py` | News event detection → targeted sentiment refresh |
+| `engines/job_locks.py` | Advisory TTL-based pipeline locking |
+| `engines/macro_data.py` | MacroDataProvider: CBE rate, USD/EGP, CPI, GDP → composite risk score |
+| `web-ui/services/openbbMcpBridge.js` | MCP bridge: live quotes + macro context for RAG chat |
+| `openbb_egx/` | OpenBB-compatible EGX data provider (Pydantic v2, async TradingView + yfinance) |
 | `backfill_history.py` | Bulk historical price backfill |
 
 ---
@@ -117,6 +123,36 @@ Each trading day the pipeline runs six specialised agents in sequence:
 ### 8.3 Market Regime Detection
 
 `_detect_market_regime()` uses MA/volatility analysis (not HMM). Result written to `regime_log` after each detection run.
+
+### 8.4 Dynamic Agent Weighting (April 2026)
+
+`engines/agent_weights.py` replaces static equal weights with softmax-based dynamic weights computed from recent 30-day directional accuracy. Temperature=2.0, floor=5%. Weight history logged to `agent_weights_log` table. Falls back to equal weights when insufficient evaluation data exists.
+
+### 8.5 Regime Feedback into Agents (April 2026)
+
+`engines/regime_model.py` `get_current_regime()` returns bull/bear/high_vol labels. `REGIME_SIGNAL_MODIFIERS` in `run_agents.py` applies per-regime bias adjustments and threshold gates before consensus:
+- **Bull**: +5% confidence bias to UP signals, UP threshold lowered to 55%
+- **Bear**: +5% confidence bias to DOWN signals, DOWN threshold lowered to 55%
+- **High Vol**: confidence dampened by 10%, directional thresholds raised to 70%
+
+### 8.6 Event-Triggered Sentiment Refresh (April 2026)
+
+`engines/event_detector.py` (`EGXEventDetector`) scans recent news before the agent pipeline runs. Detects:
+- CBE rate decisions (affects all stocks)
+- Earnings announcements (affects mentioned symbols)
+- Regulatory actions (FRA suspensions, delistings)
+- EGX30 index rebalances
+- Opening price gaps >3%
+
+Triggers targeted `collect_sentiment()` for affected symbols before predictions.
+
+### 8.7 Calibrated Evaluation Metrics (April 2026)
+
+`evaluate.py` now computes multi-metric scoring per prediction: magnitude score, Brier calibration, signal strength, and actual return. `evaluate_performance.py` computes Information Coefficient (IC) via Spearman rank correlation. Exposed via `/api/track-record/summary`.
+
+### 8.8 OpenBB MCP Bridge (April 2026)
+
+`web-ui/services/openbbMcpBridge.js` enriches the RAG chat assistant with live market data when an OpenBB API server is running. Extracts EGX symbols from user queries, fetches live quotes and macro context. A "Live data" badge (EN/AR) is shown on enriched responses in the assistant widget.
 
 ---
 
@@ -152,7 +188,7 @@ Each trading day the pipeline runs six specialised agents in sequence:
 | `post-market-pipeline` | `30 12 * * 0-4` | 90m timeout |
 | `egx-daily-snapshot` | `0 14 * * 0-4` | |
 | `daily-pipeline` | `0 22 * * 0-5` | 60m timeout |
-| `catchup-evaluation` | `0 6,12,18 * * *` | 30m timeout |
+| `catchup-evaluation` | `0 6,18 * * *` + `15 12 * * *` | 30m timeout; 12:15 staggers past price-update |
 | `etf-egx-all` | `30 13 * * 0-4` | |
 | `etf-global-prices` | `30 21 * * 1-5` | |
 | `etf-rag-embedding` | `15 6,10,14,20 * * *` | 4×/day |
@@ -258,6 +294,13 @@ All DDL uses `safeDDL(db, sql, timeoutMs)` transaction wrapper with `SET LOCAL l
 New DB tables must be added to **both**:
 1. `database.py` `create_tables()` — use `{auto_id}` f-string (not `AUTOINCREMENT`)
 2. `web-ui/init-db.js` — use `SERIAL PRIMARY KEY`; wrap DDL in `safeDDL`
+
+**Tables added April 2026:**
+- `agent_weights_log` — softmax weight audit trail (migration 013)
+- `macro_indicators` — cached macro data: CBE rate, USD/EGP, CPI, GDP
+- `job_locks` — advisory pipeline locking (migration 015)
+- New columns on `evaluations`: `magnitude_score`, `calibration_score`, `signal_strength`, `actual_return` (migration 014)
+- New column on `predictions`: `confidence_score` (migration 013)
 
 ### 16.3 Server.js DB Wrapper
 
