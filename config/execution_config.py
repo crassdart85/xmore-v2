@@ -90,8 +90,8 @@ TRAILING_STOP_PCT             = 0.06 # 6% trailing stop once activated
 HARD_MAX_HOLDING_DAYS         = 45  # Absolute maximum — failsafe only
 
 # ─── PRIMARY KSA PERFORMANCE BENCHMARKS ────────────────────────────────────
-EGX_RISK_FREE_RATE_ANNUAL = 0.05     # Legacy variable name retained for compatibility
-EGX_TRADING_DAYS_PER_YEAR = 252      # Tadawul trading-calendar approximation
+EGX_RISK_FREE_RATE_ANNUAL = 0.0489    # SAIBOR 3M — legacy name kept for compat
+EGX_TRADING_DAYS_PER_YEAR = 250       # Tadawul: Sun–Thu (~250 days/year)
 
 # ─── MARKET REGIME FILTER ───────────────────────────────────────────────────
 REGIME_MA_PERIOD       = 20

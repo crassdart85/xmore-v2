@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: openbb-egx
+Version: 0.1.0
+Summary: OpenBB data provider for the Egyptian Exchange (EGX)
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: aiohttp>=3.8
+Requires-Dist: pydantic>=2.0
+Requires-Dist: pandas>=1.5
+Requires-Dist: yfinance>=0.2.18
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-asyncio; extra == "dev"
+Requires-Dist: aioresponses; extra == "dev"

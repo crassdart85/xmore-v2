@@ -1,0 +1,9 @@
+aiohttp>=3.8
+pydantic>=2.0
+pandas>=1.5
+yfinance>=0.2.18
+
+[dev]
+pytest
+pytest-asyncio
+aioresponses

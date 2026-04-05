@@ -18,16 +18,19 @@ from database import get_connection
 
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-# EGX reporting basis should not inherit cross-market compatibility aliases.
-EGX_RISK_FREE_RATE_ANNUAL = 0.2725
-EGX_TRADING_DAYS_PER_YEAR = 247
-
+# KSA / Tadawul market parameters (SAIBOR 3M benchmark)
+# Legacy variable names (EGX_*) retained for backward compat with test imports.
 try:
-    from config.execution_config import EGX_ROUND_TRIP_RATE
+    from config.execution_config import TADAWUL_CONFIG as _TC
+    EGX_RISK_FREE_RATE_ANNUAL = _TC.get('saibor_3m', 0.0489)
+    EGX_TRADING_DAYS_PER_YEAR = _TC.get('trading_days_per_year', 250)
+    EGX_ROUND_TRIP_RATE       = _TC.get('round_trip_cost', 0.00382)
 except ImportError:
-    EGX_ROUND_TRIP_RATE = 0.00725  # 0.725% round-trip baseline
+    EGX_RISK_FREE_RATE_ANNUAL = 0.0489    # SAIBOR 3M
+    EGX_TRADING_DAYS_PER_YEAR = 250       # Tadawul: Sun–Thu
+    EGX_ROUND_TRIP_RATE       = 0.00382   # 38.2 bps round-trip
 
-# Daily risk-free rate: (1 + annual) ^ (1/247) - 1
+# Daily risk-free rate: (1 + annual) ^ (1/trading_days) - 1
 EGX_DAILY_RF = (1 + EGX_RISK_FREE_RATE_ANNUAL) ** (1 / EGX_TRADING_DAYS_PER_YEAR) - 1
 MINIMUM_TRADES_FOR_METRICS = 30
 
@@ -39,7 +42,7 @@ def apply_transaction_costs(returns: list, cost_percents: list = None) -> list:
     Deduct round-trip transaction costs from a gross return series.
     Returns are in percentage points (e.g. 2.5 = 2.5%).
     If cost_percents is provided it must have the same length as returns.
-    Falls back to EGX_ROUND_TRIP_RATE * 100 (= 0.725 pp) per trade.
+    Falls back to EGX_ROUND_TRIP_RATE * 100 per trade.
     """
     if not returns:
         return []
@@ -232,15 +235,16 @@ def get_performance_summary(
 def sharpe_ratio(returns: list, risk_free_rate: float = None, annualize: bool = True) -> float:
     """
     Sharpe Ratio = (avg_return - daily_rf) / stdev(returns)
-    Annualized using EGX_TRADING_DAYS_PER_YEAR (247, Sun–Thu).
-    Defaults to Egypt CBE risk-free rate (~27.25% annual).
+    Returns are in percentage points (e.g. 1.5 = 1.5%); converted to
+    decimal for comparison with the decimal risk-free rate.
+    Annualized using EGX_TRADING_DAYS_PER_YEAR (250, KSA Sun–Thu).
     """
     if len(returns) < 2:
         return 0.0
 
     daily_rf = EGX_DAILY_RF if risk_free_rate is None else risk_free_rate
-    m = avg(returns)
-    std = stddev(returns)
+    m = avg(returns) / 100          # convert % to decimal
+    std = stddev(returns) / 100     # convert % to decimal
 
     if std == 0:
         return 0.0
@@ -255,19 +259,20 @@ def sharpe_ratio(returns: list, risk_free_rate: float = None, annualize: bool = 
 def sortino_ratio(returns: list, risk_free_rate: float = None) -> float:
     """
     Sortino Ratio = (avg_return - daily_rf) / downside_deviation
-    Only penalizes negative returns. Annualized with EGX 247-day calendar.
+    Only penalizes negative returns. Annualized with KSA 250-day calendar.
+    Returns are in percentage points; converted to decimal internally.
     """
     if len(returns) < 2:
         return 0.0
 
     daily_rf = EGX_DAILY_RF if risk_free_rate is None else risk_free_rate
-    m = avg(returns)
+    m = avg(returns) / 100          # convert % to decimal
     downside = [r for r in returns if r < 0]
 
     if not downside:
         return 99.9  # No losses → excellent
 
-    downside_std = stddev(downside)
+    downside_std = stddev(downside) / 100   # convert % to decimal
     if downside_std == 0:
         return 99.9
 
@@ -276,25 +281,22 @@ def sortino_ratio(returns: list, risk_free_rate: float = None) -> float:
 
 def max_drawdown(returns: list) -> float:
     """
-    Maximum peak-to-trough decline in cumulative returns.
-    Returns as negative percentage.
+    Maximum peak-to-trough decline via compounded equity curve.
+    Returns are in percentage points (e.g. 2.5 = 2.5%).
+    Result is a negative percentage (e.g. -12.3 = -12.3% drawdown).
     """
     if not returns:
         return 0.0
 
-    cumulative = []
-    running = 0
+    equity = 1.0
+    peak = 1.0
+    max_dd = 0.0
+
     for r in returns:
-        running += r
-        cumulative.append(running)
-
-    peak = cumulative[0]
-    max_dd = 0
-
-    for val in cumulative:
-        if val > peak:
-            peak = val
-        dd = val - peak
+        equity *= (1 + r / 100)
+        if equity > peak:
+            peak = equity
+        dd = (equity - peak) / peak * 100   # negative %
         if dd < max_dd:
             max_dd = dd
 
@@ -486,26 +488,28 @@ def get_equity_curve(user_id: int = None, days: int = 180) -> dict:
         except Exception:
             return {"series": [], "total_xmore": 0, "total_egx30": 0, "total_alpha": 0}
 
-        # Build cumulative series
-        xmore_cum = 0
-        bench_cum = 0
+        # Build cumulative series (compounded equity curve)
+        xmore_eq = 1.0
+        bench_eq = 1.0
         series = []
 
         for d in daily:
-            xmore_cum += float(d.get("xmore_return", 0) or 0)
-            bench_cum += float(d.get("benchmark_return", 0) or 0)
+            xmore_eq *= (1 + float(d.get("xmore_return", 0) or 0) / 100)
+            bench_eq *= (1 + float(d.get("benchmark_return", 0) or 0) / 100)
+            xmore_cum = round((xmore_eq - 1) * 100, 2)
+            bench_cum = round((bench_eq - 1) * 100, 2)
             series.append({
                 "date": str(d["date"]),
-                "xmore": round(xmore_cum, 2),
-                "egx30": round(bench_cum, 2),
+                "xmore": xmore_cum,
+                "egx30": bench_cum,
                 "alpha": round(xmore_cum - bench_cum, 2)
             })
 
         return {
             "series": series,
-            "total_xmore": round(xmore_cum, 2),
-            "total_egx30": round(bench_cum, 2),
-            "total_alpha": round(xmore_cum - bench_cum, 2)
+            "total_xmore": round((xmore_eq - 1) * 100, 2),
+            "total_egx30": round((bench_eq - 1) * 100, 2),
+            "total_alpha": round((xmore_eq - 1) * 100 - (bench_eq - 1) * 100, 2)
         }
 
 
@@ -520,9 +524,9 @@ def calculate_calmar_ratio(returns: list, max_dd: float) -> float:
         return None
     if not max_dd:
         return 0.0
-    mean_daily = avg(returns)
+    mean_daily = avg(returns) / 100   # convert % → decimal
     annual_return = (1 + mean_daily) ** EGX_TRADING_DAYS_PER_YEAR - 1
-    return round(annual_return / abs(max_dd), 4)
+    return round(annual_return / abs(max_dd / 100), 4)
 
 
 def calculate_max_drawdown_details(equity_curve: list) -> dict:
@@ -675,8 +679,8 @@ def calculate_benchmark_comparison(portfolio_returns: list, benchmark_returns: l
     corr = (cov / (std_p * std_b)) if std_p > 0 and std_b > 0 else 0
 
     # Alpha annualized
-    mean_daily_p = avg(p)
-    mean_daily_b = avg(b)
+    mean_daily_p = avg(p) / 100   # convert % → decimal
+    mean_daily_b = avg(b) / 100
     annual_p = (1 + mean_daily_p) ** EGX_TRADING_DAYS_PER_YEAR - 1
     annual_b = (1 + mean_daily_b) ** EGX_TRADING_DAYS_PER_YEAR - 1
     alpha_annual = annual_p - annual_b
@@ -684,8 +688,10 @@ def calculate_benchmark_comparison(portfolio_returns: list, benchmark_returns: l
     # Up/down capture
     up_days   = [(pi, bi) for pi, bi in zip(p, b) if bi > 0]
     down_days = [(pi, bi) for pi, bi in zip(p, b) if bi < 0]
-    up_capture   = (avg([pi for pi, _ in up_days]) / avg([bi for _, bi in up_days])) if up_days else 0
-    down_capture = (avg([pi for pi, _ in down_days]) / avg([bi for _, bi in down_days])) if down_days else 0
+    up_avg_b   = avg([bi for _, bi in up_days]) if up_days else 0
+    down_avg_b = avg([bi for _, bi in down_days]) if down_days else 0
+    up_capture   = (avg([pi for pi, _ in up_days]) / up_avg_b) if up_avg_b != 0 else 0
+    down_capture = (avg([pi for pi, _ in down_days]) / down_avg_b) if down_avg_b != 0 else 0
 
     outperform_pct = sum(1 for e in excess if e > 0) / n if n > 0 else 0
 

@@ -22,47 +22,44 @@ from engines.performance_metrics import (
 
 # ─── Helpers ────────────────────────────────────────────────────
 
-def make_returns(n=50, daily_mean=0.001, daily_std=0.008, seed=42):
+def make_returns(n=50, daily_mean=0.10, daily_std=0.80, seed=42):
+    """Generate synthetic daily returns in PERCENTAGE POINTS (e.g. 0.10 = 0.10%)."""
     import random
     random.seed(seed)
     return [random.gauss(daily_mean, daily_std) for _ in range(n)]
 
 
-# ─── Test 1: Sharpe uses EGX 27.25% rate, not US 5% ────────────
+# ─── Test 1: Sharpe uses KSA SAIBOR 4.89%, not US 5% ──────────
 
-def test_sharpe_uses_egx_rate_not_us():
-    """Same return series must give a lower Sharpe with EGX 27.25% than US 5%."""
-    returns = make_returns(60, daily_mean=0.002)
-    egx_sharpe = sharpe_ratio(returns)                              # uses EGX default
+def test_sharpe_uses_ksa_rate_not_us():
+    """KSA rate (4.89%) < US rate (5%) → KSA Sharpe should be higher (less rf deducted)."""
+    returns = make_returns(60, daily_mean=0.20)  # 0.20% daily mean
+    ksa_sharpe = sharpe_ratio(returns)                              # uses KSA default (4.89%)
     us_sharpe  = sharpe_ratio(returns, risk_free_rate=0.05 / 252)  # US daily rf
-    assert egx_sharpe < us_sharpe, (
-        f"EGX Sharpe ({egx_sharpe:.3f}) should be lower than US Sharpe ({us_sharpe:.3f})"
+    assert ksa_sharpe > us_sharpe, (
+        f"KSA Sharpe ({ksa_sharpe:.3f}) should be higher than US Sharpe ({us_sharpe:.3f}) "
+        f"because KSA risk-free rate (4.89%) < US (5.0%)"
     )
 
 
-def test_sharpe_annualizes_with_247_days():
-    """Annualized Sharpe should use sqrt(247), not sqrt(252)."""
-    daily_excess = 0.001  # simple positive daily excess return
-    std = 0.01
-    # manual: excess / std * sqrt(247)
-    expected = (daily_excess / std) * math.sqrt(EGX_TRADING_DAYS_PER_YEAR)
-    # returns where mean ≈ daily_excess + daily_rf and std ≈ 0.01
-    returns = [daily_excess + EGX_DAILY_RF] * 50  # zero std — avoid divide by zero
-    # Use a non-trivial series instead
+def test_sharpe_annualizes_with_250_days():
+    """Annualized Sharpe should use sqrt(250) for KSA, not sqrt(252)."""
+    # Generate returns in percentage points
     import random; random.seed(7)
-    returns = [daily_excess + EGX_DAILY_RF + random.gauss(0, std) for _ in range(100)]
+    returns = [0.10 + random.gauss(0, 1.0) for _ in range(100)]  # ~0.10% daily mean, 1% std
     result = sharpe_ratio(returns)
-    # Just verify it's plausibly around the expected value (not wildly off due to 252)
-    ratio_252 = ((sum(returns) / len(returns) - EGX_DAILY_RF) / (std)) * math.sqrt(252)
-    ratio_247 = ((sum(returns) / len(returns) - EGX_DAILY_RF) / (std)) * math.sqrt(247)
-    assert abs(result - ratio_247) < abs(result - ratio_252) or True  # passes if 247 is used
+    m = sum(returns) / len(returns) / 100   # to decimal
+    s = (sum((r / 100 - m) ** 2 for r in returns) / (len(returns) - 1)) ** 0.5
+    ratio_252 = ((m - EGX_DAILY_RF) / s) * math.sqrt(252)
+    ratio_250 = ((m - EGX_DAILY_RF) / s) * math.sqrt(EGX_TRADING_DAYS_PER_YEAR)
+    assert abs(result - ratio_250) < abs(result - ratio_252) + 0.01  # 250 should be closer
 
 
 # ─── Test 2: Sortino with all-positive returns ──────────────────
 
 def test_sortino_all_positive_returns():
     """All positive returns → no downside → Sortino = 99.9 (not crash)."""
-    returns = [0.010, 0.020, 0.015, 0.008, 0.012]
+    returns = [1.0, 2.0, 1.5, 0.8, 1.2]  # percentage points
     result = sortino_ratio(returns)
     assert result == 99.9, f"Expected 99.9 but got {result}"
 
@@ -70,7 +67,7 @@ def test_sortino_all_positive_returns():
 def test_sortino_does_not_crash_on_positive_only():
     """Verify sortino_ratio does not raise any exception."""
     try:
-        sortino_ratio([0.01, 0.02, 0.015])
+        sortino_ratio([1.0, 2.0, 1.5])  # percentage points
     except Exception as e:
         pytest.fail(f"sortino_ratio raised {e}")
 
@@ -115,7 +112,7 @@ def test_max_drawdown_details_no_recovery():
 
 def test_win_loss_all_wins():
     """All winning trades → no crash, loss stats are 0."""
-    trades = [{"return_pct": 0.05}, {"return_pct": 0.08}, {"return_pct": 0.03}]
+    trades = [{"return_pct": 5.0}, {"return_pct": 8.0}, {"return_pct": 3.0}]
     result = calculate_win_loss_ratio(trades)
     assert result["win_rate"] == pytest.approx(1.0)
     assert result["avg_loss_pct"] == 0
@@ -123,7 +120,7 @@ def test_win_loss_all_wins():
 
 def test_win_loss_all_losses():
     """All losing trades → no crash, win stats are 0."""
-    trades = [{"return_pct": -0.02}, {"return_pct": -0.05}]
+    trades = [{"return_pct": -2.0}, {"return_pct": -5.0}]
     result = calculate_win_loss_ratio(trades)
     assert result["win_rate"] == pytest.approx(0.0)
     assert result["avg_win_pct"] == 0
@@ -133,7 +130,7 @@ def test_win_loss_all_losses():
 
 def test_benchmark_beta_perfect_tracking():
     """Portfolio perfectly tracks benchmark → beta ~1.0, alpha_total ~0."""
-    returns = [0.005, -0.002, 0.010, 0.001, -0.003, 0.008] * 5
+    returns = [0.5, -0.2, 1.0, 0.1, -0.3, 0.8] * 5  # percentage points
     result = calculate_benchmark_comparison(returns, returns)
     assert abs(result["beta"] - 1.0) < 0.01, f"Beta should be ~1.0, got {result['beta']}"
     assert abs(result["alpha_total"]) < 0.01, f"Alpha should be ~0, got {result['alpha_total']}"
@@ -143,13 +140,13 @@ def test_benchmark_beta_perfect_tracking():
 
 def test_rolling_sharpe_too_few_points():
     """Fewer data points than window → empty list."""
-    result = calculate_rolling_sharpe([0.001] * 20, window=30)
+    result = calculate_rolling_sharpe([0.10] * 20, window=30)
     assert result == []
 
 
 def test_rolling_sharpe_correct_length():
     """50 returns, window=30 → 21 rolling values."""
-    result = calculate_rolling_sharpe([0.001] * 50, window=30)
+    result = calculate_rolling_sharpe([0.10] * 50, window=30)
     assert len(result) == 21
 
 
@@ -162,9 +159,9 @@ def test_data_quality_warning_triggered():
     conn.cursor.return_value = cursor
     cursor.description = [("recommendation_date",), ("actual_next_day_return",),
                           ("benchmark_1d_return",), ("alpha_1d",), ("was_correct",)]
-    # Only 10 rows
+    # Only 10 rows — returns in percentage points
     cursor.fetchall.return_value = [
-        ("2026-01-10", 0.005, 0.002, 0.003, True)
+        ("2026-01-10", 0.50, 0.20, 0.30, True)
     ] * 10
 
     report = generate_full_metrics_report(conn, days=90)
@@ -196,9 +193,9 @@ def test_full_report_all_required_fields():
     conn.cursor.return_value = cursor
     cursor.description = [("recommendation_date",), ("actual_next_day_return",),
                           ("benchmark_1d_return",), ("alpha_1d",), ("was_correct",)]
-    # 35 rows to pass minimum threshold
+    # 35 rows to pass minimum threshold — returns in percentage points
     cursor.fetchall.return_value = [
-        ("2026-01-10", 0.005, 0.002, 0.003, True)
+        ("2026-01-10", 0.50, 0.20, 0.30, True)
     ] * 35
 
     report = generate_full_metrics_report(conn, days=90)

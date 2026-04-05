@@ -1,0 +1,11 @@
+pyproject.toml
+openbb_egx/__init__.py
+openbb_egx.egg-info/PKG-INFO
+openbb_egx.egg-info/SOURCES.txt
+openbb_egx.egg-info/dependency_links.txt
+openbb_egx.egg-info/requires.txt
+openbb_egx.egg-info/top_level.txt
+openbb_egx/utils/__init__.py
+openbb_egx/utils/egx_scraper.py
+openbb_egx/utils/yfinance_fallback.py
+tests/test_egx_provider.py
