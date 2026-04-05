@@ -4,8 +4,8 @@
 
 | Field | Details |
 |-------|---------|
-| **Version** | 2.0 |
-| **Date** | April 4, 2026 |
+| **Version** | 2.1 |
+| **Date** | April 5, 2026 |
 | **Status** | Implemented |
 
 ---
@@ -386,4 +386,37 @@ The evaluation pipeline (`evaluate.py`) now computes four metrics per prediction
 
 ---
 
-*Last Updated: April 4, 2026*
+## Sample Reliability (April 5, 2026)
+
+Because quality gates (Mar 21) and the Tier 2 cost gate (Apr 3) activated only weeks before this release, short rolling windows contain too few evaluated trades for ratio metrics (Sharpe, Sortino, max-drawdown, profit factor) to be stable. Each KPI window now carries a reliability tag:
+
+| Trades in window | Flag | UI badge |
+|------------------|------|----------|
+| `≥ 30`           | `high`           | none |
+| `10 – 29`        | `preliminary`    | amber |
+| `< 10`           | `insufficient`   | red |
+
+The flag is exposed on `/api/track-record/summary.kpi_windows.*.sample_reliability` and rendered as a badge on each rolling card. Directional accuracy and win-rate remain visible at all sizes; only the ratio metrics should be treated as stable once a window clears `high`.
+
+---
+
+## Horizon-scaled Cost Gate (April 5, 2026)
+
+The `run_agents_ksa.py` cost gate was comparing a **1-day ATR%** to a 5-day hold threshold, killing every Tadawul bluechip under 1.9% daily ATR. It is now horizon-adjusted:
+
+```
+5d_expected_move = ATR_1d × sqrt(5)
+HOLD if 5d_expected_move < round_trip_cost (0.4%) + min_net_profit (1.0%)
+```
+
+This restores actionable UP/DOWN signals for the typical 0.8–1.5% daily-ATR Tadawul large-cap universe without sacrificing the cost-discipline goal.
+
+---
+
+## Market-aware Freshness (April 5, 2026)
+
+`marketAdjustedAgeHours` in `web-ui/server.js` subtracts Fri/Sat hours from data-source staleness calculations for sources that only refresh on Tadawul trading days. Prevents the Intelligence Pulse widget from showing false "stale" warnings during the weekend.
+
+---
+
+*Last Updated: April 5, 2026*

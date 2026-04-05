@@ -149,4 +149,25 @@ The `catchup-evaluation` cron at 12:00 UTC is staggered to 12:15 UTC to avoid ov
 
 ---
 
-*Last Updated: April 4, 2026*
+## 8. Signal Quality & UI Integrity (April 5, 2026)
+
+### 8.1 Horizon-scaled Tier 2 cost gate
+
+`run_agents_ksa.py` rejects directional signals whose expected 5-day move cannot clear round-trip costs. The gate previously compared **1-day ATR%** against a 1.9% threshold, which killed every Tadawul bluechip. It now scales the daily ATR by √5 (≈ 2.236) to estimate the 5-day move and compares against `round_trip_cost + min_net_profit = 0.4% + 1.0% = 1.4%`.
+
+### 8.2 Market-aware freshness (`marketAdjustedAgeHours`)
+
+The `/api/intelligence/quality` endpoint in `web-ui/server.js` exposes a market-adjusted age for data sources that only refresh on Tadawul trading days. Fri (UTC day 5) and Sat (UTC day 6) hours are subtracted from the calendar age, so Thursday's post-market data does not look stale on Sun morning. Sources flagged `marketAware: true`: prices, predictions, consensus, sentiment, fx_rates. Calendar age is also returned for diagnostics.
+
+### 8.3 Sample-reliability flag (`kpiForWindow`)
+
+`web-ui/routes/track-record.js` tags each KPI window with `sample_reliability`:
+- `≥30 trades` → `high`
+- `10–29 trades` → `preliminary`
+- `<10 trades` → `insufficient`
+
+The frontend renders an amber/red "preliminary" badge on rolling cards so Sharpe / max-drawdown / win-rate are not presented as stable figures on small post-gate samples.
+
+---
+
+*Last Updated: April 5, 2026*

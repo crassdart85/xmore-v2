@@ -1,5 +1,5 @@
 # Business Requirements Document — Xmore KSA (Tadawul)
-**Version:** 1.1 | **Date:** April 2026 | **Status:** Active
+**Version:** 1.2 | **Date:** April 2026 | **Status:** Active
 
 ---
 
@@ -365,6 +365,44 @@ Each INSERT in `news_aggregator.py` must use `SAVEPOINT intel_insert` / `ROLLBAC
 - [ ] `intraday-price-update` job has NO schema init step
 - [ ] All other schema init steps have `timeout-minutes: 2` + `continue-on-error: true`
 - [ ] Verify 41 `.SR` stocks seeded in `egx30_stocks` table (not `.CA` stocks)
+
+---
+
+## 19. Signal Quality & Presentation Fixes (April 5, 2026)
+
+Three production issues surfaced after the April 3–4 quality-gate rollout produced a 10-day evaluation sample with misleading headline metrics.
+
+### 19.1 Horizon-scaled Tier 2 cost gate
+
+**Problem:** The cost gate in `run_agents_ksa.py` compared a **1-day ATR%** to a **5-day hold cost+profit threshold** (1.9 %). Because the typical Tadawul large-cap daily ATR is 0.8–1.5 %, every directional signal was forced to HOLD, producing a dashboard of all-HOLD with 0.00 % expected edge.
+
+**Fix:** Scale 1-day ATR% by √5 to approximate the 5-day expected move, then compare against the threshold:
+
+```
+5d_expected_move = ATR_1d × √5
+gate: 5d_expected_move < (round_trip_cost 0.4 % + min_net_profit 1.0 %) = 1.4 % → HOLD
+```
+
+- 2222.SR (ATR ~1.1 %): 5d move 2.46 % → **PASS**
+- 1180.SR (ATR ~1.3 %): 5d move 2.91 % → **PASS**
+- Previously all such symbols were killed.
+
+### 19.2 Market-aware data-freshness warnings
+
+**Problem:** On Fri/Sat the `/api/intelligence/quality` endpoint compared latest prices/predictions/consensus/sentiment timestamps against a 36-hour calendar threshold. Since Tadawul is closed Fri–Sat, every weekend legitimately-fresh data looked stale with a yellow warning pill, signalling a false pipeline failure to investors.
+
+**Fix:** `marketAdjustedAgeHours()` in `web-ui/server.js` subtracts Fri (UTC day 5) and Sat (UTC day 6) hours from the age calculation. Sources that only update on trading days are flagged `marketAware: true` in the quality endpoint. Calendar age is still exposed as `calendar_age_hours` for debugging.
+
+### 19.3 Sample-reliability flag on track-record cards
+
+**Problem:** Because quality gates + cost gate activated Mar 21 + Apr 3, the 30-day window contains ~10 evaluated trades — too few for Sharpe / max-drawdown / profit-factor to be statistically meaningful. The dashboard displayed misleading headline figures.
+
+**Fix:** `kpiForWindow` in `web-ui/routes/track-record.js` now returns a `sample_reliability` field:
+- `≥30 trades` → `high` (no badge)
+- `10–29 trades` → `preliminary` (amber badge)
+- `<10 trades`  → `insufficient` (red badge)
+
+The frontend renders the badge on each rolling card so investors can distinguish transient post-gate metrics from long-run performance.
 
 ---
 

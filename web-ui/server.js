@@ -451,6 +451,31 @@ function ageHoursFromDate(value) {
   return age < 0 ? null : age;
 }
 
+// Tadawul trades Sun–Thu. Fri (UTC day 5) and Sat (UTC day 6) are non-trading.
+// Count hours between two timestamps that fall inside KSA trading days only,
+// so "data from Thursday close" does not look stale on Fri/Sat/Sun-morning.
+function marketAdjustedAgeHours(value) {
+  const raw = ageHoursFromDate(value);
+  if (raw == null) return null;
+  const now = Date.now();
+  const fromMs = now - raw * 3600000;
+  let adjusted = raw;
+  const cursor = new Date(now);
+  while (cursor.getTime() > fromMs) {
+    const dow = cursor.getUTCDay(); // 0=Sun ... 5=Fri, 6=Sat
+    const startOfDay = Date.UTC(
+      cursor.getUTCFullYear(), cursor.getUTCMonth(), cursor.getUTCDate()
+    );
+    const intervalStart = Math.max(startOfDay, fromMs);
+    const hoursThisDay = (cursor.getTime() - intervalStart) / 3600000;
+    if (dow === 5 || dow === 6) {
+      adjusted -= hoursThisDay;
+    }
+    cursor.setTime(startOfDay - 1);
+  }
+  return Math.max(0, adjusted);
+}
+
 function freshnessStatus(ageHours, thresholdHours) {
   if (ageHours == null) return 'unknown';
   if (ageHours <= thresholdHours) return 'fresh';
@@ -986,23 +1011,30 @@ app.get('/api/intelligence/changes', optionalAuth, async (req, res) => {
 app.get('/api/intelligence/quality', optionalAuth, async (req, res) => {
   try {
     const freshness = {};
+    // `marketAware: true` sources only publish on Tadawul trading days
+    // (Sun–Thu), so we skip Fri/Sat hours when computing staleness.
     const sources = [
-      { key: 'prices', sql: `SELECT MAX(date) AS latest_value FROM prices`, thresholdHours: 36 },
-      { key: 'predictions', sql: `SELECT MAX(prediction_date) AS latest_value FROM predictions`, thresholdHours: 36 },
-      { key: 'consensus', sql: `SELECT MAX(prediction_date) AS latest_value FROM consensus_results`, thresholdHours: 36 },
-      { key: 'news', sql: `SELECT MAX(date) AS latest_value FROM news WHERE date <= ${DATABASE_URL ? 'CURRENT_DATE' : "date('now')"}`, thresholdHours: 24 },
-      { key: 'sentiment', sql: `SELECT MAX(date) AS latest_value FROM sentiment_scores`, thresholdHours: 36 },
-      { key: 'fx_rates', sql: `SELECT MAX(date) AS latest_value FROM fx_rates_history`, thresholdHours: 36 }
+      { key: 'prices',      sql: `SELECT MAX(date) AS latest_value FROM prices`,           thresholdHours: 36, marketAware: true },
+      { key: 'predictions', sql: `SELECT MAX(prediction_date) AS latest_value FROM predictions`,     thresholdHours: 36, marketAware: true },
+      { key: 'consensus',   sql: `SELECT MAX(prediction_date) AS latest_value FROM consensus_results`, thresholdHours: 36, marketAware: true },
+      { key: 'news',        sql: `SELECT MAX(date) AS latest_value FROM news WHERE date <= ${DATABASE_URL ? 'CURRENT_DATE' : "date('now')"}`, thresholdHours: 24, marketAware: false },
+      { key: 'sentiment',   sql: `SELECT MAX(date) AS latest_value FROM sentiment_scores`, thresholdHours: 36, marketAware: true },
+      { key: 'fx_rates',    sql: `SELECT MAX(date) AS latest_value FROM fx_rates_history`, thresholdHours: 36, marketAware: true }
     ];
 
     for (const source of sources) {
       try {
         const row = await dbGetAsync(source.sql, []);
         const latestValue = row?.latest_value || null;
-        const ageHours = ageHoursFromDate(latestValue);
+        const calendarAge = ageHoursFromDate(latestValue);
+        const ageHours = source.marketAware
+          ? marketAdjustedAgeHours(latestValue)
+          : calendarAge;
         freshness[source.key] = {
           latest_value: latestValue,
           age_hours: ageHours == null ? null : Number(ageHours.toFixed(2)),
+          calendar_age_hours: calendarAge == null ? null : Number(calendarAge.toFixed(2)),
+          market_aware: !!source.marketAware,
           status: freshnessStatus(ageHours, source.thresholdHours)
         };
       } catch (err) {
