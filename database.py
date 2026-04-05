@@ -769,12 +769,14 @@ def create_tables():
                 chunk_text  TEXT NOT NULL,
                 embedding   TEXT,
                 source_meta TEXT,
+                market_id   TEXT DEFAULT 'KSA',
                 created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(source_type, source_id, chunk_index)
+                UNIQUE(source_type, source_id, chunk_index, market_id)
             )
         """)
         _safe_create_index(cursor, "CREATE INDEX IF NOT EXISTS idx_rag_chunks_source ON rag_chunks(source_type, source_id)")
-        # Add source_meta to existing installs that predate this column
+        # Add market_id and source_meta to existing installs that predate these columns
+        _safe_add_column(cursor, 'rag_chunks', 'market_id', "TEXT DEFAULT 'KSA'")
         _safe_add_column(cursor, 'rag_chunks', 'source_meta', 'TEXT')
 
         # Table 23: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
@@ -967,9 +969,12 @@ def create_tables():
                 storage_uri   TEXT,
                 fetched_at    TIMESTAMP,
                 ingested_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(url)
+                market_id     TEXT DEFAULT 'KSA',
+                UNIQUE(url, market_id)
             )
         """)
+        # Add market_id to existing installs that predate this column
+        _safe_add_column(cursor, 'rag_document', 'market_id', "TEXT DEFAULT 'KSA'")
 
         # Table 35: RAG embedding job queue
         cursor.execute(f"""

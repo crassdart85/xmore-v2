@@ -395,6 +395,7 @@ async function initializeDatabase() {
         UNIQUE(url, market_id)
       )
     `);
+    await safeExec(pool, `ALTER TABLE rag_document ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS rag_embedding_job (
         job_id        BIGSERIAL PRIMARY KEY,
@@ -416,6 +417,7 @@ async function initializeDatabase() {
         market_id   TEXT DEFAULT 'KSA'
       )
     `);
+    await safeExec(pool, `ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_doc_market  ON rag_document(market_id)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc  ON rag_chunks(doc_id)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_job_status  ON rag_embedding_job(status)');
