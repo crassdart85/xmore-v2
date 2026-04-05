@@ -378,7 +378,7 @@ async function initializeDatabase() {
     // ── RAG / knowledge-base tables ─────────────────────────────────────────
     console.log('📚 Creating RAG knowledge-base tables...');
 
-    await pool.query(`
+    await safeExec(pool, `
       CREATE TABLE IF NOT EXISTS rag_document (
         doc_id       BIGSERIAL PRIMARY KEY,
         doc_type     TEXT NOT NULL DEFAULT 'knowledge',
@@ -395,8 +395,12 @@ async function initializeDatabase() {
         UNIQUE(url, market_id)
       )
     `);
+    // If rag_document was created by Python (with id PK, no market_id), patch it up
     await safeExec(pool, `ALTER TABLE rag_document ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
-    await pool.query(`
+    // Ensure a unique index on (url, market_id) exists for ON CONFLICT
+    await safeCreateIndex(pool, `CREATE UNIQUE INDEX IF NOT EXISTS idx_rag_doc_url_market ON rag_document(url, market_id)`);
+
+    await safeExec(pool, `
       CREATE TABLE IF NOT EXISTS rag_embedding_job (
         job_id        BIGSERIAL PRIMARY KEY,
         doc_id        BIGINT NOT NULL REFERENCES rag_document(doc_id) ON DELETE CASCADE,
@@ -407,7 +411,7 @@ async function initializeDatabase() {
         error_message TEXT
       )
     `);
-    await pool.query(`
+    await safeExec(pool, `
       CREATE TABLE IF NOT EXISTS rag_chunks (
         chunk_id    BIGSERIAL PRIMARY KEY,
         doc_id      BIGINT NOT NULL REFERENCES rag_document(doc_id) ON DELETE CASCADE,
@@ -431,7 +435,8 @@ async function initializeDatabase() {
       console.log('⚠️  pgvector not available — using embedding_json fallback');
     }
 
-    // Seed KSA knowledge-base entries (upsert on url+market_id)
+    // Seed KSA knowledge-base entries (upsert — catches any unique constraint)
+    try {
     const ksaDocs = [
       { title: 'Saudi Exchange (Tadawul) Trading Rules Overview',        publisher: 'Tadawul', language: 'en', url: 'internal://ksa/tadawul-trading-rules', content_hash: 'ksa-001', content: `The Saudi Exchange (Tadawul) is the principal securities exchange in Saudi Arabia. Trading hours: 10:00–15:00 AST (UTC+3) Sunday to Thursday. The exchange is closed on Fridays and Saturdays and Saudi public holidays. The benchmark index is the Tadawul All Share Index (TASI). All securities are denominated in Saudi Riyal (SAR). Price movement limits: most equities have a daily move limit of ±10%. Settlement cycle: T+2. Short selling is permitted subject to CMA regulations. Foreign investors may hold up to 49% of most listed companies (Strategic 100% in some sectors with MISA approval). Minimum lot size: 1 share. Transaction costs include brokerage commission (~0.15–0.25%), CMA levy (0.0033%), Tadawul fee (0.0046%), plus 15% VAT on fees.` },
       { title: 'SAMA Monetary Policy & SAR Peg', publisher: 'SAMA', language: 'en', url: 'internal://ksa/sama-monetary-policy', content_hash: 'ksa-002', content: `The Saudi Central Bank (SAMA) maintains the Saudi Riyal (SAR) peg to the US Dollar at a fixed rate of 3.75 SAR per USD (established 1986). Saudi Arabia does not conduct independent monetary policy; it mirrors US Federal Reserve decisions to maintain the peg. The key SAMA policy rate (repo rate) closely tracks the US Fed Funds rate. As of 2024–2025, the SAMA repo rate is approximately 5.5–6.0%. Saudi Arabia targets low inflation (~2–3%) supported by domestic fuel and utility subsidies. The country holds the world's largest official foreign exchange reserves after China and Japan (~$450 billion). Gold reserves are modest (~323 tonnes). Saudi Arabia is the world's largest crude oil exporter and OPEC's de facto leader; oil revenues dominate the fiscal budget.` },
@@ -446,10 +451,13 @@ async function initializeDatabase() {
       await pool.query(`
         INSERT INTO rag_document (doc_type, title, publisher, language, url, content_hash, market_id, fetched_at)
         VALUES ('knowledge', $1, $2, $3, $4, $5, 'KSA', NOW())
-        ON CONFLICT (url, market_id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `, [meta.title, meta.publisher, meta.language, meta.url, meta.content_hash]);
     }
     console.log('✅ KSA RAG knowledge-base seeded (6 documents)');
+    } catch (ragSeedErr) {
+      console.warn('⚠️  RAG seed skipped (non-fatal):', ragSeedErr.message.split('\n')[0]);
+    }
 
     // signal_ic_log — Information Coefficient monitoring (Spearman rank IC per symbol)
     await pool.query(`
