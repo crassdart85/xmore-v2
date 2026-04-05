@@ -89,9 +89,11 @@ Egyptian retail investors lack affordable, systematic tools for EGX equity analy
 | `engines/pivot_engine.py` | Pivot levels, ATR, candlestick patterns |
 | `engines/backtest.py` | Walk-forward backtest (`--save` upserts to `backtest_results`) |
 | `engines/agent_weights.py` | Softmax dynamic agent weights (T=2.0, floor 5%) + audit log |
+| `engines/meta_learner.py` | Meta-learner: stacks agent outputs via LightGBM for ensemble signal |
 | `engines/event_detector.py` | News event detection → targeted sentiment refresh |
-| `engines/job_locks.py` | Advisory TTL-based pipeline locking |
+| `engines/job_locks.py` | Advisory TTL-based pipeline locking (prevents GH Actions overlaps) |
 | `engines/macro_data.py` | MacroDataProvider: CBE rate, USD/EGP, CPI, GDP → composite risk score |
+| `engines/etf_shared.py` | Shared ETF helpers — `get_or_create_instrument()` upserts to `instrument` table (PK: `instrument_id`) |
 | `web-ui/services/openbbMcpBridge.js` | MCP bridge: live quotes + macro context for RAG chat |
 | `openbb_egx/` | OpenBB-compatible EGX data provider (Pydantic v2, async TradingView + yfinance) |
 | `backfill_history.py` | Bulk historical price backfill |
@@ -276,6 +278,8 @@ Configured in `.claude/settings.json` + `.claude/hooks/`:
 | Gemini 404 on deprecated models | Use `gemini-2.5-flash` + `text-embedding-005` |
 | `authMiddleware` 500 errors | Always use `req.userId`, never `req.user.userId` |
 | Render free tier (400 pipeline-min/month) | Resets 1st of each month |
+| `etf-global-universe` crash: `column "id" does not exist` | `instrument` table PK is `instrument_id`. `engines/etf_shared.py` `get_or_create_instrument()` must use `RETURNING instrument_id`. Fixed Apr 2026. |
+| KSA pipeline writing to EGX database | `ksa-branch-scheduled.yml` must use `secrets.KSA_DATABASE_URL` (not `DATABASE_URL`). Fixed Apr 2026. |
 
 ---
 
