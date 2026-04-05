@@ -1,11 +1,11 @@
 """
-MacroDataProvider — fetches and caches Egypt macro indicators.
+MacroDataProvider — fetches and caches KSA (Saudi Arabia) macro indicators.
 
 Indicators:
-  - CBE overnight rate (proxy: Egypt 91-day T-bill rate)
-  - USD/EGP spot rate
-  - Egypt CPI YoY %
-  - Egypt GDP growth %
+  - SAMA repo rate (mirrors US Fed Funds due to SAR-USD peg)
+  - USD/SAR spot rate (fixed peg ~3.75, but tracked for verification)
+  - Saudi CPI YoY %
+  - Saudi GDP growth %
 
 Caching:
   - Macro data is slow-moving; cached to `macro_indicators` table
@@ -14,7 +14,7 @@ Caching:
 
 Schema: macro_indicators table
   id SERIAL PRIMARY KEY,
-  indicator TEXT NOT NULL,        -- 'cbe_rate', 'usd_egp', 'cpi_yoy', 'gdp_growth'
+  indicator TEXT NOT NULL,        -- 'sama_rate', 'usd_sar', 'cpi_yoy', 'gdp_growth'
   value REAL NOT NULL,
   period TEXT NOT NULL,           -- 'YYYY-MM' or 'YYYY-QQ'
   source TEXT NOT NULL,           -- 'FRED', 'WorldBank', 'yfinance', 'manual'
@@ -31,21 +31,28 @@ logger = logging.getLogger(__name__)
 DATABASE_URL = os.getenv('DATABASE_URL')
 
 # Default values for when APIs are unavailable
+# SAMA mirrors US Fed Funds (~5.5%); SAR pegged at 3.75; Saudi CPI ~2%; GDP ~4%
 _DEFAULTS = {
-    'cbe_rate': {'value': 27.25, 'period': '2026-03', 'source': 'manual'},
-    'usd_egp': {'value': 50.85, 'period': '2026-04', 'source': 'manual'},
-    'cpi_yoy': {'value': 13.6, 'period': '2026-02', 'source': 'manual'},
-    'gdp_growth': {'value': 3.5, 'period': '2025-Q4', 'source': 'manual'},
+    'sama_rate': {'value': 5.50, 'period': '2026-03', 'source': 'manual'},
+    'usd_sar': {'value': 3.75, 'period': '2026-04', 'source': 'manual'},
+    'cpi_yoy': {'value': 2.0, 'period': '2026-02', 'source': 'manual'},
+    'gdp_growth': {'value': 4.2, 'period': '2025-Q4', 'source': 'manual'},
+}
+
+# Legacy aliases so old code referencing Egypt indicators degrades gracefully
+_LEGACY_MAP = {
+    'cbe_rate': 'sama_rate',
+    'usd_egp': 'usd_sar',
 }
 
 
 class MacroDataProvider:
     """
-    Fetches and caches Egypt macro indicators.
+    Fetches and caches KSA (Saudi Arabia) macro indicators.
 
     Usage:
         provider = MacroDataProvider(db_conn)
-        latest = provider.get_latest('cbe_rate')
+        latest = provider.get_latest('sama_rate')
         context = provider.get_macro_regime_context()
     """
 
@@ -83,6 +90,8 @@ class MacroDataProvider:
         Returns latest value for an indicator.
         Returns: {'value': float, 'period': str, 'source': str, 'fetched_at': str}
         """
+        # Map legacy Egypt indicator names to KSA equivalents
+        indicator = _LEGACY_MAP.get(indicator, indicator)
         try:
             cursor = self.db.cursor()
             if DATABASE_URL:
@@ -148,17 +157,17 @@ class MacroDataProvider:
         Returns {indicator: success_bool}.
 
         Sources:
-          - USD/EGP: yfinance (EGP=X)
-          - CBE rate: manual/config (CBE doesn't publish via API)
-          - CPI/GDP: manual (World Bank has significant lag)
+          - USD/SAR: yfinance (SAR=X) — pegged at 3.75, tracked for verification
+          - SAMA repo rate: mirrors US Fed Funds; manual/config
+          - CPI/GDP: manual (GASTAT publishes with lag)
         """
         results = {}
 
-        # USD/EGP via yfinance
-        results['usd_egp'] = await self._refresh_usd_egp()
+        # USD/SAR via yfinance (pegged, but verify)
+        results['usd_sar'] = await self._refresh_usd_sar()
 
-        # CBE rate — use existing collect_data.py _fetch_usdegp_rate or manual
-        results['cbe_rate'] = self._refresh_from_default('cbe_rate')
+        # SAMA rate — mirrors Fed Funds; use default/manual
+        results['sama_rate'] = self._refresh_from_default('sama_rate')
 
         # CPI/GDP — these lag months behind, use defaults
         results['cpi_yoy'] = self._refresh_from_default('cpi_yoy')
@@ -166,20 +175,20 @@ class MacroDataProvider:
 
         return results
 
-    async def _refresh_usd_egp(self) -> bool:
-        """Fetch USD/EGP rate from yfinance."""
+    async def _refresh_usd_sar(self) -> bool:
+        """Fetch USD/SAR rate from yfinance (pegged at 3.75, sanity check)."""
         try:
             import yfinance as yf
-            ticker = yf.Ticker('EGP=X')
+            ticker = yf.Ticker('SAR=X')
             hist = ticker.history(period='5d')
             if hist is not None and not hist.empty:
                 rate = float(hist['Close'].iloc[-1])
                 period = datetime.now().strftime('%Y-%m')
-                self._upsert(indicator='usd_egp', value=rate, period=period, source='yfinance')
-                logger.info(f"USD/EGP refreshed: {rate:.2f}")
+                self._upsert(indicator='usd_sar', value=rate, period=period, source='yfinance')
+                logger.info(f"USD/SAR refreshed: {rate:.4f}")
                 return True
         except Exception as e:
-            logger.warning(f"USD/EGP refresh failed: {e}")
+            logger.warning(f"USD/SAR refresh failed: {e}")
         return False
 
     def _refresh_from_default(self, indicator: str) -> bool:
@@ -224,6 +233,11 @@ class MacroDataProvider:
         """
         Returns composite macro context for simulation engine.
 
+        KSA-specific thresholds:
+          - SAR pegged to USD at 3.75; SAMA mirrors US Fed Funds rate
+          - Saudi inflation is low (~2-3%) due to fuel/utility subsidies
+          - GDP growth driven by Vision 2030 diversification + oil
+
         Returns:
             {
                 'rate_environment': 'high' | 'normal' | 'low',
@@ -233,44 +247,43 @@ class MacroDataProvider:
                 'macro_risk_score': float,  # 0.0–1.0 composite
             }
         """
-        cbe = self.get_latest('cbe_rate')
-        usd_egp = self.get_latest('usd_egp')
+        sama = self.get_latest('sama_rate')
+        usd_sar = self.get_latest('usd_sar')
         cpi = self.get_latest('cpi_yoy')
         gdp = self.get_latest('gdp_growth')
 
-        # Rate environment
-        rate = cbe.get('value', 27.25)
-        if rate > 18:
+        # SAMA rate environment (mirrors US Fed; 4-6% is normal for peg)
+        rate = sama.get('value', 5.50)
+        if rate > 6.0:
             rate_env = 'high'
-        elif rate > 12:
+        elif rate > 4.0:
             rate_env = 'normal'
         else:
             rate_env = 'low'
 
-        # FX stress: check if EGP depreciated >5% recently
-        # (We only have point-in-time, so compare against a baseline)
-        fx_rate = usd_egp.get('value', 50.0)
-        fx_stress = fx_rate > 52.0  # Rough threshold for Q2 2026
+        # FX stress: SAR is pegged at 3.75; deviation > 0.5% signals stress
+        fx_rate = usd_sar.get('value', 3.75)
+        fx_stress = abs(fx_rate - 3.75) > 0.02  # Peg deviation > ~0.5%
 
-        # Inflation regime
-        inflation = cpi.get('value', 13.6)
-        if inflation > 20:
+        # Inflation regime (Saudi targets ~2-3%)
+        inflation = cpi.get('value', 2.0)
+        if inflation > 5.0:
             inflation_regime = 'high'
-        elif inflation > 10:
+        elif inflation > 3.0:
             inflation_regime = 'moderate'
         else:
             inflation_regime = 'low'
 
         # Growth momentum
-        growth = gdp.get('value', 3.5)
+        growth = gdp.get('value', 4.2)
         growth_momentum = 'positive' if growth > 0 else 'negative'
 
         # Composite risk score (0.0 = low risk, 1.0 = high risk)
         risk_components = []
-        risk_components.append(0.4 if rate_env == 'high' else (0.2 if rate_env == 'normal' else 0.0))
-        risk_components.append(0.3 if fx_stress else 0.0)
+        risk_components.append(0.3 if rate_env == 'high' else (0.1 if rate_env == 'normal' else 0.0))
+        risk_components.append(0.3 if fx_stress else 0.0)  # Peg break = severe
         risk_components.append(0.2 if inflation_regime == 'high' else (0.1 if inflation_regime == 'moderate' else 0.0))
-        risk_components.append(0.1 if growth_momentum == 'negative' else 0.0)
+        risk_components.append(0.2 if growth_momentum == 'negative' else 0.0)
         macro_risk_score = min(1.0, sum(risk_components))
 
         return {
@@ -280,8 +293,8 @@ class MacroDataProvider:
             'growth_momentum': growth_momentum,
             'macro_risk_score': round(macro_risk_score, 2),
             'indicators': {
-                'cbe_rate': rate,
-                'usd_egp': fx_rate,
+                'sama_rate': rate,
+                'usd_sar': fx_rate,
                 'cpi_yoy': inflation,
                 'gdp_growth': growth,
             },
