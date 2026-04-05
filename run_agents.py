@@ -1252,19 +1252,27 @@ def execute():
                     )
 
                 # ── Tier 2: Transaction Cost Gate ──────────────────────────
-                # Kill signals whose expected move is too small to clear
-                # round-trip costs. EGX typical spread + impact ≈ 50 bps;
-                # require ≥1.5% net move to justify action.
+                # Kill signals whose expected 5-day move is too small to
+                # clear round-trip costs. expected_move_pct stores a 1-day
+                # ATR%, so we scale by sqrt(holding_days) to estimate the
+                # horizon-appropriate move. EGX spread + impact ≈ 50 bps;
+                # require ≥1.0 % net profit on top of cost.
                 _ROUND_TRIP_COST_PCT = 0.50   # 50 bps as a percentage
-                _MIN_NET_MOVE_PCT    = 1.50   # 1.5 % minimum net expected move
+                _MIN_NET_MOVE_PCT    = 1.00   # 1.0 % minimum net expected move (over horizon)
+                _HOLDING_DAYS        = 5
+                import math as _math
+                _HORIZON_SCALE       = _math.sqrt(_HOLDING_DAYS)  # ~2.236
+                _MIN_THRESHOLD_PCT   = _ROUND_TRIP_COST_PCT + _MIN_NET_MOVE_PCT  # 1.50 %
                 if consensus_result.get('final_signal') in ('UP', 'DOWN'):
                     em_pct = consensus_result.get('expected_move_pct')
-                    if em_pct is not None and em_pct < (_ROUND_TRIP_COST_PCT + _MIN_NET_MOVE_PCT):
-                        print(f"  💸 [{stock}] Cost gate: ATR {em_pct:.2f}% < {_ROUND_TRIP_COST_PCT + _MIN_NET_MOVE_PCT:.2f}% threshold → HOLD")
-                        consensus_result['final_signal'] = 'HOLD'
-                        consensus_result['conviction']   = 'LOW'
-                        consensus_result['risk_adjusted'] = True
-                        consensus_result.setdefault('risk_assessment', {})['action'] = 'COST_GATED'
+                    if em_pct is not None:
+                        horizon_move_pct = em_pct * _HORIZON_SCALE
+                        if horizon_move_pct < _MIN_THRESHOLD_PCT:
+                            print(f"  💸 [{stock}] Cost gate: 5d move {horizon_move_pct:.2f}% < {_MIN_THRESHOLD_PCT:.2f}% → HOLD")
+                            consensus_result['final_signal'] = 'HOLD'
+                            consensus_result['conviction']   = 'LOW'
+                            consensus_result['risk_adjusted'] = True
+                            consensus_result.setdefault('risk_assessment', {})['action'] = 'COST_GATED'
 
                 # Store consensus result
                 _store_consensus(conn, stock, today, consensus_result)

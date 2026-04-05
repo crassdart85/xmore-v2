@@ -728,4 +728,59 @@ Positions are scaled proportionally so their relative weights remain unchanged b
 
 ---
 
+## 14. Tier 2 Cost Gate (Horizon-scaled)
+
+**Source:** `run_agents.py` `_compute_atr_pct` + Tier 2 gate (lines ≈ 1254–1278)
+
+The cost gate rejects any UP/DOWN signal whose expected 5-day move cannot clear round-trip transaction cost plus a minimum net-profit margin.
+
+**1-day ATR% (current bar):**
+
+$$\text{ATR}_{1d}(\%) = \frac{\text{ATR}_{14}}{\text{close}} \times 100$$
+
+**Horizon-adjusted expected move (5-day hold):**
+
+$$E[\text{move}_{5d}](\%) = \text{ATR}_{1d}(\%) \times \sqrt{5} \approx \text{ATR}_{1d}(\%) \times 2.236$$
+
+**Gate condition:**
+
+$$\text{signal} \to \text{HOLD} \quad \text{if} \quad E[\text{move}_{5d}] < (c_{\text{round\_trip}} + m_{\text{min\_net}})$$
+
+Where (EGX):
+- $c_{\text{round\_trip}} = 0.5\%$ (spread + impact estimate)
+- $m_{\text{min\_net}} = 1.0\%$ (minimum net profit over horizon)
+- Threshold $= 1.5\%$
+
+For Tadawul (KSA): $c_{\text{round\_trip}} = 0.4\%$, $m_{\text{min\_net}} = 1.0\%$, threshold $= 1.4\%$.
+
+---
+
+## 15. KPI Sample-Reliability Flag
+
+**Source:** `web-ui/routes/track-record.js` `kpiForWindow`
+
+Each rolling KPI window (30d / 60d / 90d / 180d / 365d) is tagged with a reliability level based on the count of evaluated trades $N$:
+
+$$\text{reliability} = \begin{cases}
+\text{high}         & \text{if } N \geq 30 \\
+\text{preliminary}  & \text{if } 10 \leq N < 30 \\
+\text{insufficient} & \text{if } N < 10
+\end{cases}$$
+
+Ratio metrics (Sharpe, Sortino, max-drawdown, profit factor) are dominated by noise below $N \approx 30$. The flag drives an amber/red "preliminary" badge on the track-record UI so investors interpret post-gate metrics correctly.
+
+---
+
+## 16. Market-Adjusted Data Age
+
+**Source:** `web-ui/server.js` `marketAdjustedAgeHours`
+
+For sources that only refresh on trading days (prices, predictions, consensus, sentiment, fx_rates), the `/api/intelligence/quality` endpoint reports a market-adjusted age instead of calendar age:
+
+$$\text{age}_{\text{adj}} = \text{age}_{\text{cal}} - \sum_{d \in \text{weekend}} h_d$$
+
+Where weekend for EGX/Tadawul = {Friday (UTC dow 5), Saturday (UTC dow 6)}. This prevents Thursday post-market data from triggering a false "stale" warning on Fri/Sat/Sun-morning.
+
+---
+
 *Last updated: April 2026 — reflects production codebase at HEAD.*

@@ -1,5 +1,5 @@
 # Business Requirements Document — Xmore (EGX)
-**Version:** 1.6 | **Date:** April 2026 | **Status:** Active
+**Version:** 1.7 | **Date:** April 2026 | **Status:** Active
 
 ---
 
@@ -320,6 +320,44 @@ Each INSERT in `news_aggregator.py` must use `SAVEPOINT intel_insert` / `ROLLBAC
 - [ ] GitHub Actions secrets match Render env vars
 - [ ] `intraday-price-update` job has NO schema init step
 - [ ] All other schema init steps have `timeout-minutes: 2` + `continue-on-error: true`
+
+---
+
+## 18. Signal Quality & Presentation Fixes (April 5, 2026)
+
+Three production issues surfaced after the April 3–4 quality-gate rollout produced a 10-day evaluation sample with misleading headline metrics.
+
+### 18.1 Horizon-scaled Tier 2 cost gate
+
+**Problem:** The cost gate in `run_agents.py` compared a **1-day ATR%** to a **5-day hold cost+profit threshold** (2.0 %). Because the typical EGX bluechip daily ATR is 1.0–1.8 %, every directional signal was forced to HOLD, producing a dashboard of all-HOLD with 0.00 % expected edge.
+
+**Fix:** Scale 1-day ATR% by √5 to approximate the 5-day expected move, then compare against the threshold:
+
+```
+5d_expected_move = ATR_1d × √5
+gate: 5d_expected_move < (round_trip_cost 0.5 % + min_net_profit 1.0 %) = 1.5 % → HOLD
+```
+
+- COMI.CA (ATR 1.2 %): 5d move 2.68 % → **PASS**
+- EFIH.CA (ATR 0.9 %): 5d move 2.01 % → **PASS**
+- Previously all such stocks were killed.
+
+### 18.2 Market-aware data-freshness warnings
+
+**Problem:** On Fri/Sat the `/api/intelligence/quality` endpoint compared latest prices/predictions/consensus/sentiment timestamps against a 36-hour calendar threshold. Since EGX is closed Fri–Sat, every weekend legitimately-fresh data looked "41.6h stale" with a yellow warning pill, signalling a false pipeline failure to investors.
+
+**Fix:** `marketAdjustedAgeHours()` in [web-ui/server.js](web-ui/server.js) subtracts Fri (UTC day 5) and Sat (UTC day 6) hours from the age calculation. Sources that only update on trading days are flagged `marketAware: true` in the quality endpoint. Calendar age is still exposed as `calendar_age_hours` for debugging.
+
+### 18.3 Sample-reliability flag on track-record cards
+
+**Problem:** Because quality gates + cost gate activated Mar 21 + Apr 3, the 30-day window contains ~10 evaluated trades — too few for Sharpe / max-drawdown / profit-factor to be statistically meaningful. The dashboard displayed Sharpe -8.88, DD 89.44 %, Win 26.1 % as if they were stable figures.
+
+**Fix:** [`kpiForWindow`](web-ui/routes/track-record.js) now returns a `sample_reliability` field:
+- `≥30 trades` → `high` (no badge)
+- `10–29 trades` → `preliminary` (amber badge)
+- `<10 trades`  → `insufficient` (red badge)
+
+The frontend renders the badge on each rolling card so investors can distinguish transient post-gate metrics from long-run performance.
 
 ---
 

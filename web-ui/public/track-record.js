@@ -629,8 +629,16 @@ async function renderRolling(rolling) {
     if (pfGross != null) rows.push({ label: withGrossLabel(labels.profit_factor), val: pfGross, fmt: v => fmt(v, 2), cls: colorClass(pfGross != null ? pfGross - 1 : null) });
     if (beatGross != null) rows.push({ label: withGrossLabel(labels.beat_benchmark), val: beatGross, fmt: v => v + '%', cls: beatGross >= 50 ? 'pos' : 'neg' });
 
+    const reliability = w.sample_reliability || null;
+    let reliabilityBadge = '';
+    if (reliability === 'insufficient') {
+      reliabilityBadge = ' <span class="tr-reliability-badge tr-reliability-insufficient" title="Too few trades to compute reliable ratios">preliminary</span>';
+    } else if (reliability === 'preliminary') {
+      reliabilityBadge = ' <span class="tr-reliability-badge tr-reliability-preliminary" title="Small sample — metrics may be volatile">preliminary</span>';
+    }
+
     return '<div class="tr-rolling-card">' +
-      '<div class="tr-rolling-card-title">' + label + ' | ' + trades + ' signals</div>' +
+      '<div class="tr-rolling-card-title">' + label + ' | ' + trades + ' signals' + reliabilityBadge + '</div>' +
       rows.map(r => '<div class="tr-rolling-row">' +
         '<span class="tr-rolling-row-label">' + r.label + '</span>' +
         '<span class="tr-rolling-row-val ' + (r.cls || '') + '">' + r.fmt(r.val) + '</span>' +

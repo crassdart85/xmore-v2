@@ -164,10 +164,26 @@ async function kpiForWindow(days) {
         const mddNet = calcMaxDrawdownAbs(returnsNet);
         const mddGross = calcMaxDrawdownAbs(returnsGross);
 
+        // Reliability gate: ratio metrics (Sharpe, Sortino, max-DD, profit
+        // factor) are noise below ~20 trades, especially after major system
+        // changes (quality gates, cost gate). Expose a reliability flag so
+        // the UI can show a "Preliminary" badge instead of misleading numbers.
+        const MIN_SAMPLE_RELIABLE    = 30;
+        const MIN_SAMPLE_PRELIMINARY = 10;
+        const sample_reliability =
+            total >= MIN_SAMPLE_RELIABLE    ? 'high'       :
+            total >= MIN_SAMPLE_PRELIMINARY ? 'preliminary':
+                                              'insufficient';
+        const firstDate = rows[0]?.recommendation_date || null;
+        const lastDate  = rows[rows.length - 1]?.recommendation_date || null;
+
         return {
             reporting_basis:       'net_of_transaction_costs',
             total_signals:         total,
             directional_accuracy:  total > 0 ? parseFloat((correct / total).toFixed(4)) : 0,
+            sample_reliability,
+            sample_window_start:   firstDate,
+            sample_window_end:     lastDate,
 
             // Primary (net)
             alpha_vs_egx30:        parseFloat(mean(alphaNet).toFixed(4)),
