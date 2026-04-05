@@ -72,9 +72,13 @@ def _execute(cursor, sql, params=None):
 
 # ─── MAIN ENTRY POINT ─────────────────────────────────────────
 
-def run_evaluation(pipeline_run_id: str = None):
+def run_evaluation(pipeline_run_id: str = None, market_id: str = None):
     """
     Full evaluation pass. Called daily after briefing generation.
+    Args:
+        pipeline_run_id: Optional pipeline run tracking ID.
+        market_id: Optional market filter (e.g. 'KSA'). Currently unused
+                   but accepted so callers don't raise TypeError.
     """
     print("[Evaluate] Starting performance evaluation...")
 
@@ -149,7 +153,9 @@ def resolve_1day_outcomes() -> int:
 
         # Find unresolved 1-day recommendations
         sql = f"""
-            SELECT tr.id, tr.symbol, tr.action, tr.signal, tr.close_price,
+            SELECT tr.id, tr.symbol,
+                   COALESCE(tr.action, tr.signal_type, tr.signal) AS action,
+                   tr.signal, tr.close_price,
                    tr.recommendation_date
             FROM trade_recommendations tr
             WHERE tr.actual_next_day_return IS NULL
@@ -402,14 +408,18 @@ def get_benchmark_return(cursor, start_date, end_date) -> float:
                  / start_price[0]["close"]) * 100, 4
             )
 
-    return None
+    # No benchmark data available — return 0.0 so alpha = raw return
+    # rather than NULL (which breaks downstream KPI calculations).
+    return 0.0
 
 
 def evaluate_correctness(action: str, actual_return: float):
-    """Determine if a recommendation was correct."""
-    if action == "BUY":
+    """Determine if a recommendation was correct.
+    Handles both EGX-style (BUY/SELL/HOLD) and KSA consensus (UP/DOWN/HOLD).
+    """
+    if action in ("BUY", "UP"):
         return actual_return > 0           # Price went up
-    elif action == "SELL":
+    elif action in ("SELL", "DOWN"):
         return actual_return < 0           # Price went down (good exit)
     elif action == "HOLD":
         return actual_return >= -2.0       # Didn't crash

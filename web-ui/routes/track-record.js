@@ -78,13 +78,14 @@ function calcProfitFactor(returnsArr) {
 }
 
 function calcMaxDrawdownAbs(returnsArr) {
-    let cum = 0;
-    let peak = 0;
+    // Compound returns into equity curve, then compute peak-to-trough drawdown
+    let equity = 1;
+    let peak = 1;
     let maxDd = 0;
     returnsArr.forEach(r => {
-        cum += r;
-        if (cum > peak) peak = cum;
-        const dd = peak - cum;
+        equity *= (1 + r / 100);
+        if (equity > peak) peak = equity;
+        const dd = (peak - equity) / peak * 100;  // drawdown in %
         if (dd > maxDd) maxDd = dd;
     });
     return maxDd;

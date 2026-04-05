@@ -116,7 +116,7 @@ router.get('/performance/summary', async (req, res) => {
         const winRate    = rows.length ? (wins / rows.length) * 100 : 0;
 
         const m = mean(returns), s = stdev(returns);
-        const sharpe  = s > 0 ? ((m - dailyRf) / s) * Math.sqrt(TRADING_DAYS) : 0;
+        const sharpe  = s > 0 ? ((m / 100 - dailyRf) / (s / 100)) * Math.sqrt(TRADING_DAYS) : 0;
 
         const profits = returns.filter(v => v > 0).reduce((a, b) => a + b, 0);
         const losses  = Math.abs(returns.filter(v => v < 0).reduce((a, b) => a + b, 0));

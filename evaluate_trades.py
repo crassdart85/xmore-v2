@@ -17,7 +17,9 @@ def evaluate_past_recommendations():
         # Evaluate 1-day-old recommendations
         if os.getenv('DATABASE_URL'):
             cursor.execute("""
-                SELECT tr.id, tr.symbol, tr.action, tr.signal, tr.close_price,
+                SELECT tr.id, tr.symbol,
+                       COALESCE(tr.action, tr.signal_type, tr.signal) AS action,
+                       tr.signal, tr.close_price,
                        tr.recommendation_date
                 FROM trade_recommendations tr
                 WHERE tr.actual_next_day_return IS NULL
@@ -26,7 +28,9 @@ def evaluate_past_recommendations():
             """)
         else:
              cursor.execute("""
-                SELECT tr.id, tr.symbol, tr.action, tr.signal, tr.close_price,
+                SELECT tr.id, tr.symbol,
+                       COALESCE(tr.action, tr.signal_type, tr.signal) AS action,
+                       tr.signal, tr.close_price,
                        tr.recommendation_date
                 FROM trade_recommendations tr
                 WHERE tr.actual_next_day_return IS NULL
@@ -59,11 +63,12 @@ def evaluate_past_recommendations():
                 
                 # Was the recommendation correct?
                 was_correct = None
-                if rec["action"] == "BUY":
+                action = rec["action"]
+                if action in ("BUY", "UP"):
                     was_correct = return_1d > 0        # Price went up = correct
-                elif rec["action"] == "SELL":
+                elif action in ("SELL", "DOWN"):
                     was_correct = return_1d < 0        # Price went down = correct exit
-                elif rec["action"] == "HOLD":
+                elif action == "HOLD":
                     was_correct = return_1d >= -2.0    # Didn't crash = correct hold
                 # WATCH: no correctness evaluation
                 

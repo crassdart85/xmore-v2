@@ -571,20 +571,30 @@ def _run_consensus(
 # DB signal storage
 # ---------------------------------------------------------------------------
 
-def _store_signal(conn, ticker: str, consensus_result: dict) -> None:
+def _store_signal(conn, ticker: str, consensus_result: dict, market_data: dict = None) -> None:
     """
     INSERT a consensus signal into trade_recommendations with market_id='KSA'.
     Uses ON CONFLICT DO NOTHING to be idempotent on re-runs within the same day.
 
     Columns written:
-        symbol, recommendation_date, signal_type, conviction,
-        xmore_score, market_id, notes, created_at
+        symbol, recommendation_date, signal_type, action, close_price,
+        conviction, xmore_score, market_id, notes, created_at
     """
     try:
         final_signal = consensus_result.get("final_signal", "HOLD")
         conviction   = consensus_result.get("conviction", "LOW")
         xmore_score  = consensus_result.get("xmore_score", 50)
-        notes        = consensus_result.get("notes") or json.dumps(
+
+        # Map directional signal to action for evaluate_performance compat
+        _ACTION_MAP = {"UP": "BUY", "DOWN": "SELL", "BUY": "BUY", "SELL": "SELL"}
+        action = _ACTION_MAP.get(final_signal, "HOLD")
+
+        # close_price is required by the evaluation engine
+        close_price = None
+        if market_data:
+            close_price = market_data.get("current_price") or market_data.get("close")
+
+        notes = consensus_result.get("notes") or json.dumps(
             {
                 "market_id": MARKET_ID,
                 "source":    "run_agents_ksa",
@@ -596,16 +606,18 @@ def _store_signal(conn, ticker: str, consensus_result: dict) -> None:
         cursor.execute(
             """
             INSERT INTO trade_recommendations
-                (symbol, recommendation_date, signal_type, conviction,
-                 xmore_score, market_id, notes, created_at)
-            VALUES (%s, CURRENT_DATE, %s, %s, %s, %s, %s, NOW())
+                (symbol, recommendation_date, signal_type, action, close_price,
+                 conviction, xmore_score, market_id, notes, created_at)
+            VALUES (%s, CURRENT_DATE, %s, %s, %s, %s, %s, %s, %s, NOW())
             ON CONFLICT DO NOTHING
             """,
-            (ticker, final_signal, conviction, xmore_score, MARKET_ID, notes),
+            (ticker, final_signal, action, close_price, conviction,
+             xmore_score, MARKET_ID, notes),
         )
         conn.commit()
         logger.debug(
-            f"[KSA] Signal stored for {ticker}: {final_signal} ({conviction})"
+            f"[KSA] Signal stored for {ticker}: {final_signal} ({conviction}) "
+            f"close={close_price}"
         )
 
     except Exception as e:
@@ -773,7 +785,7 @@ def execute(args) -> None:
 
             # Store to DB (skip in dry-run mode)
             if not args.dry_run:
-                _store_signal(conn, ticker, consensus)
+                _store_signal(conn, ticker, consensus, market_data=market_data)
 
             all_results.append(consensus)
             processed += 1
