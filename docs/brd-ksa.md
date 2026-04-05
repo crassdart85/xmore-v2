@@ -301,7 +301,9 @@ All server.js queries filter `WHERE symbol LIKE '%.SR'` (predictions, evaluation
 
 ### 15.1 Environment Secrets (GitHub + Render)
 
-`DATABASE_URL`, `NEWS_API_KEY`, `FINNHUB_API_KEY`, `GOOGLE_API_KEY`, `JWT_SECRET`, `EODHD_API_KEY`, `MARKETAUX_API_KEY`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`
+**Render (`xmore-ksa` service):** `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_API_KEY`, `NEWS_API_KEY`, `FINNHUB_API_KEY`, `EODHD_API_KEY`, `MARKETAUX_API_KEY`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`
+
+**GitHub Actions (repo secrets):** `KSA_DATABASE_URL` ← **must be the External Database URL from `ksa-trading-db` on Render** (not the internal hostname). `ksa-branch-scheduled.yml` sets `DATABASE_URL: ${{ secrets.KSA_DATABASE_URL }}`. Using the shared `DATABASE_URL` (EGX DB) caused KSA data to contaminate the EGX database — fixed Apr 2026.
 
 ### 15.2 Auth Pattern
 
@@ -332,6 +334,7 @@ Configured in `.claude/settings.json` + `.claude/hooks/` (local-only, gitignored
 | KSA `/execution/:ticker` HTTP 500 | Check `signal_type`/`xmore_score` columns exist; prices query must NOT filter `market_id` |
 | KSA signals HTTP 500 | `consensus_results` column is `prediction_date`; never SELECT `regime_flag` |
 | `consensus_results` stale .CA rows | server.js `WHERE symbol LIKE '%.SR'` filter removes them; will clear when KSA pipeline runs |
+| KSA pipeline writing to EGX DB (DB empty) | `ksa-branch-scheduled.yml` was using `secrets.DATABASE_URL` (EGX DB). Fixed Apr 2026: now uses `secrets.KSA_DATABASE_URL`. Render internal hostname won't work from GH Actions — use External Database URL. |
 
 ---
 
@@ -361,7 +364,8 @@ Each INSERT in `news_aggregator.py` must use `SAVEPOINT intel_insert` / `ROLLBAC
 - [ ] `render-ksa.yaml` `startCommand: node web-ui/server.js`
 - [ ] Same settings updated in Render dashboard (buildCommand field)
 - [ ] All secrets configured in Render dashboard for `xmore-ksa` service
-- [ ] GitHub Actions secrets match Render env vars
+- [ ] `KSA_DATABASE_URL` repo secret set to **External** Database URL from `ksa-trading-db` (Render → PostgreSQL → Connection → External Database URL)
+- [ ] `DATABASE_URL` repo secret remains set to EGX DB (used by main branch workflows only)
 - [ ] `intraday-price-update` job has NO schema init step
 - [ ] All other schema init steps have `timeout-minutes: 2` + `continue-on-error: true`
 - [ ] Verify 41 `.SR` stocks seeded in `egx30_stocks` table (not `.CA` stocks)
