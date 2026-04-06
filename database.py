@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Use PostgreSQL on Render, SQLite locally
 DATABASE_URL = os.getenv('DATABASE_URL')
+ACTIVE_MARKET = (os.getenv('MARKET') or 'EGX').upper()
 
 # ============================================
 # DATABASE CONNECTION
@@ -72,6 +73,23 @@ def _safe_create_index(cursor, sql):
             logger.warning(f"Index skipped (concurrent run / deadlock): {e}")
     else:
         cursor.execute(sql)
+
+
+def _safe_exec(cursor, sql):
+    """Execute arbitrary DDL safely so one failed mutation doesn't abort the run."""
+    if DATABASE_URL:
+        cursor.execute("SAVEPOINT safe_exec")
+        try:
+            cursor.execute(sql)
+            cursor.execute("RELEASE SAVEPOINT safe_exec")
+        except Exception as e:
+            cursor.execute("ROLLBACK TO SAVEPOINT safe_exec")
+            logger.warning(f"DDL skipped: {e}")
+    else:
+        try:
+            cursor.execute(sql)
+        except Exception:
+            pass
 
 @contextmanager
 def get_connection():
@@ -278,6 +296,9 @@ def create_tables():
         _safe_add_column(cursor, "consensus_results", "xmore_score", "REAL")
         _safe_add_column(cursor, "consensus_results", "calibrated_confidence", "REAL")
         _safe_add_column(cursor, "consensus_results", "expected_edge_pct", "REAL")
+        _safe_add_column(cursor, "consensus_results", "date", "DATE")
+        _safe_add_column(cursor, "consensus_results", "market_id", "TEXT DEFAULT 'KSA'")
+        _safe_add_column(cursor, "consensus_results", "signal_count", "INTEGER")
         _safe_add_column(cursor, "consensus_results", "ranking_score", "REAL")
         _safe_add_column(cursor, "consensus_results", "weight_profile_json", "TEXT")
         _safe_add_column(cursor, "consensus_results", "calibration_meta_json", "TEXT")
@@ -515,6 +536,36 @@ def create_tables():
         ]
         for col_name, col_type in benchmark_columns:
             _safe_add_column(cursor, "trade_recommendations", col_name, col_type)
+
+        # KSA-compatible columns are added here as well because scheduled jobs
+        # call create_tables() on every run, not the Render JS initializer.
+        _safe_add_column(cursor, "prices", "market_id", "TEXT DEFAULT 'KSA'")
+        _safe_add_column(cursor, "news", "market_id", "TEXT DEFAULT 'KSA'")
+        _safe_add_column(cursor, "news", "title", "TEXT")
+        _safe_add_column(cursor, "news", "ticker_mentions", "TEXT")
+        _safe_add_column(cursor, "news", "direction", "TEXT")
+        _safe_add_column(cursor, "news", "post_type", "TEXT")
+        _safe_add_column(cursor, "news", "channel_weight", "REAL")
+        _safe_add_column(cursor, "trade_recommendations", "market_id", "TEXT DEFAULT 'KSA'")
+        _safe_add_column(cursor, "trade_recommendations", "signal_type", "TEXT")
+        _safe_add_column(cursor, "trade_recommendations", "final_signal", "TEXT")
+        _safe_add_column(cursor, "trade_recommendations", "xmore_score", "REAL")
+        _safe_add_column(cursor, "trade_recommendations", "notes", "TEXT")
+        _safe_add_column(cursor, "trade_recommendations", "actual_outcome", "TEXT")
+        _safe_add_column(cursor, "regime_log", "market_id", "TEXT DEFAULT 'KSA'")
+        _safe_add_column(cursor, "regime_log", "regime_label", "TEXT")
+        _safe_add_column(cursor, "regime_log", "regime_label_en", "TEXT")
+        _safe_add_column(cursor, "regime_log", "regime_label_ar", "TEXT")
+        _safe_add_column(cursor, "regime_log", "regime_confidence", "REAL")
+        _safe_add_column(cursor, "regime_log", "current_regime", "INTEGER")
+        _safe_add_column(cursor, "regime_log", "n_regimes", "INTEGER")
+        _safe_add_column(cursor, "regime_log", "is_bearish", "BOOLEAN DEFAULT FALSE")
+        _safe_add_column(cursor, "regime_log", "index_price", "REAL")
+        _safe_add_column(cursor, "regime_log", "ma20", "REAL")
+        _safe_add_column(cursor, "regime_log", "detected_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+
+        if ACTIVE_MARKET == "KSA":
+            _safe_exec(cursor, "ALTER TABLE trade_recommendations ALTER COLUMN user_id DROP NOT NULL")
 
         # Add session-sheet columns (pivot levels, trend, buy guide, rec type, patterns)
         session_columns = [

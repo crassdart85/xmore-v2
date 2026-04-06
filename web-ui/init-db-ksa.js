@@ -104,12 +104,17 @@ async function initializeDatabase() {
     `);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS signal_type TEXT`);
+    await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS final_signal TEXT`);
+    await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS action TEXT`);
+    await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS close_price REAL`);
+    await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS conviction TEXT`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS xmore_score REAL`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS notes TEXT`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS actual_next_day_return REAL`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS benchmark_1d_return REAL`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS alpha_1d REAL`);
     await safeExec(pool, `ALTER TABLE trade_recommendations ADD COLUMN IF NOT EXISTS was_correct BOOLEAN`);
+    await safeExec(pool, `ALTER TABLE trade_recommendations ALTER COLUMN user_id DROP NOT NULL`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_tr_ksa_symbol ON trade_recommendations(symbol, recommendation_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_tr_ksa_market ON trade_recommendations(market_id, recommendation_date DESC)');
 
@@ -171,6 +176,9 @@ async function initializeDatabase() {
       )
     `);
     await safeExec(pool, `ALTER TABLE news ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
+    await safeExec(pool, `ALTER TABLE news ADD COLUMN IF NOT EXISTS symbol TEXT`);
+    await safeExec(pool, `ALTER TABLE news ADD COLUMN IF NOT EXISTS headline TEXT`);
+    await safeExec(pool, `ALTER TABLE news ADD COLUMN IF NOT EXISTS sentiment_label TEXT`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_ksa ON news(market_id, date DESC)');
 
     await pool.query(`
@@ -187,6 +195,14 @@ async function initializeDatabase() {
       )
     `);
     await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS market_id TEXT DEFAULT 'KSA'`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS regime_label TEXT`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS regime TEXT`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS hmm_state INTEGER`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS volatility REAL`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS is_bearish BOOLEAN DEFAULT FALSE`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS index_price REAL`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS ma20 REAL`);
+    await safeExec(pool, `ALTER TABLE regime_log ADD COLUMN IF NOT EXISTS detected_at TIMESTAMPTZ DEFAULT NOW()`);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_regime_ksa ON regime_log(market_id, date DESC)');
 
     await pool.query(`
@@ -311,6 +327,7 @@ async function initializeDatabase() {
       )
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_prices_ksa ON prices(symbol, date DESC)');
+    await safeExec(pool, `ALTER TABLE prices ADD COLUMN IF NOT EXISTS data_source TEXT DEFAULT 'yahoo_finance'`);
 
     // ── Seed Tadawul stocks ───────────────────────────────────────────────
     console.log('🌱 Seeding Tadawul (KSA) stocks...');

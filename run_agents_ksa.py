@@ -59,6 +59,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 MARKET_ID   = "KSA"
 TASI_TICKER = "^TASI.SR"
+_TABLE_COLUMNS_CACHE: dict[str, set[str]] = {}
 
 # Saudi national holidays 2026 (Gregorian calendar equivalents).
 # Sources: Saudi official calendar -- Founding Day, Eid al-Fitr, Eid al-Adha,
@@ -85,6 +86,35 @@ SAUDI_HOLIDAYS_2026 = [
 
 # Tadawul trading week: Sunday-Thursday (weekday indices Sun=6, Mon=0 ... Thu=3)
 _TADAWUL_TRADING_DAYS = {6, 0, 1, 2, 3}
+
+
+def _get_table_columns(conn, table_name: str) -> set[str]:
+    """Return lowercase column names for a table using the current DB backend."""
+    cache_key = table_name.lower()
+    if cache_key in _TABLE_COLUMNS_CACHE:
+        return _TABLE_COLUMNS_CACHE[cache_key]
+
+    cursor = conn.cursor()
+    cols: set[str] = set()
+    try:
+        if hasattr(conn, "server_version"):
+            cursor.execute(
+                """
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_schema = 'public' AND table_name = %s
+                """,
+                (table_name,),
+            )
+            cols = {str(row[0]).lower() for row in cursor.fetchall()}
+        else:
+            cursor.execute(f"PRAGMA table_info({table_name})")
+            cols = {str(row[1]).lower() for row in cursor.fetchall()}
+    except Exception as exc:
+        logger.debug(f"[KSA] Could not inspect columns for {table_name}: {exc}")
+
+    _TABLE_COLUMNS_CACHE[cache_key] = cols
+    return cols
 
 
 # ---------------------------------------------------------------------------
@@ -195,17 +225,49 @@ def _detect_market_regime(conn) -> dict:
 
         # Persist to regime_log (best-effort; table may not exist on all envs)
         try:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO regime_log
-                    (market_id, regime_label, is_bearish, index_price, ma20, detected_at)
-                VALUES (%s, %s, %s, %s, %s, NOW())
-                ON CONFLICT DO NOTHING
-                """,
-                (MARKET_ID, label, is_bearish, tasi_price, ma20),
-            )
-            conn.commit()
+            cols = _get_table_columns(conn, "regime_log")
+            payload = {}
+            if "date" in cols:
+                payload["date"] = datetime.date.today()
+            if "market_id" in cols:
+                payload["market_id"] = MARKET_ID
+            if "regime_label" in cols:
+                payload["regime_label"] = label
+            if "regime_label_en" in cols:
+                payload["regime_label_en"] = label
+            if "regime_label_ar" in cols:
+                payload["regime_label_ar"] = "هادئ" if label == "Calm" else "متقلب"
+            if "regime_confidence" in cols:
+                payload["regime_confidence"] = 0.70
+            if "current_regime" in cols:
+                payload["current_regime"] = 0 if label == "Calm" else 1
+            if "n_regimes" in cols:
+                payload["n_regimes"] = 2
+            if "regime" in cols:
+                payload["regime"] = label
+            if "hmm_state" in cols:
+                payload["hmm_state"] = 0 if label == "Calm" else 1
+            if "volatility" in cols:
+                payload["volatility"] = vol_20d
+            if "is_bearish" in cols:
+                payload["is_bearish"] = is_bearish
+            if "index_price" in cols:
+                payload["index_price"] = tasi_price
+            if "ma20" in cols:
+                payload["ma20"] = ma20
+            if "detected_at" in cols:
+                payload["detected_at"] = datetime.datetime.utcnow()
+
+            if payload:
+                col_names = list(payload.keys())
+                placeholders = ", ".join(["%s"] * len(col_names))
+                columns_sql = ", ".join(col_names)
+                cursor = conn.cursor()
+                cursor.execute(
+                    f"INSERT INTO regime_log ({columns_sql}) VALUES ({placeholders}) ON CONFLICT DO NOTHING",
+                    [payload[c] for c in col_names],
+                )
+                conn.commit()
         except Exception as _db_err:
             logger.debug(f"[KSA] regime_log write skipped: {_db_err}")
             try:
@@ -536,23 +598,32 @@ def _run_consensus(
 
     # Persist to consensus_results (best-effort)
     try:
+        cols = _get_table_columns(conn, "consensus_results")
+        payload = {"symbol": ticker}
+        if "prediction_date" in cols:
+            payload["prediction_date"] = datetime.date.today()
+        if "date" in cols:
+            payload["date"] = datetime.date.today()
+        if "final_signal" in cols:
+            payload["final_signal"] = result.get("final_signal", "HOLD")
+        if "conviction" in cols:
+            payload["conviction"] = result.get("conviction", "LOW")
+        if "xmore_score" in cols:
+            payload["xmore_score"] = result.get("xmore_score", 50)
+        if "market_id" in cols:
+            payload["market_id"] = MARKET_ID
+        if "signal_count" in cols:
+            payload["signal_count"] = len(signals)
+        if "created_at" in cols:
+            payload["created_at"] = datetime.datetime.utcnow()
+
+        col_names = list(payload.keys())
+        placeholders = ", ".join(["%s"] * len(col_names))
+        columns_sql = ", ".join(col_names)
         cursor = conn.cursor()
         cursor.execute(
-            """
-            INSERT INTO consensus_results
-                (symbol, prediction_date, date, final_signal, conviction,
-                 xmore_score, market_id, signal_count, created_at)
-            VALUES (%s, CURRENT_DATE, CURRENT_DATE, %s, %s, %s, %s, %s, NOW())
-            ON CONFLICT DO NOTHING
-            """,
-            (
-                ticker,
-                result.get("final_signal", "HOLD"),
-                result.get("conviction", "LOW"),
-                result.get("xmore_score", 50),
-                MARKET_ID,
-                len(signals),
-            ),
+            f"INSERT INTO consensus_results ({columns_sql}) VALUES ({placeholders}) ON CONFLICT DO NOTHING",
+            [payload[c] for c in col_names],
         )
         conn.commit()
     except Exception as _db_err:
@@ -584,6 +655,8 @@ def _store_signal(conn, ticker: str, consensus_result: dict, market_data: dict =
         final_signal = consensus_result.get("final_signal", "HOLD")
         conviction   = consensus_result.get("conviction", "LOW")
         xmore_score  = consensus_result.get("xmore_score", 50)
+        confidence_map = {"LOW": 55, "MEDIUM": 70, "HIGH": 85, "VERY_HIGH": 92}
+        numeric_confidence = confidence_map.get(str(conviction).upper(), 60)
 
         # Map directional signal to action for evaluate_performance compat
         _ACTION_MAP = {"UP": "BUY", "DOWN": "SELL", "BUY": "BUY", "SELL": "SELL"}
@@ -602,17 +675,43 @@ def _store_signal(conn, ticker: str, consensus_result: dict, market_data: dict =
             }
         )
 
+        cols = _get_table_columns(conn, "trade_recommendations")
+        payload = {"symbol": ticker, "recommendation_date": datetime.date.today()}
+        if "action" in cols:
+            payload["action"] = action
+        if "signal" in cols:
+            payload["signal"] = final_signal
+        if "signal_type" in cols:
+            payload["signal_type"] = final_signal
+        if "final_signal" in cols:
+            payload["final_signal"] = final_signal
+        if "confidence" in cols:
+            payload["confidence"] = numeric_confidence
+        if "conviction" in cols:
+            payload["conviction"] = conviction
+        if "close_price" in cols:
+            payload["close_price"] = close_price
+        if "xmore_score" in cols:
+            payload["xmore_score"] = xmore_score
+        if "market_id" in cols:
+            payload["market_id"] = MARKET_ID
+        if "notes" in cols:
+            payload["notes"] = notes
+        if "reasons" in cols:
+            payload["reasons"] = notes
+        if "created_at" in cols:
+            payload["created_at"] = datetime.datetime.utcnow()
+        if "updated_at" in cols:
+            payload["updated_at"] = datetime.datetime.utcnow()
+
+        col_names = list(payload.keys())
+        placeholders = ", ".join(["%s"] * len(col_names))
+        columns_sql = ", ".join(col_names)
+
         cursor = conn.cursor()
         cursor.execute(
-            """
-            INSERT INTO trade_recommendations
-                (symbol, recommendation_date, signal_type, action, close_price,
-                 conviction, xmore_score, market_id, notes, created_at)
-            VALUES (%s, CURRENT_DATE, %s, %s, %s, %s, %s, %s, %s, NOW())
-            ON CONFLICT DO NOTHING
-            """,
-            (ticker, final_signal, action, close_price, conviction,
-             xmore_score, MARKET_ID, notes),
+            f"INSERT INTO trade_recommendations ({columns_sql}) VALUES ({placeholders}) ON CONFLICT DO NOTHING",
+            [payload[c] for c in col_names],
         )
         conn.commit()
         logger.debug(
