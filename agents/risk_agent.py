@@ -46,22 +46,58 @@ DEFAULT_RISK_CONFIG = {
 
 # Sector mapping for concentration checks
 SECTOR_MAP = {
-    # Banking & Financial
-    "COMI.CA": "banking", "HRHO.CA": "financial", "EMFD.CA": "financial",
+    # Banking & Financial (KSA / Tadawul)
+    "1180.SR": "banking",   # Al Rajhi Bank
+    "1120.SR": "banking",   # Al Jazira Bank
+    "1140.SR": "banking",   # Al Bilad Bank
+    "1010.SR": "banking",   # Riyad Bank
+    "1020.SR": "banking",   # Bank AlJazira
+    "1030.SR": "banking",   # Saudi Investment Bank
+    "1050.SR": "banking",   # Banque Saudi Fransi
+    "1060.SR": "banking",   # SABB
+    "1080.SR": "banking",   # Arab National Bank
+    "1150.SR": "banking",   # Alinma Bank
+    "1170.SR": "banking",   # Saudi National Bank
+    "1160.SR": "insurance", # Al-Rajhi Takaful
+    # Energy & Petrochemicals
+    "2222.SR": "energy",         # Saudi Aramco
+    "2010.SR": "petrochemicals", # SABIC
+    "2020.SR": "petrochemicals", # Saudi Industrial Investment
+    "2030.SR": "petrochemicals", # SAFCO
+    "2060.SR": "petrochemicals", # Yanbu National Petrochemicals
+    "2080.SR": "petrochemicals", # National Industrialization
+    "2090.SR": "petrochemicals", # National Petrochemical
+    "2100.SR": "energy",         # Gulf International Services
+    # Telecom
+    "7010.SR": "telecom",  # STC
+    "7020.SR": "telecom",  # Mobily
+    "7030.SR": "telecom",  # Zain KSA
+    # Retail & Consumer
+    "4003.SR": "consumer",  # Extra
+    "4050.SR": "consumer",  # Savola
+    "4061.SR": "consumer",  # Almarai
+    "4001.SR": "consumer",  # Aldrees
+    "4190.SR": "consumer",  # Jarir
+    "4240.SR": "consumer",  # Fawaz Alhokair
+    "4321.SR": "consumer",  # Al Othaim
     # Real Estate
-    "TMGH.CA": "real_estate", "PHDC.CA": "real_estate", "MNHD.CA": "real_estate",
-    "OCDI.CA": "real_estate",
-    # Industrial / Utilities
-    "ORAS.CA": "industrial", "SWDY.CA": "industrial", "ESRS.CA": "industrial",
-    # Consumer / Telecom
-    "EAST.CA": "consumer", "ETEL.CA": "telecom", "FWRY.CA": "fintech",
-    "JUFO.CA": "consumer", "ORWE.CA": "consumer",
+    "4020.SR": "real_estate",  # Dar Al Arkan
+    "4040.SR": "real_estate",  # Saudi Real Estate
+    "4100.SR": "real_estate",  # Emaar
+    "4150.SR": "real_estate",  # Taiba Investments
+    # Industrials & Materials
+    "2110.SR": "industrial",  # Saudi Steel Pipe
+    "2120.SR": "industrial",  # Astra Industrial
+    "2130.SR": "industrial",  # Saudi Ceramics
+    "2140.SR": "industrial",  # Shaker
+    "2150.SR": "industrial",  # Saudi Printing
+    "3001.SR": "industrial",  # Yamama Cement
+    "3002.SR": "industrial",  # Saudi Cement
+    "3003.SR": "industrial",  # Qassim Cement
     # Healthcare
-    "CCAP.CA": "healthcare",
-    # Chemicals / Energy
-    "ABUK.CA": "chemicals", "MFPC.CA": "chemicals", "SKPC.CA": "chemicals",
-    "AMOC.CA": "energy", "ALCN.CA": "logistics",
-    "EFIH.CA": "industrial",
+    "4002.SR": "healthcare",  # Dallah Healthcare
+    "4005.SR": "healthcare",  # National Medical Care
+    "4007.SR": "healthcare",  # Mouwasat
     # US Tech
     "AAPL": "tech", "GOOGL": "tech", "MSFT": "tech", "AMZN": "tech",
     "META": "tech", "TSLA": "auto_tech", "NVDA": "tech",

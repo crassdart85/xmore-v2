@@ -141,7 +141,7 @@ def _apply_regime_gate(signal: str, conviction: str,
 
       Turbulent (mid-vol state, confidence >= 60%):
         - UP  → HOLD  (volatility erodes signal edge)
-        - DOWN → HOLD  (EGX has limited short-selling; downside moves are
+        - DOWN → HOLD  (Tadawul has limited short-selling; downside moves are
                         unpredictable in turbulent conditions)
 
       Calm: no adjustment.
@@ -192,7 +192,7 @@ def run_consensus(symbol: str,
       5. Meta-Learner      — confidence calibration via stacked LogisticRegression
 
     Args:
-        symbol:              Stock ticker (e.g. "COMI.CA")
+        symbol:              Stock ticker (e.g. "2222.SR")
         agent_signals:       List of AgentSignal dicts (from Layer 1)
         market_data:         Dict with price, volume, volatility, drawdowns, 52w range
         sentiment_data:      Dict with avg_sentiment, sentiment_label, article_count

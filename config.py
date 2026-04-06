@@ -39,7 +39,7 @@ US_STOCKS = [
 ALL_STOCKS = KSA_STOCKS + US_STOCKS
 
 # ============================================
-# EGYPTIAN MARKET SETTINGS
+# KSA MARKET SETTINGS
 # ============================================
 
 # Tadawul Market Configuration

@@ -26,20 +26,20 @@ def agent():
 # ─── Test 1: Minimum ticket rule on small position ───────────────────────────
 
 def test_round_trip_cost_minimum_ticket(agent):
-    """Position of 500 EGP → cost = 2 × min ticket (30 EGP), not ~3.5 EGP."""
+    """Position of 500 SAR → cost = 2 × min ticket (20 SAR), not ~2.78 SAR."""
     cost = agent.calculate_round_trip_cost(500.0)
     assert cost == EGX_MIN_TICKET_EGP * 2, (
-        f"Expected {EGX_MIN_TICKET_EGP * 2} EGP but got {cost}"
+        f"Expected {EGX_MIN_TICKET_EGP * 2} SAR but got {cost}"
     )
 
 
 # ─── Test 2: Low-return signal rejected ──────────────────────────────────────
 
 def test_minimum_edge_rejects_low_return(agent):
-    """1.5% return, ~0.7% round-trip → edge ratio ≈ 2.1 → REJECTED."""
+    """0.5% return, ~0.28% round-trip → edge ratio ≈ 1.8 → REJECTED."""
     # Use a large position so minimum ticket doesn't dominate
     result = agent.check_minimum_edge(
-        expected_return_pct=0.015,
+        expected_return_pct=0.005,
         position_value_egp=100_000,
     )
     assert result["approved"] is False

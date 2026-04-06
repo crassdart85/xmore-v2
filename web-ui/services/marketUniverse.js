@@ -58,7 +58,7 @@ async function resolveMarketSymbol(rawSymbol, db) {
 
     const candidates = /^\d{4}$/.test(input)
         ? [`${input}.SR`, `${input}.CA`, input]
-        : [`${input}.CA`, `${input}.SR`, input];
+        : [`${input}.SR`, `${input}.CA`, input];
 
     if (db && typeof db.all === 'function') {
         try {
@@ -89,7 +89,7 @@ async function resolveMarketSymbol(rawSymbol, db) {
         }
     }
 
-    return /^\d{4}$/.test(input) ? `${input}.SR` : `${input}.CA`;
+    return /^\d{4}$/.test(input) ? `${input}.SR` : `${input}.SR`;
 }
 
 module.exports = {

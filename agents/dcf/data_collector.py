@@ -22,7 +22,7 @@ def collect_financial_data(ticker_ca: str, ticker_yahoo: str, sector: str) -> di
 
     Args:
         ticker_ca: EGX CA ticker (e.g., COMI)
-        ticker_yahoo: yfinance ticker (e.g., COMI.CA)
+        ticker_yahoo: yfinance ticker (e.g., 2222.SR)
         sector: sector name used for defaults/assumptions
 
     Returns:

@@ -355,15 +355,15 @@ class MLAgent(BaseAgent):
         df = add_sentiment_features(df, news_df)
         df = add_macro_features(df, macro_df)
 
-        # ── Cross-sectional features: stock vs EGX30 index ────────────────
+        # ── Cross-sectional features: stock vs TASI index ────────────────
         index_df = pd.DataFrame()
         try:
             with get_connection() as conn:
                 cur = conn.cursor()
-                # EGX30 proxy: use COMI.CA (most liquid, high correlation with index)
+                # TASI proxy: use 2222.SR (Saudi Aramco, most liquid, high correlation with index)
                 cur.execute("""
                     SELECT date, close FROM prices
-                    WHERE symbol = 'COMI.CA'
+                    WHERE symbol = '2222.SR'
                     ORDER BY date
                 """)
                 rows = cur.fetchall()

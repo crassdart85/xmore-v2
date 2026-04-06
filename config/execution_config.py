@@ -1,15 +1,16 @@
 """
 Execution Realism Configuration — market friction parameters.
-EGX values in Egyptian Pounds (EGP). Tadawul values in SAR.
+KSA values in Saudi Riyals (SAR). Legacy variable names retained for compat.
 """
 
-# ─── EGX TRANSACTION COST STRUCTURE ────────────────────────────────────────
-EGX_BROKERAGE_RATE     = 0.00150   # 0.15% per leg
-EGX_STAMP_DUTY         = 0.00150   # 0.15% per leg
-EGX_FRA_FEE            = 0.000125  # Financial Regulatory Authority
-EGX_EXCHANGE_FEE       = 0.000125  # EGX infrastructure fee
-EGX_MISR_CLEARING      = 0.00010   # Misr for Central Clearing
-EGX_MIN_TICKET_EGP     = 15.0      # Minimum commission per order in EGP
+# ─── KSA/TADAWUL TRANSACTION COST STRUCTURE ────────────────────────────────
+# Legacy variable names (EGX_*) kept for backward compatibility.
+EGX_BROKERAGE_RATE     = 0.00120   # 0.12% per leg (typical Saudi broker)
+EGX_STAMP_DUTY         = 0.0       # No stamp duty on Tadawul
+EGX_FRA_FEE            = 0.000125  # CMA fee
+EGX_EXCHANGE_FEE       = 0.000050  # Tadawul infrastructure fee
+EGX_MISR_CLEARING      = 0.000015  # Edaa (Saudi clearing)
+EGX_MIN_TICKET_EGP     = 10.0      # Minimum commission per order in SAR
 EGX_ROUND_TRIP_RATE    = (EGX_BROKERAGE_RATE + EGX_STAMP_DUTY + EGX_FRA_FEE +
                            EGX_EXCHANGE_FEE + EGX_MISR_CLEARING) * 2
 
@@ -17,12 +18,12 @@ EGX_ROUND_TRIP_RATE    = (EGX_BROKERAGE_RATE + EGX_STAMP_DUTY + EGX_FRA_FEE +
 MIN_EDGE_TO_COST_RATIO = 3.0       # Signal expected return must be ≥ 3× round-trip cost
                                     # Round-trip ≈ 0.70–1.0%, so min signal target ≈ +3%
 
-# ─── SLIPPAGE TIERS (basis points) by EGX Liquidity ───────────────────────
+# ─── SLIPPAGE TIERS (basis points) by Tadawul Liquidity ───────────────────
 # Tier assigned based on Average Daily Turnover (price × volume)
 SLIPPAGE_TIERS = {
-    "high":   {"min_adv_egp": 5_000_000, "bps": 10},   # COMI, ETEL, TMGH
-    "medium": {"min_adv_egp": 1_000_000, "bps": 25},   # SKPC, AMOC, HELI, ISPH
-    "low":    {"min_adv_egp": 0,         "bps": 60},   # GBCO, EFIH, ABUK, MFPC
+    "high":   {"min_adv_egp": 5_000_000, "bps": 10},   # 2222.SR, 1180.SR, 7010.SR
+    "medium": {"min_adv_egp": 1_000_000, "bps": 25},   # 2010.SR, 4061.SR
+    "low":    {"min_adv_egp": 0,         "bps": 60},   # Small/mid cap
 }
 
 # ─── PARTIAL FILL MODEL ─────────────────────────────────────────────────────
@@ -35,13 +36,13 @@ FILL_THRESHOLDS = [
 ]
 MAX_ADV_PARTICIPATION = 0.03        # Split orders if position > 3% of ADV
 
-# ─── EGX DAILY PRICE LIMIT ──────────────────────────────────────────────────
+# ─── TADAWUL DAILY PRICE LIMIT ──────────────────────────────────────────────
 EGX_DAILY_LIMIT_PCT    = 0.10       # ±10% max daily move — stops can gap through
 
 # ─── POSITION SIZING ────────────────────────────────────────────────────────
 MAX_POSITION_PCT       = 0.10       # Hard cap: max 10% of portfolio per single stock
 MAX_SECTOR_PCT         = 0.35       # Max 35% of portfolio in one sector
-BASE_DAILY_VOLATILITY  = 0.020      # 2.0% reference daily std (EGX mid-cap baseline)
+BASE_DAILY_VOLATILITY  = 0.020      # 2.0% reference daily std (Tadawul mid-cap baseline)
 
 
 def calculate_position_size(

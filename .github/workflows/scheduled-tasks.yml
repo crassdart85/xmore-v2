@@ -1,37 +1,37 @@
-name: Trading System Automation
+﻿name: Trading System Automation
 
-# EGX market hours: 09:00–14:00 Cairo (UTC+2) = 07:00–12:00 UTC, Sun–Thu
+# Tadawul market hours: 10:00–15:00 Riyadh (UTC+3) = 07:00–12:00 UTC, Sun–Thu
 # NYSE/NASDAQ market hours: Mon–Fri
 # ─────────────────────────────────────────────────────────────────────────
 # Schedule overview (all times UTC):
 #
-#  07,08,09,10,11,12  Sun–Thu  intraday-price-update         (hourly prices, 09:00–14:00 Cairo)
+#  07,08,09,10,11,12  Sun–Thu  intraday-price-update         (hourly prices, 10:00–15:00 Riyadh)
 #  07,09,11           Sun–Thu  intraday-news-update           (news+RSS 3× during trading day)
 #  12:30              Sun–Thu  post-market-pipeline           (close prices→sentiment→agents→eval)
-#  14:00              Sun–Thu  egx-daily-snapshot             (backup EGX data export, 16:00 Cairo)
+#  14:00              Sun–Thu  egx-daily-snapshot             (backup Tadawul data export, 18:00 Riyadh)
 #  22:00              Sun–Fri  daily-pipeline                 (full nightly: briefing, portfolios)
 #  06,12:15,18:00     3×/day   catchup-evaluation             (resolve expired predictions → track-record data)
-#  13:30              Sun–Thu  etf-egx-all (EGX ETF post-close: tape+nav+holdings+fv+pd)
+#  13:30              Sun–Thu  etf-egx-all (Tadawul ETF post-close: tape+nav+holdings+fv+pd)
 #  21:30 + 04:30      Mon–Fri  etf-global-prices (×2)         (NYSE/NASDAQ EOD prices)
 #  Sun 05:00–06:00    Weekly   etf-global-universe/holdings/docs
 #  :15                Hourly   etf-rag-embedding
 
 on:
   schedule:
-    # Hourly price collection during EGX trading hours (09:00–14:00 Cairo = 07:00–12:00 UTC)
+    # Hourly price collection during Tadawul trading hours (10:00–15:00 Riyadh = 07:00–12:00 UTC)
     - cron: '0 7,8,9,10,11,12 * * 0-4'
 
-    # News + RSS collection 3× during trading day (09:00, 11:00, 13:00 Cairo = 07:00, 09:00, 11:00 UTC)
+    # News + RSS collection 3× during trading day (10:00, 12:00, 14:00 Riyadh = 07:00, 09:00, 11:00 UTC)
     - cron: '0 7,9,11 * * 0-4'
 
-    # Post-market pipeline: 30 min after close (14:30 Cairo = 12:30 UTC)
+    # Post-market pipeline: 30 min after close (15:30 Riyadh = 12:30 UTC)
     # prices → news → reliable-news → sentiment → agents → evaluate
     - cron: '30 12 * * 0-4'
 
-    # EGX daily snapshot backup (16:00 Cairo = 14:00 UTC)
+    # Tadawul daily snapshot backup (18:00 Riyadh = 14:00 UTC)
     - cron: '0 14 * * 0-4'
 
-    # Full nightly pipeline (00:00 Cairo+1 = 22:00 UTC) — includes briefing + portfolios
+    # Full nightly pipeline (01:00 Riyadh+1 = 22:00 UTC) — includes briefing + portfolios
     - cron: '0 22 * * 0-5'
 
     # Catchup evaluation: 3× daily (fills actual_next_day_return for track-record page)
@@ -39,19 +39,19 @@ on:
     - cron: '0 6,18 * * *'
     - cron: '15 12 * * *'
 
-    # ── ETF jobs (EGX post-close, Africa/Cairo UTC+2) ──
-    # All EGX ETF scrapes combined in one trigger (15:30 Cairo = 13:30 UTC, Sun–Thu)
+    # ── ETF jobs (Tadawul post-close, Asia/Riyadh UTC+3) ──
+    # All Tadawul ETF scrapes combined in one trigger (16:30 Riyadh = 13:30 UTC, Sun–Thu)
     # tape → NAV → holdings → fund volume → premium/discount run sequentially
     - cron: '30 13 * * 0-4'
-    # Global ETF prices night run (23:30 Cairo = 21:30 UTC, Mon–Fri — NYSE/NASDAQ)
+    # Global ETF prices night run (00:30 Riyadh = 21:30 UTC, Mon–Fri — NYSE/NASDAQ)
     - cron: '30 21 * * 1-5'
-    # Global ETF prices morning backstop (06:30 Cairo = 04:30 UTC, Mon–Fri — NYSE/NASDAQ)
+    # Global ETF prices morning backstop (09:30 Riyadh = 04:30 UTC, Mon–Fri — NYSE/NASDAQ)
     - cron: '30 4 * * 1-5'
-    # Global ETF universe refresh (07:00 Cairo Sun = 05:00 UTC)
+    # Global ETF universe refresh (10:00 Riyadh Sun = 05:00 UTC)
     - cron: '0 5 * * 0'
-    # Global ETF holdings refresh (07:30 Cairo Sun = 05:30 UTC)
+    # Global ETF holdings refresh (10:30 Riyadh Sun = 05:30 UTC)
     - cron: '30 5 * * 0'
-    # ETF docs ingest (08:00 Cairo Sun = 06:00 UTC)
+    # ETF docs ingest (11:00 Riyadh Sun = 06:00 UTC)
     - cron: '0 6 * * 0'
     # ETF RAG embedding worker (4× daily — only processes PENDING chunks)
     - cron: '15 6,10,14,20 * * *'
@@ -71,7 +71,7 @@ env:
 
 jobs:
   # ──────────────────────────────────────────────
-  # Job 1: Intraday price update (hourly during EGX trading, 09:00–14:00 Cairo)
+  # Job 1: Intraday price update (hourly during Tadawul trading, 10:00–15:00 Riyadh)
   # Lightweight — prices only, no news, no agents
   # ──────────────────────────────────────────────
   intraday-price-update:
@@ -98,7 +98,7 @@ jobs:
         run: python collect_data.py --prices-only
 
   # ──────────────────────────────────────────────
-  # Job 2: Intraday news update (3× during trading: 09:00, 11:00, 13:00 Cairo)
+  # Job 2: Intraday news update (3× during trading: 10:00, 12:00, 14:00 Riyadh)
   # News + RSS only — respects NewsAPI 100 req/day free tier
   # ──────────────────────────────────────────────
   intraday-news-update:
@@ -158,7 +158,7 @@ jobs:
         run: python news/ingest_cli.py
 
   # ──────────────────────────────────────────────
-  # Job 3: Post-market pipeline (30 min after EGX close — 14:30 Cairo = 12:30 UTC)
+  # Job 3: Post-market pipeline (30 min after Tadawul close — 15:30 Riyadh = 12:30 UTC)
   # Runs same-day predictions so the dashboard shows fresh signals by afternoon
   # ──────────────────────────────────────────────
   post-market-pipeline:
@@ -243,7 +243,7 @@ jobs:
         run: python evaluate.py
 
   # ──────────────────────────────────────────────
-  # Job 4: EGX daily snapshot (backup export, 16:00 Cairo = 14:00 UTC, Sun–Thu)
+  # Job 4: Tadawul daily snapshot (backup export, 18:00 Riyadh = 14:00 UTC, Sun–Thu)
   # ──────────────────────────────────────────────
   egx-daily-snapshot:
     if: github.event.schedule == '0 14 * * 0-4' || github.event_name == 'workflow_dispatch'
@@ -265,7 +265,7 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements_data.txt
 
-      - name: Run EGX daily snapshot job
+      - name: Run Tadawul daily snapshot job
         run: python xmore_data/daily_snapshot_job.py --interval 1d --output-dir data_exports/daily_egx_snapshots
 
       - name: Upload snapshot artifacts
@@ -277,7 +277,7 @@ jobs:
           if-no-files-found: warn
 
   # ──────────────────────────────────────────────
-  # Job 5: Full nightly pipeline (00:00 Cairo+1 = 22:00 UTC, Sun–Fri)
+  # Job 5: Full nightly pipeline (01:00 Riyadh+1 = 22:00 UTC, Sun–Fri)
   # Includes briefing generation, model portfolios, and full sentiment refresh.
   # Depends on post-market-pipeline having already run today's agents.
   # ──────────────────────────────────────────────
@@ -438,10 +438,10 @@ jobs:
   # ══════════════════════════════════════════════════
 
   # ─────────────────────────────────────
-  # ETF Job 1: EGX trading tape (14:35 Cairo = 12:35 UTC, Sun–Thu)
+  # ETF Job 1: Tadawul trading tape (15:35 Riyadh = 12:35 UTC, Sun–Thu)
   # ─────────────────────────────────────
   # ─────────────────────────────────────
-  # ETF Job 1: All EGX ETF scrapes (15:30 Cairo = 13:30 UTC, Sun–Thu)
+  # ETF Job 1: All Tadawul ETF scrapes (16:30 Riyadh = 13:30 UTC, Sun–Thu)
   # Consolidated: tape → NAV → holdings → fund volume → premium/discount
   # Previously 5 separate crons (12:35–13:20 UTC) that GitHub Actions dropped
   # due to scheduler saturation. One trigger is reliable.
@@ -471,16 +471,16 @@ jobs:
         continue-on-error: true
         run: python -m engines.etf_egx_mubasher
       # EGX.com.eg scrapers — may be slow/blocked; capped at 5 min each
-      - name: Scrape EGX ETF daily tape
+      - name: Scrape Tadawul ETF daily tape
         continue-on-error: true
         run: timeout 300 python -m engines.etf_egx_tape || true
-      - name: Scrape EGX ETF NAV
+      - name: Scrape Tadawul ETF NAV
         continue-on-error: true
         run: timeout 300 python -m engines.etf_egx_nav || true
-      - name: Scrape EGX ETF holdings
+      - name: Scrape Tadawul ETF holdings
         continue-on-error: true
         run: timeout 300 python -m engines.etf_egx_holdings || true
-      - name: Scrape EGX ETF fund volume
+      - name: Scrape Tadawul ETF fund volume
         continue-on-error: true
         run: timeout 300 python -m engines.etf_egx_fund_volume || true
       - name: Compute ETF premium/discount
@@ -488,7 +488,7 @@ jobs:
         run: timeout 120 python -m engines.etf_premium_discount || true
 
   # ─────────────────────────────────────
-  # ETF Job 2: Global prices night run (23:30 Cairo = 21:30 UTC)
+  # ETF Job 2: Global prices night run (00:30 Riyadh = 21:30 UTC)
   # ─────────────────────────────────────
   etf-global-prices:
     if: github.event.schedule == '30 21 * * 1-5' || github.event_name == 'workflow_dispatch'
@@ -514,7 +514,7 @@ jobs:
         run: python -m engines.etf_global_prices
 
   # ─────────────────────────────────────
-  # ETF Job 7: Global prices backstop (06:30 Cairo = 04:30 UTC)
+  # ETF Job 7: Global prices backstop (09:30 Riyadh = 04:30 UTC)
   # ─────────────────────────────────────
   etf-global-prices-backstop:
     if: github.event.schedule == '30 4 * * 1-5' || github.event_name == 'workflow_dispatch'

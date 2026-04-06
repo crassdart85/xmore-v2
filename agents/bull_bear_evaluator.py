@@ -28,7 +28,7 @@ def build_bull_case(symbol, agent_signals, market_data, sentiment_data):
     Returns a bull_score (0-100) and a list of supporting factors.
     
     Args:
-        symbol: Stock ticker (e.g., "COMI.CA")
+        symbol: Stock ticker (e.g., "2222.SR")
         agent_signals: List of AgentSignal dicts from all 4 agents
         market_data: Latest price data dict (close, volume, bid, ask, 52w range)
         sentiment_data: Latest sentiment score dict + article count
