@@ -1299,11 +1299,11 @@ function getGlobalSearchItems() {
         { en: 'Consensus', ar: 'Ø§Ù„Ø¥Ø¬Ù…Ø§Ø¹', target: 'consensus', aliases: 'ranked ranking score calibrated confidence expected edge conviction agreement edge alpha what changed today freshness drift ØªØ±ØªÙŠØ¨ Ø¯Ø±Ø¬Ø© Ø§Ù„Ø«Ù‚Ø© Ø§Ù„Ø­Ø§ÙØ© Ø§Ù„Ø¹Ø§Ø¦Ø¯ Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ Ø¥Ø¬Ù…Ø§Ø¹ Ø§Ù†Ø­Ø±Ø§Ù Ø­Ø¯Ø§Ø«Ø©' },
         { en: 'DCF Valuation', ar: 'ØªÙ‚ÙŠÙŠÙ… DCF', target: 'consensus', aliases: 'discounted cash flow intrinsic valuation Ø§Ù„ØªØ¯ÙÙ‚Ø§Øª Ø§Ù„Ù†Ù‚Ø¯ÙŠØ© Ø§Ù„Ù…Ø®ØµÙˆÙ…Ø© ØªÙ‚ÙŠÙŠÙ… Ø¬ÙˆÙ‡Ø±ÙŠ' },
         { en: 'Performance', ar: 'Ø§Ù„Ø£Ø¯Ø§Ø¡', target: 'performance', aliases: 'accuracy win rate drawdown benchmark returns track quality alpha stability Ø¯Ù‚Ø© Ø§Ù„Ø£Ø¯Ø§Ø¡ Ø¹Ø§Ø¦Ø¯ Ù…Ø¤Ø´Ø± ÙÙˆØ² ØªØ±Ø§Ø¬Ø¹' },
-        { en: 'Trades', ar: 'Ø§Ù„ØµÙÙ‚Ø§Øª', target: 'trades', aliases: 'recommendations trade ideas entry target stop risk execution session ØªÙˆØµÙŠØ§Øª ØµÙÙ‚Ø§Øª Ø¯Ø®ÙˆÙ„ Ù‡Ø¯Ù Ø¥ÙŠÙ‚Ø§Ù Ø®Ø³Ø§Ø±Ø© ØªÙ†ÙÙŠØ°' },
+        { en: 'Trades', ar: 'Ø§Ù„ØµÙÙ‚Ø§Øª', target: 'portfolio', aliases: 'recommendations trade ideas entry target stop risk execution session ØªÙˆØµÙŠØ§Øª ØµÙÙ‚Ø§Øª Ø¯Ø®ÙˆÙ„ Ù‡Ø¯Ù Ø¥ÙŠÙ‚Ø§Ù Ø®Ø³Ø§Ø±Ø© ØªÙ†ÙÙŠØ°' },
         { en: 'Portfolio', ar: 'Ø§Ù„Ù…Ø­ÙØ¸Ø©', target: 'portfolio', aliases: 'positions pnl profit loss holdings allocation exposure alerts Ø§Ù„Ù…Ø±Ø§ÙƒØ² Ø§Ù„Ø£Ø±Ø¨Ø§Ø­ Ø§Ù„Ø®Ø³Ø§Ø¦Ø± Ø§Ù„Ø­ÙŠØ§Ø²Ø§Øª ØªÙˆØ²ÙŠØ¹ ØªØ¹Ø±Ø¶ ØªÙ†Ø¨ÙŠÙ‡Ø§Øª' },
         { en: 'Forecasts', ar: 'Ø§Ù„ØªÙˆÙ‚Ø¹Ø§Øª', target: 'forecasts', aliases: 'scenario scenarios projected future simulation monte carlo probabilistic portfolio forecast Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆ Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆÙ‡Ø§Øª Ù…Ø­Ø§ÙƒØ§Ø© Ø§Ù„Ù…Ø³ØªÙ‚Ø¨Ù„ Ø§Ø­ØªÙ…Ø§Ù„ÙŠ ØªÙˆÙ‚Ø¹ Ù…Ø­ÙØ¸Ø©' },
         { en: 'Watchlist', ar: 'Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©', target: 'watchlist', aliases: 'favorites favourite saved stocks monitor tracking Ø§Ù„Ù…ÙØ¶Ù„Ø© Ù…ÙØ¶Ù„Ø§Øª Ù…Ø±Ø§Ù‚Ø¨Ø© ØªØªØ¨Ø¹ Ø£Ø³Ù‡Ù… Ù…Ø­ÙÙˆØ¸Ø©' },
-        { en: 'Results', ar: 'Ø§Ù„Ù†ØªØ§Ø¦Ø¬', target: 'results', aliases: 'evaluations actual realized outcomes backtest validation compare predicted actual ØªÙ‚ÙŠÙŠÙ… ØªØ­Ù‚Ù‚ Ù†ØªØ§Ø¦Ø¬ ÙØ¹Ù„ÙŠØ© Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ Ø§Ù„ÙØ¹Ù„ÙŠ' },
+        { en: 'Results', ar: 'Ø§Ù„Ù†ØªØ§Ø¦Ø¬', target: 'performance', aliases: 'evaluations actual realized outcomes backtest validation compare predicted actual ØªÙ‚ÙŠÙŠÙ… ØªØ­Ù‚Ù‚ Ù†ØªØ§Ø¦Ø¬ ÙØ¹Ù„ÙŠØ© Ù…Ù‚Ø§Ø±Ù†Ø© Ø§Ù„Ù…ØªÙˆÙ‚Ø¹ Ø§Ù„ÙØ¹Ù„ÙŠ' },
         { en: 'Prices', ar: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø±', target: 'prices', aliases: 'market prices last price volume quote quotes tape feed Ø³Ø¹Ø± Ø£Ø³Ø¹Ø§Ø± Ø­Ø¬Ù… ØªØ¯Ø§ÙˆÙ„ Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø³ÙˆÙ‚' },
         { en: 'Time Machine', ar: 'Ø¢Ù„Ø© Ø§Ù„Ø²Ù…Ù†', target: 'timemachine', aliases: 'what if back in time historical simulate past future path investment timeline Ù…Ø§Ø°Ø§ Ù„Ùˆ Ù…Ø§Ø¶ÙŠ ØªØ§Ø±ÙŠØ®ÙŠ Ù…Ø­Ø§ÙƒØ§Ø© Ø§Ù„Ø§Ø³ØªØ«Ù…Ø§Ø± Ø§Ù„Ø¬Ø¯ÙˆÙ„ Ø§Ù„Ø²Ù…Ù†ÙŠ' },
         { en: 'Rates', ar: 'Ø§Ù„Ø£Ø³Ø¹Ø§Ø± Ø§Ù„Ø¹Ø§Ù„Ù…ÙŠØ©', target: 'rates', aliases: 'usd sar fx dollar gold 24k 21k currency macro rates foreign exchange Ø¯ÙˆÙ„Ø§Ø± Ø±ÙŠØ§Ù„ Ø°Ù‡Ø¨ 24 21 Ø¹Ù…Ù„Ø§Øª ÙÙˆØ±ÙƒØ³ Ù…Ø§ÙƒØ±Ùˆ' },
@@ -1510,9 +1510,10 @@ function switchToTab(tabId, updateHash) {
     // Lazy-load data
     if (tabId === 'watchlist' && typeof loadWatchlist === 'function') loadWatchlist();
     if (tabId === 'briefing' && typeof loadBriefing === 'function') loadBriefing();
-    if (tabId === 'trades' && typeof loadTrades === 'function') loadTrades();
-    if (tabId === 'portfolio' && typeof loadPortfolio === 'function') loadPortfolio();
+    if ((tabId === 'trades' || tabId === 'portfolio') && typeof loadTrades === 'function') loadTrades();
+    if ((tabId === 'trades' || tabId === 'portfolio') && typeof loadPortfolio === 'function') loadPortfolio();
     if (tabId === 'performance' && typeof loadPerformanceDashboard === 'function') loadPerformanceDashboard();
+    if (tabId === 'performance' && typeof loadEvaluations === 'function') loadEvaluations();
     if (tabId === 'timemachine' && typeof loadTimeMachine === 'function') loadTimeMachine();
     if (tabId === 'etf' && typeof loadEtfTab === 'function') loadEtfTab();
     if (tabId === 'forecasts' && typeof loadPortfolioForecasts === 'function') loadPortfolioForecasts();
@@ -2048,39 +2049,58 @@ async function loadIntelligencePulse() {
         });
 
         const allChangeLines = [...signalLines, ...forecastLines, ...macroLines];
-        changesEl.innerHTML = allChangeLines.length ? allChangeLines.join('') : `<p class="global-snapshot-empty">${t('noChangesToday')}</p>`;
+        const overallStatus = String(qualityData.overall_status || 'unknown').toLowerCase();
+        const hasDegradingAgents = (qualityData.drift || []).some(d => d.status === 'degrading' || d.status === 'degraded');
+        const isTrivial = allChangeLines.length === 0 && !hasDegradingAgents &&
+            (overallStatus === 'ok' || overallStatus === 'fresh' || overallStatus === 'unknown');
+
+        const pulseSection = document.getElementById('intelligencePulse');
+        const perfSnapshot = document.getElementById('globalPerfSnapshot');
+
+        if (isTrivial) {
+            if (pulseSection) pulseSection.style.display = 'none';
+            const asOf = changesData.as_of ? ' · ' + formatDate(changesData.as_of) : '';
+            let statusPill = document.getElementById('intelStatusPill');
+            if (!statusPill && perfSnapshot) {
+                statusPill = document.createElement('span');
+                statusPill.id = 'intelStatusPill';
+                statusPill.className = 'quality-pill quality-pill-fresh intel-status-pill';
+                perfSnapshot.appendChild(statusPill);
+            }
+            if (statusPill) { statusPill.innerHTML = '&#10003; Data current' + asOf; statusPill.style.display = ''; }
+            return;
+        }
+
+        if (pulseSection) pulseSection.style.display = '';
+        const existingPill = document.getElementById('intelStatusPill');
+        if (existingPill) existingPill.style.display = 'none';
+
+        changesEl.innerHTML = allChangeLines.length ? allChangeLines.join('') : '<p class="global-snapshot-empty">' + t('noChangesToday') + '</p>';
 
         const freshness = qualityData.freshness || {};
-        const freshnessLines = Object.entries(freshness).slice(0, 4).map(([key, item]) => `
-            <div class="quality-line">
-                <div class="quality-line-top">
-                    <span class="quality-line-label">${key.replace(/_/g, ' ')}</span>
-                    <span class="quality-pill quality-pill-${String(item.status || 'unknown').toLowerCase()}">${qualityTextLabel(item.status)}</span>
-                </div>
-                <div class="quality-line-meta">${t('freshnessLabel')}: ${item.age_hours == null ? 'â€”' : `${item.age_hours.toFixed(1)}h`}</div>
-            </div>
-        `);
+        const freshnessLines = Object.entries(freshness).slice(0, 4).map(([key, item]) => {
+            const statusCls = String(item.status || 'unknown').toLowerCase();
+            const age = item.age_hours == null ? '—' : item.age_hours.toFixed(1) + 'h';
+            return '<div class="quality-line"><div class="quality-line-top"><span class="quality-line-label">' + key.replace(/_/g, ' ') + '</span><span class="quality-pill quality-pill-' + statusCls + '">' + qualityTextLabel(item.status) + '</span></div><div class="quality-line-meta">' + t('freshnessLabel') + ': ' + age + '</div></div>';
+        });
 
-        const driftLines = (qualityData.drift || []).slice(0, 3).map(item => `
-            <div class="quality-line">
-                <div class="quality-line-top">
-                    <span class="quality-line-label">${getAgentDisplayName(item.agent_name)}</span>
-                    <span class="quality-pill quality-pill-${String(item.status || 'unknown').toLowerCase()}">${qualityTextLabel(item.status)}</span>
-                </div>
-                <div class="quality-line-meta">${t('driftLabel')}: ${Number(item.drift_gap || 0).toFixed(1)} pts | 30d ${Number(item.win_rate_30d || 0).toFixed(1)}%</div>
-            </div>
-        `);
+        const driftLines = (qualityData.drift || []).filter(d => d.status === 'degrading' || d.status === 'degraded').slice(0, 3).map(item => {
+            const statusCls = String(item.status || 'unknown').toLowerCase();
+            const name = getAgentDisplayName(item.agent_name);
+            const wr = Number(item.win_rate_30d || 0).toFixed(0);
+            return '<div class="quality-line"><div class="quality-line-top"><span class="quality-line-label">' + name + '</span><span class="quality-pill quality-pill-' + statusCls + '">' + qualityTextLabel(item.status) + '</span></div><div class="quality-line-meta">' + name + ' accuracy has declined recently (30d: ' + wr + '%)</div></div>';
+        });
 
         const allQualityLines = [...freshnessLines, ...driftLines];
-        qualityEl.innerHTML = allQualityLines.length ? allQualityLines.join('') : `<p class="global-snapshot-empty">${t('noQualityData')}</p>`;
+        qualityEl.innerHTML = allQualityLines.length ? allQualityLines.join('') : '<p class="global-snapshot-empty">' + t('noQualityData') + '</p>';
         if (qualityBadge) {
             qualityBadge.textContent = qualityTextLabel(qualityData.overall_status || 'unknown');
-            qualityBadge.className = `intelligence-pulse-badge quality-pill quality-pill-${String(qualityData.overall_status || 'unknown').toLowerCase()}`;
+            qualityBadge.className = 'intelligence-pulse-badge quality-pill quality-pill-' + overallStatus;
         }
     } catch (error) {
         console.error('Error loading intelligence pulse:', error);
-        changesEl.innerHTML = `<p class="global-snapshot-empty">${t('noChangesToday')}</p>`;
-        qualityEl.innerHTML = `<p class="global-snapshot-empty">${t('noQualityData')}</p>`;
+        const ps = document.getElementById('intelligencePulse');
+        if (ps) ps.style.display = 'none';
     }
 }
 

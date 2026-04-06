@@ -1655,10 +1655,6 @@ app.get('/docs', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'docs.html'));
 });
 
-app.get('/session', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'session.html'));
-});
-
 app.get('/landing', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'landing.html'));
 });

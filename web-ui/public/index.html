@@ -34,9 +34,7 @@
                     <input id="globalSearchInput" class="global-search-input" type="search" placeholder="Search stocks, tabs, or pages..." autocomplete="off" />
                     <div id="globalSearchResults" class="global-search-results" aria-live="polite" hidden></div>
                 </div>
-                <a href="/docs" class="Pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Docs</a>
                 <a href="/track-record" class="Pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Track Record &#8599;</a>
-                <a href="/session" class="Pro-link-btn header-link-secondary" style="background:transparent;border-color:var(--text-muted);color:var(--text-secondary)">Session &#8599;</a>
                 <a href="/pro" class="Pro-link-btn header-link-secondary">Pro &#8599;</a>
                 <!-- Mobile Menu Button (640px and below) -->
                 <button id="mobileMenuBtn" class="mobile-menu-btn" title="Menu" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenuDropdown">
@@ -49,10 +47,9 @@
                 <button id="langBtn" class="lang-btn">عربي</button>
                 <!-- Mobile Menu Dropdown -->
                 <div id="mobileMenuDropdown" class="mobile-menu-dropdown" role="menu" aria-hidden="true">
-                    <a href="/docs" class="mobile-menu-item" role="menuitem">Docs</a>
                     <a href="/track-record" class="mobile-menu-item" role="menuitem">Track Record</a>
-                    <a href="/session" class="mobile-menu-item" role="menuitem">Session</a>
                     <a href="/pro" class="mobile-menu-item" role="menuitem">Pro</a>
+                    <a href="/docs" class="mobile-menu-item" role="menuitem">Docs</a>
                 </div>
             </div>
         </header>
@@ -87,37 +84,15 @@
         <!-- Market Regime Banner -->
         <div id="regimeBanner" class="regime-banner" style="display:none" aria-live="polite"></div>
 
-        <!-- System Stats -->
-        <section class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="stocksTracked">-</div>
-                <div class="stat-label">Stocks Tracked</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalPredictions">-</div>
-                <div class="stat-label">Total Predictions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="overallAccuracy">-</div>
-                <div class="stat-label">Accuracy</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="latestDate">-</div>
-                <div class="stat-label">Latest Data</div>
-            </div>
-        </section>
-
         <!-- Tab Navigation -->
         <nav class="tab-nav" id="tabNav" role="tablist">
             <button class="tab-btn active" data-tab="predictions" id="tabPredictions" role="tab" aria-selected="true" aria-controls="tab-predictions">Predictions</button>
             <button class="tab-btn" data-tab="briefing" id="tabBriefing" role="tab" aria-selected="false" aria-controls="tab-briefing">Briefing</button>
-            <button class="tab-btn" data-tab="trades" id="tabTrades" role="tab" aria-selected="false" aria-controls="tab-trades">Trades</button>
             <button class="tab-btn" data-tab="portfolio" id="tabPortfolio" role="tab" aria-selected="false" aria-controls="tab-portfolio">Portfolio</button>
             <button class="tab-btn" data-tab="forecasts" id="tabForecasts" role="tab" aria-selected="false" aria-controls="tab-forecasts">Forecasts</button>
             <button class="tab-btn" data-tab="watchlist" id="tabWatchlist" role="tab" aria-selected="false" aria-controls="tab-watchlist">Watchlist</button>
             <button class="tab-btn" data-tab="consensus" id="tabConsensus" role="tab" aria-selected="false" aria-controls="tab-consensus">Consensus</button>
             <button class="tab-btn" data-tab="performance" id="tabPerformance" role="tab" aria-selected="false" aria-controls="tab-performance">Performance</button>
-            <button class="tab-btn" data-tab="results" id="tabResults" role="tab" aria-selected="false" aria-controls="tab-results">Results</button>
             <button class="tab-btn" data-tab="prices" id="tabPrices" role="tab" aria-selected="false" aria-controls="tab-prices">Prices</button>
             <button class="tab-btn" data-tab="timemachine" id="tabTimeMachine" role="tab" aria-selected="false" aria-controls="tab-timemachine">Time Machine</button>
             <button class="tab-btn" data-tab="rates" id="tabRates" role="tab" aria-selected="false" aria-controls="tab-rates">Rates</button>
@@ -215,7 +190,7 @@
             </div>
         </section>
 
-        <!-- Tab: Performance Dashboard (Investor-Grade) -->
+        <!-- Tab: Performance Dashboard + Results -->
         <section class="tab-content" id="tab-performance" role="tabpanel" aria-labelledby="tabPerformance">
             <div class="section-header">
                 <p class="section-subtitle" id="performanceBrief">Review strategy quality over time, including win rate, drawdown, and benchmark-relative performance.</p>
@@ -234,6 +209,14 @@
                     </div>
                 </div>
                 <div id="signalAccuracyTable"><p class="loading">Loading...</p></div>
+            </div>
+            <!-- Prediction Results -->
+            <div class="section-inner" style="margin-top:32px;border-top:1px solid var(--border-color);padding-top:24px">
+                <h3 id="resultsTitle" style="margin:0 0 4px">Prediction Results</h3>
+                <p class="section-subtitle" id="resultsBrief" style="margin:0 0 16px">Compare past predictions with real outcomes to understand what the model got right or wrong.</p>
+                <div id="evaluations" class="scrollable-container">
+                    <p class="loading">Loading prediction results...</p>
+                </div>
             </div>
         </section>
 
@@ -276,16 +259,7 @@
             </div>
         </section>
 
-        <!-- Tab: Prediction Results -->
-        <section class="tab-content" id="tab-results" role="tabpanel" aria-labelledby="tabResults">
-            <div class="section-header section-header-centered">
-                <h2 id="resultsTitle">Results</h2>
-                <p class="section-subtitle" id="resultsBrief">Compare past predictions with real outcomes to understand what the model got right or wrong.</p>
-            </div>
-            <div id="evaluations" class="scrollable-container">
-                <p class="loading">Loading prediction results...</p>
-            </div>
-        </section>
+
 
         <!-- Tab: Latest Prices -->
         <section class="tab-content" id="tab-prices" role="tabpanel" aria-labelledby="tabPrices">
@@ -310,24 +284,19 @@
             </div>
         </section>
 
-        <!-- Tab: Trades (Today) -->
-        <section class="tab-content" id="tab-trades" role="tabpanel" aria-labelledby="tabTrades">
-            <div class="section-header">
-                <h2 id="tradesTitle">Today's Recommendations</h2>
-                <p class="section-subtitle" id="tradesSubtitle">Trade signals for today's marketSession.
-                </p>
-                <p class="section-subtitle" id="tradesBrief">View executable trade ideas with direction and rationale for the currentSession.</p>
-            </div>
-            <div id="todayTradesContainer">
-                <p class="loading">Loading trades...</p>
-            </div>
-        </section>
-
-        <!-- Tab: Portfolio -->
+        <!-- Tab: Portfolio + Today's Trades -->
         <section class="tab-content" id="tab-portfolio" role="tabpanel" aria-labelledby="tabPortfolio">
             <div class="section-header">
-                <h2 id="portfolioTitle">My Portfolio</h2>
-                <p class="section-subtitle" id="portfolioBrief">Monitor open positions, real SAR P&amp;L, sector breakdown, and price alerts.</p>
+                <h2 id="portfolioTitle">Portfolio &amp; Trades</h2>
+                <p class="section-subtitle" id="portfolioBrief">Today's trade recommendations, open positions, SAR P&amp;L, and price alerts.</p>
+            </div>
+            <!-- Today's Recommendations (merged from Trades tab) -->
+            <div class="section-inner" style="margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--border-color)">
+                <h3 id="tradesTitle" style="margin:0 0 4px">Today's Recommendations</h3>
+                <p class="section-subtitle" id="tradesBrief" style="margin:0 0 12px">View executable trade ideas with direction and rationale for today's market session.</p>
+                <div id="todayTradesContainer">
+                    <p class="loading">Loading trades...</p>
+                </div>
             </div>
 
             <!-- Portfolio totals strip -->
