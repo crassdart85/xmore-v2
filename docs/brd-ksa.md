@@ -228,7 +228,7 @@ All schema init steps: `timeout-minutes: 2` + `continue-on-error: true`.
 | ETF | KSA and global ETF analytics (`_etfClassify` detects KSA/TADAWUL/SAR) |
 | Rates | USD/SAR FX rate + Gold SAR/gram (24K + 21K) history charts |
 | Session Sheet | Intraday session-level trade log |
-| Pro | Advanced analytics, TASI chart widget (`tasiChartWidget`), Tadawul overview (`ksaIndicesWidget`); section class `pro-ksa-section` |
+| Pro | Advanced analytics; TASI proxy chart (`tasiChartWidget` — native Chart.js, 2222.SR 60-day), Tadawul leaders price table (`ksaIndicesWidget` — native from `/api/prices`); section class `pro-ksa-section` |
 | RAG / Docs | Semantic search over knowledge base |
 | Time Machine | Hypothetical historical portfolio simulator; all amounts in SAR |
 
@@ -258,7 +258,10 @@ All schema init steps: `timeout-minutes: 2` + `continue-on-error: true`.
 - **Header:** All pages use `<header class="x-topbar x-topbar--dark">` with unified nav links
 - **Mobile:** hamburger pattern `id="<Page>MobileMenuBtn"` / `id="<Page>MobileMenuDropdown"`
 - **Language:** EN + AR (Arabic RTL supported throughout); translation keys use SAR labels
-- **Ticker tape:** Uses native `/api/prices` ticker (TradingView free plan doesn't support TADAWUL); CSS classes `.ksa-ticker-tape/.ksa-ticker-inner/.ksa-ticker-item`; items separated by `·` sentinel
+- **Ticker tape:** Uses TradingView ticker-tape widget (shows `—` for unsupported TADAWUL symbols but no blocking popup)
+- **TASI chart (`tasiChartWidget`):** Native Chart.js area chart showing Saudi Aramco (2222.SR) 60-day close from `/api/prices/history/:symbol` — replaces broken TradingView advanced-chart widget (TADAWUL exchange not on free tier → popup blocker)
+- **Tadawul leaders (`ksaIndicesWidget`):** Native HTML table from `/api/prices` — replaces broken TradingView market-overview widget
+- **CSS ticker classes:** `.ksa-ticker-tape/.ksa-ticker-inner/.ksa-ticker-item`; items separated by `·` sentinel
 - **Company names:** `getCompanyName()` strips `.SR` suffix for display fallback
 - **Alert placeholder:** `2222.SR` (Saudi Aramco)
 - **Intelligence Pulse:** collapsible; state persists via `localStorage` key `intelligencePulseCollapsed`
@@ -284,6 +287,7 @@ All server.js queries filter `WHERE symbol LIKE '%.SR'` (predictions, evaluation
 | Item | Detail |
 |------|--------|
 | `prices` table | NO `market_id` column — filter by `symbol LIKE '%.SR'`, never `market_id = 'KSA'` |
+| `/api/prices/history/:symbol` | Added Apr 6 2026 — returns last N days OHLCV for one symbol; `?days=` param (default 60, max 365); used by native TASI proxy chart in pro.js |
 | `consensus_results` date column | `prediction_date` (not `timestamp`, not `date`) — `ksa-signals.js` aliases as `prediction_date AS timestamp` |
 | `regime_flag` | Does NOT exist in `consensus_results` — never SELECT it |
 | KSA-only columns on `trade_recommendations` | `signal_type`, `xmore_score`, `notes` — added via ALTER TABLE in `init-db-ksa.js` |
@@ -335,6 +339,8 @@ Configured in `.claude/settings.json` + `.claude/hooks/` (local-only, gitignored
 | KSA signals HTTP 500 | `consensus_results` column is `prediction_date`; never SELECT `regime_flag` |
 | `consensus_results` stale .CA rows | server.js `WHERE symbol LIKE '%.SR'` filter removes them; will clear when KSA pipeline runs |
 | KSA pipeline writing to Tadawul DB (DB empty) | `ksa-branch-scheduled.yml` was using `secrets.DATABASE_URL` (Tadawul DB). Fixed Apr 2026: now uses `secrets.KSA_DATABASE_URL`. Render internal hostname won't work from GH Actions — use External Database URL. |
+| `/pro` TradingView TADAWUL popup | `embed-widget-advanced-chart` + `embed-widget-market-overview` both block with "symbol only available on TradingView" for TADAWUL exchange (not on free plan). Fixed Apr 6 2026: replaced with native Chart.js + `/api/prices` table. |
+| `/pro` stat pills showing `â€"` mojibake | `pro.html` had raw UTF-8 em-dash bytes `\xe2\x80\x94` served without explicit charset. Fixed Apr 6 2026: replaced with `&mdash;` HTML entities. `pro.js` had full cp1252-in-UTF-8 double-encoding affecting em-dash returns and Arabic i18n strings — fixed by reversing the encoding at byte level. |
 
 ---
 

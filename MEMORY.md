@@ -765,3 +765,22 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - agent, prediction log, sector, regime, and distribution endpoints now read KSA-compatible columns
 - Remaining audit gap:
   - backtests are now materially friction-aware, but they still do not simulate the full stop-loss lifecycle with explicit gap-through-stop execution behavior end-to-end.
+
+## Apr 6, 2026 — /pro Page Encoding + TradingView Fixes
+
+### Bug fixes deployed (commit b54815a)
+
+**TradingView TADAWUL popup** (`embed-widget-advanced-chart` + `embed-widget-market-overview`):
+- Both widgets triggered "This symbol is only available on TradingView" popup because TADAWUL exchange is not on the free TradingView embed tier.
+- `loadTASIChart()` in `web-ui/public/pro.js` replaced with native Chart.js area chart pulling `/api/prices/history/2222.SR?days=60` (Aramco = ~80% TASI weight). Panel retitled "Saudi Aramco (2222.SR) — 60 Day".
+- `loadKSAIndices()` replaced with native HTML price table from `/api/prices`, showing 8 Tadawul Leaders (Aramco, SABIC, Al Rajhi, stc, Alinma, SNB, Maaden, ACWA).
+- New API endpoint added: `GET /api/prices/history/:symbol?days=N` (server.js, default 60, max 365).
+
+**`â€"` mojibake in stat pills and JS returns**:
+- `pro.html`: 10 raw UTF-8 em-dash bytes (`\xe2\x80\x94`) replaced with `&mdash;` HTML entities.
+- `pro.js`: Full cp1252-in-UTF-8 double-encoding repair — 36 em-dash returns in fmtChg/fmtClose/fmtDate and all Arabic i18n strings fixed. Algorithm: decode UTF-8 → encode cp1252 per char → decode UTF-8. File shrank from 60,150 to 50,726 bytes.
+
+### Known Patterns (reusable)
+- **TradingView free tier**: TADAWUL exchange symbols not supported in `embed-widget-advanced-chart` or `embed-widget-market-overview`. Use native Chart.js + `/api/prices` instead.
+- **cp1252-in-UTF-8 double-encoding**: `for c in text: b = c.encode('cp1252') except → bytes([ord(c)]); original = bytes.decode('utf-8')` pattern recovers original content with 0 data loss.
+- **HTML em-dash**: Always use `&mdash;` entity in HTML, `\u2014` in JS strings — avoids encoding ambiguity entirely.
