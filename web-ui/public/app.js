@@ -3895,9 +3895,9 @@ async function loadRatesTab() {
 
         // Live cards
         const rateItems = [
-            { label: 'USD / SAR', value: live.USD_SAR, key: 'usd_sar', icon: 'ðŸ‡¸ðŸ‡¦' },
-            { label: 'Gold 24K / gram', value: live.GOLD_24K_SAR_G, key: 'gold_24k_sar_g', icon: 'ðŸ¥‡', suffix: 'SAR' },
-            { label: 'Gold 21K / gram', value: live.GOLD_21K_SAR_G, key: 'gold_21k_sar_g', icon: 'ðŸ…', suffix: 'SAR' },
+            { label: 'USD / SAR', value: live.USD_SAR, key: 'usd_sar', icon: '&#x1F1F8;&#x1F1E6;' },
+            { label: 'Gold 24K / gram', value: live.GOLD_24K_SAR_G, key: 'gold_24k_sar_g', icon: '&#x1F947;', suffix: 'SAR' },
+            { label: 'Gold 21K / gram', value: live.GOLD_21K_SAR_G, key: 'gold_21k_sar_g', icon: '&#x1F3C5;', suffix: 'SAR' },
         ];
         cardsEl.innerHTML = rateItems.filter(r => r.value != null).map(r => `
             <div class="rate-card">

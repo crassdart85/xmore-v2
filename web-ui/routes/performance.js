@@ -48,6 +48,10 @@ function isTableMissing(err) {
 function boolTrue() { return isPostgres ? 'TRUE' : '1'; }
 function boolFalse() { return isPostgres ? 'FALSE' : '0'; }
 function ph(n) { return isPostgres ? `$${n}` : '?'; }
+// KSA market filter — all performance queries must only include .SR symbols
+const KSA_FILTER = "symbol LIKE '%.SR'";
+const KSA_FILTER_TR = "trade_recommendations.symbol LIKE '%.SR'";
+const KSA_FILTER_CR = "consensus_results.symbol LIKE '%.SR'";
 const DEFAULT_ROUND_TRIP_COST_PCT = 0.725;
 
 function perTradeCostPct(row) {
@@ -94,6 +98,7 @@ router.get('/summary', async (req, res) => {
                        round_trip_cost_egp, position_value_egp
                 FROM trade_recommendations
                 WHERE actual_next_day_return IS NOT NULL
+                AND ${KSA_FILTER}
                 AND ${liveFilter}
                 AND ${simFilter}
                 AND ${dateFilter}
@@ -107,6 +112,7 @@ router.get('/summary', async (req, res) => {
                            round_trip_cost_egp, position_value_egp
                     FROM trade_recommendations
                     WHERE actual_next_day_return IS NOT NULL
+                    AND ${KSA_FILTER}
                     AND ${liveFilter}
                     AND ${dateFilter}
                     ORDER BY recommendation_date ASC
@@ -114,7 +120,7 @@ router.get('/summary', async (req, res) => {
             }
             // Count simulated rows for data_transparency
             try {
-                const totalRow = await dbGet(`SELECT COUNT(*) AS cnt FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}`, [days]);
+                const totalRow = await dbGet(`SELECT COUNT(*) AS cnt FROM trade_recommendations WHERE actual_next_day_return IS NOT NULL AND ${KSA_FILTER} AND ${liveFilter} AND ${dateFilter}`, [days]);
                 simCount = parseInt(totalRow?.cnt || 0) - (metricsIncludeSimulated ? 0 : rows.length);
                 earliestLive = rows[0]?.recommendation_date || null;
             } catch (_) {}
@@ -484,6 +490,7 @@ router.get('/by-stock', async (req, res) => {
             FROM trade_recommendations tr
             ${isPostgres ? 'JOIN egx30_stocks s ON tr.symbol = s.symbol' : ''}
             WHERE tr.was_correct IS NOT NULL
+            AND tr.symbol LIKE '%.SR'
             AND ${liveFilter}
             AND ${dateFilter}
             GROUP BY tr.symbol${isPostgres ? ', s.name_en, s.name_ar, s.sector_en' : ''}
@@ -519,6 +526,7 @@ router.get('/equity-curve', async (req, res) => {
                 ${isPostgres ? 'ROUND(AVG(benchmark_1d_return)::numeric, 4)' : 'ROUND(AVG(benchmark_1d_return), 4)'} AS tasi
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
+            AND ${KSA_FILTER}
             AND ${liveFilter}
             AND ${dateFilter}
             GROUP BY recommendation_date
@@ -584,7 +592,8 @@ router.get('/predictions/open', async (req, res) => {
                 cr.conviction, cr.bull_score, cr.bear_score, cr.risk_action
             FROM consensus_results cr
             ${isPostgres ? 'JOIN' : 'LEFT JOIN'} egx30_stocks s ON cr.symbol = s.symbol
-            WHERE ${dateFilter}
+            WHERE cr.symbol LIKE '%.SR'
+            AND ${dateFilter}
             ORDER BY cr.prediction_date DESC, cr.confidence DESC
         `);
 
@@ -625,7 +634,8 @@ router.get('/predictions/history', async (req, res) => {
                 ON tr.symbol = cr.symbol
                 AND tr.recommendation_date = cr.prediction_date
                 AND ${liveFilter}
-            WHERE ${dateFilter}
+            WHERE cr.symbol LIKE '%.SR'
+            AND ${dateFilter}
             ORDER BY cr.prediction_date DESC, cr.symbol
             LIMIT ${ph(1)} OFFSET ${ph(2)}
         `, [limit, offset]);
@@ -634,7 +644,7 @@ router.get('/predictions/history', async (req, res) => {
             ? `prediction_date <= CURRENT_DATE`
             : `prediction_date <= date('now')`;
         const countRow = await dbGet(`
-            SELECT COUNT(*) AS cnt FROM consensus_results WHERE ${countDateFilter}
+            SELECT COUNT(*) AS cnt FROM consensus_results WHERE symbol LIKE '%.SR' AND ${countDateFilter}
         `);
         const total = parseInt(countRow?.cnt || countRow?.count || 0);
 
@@ -700,6 +710,7 @@ router.get('/full-report', async (req, res) => {
                        round_trip_cost_egp, position_value_egp
                 FROM trade_recommendations
                 WHERE actual_next_day_return IS NOT NULL
+                AND ${KSA_FILTER}
                 AND ${liveFilter}
                 AND ${dateFilter}
                 ORDER BY recommendation_date ASC
@@ -780,7 +791,7 @@ router.get('/export-summary', async (req, res) => {
                 SELECT recommendation_date, actual_next_day_return, benchmark_1d_return, alpha_1d,
                        round_trip_cost_egp, position_value_egp
                 FROM trade_recommendations
-                WHERE actual_next_day_return IS NOT NULL AND ${liveFilter} AND ${dateFilter}
+                WHERE actual_next_day_return IS NOT NULL AND ${KSA_FILTER} AND ${liveFilter} AND ${dateFilter}
                 ORDER BY recommendation_date ASC
             `, [days]);
         } catch (e) { rows = []; }

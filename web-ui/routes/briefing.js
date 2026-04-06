@@ -61,7 +61,12 @@ router.get('/today', optionalAuth, async (req, res) => {
             briefing_date: briefingDate,
             stocks_processed: briefingRow.stocks_processed,
             generation_time_seconds: briefingRow.generation_time_seconds,
-            market_pulse: parseJSON(briefingRow.market_pulse_json) || {},
+            market_pulse: (() => {
+                const mp = parseJSON(briefingRow.market_pulse_json) || {};
+                if (mp.top_gainers) mp.top_gainers = mp.top_gainers.filter(s => s.symbol && s.symbol.endsWith('.SR'));
+                if (mp.top_losers)  mp.top_losers  = mp.top_losers.filter(s => s.symbol && s.symbol.endsWith('.SR'));
+                return mp;
+            })(),
             sector_breakdown: parseJSON(briefingRow.sector_breakdown_json) || [],
             risk_alerts: parseJSON(briefingRow.risk_alerts_json) || [],
             sentiment_snapshot: parseJSON(briefingRow.sentiment_snapshot_json) || {},

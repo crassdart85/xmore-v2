@@ -257,11 +257,19 @@
 - New DB table: `system_config (key PK, value TEXT, updated_at)` for session + other config storage
 - `telethon>=1.42.0` added to `requirements.txt`
 
+## Apr 6, 2026 — KSA Cross-Market Data Leakage Fixes
+- **performance.js** — all queries (`/summary`, `/by-stock`, `/equity-curve`, `/predictions/open`, `/predictions/history`, `/full-report`, `/export-summary`) were missing `.SR` market filter → showing `.CA` symbols. Fixed: `KSA_FILTER = “symbol LIKE '%.SR'”` constants added and applied to every WHERE clause.
+- **briefing.js** — `market_pulse_json` blob contains pre-baked `.CA` movers from shared table. Fixed: server-side post-filter on `top_gainers`/`top_losers` to `.SR` only.
+- **app.js rates tab** — flag/medal emoji stored as corrupted UTF-8 bytes. Fixed: replaced with HTML entities (`&#x1F1F8;&#x1F1E6;`, `&#x1F947;`, `&#x1F3C5;`).
+
 ## Known Patterns
 - Always check `db._isPostgres` for date/boolean/syntax differences between PG and SQLite
+- **Every query on `trade_recommendations` or `consensus_results` must include `AND symbol LIKE '%.SR'`** — the shared table contains `.CA` (EGX) rows that will leak into KSA output otherwise
+- **Emoji in JS `innerHTML` strings must use HTML entities or `\uXXXX` escapes** — raw UTF-8 emoji bytes get double-encoded silently on file save
+- **Pre-baked JSON blobs (briefings, snapshots) can contain cross-market data** — always filter on read, not just at write time
 - Tab buttons need entries in both `TRANSLATIONS` and `applyLanguage()` loop
 - CSS uses `var(--accent)` / `var(--accent-dark)` for brand gradient; `var(--card-bg)` / `var(--container-bg)` for surfaces
-- Dark mode via `[data-theme="dark"]` on `:root`; RTL via `.rtl` class on `<html>`
+- Dark mode via `[data-theme=”dark”]` on `:root`; RTL via `.rtl` class on `<html>`
 - CDN libraries always wrapped with `typeof X !== 'undefined'` checks for graceful degradation
 - Skeleton templates use `.skeleton-shimmer` base class + shape classes (`.skeleton-card`, `.skeleton-metric`, `.skeleton-chart`, `.skeleton-row`, `.skeleton-text`)
 - Global utility functions in app.js: `escapeHtml()`, `animateValue()`, `showToast()`, `showSkeleton()`, `clearSkeleton()`, `renderEmptyState()` â€” all used by other modules via `typeof fn === 'function'` guards

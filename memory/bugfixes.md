@@ -1,5 +1,30 @@
 # Xmore Bug Fix Log
 
+## Apr 6, 2026
+
+### Rates tab — corrupted emoji icons (δΥ‡ garbage rendering)
+- **Symptom**: Rate cards on `/#rates` showed `δΥ‡.δΥ‡¦`, `δΥ‡¥‡`, `δΥ‡Ž…` instead of 🇸🇦 / 🥇 / 🏅
+- **Cause**: `web-ui/public/app.js` stored the emojis as raw UTF-8 bytes which were double-encoded when the file was saved — the browser decoded the mangled bytes as Latin-1 garbage
+- **Fix**: Replaced the three corrupt byte sequences with HTML entities: `&#x1F1F8;&#x1F1E6;` (SA flag), `&#x1F947;` (gold medal), `&#x1F3C5;` (sports medal) injected via `innerHTML` in the rate card template
+- **File**: `web-ui/public/app.js:3898-3900`
+- **Pattern**: Any emoji stored in a JS string literal that will be inserted via `innerHTML` must use HTML entities or Unicode escapes, not raw multibyte chars — file encoding mismatch will corrupt raw bytes silently
+
+### Performance/Results tab — `.CA` symbols appearing in Transparency log and agent table
+- **Symptom**: Performance dashboard showed Egyptian `.CA` symbols (ABUK.CA, ALCN.CA, etc.) in the immutable prediction log, agent accountability table, and Since Inception stats
+- **Cause**: All queries in `web-ui/routes/performance.js` — `/summary`, `/by-stock`, `/equity-curve`, `/predictions/open`, `/predictions/history`, `/full-report`, `/export-summary` — queried `trade_recommendations` and `consensus_results` without a market filter. The shared table contains both `.CA` and `.SR` rows.
+- **Fix**: Added `AND symbol LIKE '%.SR'` to the WHERE clause of every affected query. Added `KSA_FILTER` / `KSA_FILTER_TR` / `KSA_FILTER_CR` constants at the top of the file for consistency.
+- **File**: `web-ui/routes/performance.js`
+- **Pattern**: Every `performance.js` query that reads `trade_recommendations` or `consensus_results` must include the `.SR` market filter — same as `server.js` already does for all other routes
+
+### Briefing tab — `.CA` stocks appearing in Market Pulse top gainers/losers
+- **Symptom**: Market Pulse section on `/#briefing` showed `.CA` tickers (ALCN.CA, CIEB.CA, LCSW.CA, HDBK.CA, etc.) as top gainers/losers
+- **Cause**: `market_pulse_json` is serialised by the Python briefing generator using whatever data is in the DB at generation time. Old `.CA` rows from the shared prices/consensus table contaminate the pre-baked JSON blob.
+- **Fix**: In `web-ui/routes/briefing.js` the market_pulse JSON is now post-filtered on read — `top_gainers` and `top_losers` arrays are filtered to symbols ending in `.SR` before the API response is sent
+- **File**: `web-ui/routes/briefing.js:64-70`
+- **Pattern**: Pre-baked JSON blobs computed server-side can contain stale cross-market data. Always apply a market filter on read when serving from a shared table or blob column.
+
+---
+
 ## Mar 25, 2026
 
 ### KSA production crash from callback-only DB adapter
