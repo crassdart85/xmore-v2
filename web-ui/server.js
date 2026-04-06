@@ -774,6 +774,27 @@ app.get('/api/prices', (req, res) => {
   });
 });
 
+// 3b. Historical OHLC for a single symbol (used by native charts)
+app.get('/api/prices/history/:symbol', (req, res) => {
+  const symbol = req.params.symbol;
+  const days = Math.min(parseInt(req.query.days) || 60, 365);
+  const query = DATABASE_URL
+    ? `SELECT date, open, high, low, close, volume
+       FROM prices
+       WHERE symbol = $1
+       ORDER BY date ASC
+       LIMIT $2`
+    : `SELECT date, open, high, low, close, volume
+       FROM prices
+       WHERE symbol = ?
+       ORDER BY date ASC
+       LIMIT ?`;
+  db.all(query, [symbol, days], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows || []);
+  });
+});
+
 // 4. Get latest sentiment scores
 app.get('/api/sentiment', (req, res) => {
   // Get the most recent sentiment for each stock
