@@ -57,7 +57,6 @@ router.get('/signals/latest', async (req, res) => {
             FROM consensus_results c
             LEFT JOIN ksa_stocks k ON k.symbol = c.symbol
             WHERE c.market_id = 'KSA'
-              AND c.symbol LIKE '%.SR'
             ORDER BY prediction_date DESC
             LIMIT ${ph(1)}
         `, [limit]);
@@ -84,7 +83,6 @@ router.get('/signals/today', async (req, res) => {
             SELECT MAX(prediction_date) AS latest_date
             FROM consensus_results
             WHERE market_id = 'KSA'
-              AND symbol LIKE '%.SR'
         `);
         const latestDate = latest?.latest_date || null;
         if (!latestDate) {
@@ -103,7 +101,6 @@ router.get('/signals/today', async (req, res) => {
             FROM consensus_results c
             LEFT JOIN ksa_stocks k ON k.symbol = c.symbol
             WHERE c.market_id = 'KSA'
-              AND c.symbol LIKE '%.SR'
               AND ${dateClause}
             ORDER BY xmore_score DESC
         `, [latestDate]);
@@ -131,7 +128,6 @@ router.get('/performance/summary', async (req, res) => {
                    alpha_1d, recommendation_date
             FROM trade_recommendations
             WHERE market_id = 'KSA'
-              AND symbol LIKE '%.SR'
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             ORDER BY recommendation_date ASC
@@ -229,14 +225,10 @@ router.get('/freshness', async (_req, res) => {
                 { latest_value: null },
             )),
             dbGetSafe(
-                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA' AND symbol LIKE '%.SR'`,
-                [],
-                null,
-            ).then(row => row || dbGetSafe(
-                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE symbol LIKE '%.SR'`,
+                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA'`,
                 [],
                 { latest_value: null },
-            )),
+            ),
             dbGetSafe(
                 `SELECT MAX(COALESCE(computed_at, valuation_date)) AS latest_value FROM ksa_dcf_valuations`,
                 [],
@@ -337,7 +329,6 @@ router.get('/execution/:ticker', async (req, res) => {
             FROM trade_recommendations
             WHERE symbol = ${ph(1)}
               AND market_id = 'KSA'
-              AND symbol LIKE '%.SR'
               AND close_price IS NOT NULL
             ORDER BY recommendation_date DESC
             LIMIT 1
@@ -405,7 +396,6 @@ router.get('/context/:ticker', async (req, res) => {
                    drivers_json, risk_level, expected_move
             FROM consensus_results
             WHERE market_id = 'KSA'
-              AND symbol LIKE '%.SR'
               AND symbol = ${ph(1)}
             ORDER BY prediction_date DESC
             LIMIT 1

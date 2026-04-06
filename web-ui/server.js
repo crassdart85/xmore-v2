@@ -111,7 +111,7 @@ const apiLimiter = rateLimit({
 
 app.use('/api', apiLimiter);
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), { index: false }));
 
 // ============================================
 // DATABASE CONNECTION (PostgreSQL or SQLite)
@@ -1684,6 +1684,10 @@ app.get('/track-record', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ksa-track-record.html'));
 });
 
+app.get('/session', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'session.html'));
+});
+
 // Root serves the KSA dashboard directly on the KSA deployment.
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'ksa-dashboard.html'));
@@ -1716,7 +1720,7 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: 'Not found' });
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'ksa-dashboard.html'));
 });
 
 
