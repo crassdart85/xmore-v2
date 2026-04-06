@@ -48,16 +48,44 @@ function containsKsaSymbols(payload) {
     return /\.SR\b/i.test(text);
 }
 
+function isKsaRequest(req) {
+    const host = String(req.headers.host || req.hostname || '').toLowerCase();
+    return ACTIVE_MARKET === 'KSA' || host.includes('xmore-ksa');
+}
+
+function isKsaSymbol(value) {
+    return typeof value === 'string' && /\.SR$/i.test(value.trim());
+}
+
+function filterKsaArray(arr) {
+    return (arr || []).filter((item) => {
+        if (!item || typeof item !== 'object') return false;
+        return isKsaSymbol(item.symbol) || isKsaSymbol(item.ticker);
+    });
+}
+
+function sanitizeKsaBriefing(response) {
+    const safe = { ...response };
+    safe.market_pulse = { ...(safe.market_pulse || {}) };
+    safe.market_pulse.top_gainers = filterKsaArray(safe.market_pulse.top_gainers);
+    safe.market_pulse.top_losers = filterKsaArray(safe.market_pulse.top_losers);
+    safe.risk_alerts = filterKsaArray(safe.risk_alerts);
+    safe.sentiment_snapshot = { ...(safe.sentiment_snapshot || {}) };
+    safe.sentiment_snapshot.notable = filterKsaArray(safe.sentiment_snapshot.notable);
+    return safe;
+}
+
 
 // ─── GET /api/briefing/today ──────────────────────────────────
 // Returns the most recent briefing + user-specific overlays
 router.get('/today', optionalAuth, async (req, res) => {
     try {
+        const ksaRequest = isKsaRequest(req);
         // 1. Fetch the most recent KSA-compatible briefing.
         // The table is not market-partitioned, so on KSA deploy we select the newest row
         // whose payload actually references .SR symbols.
         let briefingRow = null;
-        if (ACTIVE_MARKET === 'KSA') {
+        if (ksaRequest) {
             const candidates = await queryAll(
                 `SELECT * FROM daily_briefings ORDER BY briefing_date DESC LIMIT 10`
             );
@@ -97,6 +125,8 @@ router.get('/today', optionalAuth, async (req, res) => {
             watchlist_heatmap: null
         };
 
+        const sanitizedResponse = ksaRequest ? sanitizeKsaBriefing(response) : response;
+
         // 2. If logged in, overlay user-specific data
         if (req.userId) {
             const userId = req.userId;
@@ -127,8 +157,8 @@ router.get('/today', optionalAuth, async (req, res) => {
                 reasons_ar: parseJSON(r.reasons_ar) || []
             }));
 
-            response.actions_today = allRecs.filter(r => r.action === 'BUY' || r.action === 'SELL');
-            response.all_recommendations = allRecs;
+            sanitizedResponse.actions_today = allRecs.filter(r => r.action === 'BUY' || r.action === 'SELL');
+            sanitizedResponse.all_recommendations = allRecs;
 
             // b. Portfolio snapshot
             const daysHeldExpr = db._isPostgres
@@ -178,7 +208,7 @@ router.get('/today', optionalAuth, async (req, res) => {
                 ? parseFloat((positions.reduce((sum, p) => sum + p.unrealized_pct, 0) / positions.length).toFixed(2))
                 : 0;
 
-            response.portfolio_snapshot = {
+            sanitizedResponse.portfolio_snapshot = {
                 open_count: positions.length,
                 total_unrealized_pct: totalUnrealized,
                 best_position: positions[0] || null,
@@ -204,14 +234,14 @@ router.get('/today', optionalAuth, async (req, res) => {
                 ORDER BY c.confidence DESC
             `, [userId, briefingDate]);
 
-            response.watchlist_heatmap = heatmapResult.rows.map(r => ({
+            sanitizedResponse.watchlist_heatmap = heatmapResult.rows.map(r => ({
                 ...r,
                 signal_strength: Math.abs((r.bull_score || 0) - (r.bear_score || 0))
             }));
-            response.watchlist_heatmap.sort((a, b) => b.signal_strength - a.signal_strength);
+            sanitizedResponse.watchlist_heatmap.sort((a, b) => b.signal_strength - a.signal_strength);
         }
 
-        return res.json(response);
+        return res.json(sanitizedResponse);
 
     } catch (err) {
         console.error('Error fetching briefing:', err);

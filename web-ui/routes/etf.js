@@ -52,17 +52,30 @@ function handleMissing(err, res, emptyVal = []) {
     return res.status(500).json({ error: err.message });
 }
 
-function instrumentMarketWhere(alias = 'i') {
-    if (ACTIVE_MARKET === 'KSA') {
-        return `${alias}.region = 'LOCAL_KSA' OR ${alias}.exchange = 'TADAWUL' OR ${alias}.currency = 'SAR'`;
-    }
-    return `${alias}.is_active = ${isPostgres ? 'TRUE' : '1'}`;
+function isKsaRequest(req) {
+    const host = String(req.headers.host || req.hostname || '').toLowerCase();
+    return ACTIVE_MARKET === 'KSA' || host.includes('xmore-ksa');
+}
+
+function isKsaEtfRow(row) {
+    const region = String(row?.region || '').toUpperCase();
+    const exchange = String(row?.exchange || '').toUpperCase();
+    const currency = String(row?.currency || '').toUpperCase();
+    const symbol = String(row?.symbol || '').toUpperCase();
+    const country = String(row?.country || '').toUpperCase();
+    return region === 'LOCAL_KSA'
+        || exchange === 'TADAWUL'
+        || currency === 'SAR'
+        || symbol.endsWith('.SR')
+        || country === 'SAUDI ARABIA'
+        || country === 'KSA';
 }
 
 // ── GET /api/etf/instruments ─────────────────────────────────────────────────
 
 router.get('/instruments', async (req, res) => {
     try {
+        const ksaRequest = isKsaRequest(req);
         const idCol = instrIdCol();
         // Instruments joined with latest price and latest NAV
         const sql = `
@@ -120,7 +133,7 @@ router.get('/instruments', async (req, res) => {
             ORDER BY i.region, i.symbol
         `;
         const rows = await dbAll(isPostgres ? sql : sqlSqlite, []);
-        const filtered = rows.filter(row => ACTIVE_MARKET !== 'KSA' || row.region === 'LOCAL_KSA' || row.exchange === 'TADAWUL' || row.currency === 'SAR');
+        const filtered = rows.filter(row => !ksaRequest || isKsaEtfRow(row));
         res.json(filtered);
     } catch (err) { handleMissing(err, res); }
 });
@@ -273,7 +286,7 @@ router.get('/holdings/:symbol', async (req, res) => {
 
 router.get('/country-exposure', async (req, res) => {
     try {
-        if (ACTIVE_MARKET === 'KSA') return res.json([]);
+        if (isKsaRequest(req)) return res.json([]);
         const idCol = instrIdCol();
         // Latest Egypt exposure per global instrument
         const sqlPg = `
@@ -351,6 +364,7 @@ router.get('/documents', async (req, res) => {
 
 router.get('/signals', async (req, res) => {
     try {
+        const ksaRequest = isKsaRequest(req);
         const iid = instrIdCol();
         const sql = `SELECT s.instrument_id, s.symbol, s.signal_date, s.signal,
                     s.confidence, s.ma_signal, s.rsi_signal, s.nav_signal,
@@ -365,7 +379,7 @@ router.get('/signals', async (req, res) => {
              )
              ORDER BY s.confidence DESC, s.symbol ASC`;
         const rows = await dbAll(sql, []);
-        const filtered = rows.filter(row => ACTIVE_MARKET !== 'KSA' || row.region === 'LOCAL_KSA' || row.exchange === 'TADAWUL' || row.currency === 'SAR');
+        const filtered = rows.filter(row => !ksaRequest || isKsaEtfRow(row));
         res.json(filtered);
     } catch (err) {
         if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) {
