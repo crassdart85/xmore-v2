@@ -28,21 +28,36 @@ function dbGet(query, params = []) {
     });
 }
 
+function isTableMissing(err) {
+    return err && err.message && (
+        err.message.includes('does not exist') ||
+        err.message.includes('no such table') ||
+        err.message.includes('no such column')
+    );
+}
+
 // GET /api/ksa/signals/latest — last 20 KSA signals
 router.get('/signals/latest', async (req, res) => {
     try {
+        const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 50);
         const rows = await dbAll(`
-            SELECT symbol, final_signal, conviction, xmore_score, confidence,
+            SELECT c.symbol, COALESCE(k.name_en, c.symbol) AS name_en,
+                   final_signal, conviction, xmore_score, confidence,
                    bull_score, bear_score, agent_agreement, prediction_date AS timestamp,
                    drivers_json, risk_level, expected_move, signal_label, liquidity_score
-            FROM consensus_results
-            WHERE market_id = 'KSA'
-              AND symbol LIKE '%.SR'
+            FROM consensus_results c
+            LEFT JOIN ksa_stocks k ON k.symbol = c.symbol
+            WHERE c.market_id = 'KSA'
+              AND c.symbol LIKE '%.SR'
             ORDER BY prediction_date DESC
-            LIMIT 20
-        `);
+            LIMIT ${ph(1)}
+        `, [limit]);
         const result = rows.map(r => ({
             ...r,
+            ticker: r.symbol,
+            signal: r.final_signal,
+            company: r.name_en,
+            summary: `${r.symbol} ${r.final_signal || 'HOLD'}${r.expected_move ? ` · ${r.expected_move}` : ''}`,
             drivers: (() => { try { return JSON.parse(r.drivers_json || '[]'); } catch { return []; } })(),
             drivers_json: undefined,
         }));
@@ -56,26 +71,44 @@ router.get('/signals/latest', async (req, res) => {
 // GET /api/ksa/signals/today — today's pre-market signals
 router.get('/signals/today', async (req, res) => {
     try {
-        const dateClause = isPostgres
-            ? `prediction_date = CURRENT_DATE`
-            : `prediction_date = DATE('now')`;
-        const rows = await dbAll(`
-            SELECT symbol, final_signal, conviction, xmore_score, confidence,
-                   bull_score, bear_score, agent_agreement, prediction_date AS timestamp,
-                   drivers_json, risk_level, expected_move,
-                   signal_label, liquidity_score
+        const latest = await dbGet(`
+            SELECT MAX(prediction_date) AS latest_date
             FROM consensus_results
             WHERE market_id = 'KSA'
               AND symbol LIKE '%.SR'
+        `);
+        const latestDate = latest?.latest_date || null;
+        if (!latestDate) {
+            return res.json({ available: true, date: null, signals: [], stale: false });
+        }
+
+        const dateClause = isPostgres
+            ? `prediction_date = ${ph(1)}::date`
+            : `prediction_date = ${ph(1)}`;
+        const rows = await dbAll(`
+            SELECT c.symbol, COALESCE(k.name_en, c.symbol) AS name_en,
+                   final_signal, conviction, xmore_score, confidence,
+                   bull_score, bear_score, agent_agreement, prediction_date AS timestamp,
+                   drivers_json, risk_level, expected_move,
+                   signal_label, liquidity_score
+            FROM consensus_results c
+            LEFT JOIN ksa_stocks k ON k.symbol = c.symbol
+            WHERE c.market_id = 'KSA'
+              AND c.symbol LIKE '%.SR'
               AND ${dateClause}
             ORDER BY xmore_score DESC
-        `);
+        `, [latestDate]);
         const result = rows.map(r => ({
             ...r,
+            ticker: r.symbol,
+            signal: r.final_signal,
+            company: r.name_en,
             drivers: (() => { try { return JSON.parse(r.drivers_json || '[]'); } catch { return []; } })(),
             drivers_json: undefined,
         }));
-        res.json({ available: true, date: new Date().toISOString().slice(0, 10), signals: result });
+        const apiDate = String(latestDate).slice(0, 10);
+        const stale = apiDate !== new Date().toISOString().slice(0, 10);
+        res.json({ available: true, date: apiDate, signals: result, stale });
     } catch (e) {
         res.status(500).json({ error: 'Failed to load today\'s KSA signals' });
     }
@@ -152,10 +185,89 @@ router.get('/regime', async (req, res) => {
             ORDER BY trading_date DESC
             LIMIT 1
         `);
-        if (!row) return res.json({ available: false, label: 'Unknown' });
-        res.json({ available: true, ...row });
+        if (!row) return res.json({ available: false, regime: 'calm', label: 'Unknown' });
+        const rawLabel = String(row.regime_label_en || '').toLowerCase();
+        const regime = rawLabel.includes('crisis')
+            ? 'crisis'
+            : rawLabel.includes('turb')
+                ? 'turbulent'
+                : 'calm';
+        res.json({
+            available: true,
+            regime,
+            label: row.regime_label_en || 'Unknown',
+            label_ar: row.regime_label_ar || null,
+            probability: row.regime_confidence != null ? Number(row.regime_confidence) : null,
+            n_regimes: row.n_regimes,
+            as_of: row.trading_date,
+        });
     } catch (e) {
-        res.json({ available: false, label: 'Unknown' });
+        res.json({ available: false, regime: 'calm', label: 'Unknown' });
+    }
+});
+
+// GET /api/ksa/freshness
+router.get('/freshness', async (_req, res) => {
+    try {
+        const [pricesRow, signalsRow, dcfRow] = await Promise.all([
+            dbGet(`SELECT MAX(date) AS latest_value FROM prices WHERE market_id = 'KSA' OR symbol LIKE '%.SR'`),
+            dbGet(`SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA' AND symbol LIKE '%.SR'`),
+            dbGet(`SELECT MAX(COALESCE(computed_at, valuation_date)) AS latest_value FROM ksa_dcf_valuations`)
+                .catch(err => isTableMissing(err) ? { latest_value: null } : Promise.reject(err)),
+        ]);
+
+        res.json({
+            available: true,
+            prices_updated: pricesRow?.latest_value || null,
+            signals_updated: signalsRow?.latest_value || null,
+            dcf_updated: dcfRow?.latest_value || null,
+        });
+    } catch (e) {
+        console.error('[KSA] /freshness error:', e);
+        res.status(500).json({ error: 'Failed to load KSA freshness' });
+    }
+});
+
+// GET /api/ksa/ticker
+router.get('/ticker', async (_req, res) => {
+    try {
+        const rows = await dbAll(`
+            WITH latest_prices AS (
+                SELECT p.symbol, p.close, p.open, p.volume, p.date,
+                       ROW_NUMBER() OVER (PARTITION BY p.symbol ORDER BY p.date DESC) AS rn
+                FROM prices p
+                WHERE p.symbol LIKE '%.SR'
+            )
+            SELECT lp.symbol,
+                   COALESCE(k.name_en, lp.symbol) AS name_en,
+                   lp.close AS price,
+                   lp.date,
+                   lp.volume,
+                   CASE
+                     WHEN lp.open IS NOT NULL AND lp.open <> 0
+                     THEN ROUND(((lp.close - lp.open) / lp.open * 100)::numeric, 2)
+                     ELSE NULL
+                   END AS change_pct
+            FROM latest_prices lp
+            LEFT JOIN ksa_stocks k ON k.symbol = lp.symbol
+            WHERE lp.rn = 1
+            ORDER BY COALESCE(lp.volume, 0) DESC, lp.symbol ASC
+            LIMIT 12
+        `);
+
+        res.json({
+            available: true,
+            tickers: rows.map(row => ({
+                symbol: row.symbol,
+                name_en: row.name_en,
+                price: row.price != null ? Number(row.price) : null,
+                change_pct: row.change_pct != null ? Number(row.change_pct) : 0,
+                date: row.date || null,
+            })),
+        });
+    } catch (e) {
+        console.error('[KSA] /ticker error:', e);
+        res.status(500).json({ error: 'Failed to load KSA ticker' });
     }
 });
 

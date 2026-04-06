@@ -18,6 +18,7 @@ const router  = express.Router();
 
 let db         = null;
 let isPostgres = false;
+const ACTIVE_MARKET = String(process.env.MARKET || '').toUpperCase();
 
 function attachDb(database, pg) {
     db         = database;
@@ -49,6 +50,13 @@ function handleMissing(err, res, emptyVal = []) {
         return res.json(emptyVal);
     }
     return res.status(500).json({ error: err.message });
+}
+
+function instrumentMarketWhere(alias = 'i') {
+    if (ACTIVE_MARKET === 'KSA') {
+        return `${alias}.region = 'LOCAL_KSA' OR ${alias}.exchange = 'TADAWUL' OR ${alias}.currency = 'SAR'`;
+    }
+    return `${alias}.is_active = ${isPostgres ? 'TRUE' : '1'}`;
 }
 
 // ── GET /api/etf/instruments ─────────────────────────────────────────────────
@@ -112,7 +120,8 @@ router.get('/instruments', async (req, res) => {
             ORDER BY i.region, i.symbol
         `;
         const rows = await dbAll(isPostgres ? sql : sqlSqlite, []);
-        res.json(rows);
+        const filtered = rows.filter(row => ACTIVE_MARKET !== 'KSA' || row.region === 'LOCAL_KSA' || row.exchange === 'TADAWUL' || row.currency === 'SAR');
+        res.json(filtered);
     } catch (err) { handleMissing(err, res); }
 });
 
@@ -264,6 +273,7 @@ router.get('/holdings/:symbol', async (req, res) => {
 
 router.get('/country-exposure', async (req, res) => {
     try {
+        if (ACTIVE_MARKET === 'KSA') return res.json([]);
         const idCol = instrIdCol();
         // Latest Egypt exposure per global instrument
         const sqlPg = `
@@ -355,7 +365,8 @@ router.get('/signals', async (req, res) => {
              )
              ORDER BY s.confidence DESC, s.symbol ASC`;
         const rows = await dbAll(sql, []);
-        res.json(rows);
+        const filtered = rows.filter(row => ACTIVE_MARKET !== 'KSA' || row.region === 'LOCAL_KSA' || row.exchange === 'TADAWUL' || row.currency === 'SAR');
+        res.json(filtered);
     } catch (err) {
         if (err.message && (err.message.includes('does not exist') || err.message.includes('no such table'))) {
             return res.json([]);

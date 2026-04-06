@@ -28,6 +28,14 @@ function dbGet(query, params = []) {
     });
 }
 
+function isTableMissing(err) {
+    return err && err.message && (
+        err.message.includes('does not exist') ||
+        err.message.includes('no such table') ||
+        err.message.includes('no such column')
+    );
+}
+
 // Shared helpers
 const toNum  = v => Number(v || 0);
 const mean   = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
@@ -119,9 +127,14 @@ router.get('/track-record/equity-curve', async (req, res) => {
             };
         });
 
+        const xmore = series.map(point => ({ time: point.date, value: point.xmore }));
+        const benchmark = series.map(point => ({ time: point.date, value: point.tasi }));
+
         res.json({
             available:   series.length > 0,
             series,
+            xmore,
+            benchmark,
             total_xmore: series.length ? series[series.length - 1].xmore : 0,
             total_tasi:  series.length ? series[series.length - 1].tasi : 0,
             total_alpha: series.length ? series[series.length - 1].alpha : 0,
@@ -176,17 +189,42 @@ router.get('/track-record/predictions', async (req, res) => {
         `);
         const total = Number(countRow?.cnt || 0);
 
-        const rows = await dbAll(`
-            SELECT recommendation_date, symbol, agent_name, signal_type,
-                   actual_next_day_return, was_correct, alpha_1d,
-                   xmore_score, conviction, notes
-            FROM trade_recommendations
-            WHERE market_id = 'KSA'
-              AND symbol LIKE '%.SR'
-              AND ${simFilter()}
-            ORDER BY recommendation_date DESC
-            LIMIT ${ph(1)} OFFSET ${ph(2)}
-        `, [perPage, offset]);
+        let rows = [];
+        try {
+            rows = await dbAll(`
+                SELECT recommendation_date, symbol, signal_type,
+                       actual_next_day_return, was_correct, alpha_1d,
+                       xmore_score, notes
+                FROM trade_recommendations
+                WHERE market_id = 'KSA'
+                  AND symbol LIKE '%.SR'
+                  AND ${simFilter()}
+                ORDER BY recommendation_date DESC
+                LIMIT ${ph(1)} OFFSET ${ph(2)}
+            `, [perPage, offset]);
+        } catch (err) {
+            if (!isTableMissing(err)) throw err;
+        }
+
+        const predictions = rows.map(row => ({
+            date: row.recommendation_date,
+            trading_date: row.recommendation_date,
+            symbol: row.symbol,
+            ticker: row.symbol,
+            signal: row.signal_type || 'HOLD',
+            outcome: row.was_correct == null
+                ? 'pending'
+                : (row.was_correct === true || row.was_correct === 1 || row.was_correct === 't')
+                    ? 'correct'
+                    : 'incorrect',
+            alpha: row.alpha_1d != null ? Number(row.alpha_1d) * 100 : null,
+            alpha_pct: row.alpha_1d != null ? Number(row.alpha_1d) * 100 : null,
+            dcf_label: null,
+            valuation_label: null,
+            shariah_compliant: null,
+            xmore_score: row.xmore_score != null ? Number(row.xmore_score) : null,
+            notes: row.notes || null,
+        }));
 
         res.json({
             available:   true,
@@ -194,7 +232,7 @@ router.get('/track-record/predictions', async (req, res) => {
             page,
             per_page:    perPage,
             total_pages: Math.ceil(total / perPage),
-            predictions: rows,
+            predictions,
         });
     } catch (e) {
         res.status(500).json({ error: 'Failed to load predictions' });

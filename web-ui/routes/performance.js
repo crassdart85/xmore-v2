@@ -48,6 +48,8 @@ function isTableMissing(err) {
 function boolTrue() { return isPostgres ? 'TRUE' : '1'; }
 function boolFalse() { return isPostgres ? 'FALSE' : '0'; }
 function ph(n) { return isPostgres ? `$${n}` : '?'; }
+const ACTIVE_MARKET = String(process.env.MARKET || '').toUpperCase();
+const STOCK_TABLE = ACTIVE_MARKET === 'KSA' ? 'ksa_stocks' : 'egx30_stocks';
 // KSA market filter — all performance queries must only include .SR symbols
 const KSA_FILTER = "symbol LIKE '%.SR'";
 const KSA_FILTER_TR = "trade_recommendations.symbol LIKE '%.SR'";
@@ -488,7 +490,7 @@ router.get('/by-stock', async (req, res) => {
                 : `ROUND(CAST(SUM(CASE WHEN tr.was_correct = 1 THEN 1 ELSE 0 END) AS REAL) / NULLIF(COUNT(*), 0) * 100, 1)`
             } AS win_rate
             FROM trade_recommendations tr
-            ${isPostgres ? 'JOIN egx30_stocks s ON tr.symbol = s.symbol' : ''}
+            ${isPostgres ? `JOIN ${STOCK_TABLE} s ON tr.symbol = s.symbol` : ''}
             WHERE tr.was_correct IS NOT NULL
             AND tr.symbol LIKE '%.SR'
             AND ${liveFilter}
@@ -591,7 +593,7 @@ router.get('/predictions/open', async (req, res) => {
                 cr.prediction_date, cr.final_signal, cr.confidence,
                 cr.conviction, cr.bull_score, cr.bear_score, cr.risk_action
             FROM consensus_results cr
-            ${isPostgres ? 'JOIN' : 'LEFT JOIN'} egx30_stocks s ON cr.symbol = s.symbol
+            ${isPostgres ? 'JOIN' : 'LEFT JOIN'} ${STOCK_TABLE} s ON cr.symbol = s.symbol
             WHERE cr.symbol LIKE '%.SR'
             AND ${dateFilter}
             ORDER BY cr.prediction_date DESC, cr.confidence DESC
@@ -629,7 +631,7 @@ router.get('/predictions/history', async (req, res) => {
                 tr.action, tr.actual_next_day_return, tr.benchmark_1d_return,
                 tr.alpha_1d, tr.was_correct
             FROM consensus_results cr
-            ${isPostgres ? 'JOIN egx30_stocks s ON cr.symbol = s.symbol' : ''}
+            ${isPostgres ? `JOIN ${STOCK_TABLE} s ON cr.symbol = s.symbol` : ''}
             LEFT JOIN trade_recommendations tr
                 ON tr.symbol = cr.symbol
                 AND tr.recommendation_date = cr.prediction_date

@@ -4,6 +4,8 @@ const { authMiddleware, optionalAuth } = require('../middleware/auth');
 
 let db;
 let isPostgres = false;
+const ACTIVE_MARKET = String(process.env.MARKET || '').toUpperCase();
+const STOCK_TABLE = ACTIVE_MARKET === 'KSA' ? 'ksa_stocks' : 'egx30_stocks';
 
 function attachDb(_db, _isPostgres) {
     db = _db;
@@ -41,15 +43,34 @@ function parseJSON(str) {
     try { return JSON.parse(str); } catch { return null; }
 }
 
+function containsKsaSymbols(payload) {
+    const text = JSON.stringify(payload || {});
+    return /\.SR\b/i.test(text);
+}
+
 
 // ─── GET /api/briefing/today ──────────────────────────────────
 // Returns the most recent briefing + user-specific overlays
 router.get('/today', optionalAuth, async (req, res) => {
     try {
-        // 1. Fetch most recent briefing (handle stale data gracefully)
-        const briefingRow = await queryOne(
-            `SELECT * FROM daily_briefings ORDER BY briefing_date DESC LIMIT 1`
-        );
+        // 1. Fetch the most recent KSA-compatible briefing.
+        // The table is not market-partitioned, so on KSA deploy we select the newest row
+        // whose payload actually references .SR symbols.
+        let briefingRow = null;
+        if (ACTIVE_MARKET === 'KSA') {
+            const candidates = await queryAll(
+                `SELECT * FROM daily_briefings ORDER BY briefing_date DESC LIMIT 10`
+            );
+            briefingRow = candidates.rows.find((row) =>
+                containsKsaSymbols(parseJSON(row.market_pulse_json)) ||
+                containsKsaSymbols(parseJSON(row.risk_alerts_json)) ||
+                containsKsaSymbols(parseJSON(row.sentiment_snapshot_json))
+            ) || null;
+        } else {
+            briefingRow = await queryOne(
+                `SELECT * FROM daily_briefings ORDER BY briefing_date DESC LIMIT 1`
+            );
+        }
 
         if (!briefingRow) {
             return res.json({ available: false });
@@ -93,7 +114,7 @@ router.get('/today', optionalAuth, async (req, res) => {
                        tr.reasons, tr.reasons_ar,
                        tr.bull_score, tr.bear_score
                 FROM trade_recommendations tr
-                JOIN egx30_stocks s ON tr.symbol = s.symbol
+                JOIN ${STOCK_TABLE} s ON tr.symbol = s.symbol
                 WHERE tr.user_id = $1
                   AND tr.symbol LIKE '%.SR'
                   AND ${dateFilter}
@@ -119,7 +140,7 @@ router.get('/today', optionalAuth, async (req, res) => {
                        up.entry_date, up.entry_price,
                        ${daysHeldExpr} AS days_held
                 FROM user_positions up
-                JOIN egx30_stocks s ON up.symbol = s.symbol
+                JOIN ${STOCK_TABLE} s ON up.symbol = s.symbol
                 WHERE up.user_id = $1
                   AND up.symbol LIKE '%.SR'
                   AND up.status = 'OPEN'
@@ -175,7 +196,7 @@ router.get('/today', optionalAuth, async (req, res) => {
                        c.final_signal, c.confidence, c.conviction,
                        c.bull_score, c.bear_score, c.risk_action
                 FROM consensus_results c
-                JOIN egx30_stocks s ON c.symbol = s.symbol
+                JOIN ${STOCK_TABLE} s ON c.symbol = s.symbol
                 JOIN user_watchlist w ON w.stock_id = s.id
                 WHERE w.user_id = $1
                   AND c.symbol LIKE '%.SR'
