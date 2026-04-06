@@ -1,105 +1,154 @@
-﻿# Xmore2 Trading System (Enhanced)
+# Xmore KSA Trading System
 
-An advanced automated trading system tailored for the **Saudi Exchange (Tadawul)**. features a modular agent architecture, "look-back" evaluation logic, and a modern **fully responsive** web dashboard optimized for desktop, tablet, and mobile devices.
+An automated trading and market-intelligence system tailored for the Saudi Exchange (Tadawul). This branch targets the KSA deployment, with a Node dashboard, Python data pipelines, and KSA-specific routing and APIs.
 
-## 📋 Project Overview
+## Project Overview
 
-Xmore2 is built to:
-1.  **Collect Data**: Fetch historical stock prices (Yahoo Finance) and news, optimized for Saudi markets.
-2.  **Analyze**: Run multiple trading agents to generate buy/sell signals:
-    *   **RSI Agent**: Identity overbought/oversold conditions.
-    *   **Moving Average Agent**: Trend following with crossover logic.
-    *   **Volume Agent**: Detects significant volume spikes (> 1.5x average).
-    *   **DCF Valuation Agent**: Fundamental analysis using discounted cash flow (weekly, Sunday runs).
-3.  **Predict**: Forecast market movements for a **5-day horizon**.
-4.  **Evaluate**: Automatically verify predictions against actual market outcomes.
-5.  **Visualize**: Interact with data via a comprehensive web dashboard featuring **"Future vs History"** comparison.
+Xmore KSA is built to:
 
-## 📱 Mobile-First Design
+1. Collect Tadawul prices, news, and market context.
+2. Run multiple agents and KSA-specific consensus logic.
+3. Generate daily directional signals for `.SR` symbols.
+4. Evaluate realized outcomes and alpha versus TASI.
+5. Serve KSA dashboard, briefing, pro, and track-record views.
 
-The dashboard is **fully responsive** and optimized for all device sizes:
+## KSA Deployment Notes
 
-- **Desktop (1024px+)**: Full feature set, optimal spacing and typography
-- **Tablet (768px)**: Adjusted layout, proper scaling, readable content
-- **Mobile (640px)**: Compact, touch-friendly interface with no overlapping elements, horizontal scrolling for tables, stacked navigation
+The KSA production app depends on two systems:
 
-**Key Mobile Features**:
-- Touch-friendly buttons (36px+ height)
-- No horizontal overflow or content cramping
-- Proper text wrapping and readable font sizes
-- Horizontal scrolling with GPU-accelerated performance
-- Dark mode compatible across all viewports
-- Arabic (RTL) support on all device sizes
+- Render web service
+  - serves `web-ui/server.js`
+  - runs the KSA schema initializer `web-ui/init-db-ksa.js`
+- GitHub Actions pipeline
+  - runs `.github/workflows/ksa-daily-pipeline.yml`
+  - populates prices, signals, regime, evaluations, and other KSA data
 
-## ⚠️ Tadawul Data Limitations
-Please be aware of the following when trading Saudi stocks:
-*   **Liquidity**: Some Tadawul stocks have low daily volume, leading to gaps or slippage.
-*   **Market Hours**: Trading hours are Sunday-Thursday, 10:00 AM - 1:30 PM EET.
-*   **Data Latency**: Yahoo Finance data for `.SR` tickers may be delayed.
+If the GitHub Actions pipeline is not writing fresh KSA rows, the site will render with empty states even when the frontend is correct.
 
-## 🚀 Installation
+## Current Status
+
+Recent fixes on branch `xmore-ksa` include:
+
+- KSA route/page wiring for `/track-record`
+- KSA dashboard endpoints:
+  - `/api/ksa/freshness`
+  - `/api/ksa/ticker`
+- KSA scoping on shared briefing, performance, and ETF routes
+- schema-compatibility hardening for:
+  - `trade_recommendations`
+  - `consensus_results`
+  - `regime_log`
+  - `prices`
+
+Remaining deployment risk is operational:
+
+- Render must deploy from branch `xmore-ksa`
+- GitHub Actions must successfully populate the production database
+
+## Installation
 
 ### Prerequisites
+
 - Python 3.8+
-- SQLite (included with Python)
-- [NewsAPI](https://newsapi.org/) Key (Optional)
+- Node.js 18+
+- PostgreSQL in production, SQLite locally
+- required API keys for the KSA workflow
 
 ### Setup
-1.  **Clone the repository**:
-    ```bash
-    git clone <repository_url>
-    cd Xmore2
-    ```
 
-2.  **Install dependencies**:
-    ```bash
-    pip install pandas yfinance newsapi-python textblob streamlit altair
-    ```
+1. Clone the repository:
 
-3.  **Configure**:
-    Edit `config.py` to set preferences. Default stocks: COMI, SWDY, TMGH, ETEL, EAST.
-
-4.  **Initialize Database**:
-    ```bash
-    python database.py
-    ```
-
-## ⚙️ Usage
-
-### 1. Data Collection
-Fetch prices and news. Run daily after Tadawul close (2:00 PM EET).
 ```bash
-python collect_data.py
+git clone <repository_url>
+cd Xmore-ksa
 ```
 
-### 2. Run Agents
-Generate signals based on new data.
+2. Install Python dependencies:
+
 ```bash
-python run_agents.py
+pip install -r requirements.txt
 ```
 
-### 3. Dashboard (Frontend)
-Launch the interactive web UI.
-```bash
-streamlit run dashboard.py
-```
-**New Feature**: The "Comparison" tab now shows **Future Targets** (+5 days) on the left and **Historical Reality** (what happened to predictions from ~7 days ago) on the right.
+3. Install web dependencies:
 
-### 4. Evaluation
-Check accuracy of past predictions.
 ```bash
-# Standard evaluation (processes pending items)
+cd web-ui
+npm install
+cd ..
+```
+
+4. Configure environment variables:
+
+- `DATABASE_URL`
+- `MARKET=KSA`
+- provider/API keys used by the KSA workflow
+
+5. Initialize the KSA database schema:
+
+```bash
+node web-ui/init-db-ksa.js
+```
+
+## Usage
+
+### Web app
+
+```bash
+node web-ui/server.js
+```
+
+### KSA signal pipeline
+
+```bash
+python run_agents_ksa.py
+```
+
+### Evaluation
+
+```bash
 python evaluate.py
-
-# specific "Look-back" analysis for last week
-python evaluate.py --lookback --days 7
+python -m engines.evaluate_performance
 ```
 
-## 🏗️ Architecture
+### KSA data collection
 
-*   **Database**: SQLite (`stocks.db`) storing OHLCV, news, and prediction logs.
-*   **Agents**: Extensible classes inheriting from `BaseAgent`.
-*   **Frontend**: Streamlit app (`dashboard.py`) using `utils.py` for shared logic.
+```bash
+python collect_data.py --prices-only
+python collect_data.py --news-only
+```
 
-## 📝 Disclaimer
-This software is for educational purposes only. Do not use for real money trading without extensive testing. The authors are not responsible for financial losses.
+## Verification
+
+After a KSA deploy, verify:
+
+```bash
+curl https://xmore-ksa.onrender.com/api/ksa/freshness
+curl https://xmore-ksa.onrender.com/api/ksa/ticker
+curl https://xmore-ksa.onrender.com/api/ksa/signals/today
+curl https://xmore-ksa.onrender.com/api/ksa/track-record/summary
+```
+
+Expected:
+
+- no `.CA` symbols on the KSA domain
+- no `404` from KSA dashboard APIs
+- KSA pages render even if data is temporarily stale
+- metrics populate once the GitHub Actions pipeline writes fresh KSA rows
+
+## Tadawul Data Limitations
+
+- some Tadawul stocks have low daily volume, which can amplify slippage
+- Tadawul trades Sunday through Thursday
+- free `.SR` providers can be delayed or incomplete
+- empty UI sections usually indicate missing pipeline output, not only frontend defects
+
+## Architecture
+
+- Web app: `web-ui/`
+- Pipelines: repo root scripts and `engines/`
+- Database: shared PostgreSQL in production, SQLite locally
+- Frontend: KSA HTML/JS pages under `web-ui/public/`
+
+## Disclaimer
+
+This software is for informational and research purposes only. Do not use it for real-money trading without independent validation, fresh data verification, and proper risk controls.

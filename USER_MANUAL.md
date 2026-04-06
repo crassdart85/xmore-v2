@@ -2,6 +2,20 @@
 
 ---
 
+## Deployment Note
+
+This manual describes the intended KSA product surface. On the live KSA deployment, some sections depend on the KSA data pipeline being healthy before they display populated content.
+
+Data-dependent areas include:
+
+- main dashboard stats
+- `/pro`
+- track record metrics and equity curve
+- ticker tape and freshness indicators
+- valuation and ETF modules
+
+If those areas render empty, the usual cause is missing or stale KSA rows in the production database rather than a browser-side issue.
+
 ## Table of Contents
 
 1. [Getting Started](#1-getting-started)
@@ -27,6 +41,13 @@
 ### 1.1 Accessing the Dashboard
 
 Open the Xmore dashboard in any modern browser. No installation is required. The dashboard is fully responsive and works on desktop, tablet, and mobile.
+
+Primary KSA routes in scope:
+
+- `/`
+- `/pro`
+- `/track-record`
+- `/docs`
 
 ### 1.2 User Roles
 
@@ -81,6 +102,8 @@ Four animated metric cards appear at the top of the dashboard:
 | **Overall Accuracy** | System-wide prediction accuracy percentage |
 | **Latest Data Date** | Most recent market data date in the system |
 
+If the KSA evaluation pipeline has not populated fresh rows yet, these cards may show zeros or placeholders.
+
 ### 2.3 Performance Snapshot Bar
 
 A live performance strip showing 30-day rolling metrics:
@@ -94,6 +117,8 @@ Color-coded status:
 - **Green** = Healthy
 - **Yellow** = Watch
 - **Red** = Degraded
+
+This strip depends on evaluated KSA `trade_recommendations` rows and benchmark data. If those rows are missing, the snapshot will render as unavailable.
 
 ### 2.4 Tab Navigation
 
@@ -153,6 +178,8 @@ Use the search box above the table to filter by stock symbol or company name. Fi
 
 A live TASI index ticker tape runs across the top of the predictions view, showing real-time market data. It automatically adapts to your selected theme (dark/light).
 
+Operational note: on the KSA deployment, the ticker depends on `/api/ksa/ticker`. If prices are missing in the production database, the tape will appear empty or degraded.
+
 ---
 
 ## 4. Briefing Tab
@@ -202,6 +229,8 @@ A daily market intelligence summary generated after each trading day.
 
 If no briefing has been generated for today, a message displays: "No briefing available yet." Briefings are generated daily after market analysis completes.
 
+On KSA, this usually means the daily pipeline has not yet written a KSA-compatible briefing row.
+
 ---
 
 ## 5. Trades Tab
@@ -240,6 +269,8 @@ Each recommendation is displayed as a card containing:
 ### 5.3 Stale Data Notice
 
 If no recommendations exist for today, the system falls back to the most recent available date and shows a notice: "Data from [date]".
+
+For the KSA branch, stale data is preferable to a hard failure. An older KSA date indicates the pipeline is lagging, not necessarily that the page is broken.
 
 ### 5.4 Not Logged In
 
