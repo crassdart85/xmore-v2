@@ -36,6 +36,15 @@ function isTableMissing(err) {
     );
 }
 
+async function dbGetSafe(query, params = [], fallback = null) {
+    try {
+        return await dbGet(query, params);
+    } catch (err) {
+        if (isTableMissing(err)) return fallback;
+        throw err;
+    }
+}
+
 // GET /api/ksa/signals/latest — last 20 KSA signals
 router.get('/signals/latest', async (req, res) => {
     try {
@@ -210,10 +219,33 @@ router.get('/regime', async (req, res) => {
 router.get('/freshness', async (_req, res) => {
     try {
         const [pricesRow, signalsRow, dcfRow] = await Promise.all([
-            dbGet(`SELECT MAX(date) AS latest_value FROM prices WHERE market_id = 'KSA' OR symbol LIKE '%.SR'`),
-            dbGet(`SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA' AND symbol LIKE '%.SR'`),
-            dbGet(`SELECT MAX(COALESCE(computed_at, valuation_date)) AS latest_value FROM ksa_dcf_valuations`)
-                .catch(err => isTableMissing(err) ? { latest_value: null } : Promise.reject(err)),
+            dbGetSafe(
+                `SELECT MAX(date) AS latest_value FROM prices WHERE market_id = 'KSA' OR symbol LIKE '%.SR'`,
+                [],
+                null,
+            ).then(row => row || dbGetSafe(
+                `SELECT MAX(date) AS latest_value FROM prices WHERE symbol LIKE '%.SR'`,
+                [],
+                { latest_value: null },
+            )),
+            dbGetSafe(
+                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA' AND symbol LIKE '%.SR'`,
+                [],
+                null,
+            ).then(row => row || dbGetSafe(
+                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE symbol LIKE '%.SR'`,
+                [],
+                { latest_value: null },
+            )),
+            dbGetSafe(
+                `SELECT MAX(COALESCE(computed_at, valuation_date)) AS latest_value FROM ksa_dcf_valuations`,
+                [],
+                null,
+            ).then(row => row || dbGetSafe(
+                `SELECT MAX(valuation_date) AS latest_value FROM ksa_dcf_valuations`,
+                [],
+                { latest_value: null },
+            )),
         ]);
 
         res.json({
