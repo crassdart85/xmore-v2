@@ -28,14 +28,14 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
   - `engines/timemachine.py`
 - Changes:
   - investment amount labels and validation copy now use `SAR` / `ريال`
-  - Time Machine subtitle keeps TASI framing without user-visible EGX wording
+  - Time Machine subtitle keeps TASI framing without user-visible Tadawul wording
   - frontend now normalizes legacy benchmark payload fields like `egx30_value` / `egx30_return_pct` into a benchmark/TASI view before rendering charts and tables
-  - simulation validation and server-side logs now refer to SAR instead of EGP
+  - simulation validation and server-side logs now refer to SAR instead of SAR
 - Operational rule:
   - for KSA deployment UI, payload compatibility with legacy field names is acceptable internally, but user-visible labels must always present TASI/SAR terminology
 
 ## Mar 25, 2026 - KSA Track Record Route + API Alignment
-- Found that the KSA deployment was serving the generic `/track-record` page, which is wired to EGX endpoints and showed EGX data on `xmore-ksa.onrender.com`.
+- Found that the KSA deployment was serving the generic `/track-record` page, which is wired to Tadawul endpoints and showed Tadawul data on `xmore-ksa.onrender.com`.
 - Fixed KSA track record routing and data wiring:
   - `web-ui/server.js`
     - `/track-record` now redirects to `/ksa/track-record` on the KSA deployment
@@ -45,10 +45,10 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
   - `web-ui/routes/ksa-track-record.js`
     - replaced invalid `await db.all(...)` / `await db.get(...)` usage with local promise wrappers around the callback-style DB adapter from `server.js`
 - Result:
-  - the public KSA track record route now points at the KSA page instead of the EGX page
+  - the public KSA track record route now points at the KSA page instead of Tadawul page
   - KSA API handlers no longer fail just because of callback/promise mismatch
 - Operational rule:
-  - on the KSA deployment, never point `/track-record` at the generic EGX page
+  - on the KSA deployment, never point `/track-record` at the generic Tadawul page
   - route handlers mounted under Express must match the callback-style DB adapter unless they explicitly wrap it in promises
 
 ## Mar 25, 2026 - Full Branch Validation + Live Production Smoke
@@ -97,15 +97,15 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
   - keep branch-local KSA workflows branch-aware for manual runs
   - keep default-branch KSA scheduling in sync with `xmore-ksa` workflow logic
 
-## Mar 25, 2026 - Performance Metrics EGX Basis Fix
-- Fixed `engines/performance_metrics.py` to stop inheriting KSA compatibility aliases for EGX Sharpe/Sortino/reporting defaults.
-- EGX reporting constants are now explicit in the metrics module:
-  - `EGX_RISK_FREE_RATE_ANNUAL = 0.2725`
-  - `EGX_TRADING_DAYS_PER_YEAR = 247`
-- `EGX_ROUND_TRIP_RATE` remains imported from execution config.
-- Result:
-  - shared performance-metrics test suite now passes on `xmore-ksa`
-  - branch verification is green across frontend checks, Python compile checks, and `pytest`
+## Mar 25, 2026 - Performance Metrics Tadawul Basis Fix
+- Fixed `engines/performance_metrics.py` to stop inheriting KSA compatibility aliases for Tadawul Sharpe/Sortino/reporting defaults.
+- **Updated Apr 5, 2026**: Constants now source from `TADAWUL_CONFIG` with KSA values:
+  - `EGX_RISK_FREE_RATE_ANNUAL = 0.0489` (SAIBOR 3M; legacy variable name retained for compat)
+  - `KSA_TRADING_DAYS_PER_YEAR = 250` (Tadawul: Sun–Thu)
+  - `EGX_ROUND_TRIP_RATE = 0.00382` (38.2 bps round-trip)
+- Sharpe/Sortino now correctly convert % returns to decimal before dividing by RF rate.
+- Max drawdown and equity curves now compound instead of summing.
+- 99 tests pass (52 original + 47 new financial validation tests).
 
 ## Mar 20, 2026 — Hamburger Menu Cleanup + Time Machine Validation
 - **Hamburger menu icon removal**: Stripped all emoji icon prefixes from mobile menu items across all 6 pages (`landing.html`, `session.html`, `pro.html`, `track-record.html`, `index.html`, `docs.html`)
@@ -148,8 +148,8 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `web-ui/migrations/008_model_portfolios.sql` - **NEW** Portfolio tables migration (model_portfolios, portfolio_allocations, portfolio_performance)
 - `sentiment.py` - Finnhub news + FinBERT + VADER dual-engine sentiment
 - `features.py` - 40+ TA-Lib technical indicators with pure Python fallback
-- `data/egx_live_scraper.py` - EGX live feed scraper with yfinance fallback
-- `data/egx_name_mapping.py` - Bilingual company name auto-generator
+- `xmore_data/` - KSA/Tadawul market data provider layer (EODHD primary, yfinance fallback)
+- `data/ksa_ticker_map.py` - KSA ticker-to-name mapping
 - `agents/agent_consensus.py` - Accuracy-weighted consensus voting agent
 - `database.py` - Database connection + table creation (now includes performance tables)
 - `TERMS.md` - Legal terms of service
@@ -162,7 +162,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 ## GitHub Actions Schedule
 | Task | Schedule | Script |
 |------|----------|---------|
-| EGX Data Collection | Sun-Thu 12:30 PM EST | `collect_data.py` (EGX live â†’ yfinance) |
+| KSA Data Collection | Sun-Thu 10:00 AM AST | `collect_data.py` (EODHD → yfinance) |
 | US Data + Sentiment | Mon-Fri 4:30 PM EST | `collect_data.py` + `sentiment.py` |
 | Predictions | Sun-Fri 5:00 PM EST (daily, 1-day) | `run_agents.py` (incl. Consensus, Trades, Performance Eval) |
 | Portfolio Generation | Daily (after predictions) | `engines/generate_portfolios.py` (needs: daily-predictions) |
@@ -190,12 +190,12 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `Volume_Spike_Agent` - Volume analysis
 - `Consensus` - Accuracy-weighted vote across all agents (Phase 1)
 - **Trade Recommendation Engine** - Generates actionable Buy/Sell signals with entry/exit targets (Phase 2)
-- **Performance Evaluation Engine** - Resolves outcomes, calculates alpha vs EGX30 benchmark, agent accuracy snapshots (Phase 3)
+- **Performance Evaluation Engine** - Resolves outcomes, calculates alpha vs TASI benchmark, agent accuracy snapshots (Phase 3)
 
 ## UI Features (Updated Feb 2026)
 1. **Tab Navigation** - Predictions, Performance, Results, Prices tabs
 2. **Performance Dashboard (v2)** - Investor-grade dashboard with key metrics cards, equity curve chart, agent accuracy table, best/worst stocks, recent predictions, rolling windows, integrity section, and audit log modal
-3. **TradingView Ticker Tape** - Live EGX30 + major stocks at top
+3. **TradingView Ticker Tape** - Live TASI + major KSA stocks at top
 4. **TradingView Mini Charts** - Lazy-loaded per-stock charts (click to load)
 5. **Signal Terminology** - "Bullish/Bearish/Neutral" instead of "UP/DOWN/HOLD"
 6. **Agent Accuracy Badges** - Per-agent accuracy shown on prediction cards
@@ -205,7 +205,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 10. **Bilingual Support (EN/AR)** - Language switcher with RTL support
 11. **Grouped Predictions** - Stock shown once with rowspan for multiple agents
 12. **Agent Tooltips** - Hover descriptions explaining each agent (bilingual)
-13. **Company Name Mapping** - US and EGX stocks with full names (bilingual)
+13. **Company Name Mapping** - KSA stocks with full names (bilingual EN/AR)
 14. **Color-coded Accuracy** - Green (60%+), Yellow (40-60%), Red (<40%)
 15. **Responsive Design** - Breakpoints: 1024px, 768px, 480px, 360px
 16. **Sentiment Badges** - Bullish/Neutral/Bearish badges per stock
@@ -216,7 +216,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 21. **Portfolio Tracker** - "Portfolio" tab showing open positions and history (Phase 2)
 22. **Trade Cards** - detailed visual cards with Conviction, R/R ratio, and bilingual reasoning
 23. **Portfolio Performance** - Real-time P&L tracking for virtual portfolio
-24. **Equity Curve Chart** - Canvas-rendered cumulative return chart (Xmore vs EGX30 benchmark) with period selector
+24. **Equity Curve Chart** - Canvas-rendered cumulative return chart (Xmore vs TASI benchmark) with period selector
 25. **Agent Accuracy Table** - Per-agent 30d/90d win rate, predictions count, avg confidence
 26. **Audit Trail Modal** - View all prediction modification logs for full transparency
 27. **Integrity Section** - Immutability status, audit trail, live-only indicator, minimum threshold progress
@@ -238,7 +238,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `/api/performance-v2/summary` - **NEW** Investor-grade overall performance + rolling metrics
 - `/api/performance-v2/by-agent` - **NEW** Per-agent accuracy comparison (latest daily snapshot)
 - `/api/performance-v2/by-stock?days=N` - **NEW** Per-stock performance breakdown
-- `/api/performance-v2/equity-curve?days=N` - **NEW** Cumulative return series (Xmore vs EGX30)
+- `/api/performance-v2/equity-curve?days=N` - **NEW** Cumulative return series (Xmore vs TASI)
 - `/api/performance-v2/predictions/open` - **NEW** Currently open (unresolved) predictions
 - `/api/performance-v2/predictions/history?page=N&limit=N` - **NEW** Auditable prediction history
 - `/api/performance-v2/audit?limit=N` - **NEW** Prediction modification audit trail
@@ -255,7 +255,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - `GET /api/portfolios/:type` - Full allocation detail for a portfolio type (preview: free / full: auth)
 - `GET /api/portfolios/:type/performance` - Historical performance + metrics
 - `GET /api/portfolios/:type/history` - All past snapshots and rebalances (auth)
-- `GET /api/portfolios/:type/compare` - Side-by-side with EGX30
+- `GET /api/portfolios/:type/compare` - Side-by-side with TASI
 - `POST /api/portfolios/simulate` - Simulate allocation with custom amount (auth)
 - `GET /api/portfolios/changes` - Latest rebalance changes (auth)
 
@@ -322,7 +322,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - **Auto-deactivation**: PostgreSQL trigger deactivates previous active portfolio of same type on new insert
 
 ## Notes
-- EGX stocks use `.CA` suffix (e.g., `COMI.CA`)
+- KSA stocks use `.SR` suffix (e.g., `2222.SR`)
 - Language preference stored in localStorage
 - Dark mode preference stored in localStorage (key: `theme`)
 - Server runs on port 3000 locally
@@ -331,7 +331,7 @@ Stock trading prediction system with web dashboard. Uses multiple AI agents to p
 - Prediction horizon: 1 day (changed from 7 days for faster evaluation)
 
 \n\n## Mar 14, 2026 — UI/Deploy Fixes\n\n## Mar 14, 2026 — RAG Assistant Update\n- /api/rag/chat now pulls from all RAG sources: market reports, ETF documents, embedded news/event intel chunks.\n- Added semantic matching against 
-ews_rag_chunks and included custom news sources in context when available.\n- Updated EGX knowledge block to list all internal data sources used by the assistant.\n\n- **Render boot crash**: fixed a duplicate catch block in web-ui/routes/performance.js that caused SyntaxError: missing ) after argument list on startup.\n- **Header cleanup**: removed absolute positioning from header controls and user info bar to prevent overlap; tightened small-screen behavior in web-ui/public/style.css + web-ui/public/auth.css.\n- **Snapshot bar**: removed \u201cLive-Only Data\u201d pill from the global performance snapshot bar (web-ui/public/app.js, web-ui/public/style.css).\n\n## Recent Changes (Feb 2026)
+ews_rag_chunks and included custom news sources in context when available.\n- Updated Tadawul knowledge block to list all internal data sources used by the assistant.\n\n- **Render boot crash**: fixed a duplicate catch block in web-ui/routes/performance.js that caused SyntaxError: missing ) after argument list on startup.\n- **Header cleanup**: removed absolute positioning from header controls and user info bar to prevent overlap; tightened small-screen behavior in web-ui/public/style.css + web-ui/public/auth.css.\n- **Snapshot bar**: removed \u201cLive-Only Data\u201d pill from the global performance snapshot bar (web-ui/public/app.js, web-ui/public/style.css).\n\n## Recent Changes (Feb 2026)
 - **Time Machine Short-Window No-Data Fix (Feb 18, 2026)**:
   - Increased Time Machine historical warmup window in `engines/timemachine_data.py` from 60 to 180 days so recent start dates still have enough context for indicators.
   - Relaxed strict preflight in `engines/timemachine.py` to validate in-range price availability (instead of requiring 50-row history per symbol), preventing false "insufficient data" failures.
@@ -344,10 +344,10 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - Added resilient database fallback path in `engines/timemachine_data.py` for missing Yahoo symbols:
     - PostgreSQL `prices` via `DATABASE_URL` (production/Render)
     - SQLite `stocks.db` (local fallback)
-  - Result: Time Machine simulation now succeeds for affected short ranges (including `2025-11-18`) even when Yahoo has partial EGX outages.
+  - Result: Time Machine simulation now succeeds for affected short ranges (including `2025-11-18`) even when Yahoo has partial Tadawul outages.
 - **Event Intelligence + Arabic Sentiment Layer (Feb 18, 2026)**:
   - Added new production package `xmore_event_intel/` with full modular architecture:
-    - Source scrapers: Enterprise, Daily News Egypt, Egypt Today, Mubasher Info, and EGX disclosures (`sources/*.py`)
+    - Source scrapers: Enterprise, Daily News Egypt, Egypt Today, Mubasher Info, and Tadawul disclosures (`sources/*.py`)
     - Arabic sentiment stack: preprocessor, deterministic lexicon, strict JSON-schema LLM extractor (`arabic_sentiment/*.py`)
     - Deterministic event tagging engine (`event_tagging.py`)
     - Structured earnings delta extraction (`earnings_extractor.py`)
@@ -357,12 +357,12 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - Live test executed successfully:
     - Command: `XMORE_EVENT_MAX_ARTICLES_PER_SOURCE=3`, `XMORE_EVENT_DELAY_SECONDS=0.1`, `XMORE_EVENT_TIMEOUT_SECONDS=8`, `XMORE_EVENT_MAX_RETRIES=1`, then `python -m xmore_event_intel.main --limit 10 --log-level INFO`
     - Result: `articles_collected=6`, `articles_processed=6`, `rolling_accuracy_30=None`, `corr_1d=None`, `corr_3d=None`, `corr_5d=None`
-    - Runtime observations: some sources were skipped due robots/availability constraints (Daily News Egypt, Egypt Today, EGX robots fetch instability), while pipeline remained compliant and completed.
+    - Runtime observations: some sources were skipped due robots/availability constraints (Daily News Egypt, Egypt Today, Tadawul robots fetch instability), while pipeline remained compliant and completed.
 - **Time Machine Data Reliability Upgrade (Feb 18, 2026)**:
-  - Refactored `engines/timemachine_data.py` to use a multi-source fetch strategy for EGX30 history:
+  - Refactored `engines/timemachine_data.py` to use a multi-source fetch strategy for TASI history:
     - Source 1: `yfinance` batch download (primary path)
     - Source 2: direct Yahoo Finance v8/chart API fallback per-symbol via `requests`
-    - Source 3: computed `^EGX30` equal-weight proxy benchmark from available EGX30 component prices
+    - Source 3: computed `^TASI` equal-weight proxy benchmark from available TASI component prices
   - Added direct API parser and resilient row shaping for missing OHLC fields and null closes.
   - Added browser-like request headers and a small per-symbol delay in fallback mode to reduce Yahoo rate-limit failures.
   - Updated logging and fetch summary flow to clearly report batch coverage, fallback-recovered symbols, and proxy creation status.
@@ -439,7 +439,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - Added `web-ui/scripts/check-frontend-exports.js` to fail builds on recursive `window.*` export wrappers
   - Added `npm run check` in `web-ui/package.json` to run recursion guard + `node --check` on frontend JS files
 - **Institutional Dashboard UX Upgrade (Feb 12, 2026)**:
-  - Added **Global Performance Snapshot Bar** under header with live-only badge, 30D alpha vs EGX30, 30D Sharpe, 30D max drawdown, 30D rolling win rate, and 100-trade progress bar
+  - Added **Global Performance Snapshot Bar** under header with live-only badge, 30D alpha vs TASI, 30D Sharpe, 30D max drawdown, 30D rolling win rate, and 100-trade progress bar
   - Refactored **Predictions tab** to be **stock-first** (consensus signal, agreement %, conviction, recent symbol accuracy) with expandable per-agent breakdown and structured "Why This Signal?" grid
   - Rebuilt **Performance tab** into institutional section flow:
     - Proof of Edge (alpha/sharpe/drawdown + upgraded equity curve)
@@ -452,7 +452,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
     - Watch: borderline metrics
     - Degraded: weakening profile
   - Upgraded **equity curve chart** (canvas) with:
-    - Hover tooltip (Xmore return, EGX30 return, alpha)
+    - Hover tooltip (Xmore return, TASI return, alpha)
     - Toggle benchmark line on/off
     - Toggle drawdown shading on/off
     - Mobile-responsive interaction model
@@ -463,7 +463,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - **Bug Fixes (Critical)**:
   - Fixed `init-db.js` missing `sentiment_scores` table creation (sync with `database.py`)
   - Fixed `agents/agent_ma.py` off-by-one error and "fresh crossover" logic flaw
-  - Fixed `lxml` dependency for EGX live scraper
+  - Fixed `lxml` dependency for data scraper
   - Added `finnhub-python` dependency for sentiment analysis
 - **TDZ Fix**: `applyTheme()` crashed accessing `const TRANSLATIONS` before init; wrapped in try/catch
 - **Predictions Workflow Fix**: Removed broken `needs: daily-collection` dependency that prevented `daily-predictions` from ever running on schedule
@@ -474,7 +474,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - **GitHub Actions Upgraded**: All jobs now use `actions/checkout@v4`
 
 ## Phase 1 Upgrade (Feb 2026)
-- **EGX Live Scraper**: `data/egx_live_scraper.py` scrapes live EGX feed with yfinance fallback
+- **KSA Data Provider**: `xmore_data/` provides EODHD-first Tadawul data with yfinance fallback
 - **TA-Lib Integration**: `features.py` rewritten with 40+ indicators, pure Python fallback
 - **VADER Sentiment**: Dual-engine (VADER fast + FinBERT deep) with auto mode and source weighting
 - **Performance Dashboard**: Tabbed UI, per-agent/per-stock stats, monthly accuracy chart (canvas)
@@ -484,7 +484,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - **Dependencies Added**: `lxml`, `vaderSentiment`, `quantstats`, `TA-Lib`
 
 ## Phase 3 Upgrade: Performance System (Feb 12, 2026)
-- **Performance Evaluation Engine** (`engines/evaluate_performance.py`): Resolves 1d/5d outcomes, calculates EGX30 benchmark returns + alpha, updates agent accuracy snapshots, refreshes materialized views
+- **Performance Evaluation Engine** (`engines/evaluate_performance.py`): Resolves 1d/5d outcomes, calculates TASI benchmark returns + alpha, updates agent accuracy snapshots, refreshes materialized views
 - **Performance Metrics Calculator** (`engines/performance_metrics.py`): Sharpe ratio, Sortino ratio, max drawdown, profit factor, rolling windows, equity curve data, agent comparison
 - **Investor-Grade API** (`web-ui/routes/performance.js`): 7 public endpoints under `/api/performance-v2/` â€” summary, by-agent, by-stock, equity-curve, predictions/open, predictions/history, audit
 - **Performance Dashboard** (`web-ui/public/performance-dashboard.js` + `.css`): Premium dark/light dashboard with key metrics grid, canvas equity curve chart, agent accuracy table, stock chips, prediction history pagination, audit modal, integrity section, bilingual support
@@ -500,7 +500,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 
 
 ## xmore_data Verification + Runtime Hardening (Feb 15, 2026)
-- Completed an end-to-end verification of the EGX data ingestion layer implementation under `xmore_data/`.
+- Completed an end-to-end verification of Tadawul data ingestion layer implementation under `xmore_data/`.
 - Closed requirement gaps found during audit:
   - Added required public API wrappers in `xmore_data/data_manager.py`:
     - `fetch_egx_data(...)`
@@ -523,19 +523,19 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
   - `python -m py_compile xmore_data/config.py xmore_data/utils.py xmore_data/data_manager.py xmore_data/providers/alpha_vantage_provider.py xmore_data/main.py xmore_data/__init__.py` -> passed.
   - `python -m pytest xmore_data/test_data_manager.py -v -m "not slow"` -> passed (`23 passed, 1 deselected`).
 
-## RSS + EGX Web Adapter Live Test (Feb 15, 2026)
-- Added optional EGX web news adapter behind feature flag:
+## RSS + Tadawul Web Adapter Live Test (Feb 15, 2026)
+- Added optional Tadawul web news adapter behind feature flag:
   - `config.py` -> `EGX_CONFIG['use_egx_web_scraper'] = False` (default)
   - `rss_news_collector.py` -> `fetch_egx_web_news()` with anti-bot rejection detection and graceful fallback
   - Runtime toggle via env: `USE_EGX_WEB_SCRAPER=true`
-- Added Mubasher feed as high-priority EGX source:
+- Added Mubasher feed as high-priority Tadawul source:
   - `http://feeds.mubasher.info/en/EGX/news`
   - Priority note added in `rss_news_collector.py`
-- Added daily EGX snapshot automation:
+- Added daily Tadawul snapshot automation:
   - `xmore_data/daily_snapshot_job.py` (EGXPY-first with provider fallback, per-symbol exports + manifest)
   - `.github/workflows/scheduled-tasks.yml` new cron `0 14 * * 0-4` and artifact upload
   - `xmore_data/data_manager.py` source tracking (`cache` / provider name)
-- Live test executed with EGX web adapter enabled:
+- Live test executed with Tadawul web adapter enabled:
   - Command: `USE_EGX_WEB_SCRAPER=true python -c "from rss_news_collector import collect_rss_news; ..."`
   - Result:
     - `feeds_processed`: 6
@@ -546,7 +546,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
     - `egx_web_articles_fetched`: 0
     - `egx_web_articles_saved`: 0
     - `errors`: 0
-  - Interpretation: RSS path is working in live mode; EGX website adapter remained non-blocking and returned 0 candidates (no runtime failure).
+  - Interpretation: RSS path is working in live mode; Tadawul website adapter remained non-blocking and returned 0 candidates (no runtime failure).
 - Environment note:
   - Installed missing dependency for live run: `feedparser` (global python env).
 
@@ -644,7 +644,7 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - Fixed critical pipeline bug in `run_agents.py` where multiple functions used `database.get_connection()` despite importing `get_connection` directly.
   - Result: removed `name 'database' is not defined` failures that blocked trade recommendation and briefing generation during daily pipeline runs.
 - Added watchlist seeding in `generate_daily_trade_recommendations(...)`:
-  - Active users with no `user_watchlist` rows now receive a baseline set of 10 EGX30 symbols.
+  - Active users with no `user_watchlist` rows now receive a baseline set of 10 KSA universe symbols.
   - Recommendation generation then runs for all active users with watchlists.
 - Relaxed trades API behavior in `web-ui/routes/trades.js`:
   - `GET /api/trades/today` now falls back to the userâ€™s latest available recommendation date when today has no rows.
@@ -755,13 +755,13 @@ ews_rag_chunks and included custom news sources in context when available.\n- Up
 - KSA deployment URL split corrected:
   - `https://xmore-ksa.onrender.com/` is now the canonical KSA dashboard route
   - `https://xmore-ksa.onrender.com/track-record` is now the canonical KSA track-record route
-  - KSA market switcher now points the EGX button to `https://xmore-project.onrender.com/`
+  - KSA market switcher now points Tadawul button to `https://xmore-project.onrender.com/`
   - legacy `/ksa` and `/ksa/track-record` paths remain only as redirects for compatibility
   - updated `web-ui/server.js`, `web-ui/public/ksa-dashboard.html`, and `web-ui/public/ksa-track-record.html`
 - KSA track-record now uses the full public track-record page stack instead of the slim KSA-only variant:
   - `/track-record` now serves `web-ui/public/track-record.html`
   - `web-ui/routes/track-record.js` was hardened for KSA-only data (`market_id = 'KSA'`)
-  - EGX joins/labels/risk-free assumptions were replaced with KSA/TASI equivalents
+  - Tadawul joins/labels/risk-free assumptions were replaced with KSA/TASI equivalents
   - agent, prediction log, sector, regime, and distribution endpoints now read KSA-compatible columns
 - Remaining audit gap:
   - backtests are now materially friction-aware, but they still do not simulate the full stop-loss lifecycle with explicit gap-through-stop execution behavior end-to-end.

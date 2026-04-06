@@ -1,4 +1,4 @@
-# Xmore — AI-Powered Market Intelligence Platform
+﻿# Xmore — AI-Powered Market Intelligence Platform
 ### Business Presentation Deck · March 2026
 
 ---
@@ -6,22 +6,22 @@
 ## SLIDE 1 — TITLE
 
 # XMORE
-## AI-Powered Stock Intelligence for the Egyptian Exchange
+## AI-Powered Stock Intelligence for the Saudi Exchange
 
 **Predict. Track. Outperform.**
 
 > Real-time AI consensus signals, portfolio analytics, and market intelligence
-> built for EGX traders and investment professionals.
+> built for Tadawul traders and investment professionals.
 
 ---
 
 ## SLIDE 2 — THE PROBLEM
 
-### Egyptian market investors lack institutional-grade tools
+### Saudi market investors lack institutional-grade tools
 
 | Challenge | Current Reality |
 |-----------|----------------|
-| Signal overload | 190+ EGX stocks, no unified view |
+| Signal overload | 190+ Tadawul stocks, no unified view |
 | Lag in analysis | Manual research takes hours after close |
 | No accountability | Predictions made with no outcome tracking |
 | Data fragmentation | Prices, news, FX, ETFs — all separate tools |
@@ -63,7 +63,7 @@ Gemini LLM       →  ─┘
 | < 40 | **LOW** | Bearish pressure dominant |
 
 - Composite of: bull ratio (30%), bear inverse (25%), agent agreement (25%), avg confidence (20%)
-- Updated daily after EGX close
+- Updated daily after Tadawul close
 - Color-coded throughout the platform: **green ≥ 70**, **red < 45**
 
 ---
@@ -74,7 +74,7 @@ Gemini LLM       →  ─┘
 
 **What you see each morning before market open:**
 
-| Symbol | Signal | Confidence | Xmore Score | Agents | Price (EGP) |
+| Symbol | Signal | Confidence | Xmore Score | Agents | Price (SAR) |
 |--------|--------|-----------|-------------|--------|-------------|
 | COMI | **BUY** | 87% | 78 | 4 / 5 | 62.40 |
 | EKHW | **BUY** | 72% | 66 | 3 / 5 | 18.90 |
@@ -90,12 +90,12 @@ Gemini LLM       →  ─┘
 
 ### Side-by-Side Multi-Stock Analysis in Seconds
 
-Compare up to **4 EGX stocks simultaneously** across all AI dimensions:
+Compare up to **4 Tadawul stocks simultaneously** across all AI dimensions:
 
 - Consensus signal & confidence
 - Xmore Score (bull pressure index)
 - Bull / Bear ratio breakdown
-- Last price in EGP
+- Last price in SAR
 - One-click **AI Brief** for each stock
 
 **Use case:** Portfolio manager screening sector rotation — compare COMI vs QNBE vs CIEB
@@ -125,17 +125,17 @@ Every stock generates a structured brief covering:
 
 ## SLIDE 8 — VIRTUAL PORTFOLIO
 
-### Full EGP Portfolio Tracking with Live P&L
+### Full SAR Portfolio Tracking with Live P&L
 
 **Real-time accounting for every position:**
 
 | Feature | Detail |
 |---------|--------|
 | Position tracking | Symbol, entry price, quantity, entry date |
-| Live P&L | Cost EGP vs. current market value EGP |
+| Live P&L | Cost SAR vs. current market value SAR |
 | Trade history | All closed trades with win rate + avg return |
 | Sector allocation | Visual bar chart — concentration risk at a glance |
-| Totals strip | Invested / Market Value / P&L (EGP) / Return % |
+| Totals strip | Invested / Market Value / P&L (SAR) / Return % |
 
 **Add a trade in 3 clicks.** Close with a single entry. All calculations are automatic.
 
@@ -145,14 +145,14 @@ Every stock generates a structured brief covering:
 
 ### Automated Threshold Monitoring — No Background Job Required
 
-Set **above / below** price alerts for any EGX stock:
+Set **above / below** price alerts for any Tadawul stock:
 
 - Alert fires when current price crosses your target
 - Checked automatically when Portfolio tab loads
 - Current live price shown on every alert row
 - Up to **20 active alerts** per user account
 
-**Example:** Alert on COMI above 64.00 EGP — catch breakouts without watching a screen all day.
+**Example:** Alert on COMI above 64.00 SAR — catch breakouts without watching a screen all day.
 
 > Alerts are stored per user. No SMS or email push yet — notification appears inline
 > when you open the platform.
@@ -161,19 +161,19 @@ Set **above / below** price alerts for any EGX stock:
 
 ## SLIDE 10 — RATES TAB *(New)*
 
-### Live FX & Gold Intelligence for EGX Context
+### Live FX & Gold Intelligence for Tadawul Context
 
 **Live rate cards updated on every page load:**
 
 | Rate | Description |
 |------|-------------|
-| USD / EGP | Egyptian Pound exchange rate |
+| USD / SAR | Saudi Riyal exchange rate |
 | USD / SAR | Saudi Riyal for cross-border investors |
-| SAR / EGP | Direct SAR conversion |
+| SAR / SAR | Direct SAR conversion |
 | XAU / USD | Spot gold price (troy oz) |
-| Gold 24K / gram (EGP) | Retail gold benchmark |
-| Gold 21K / gram (EGP) | Most common Egyptian jewelry standard |
-| Gold Pound (EGP) | 8g of 21K — Egyptian investor benchmark |
+| Gold 24K / gram (SAR) | Retail gold benchmark |
+| Gold 21K / gram (SAR) | Most common Saudi jewelry standard |
+| Gold Pound (SAR) | 8g of 21K — Saudi investor benchmark |
 
 **90-day sparkline history** charts for each rate — auto-accumulating daily record.
 
@@ -238,9 +238,9 @@ return for each position using all active agents:
 
 ## SLIDE 14 — ETF DASHBOARD
 
-### EGX and Global Egypt-Focused ETFs in One View
+### Tadawul and Global Egypt-Focused ETFs in One View
 
-**Local EGX ETFs (via Mubasher):**
+**Local Tadawul ETFs (via Mubasher):**
 - ~14 funds tracked including equity, commodity, and balanced funds
 - Price, NAV, premium/discount, fund volume
 - Holdings modal with top positions and weights
@@ -250,7 +250,7 @@ return for each position using all active agents:
 - Dedicated ETPs tab for quick filtering
 
 **Global ETFs (NYSE/NASDAQ):**
-- EGPT, EEMX, FM, FRDM — Egypt-exposure funds
+- SART, EEMX, FM, FRDM — Egypt-exposure funds
 - Daily price, change %, volume
 - Country exposure breakdown
 
@@ -264,12 +264,12 @@ Standalone screen at `/pro` — designed for all-day market monitoring:
 
 | Module | Description |
 |--------|-------------|
-| EGX Advanced Chart | TradingView EGX30 live area chart |
-| Market Movers Table | Top EGX blue chips with live consensus |
+| Tadawul Advanced Chart | TradingView TASI live area chart |
+| Market Movers Table | Top Tadawul blue chips with live consensus |
 | Top Gainers / Losers | 8-row session leaderboards |
 | Sector Performance | Horizontal P&L bars per sector |
-| FX Strip | Live USD/EGP, USD/SAR, SAR/EGP in header |
-| Macro Brief | Gemini-grounded Egyptian economy overview |
+| FX Strip | Live USD/SAR, USD/SAR, SAR/SAR in header |
+| Macro Brief | Gemini-grounded Saudi economy overview |
 | Walk-Forward Backtest | Historical directional accuracy per stock |
 
 **Fully bilingual — English / Arabic RTL.**
@@ -278,12 +278,12 @@ Standalone screen at `/pro` — designed for all-day market monitoring:
 
 ## SLIDE 16 — MACRO BRIEF
 
-### Real-Time Egyptian Economy Intelligence
+### Real-Time Saudi Economy Intelligence
 
 Powered by **Gemini 2.5 Flash with Google Search Grounding** (not training data):
 
-- EGX30 index level and trend
-- USD/EGP current rate
+- TASI index level and trend
+- USD/SAR current rate
 - Inflation and interest rate context
 - Key session movers and macro catalysts
 - **3 clickable web source citations** per brief
@@ -315,7 +315,7 @@ Arabic-aware — keyword extraction works in both languages.
 
 ## SLIDE 18 — TIME MACHINE
 
-### Replay Any Past EGX Session
+### Replay Any Past Tadawul Session
 
 Select any historical trading date to see:
 
@@ -333,7 +333,7 @@ excel or struggle in before increasing position sizes.
 
 ### Statistical Confidence Before You Commit Capital
 
-Every Sunday, a walk-forward backtest runs across all tracked EGX stocks:
+Every Sunday, a walk-forward backtest runs across all tracked Tadawul stocks:
 
 | Metric | What It Measures |
 |--------|-----------------|
@@ -369,14 +369,14 @@ which stocks the models predict most reliably.
 
 ### Data Pipeline Runs Automatically — Every Trading Day
 
-| Job | Time (Cairo) | Function |
+| Job | Time (Riyadh) | Function |
 |-----|-------------|----------|
 | Intraday Prices | 09:00–14:00 | Live price updates during session |
 | News Collection | 09:00 / 11:00 / 13:00 | Headlines + RSS ingestion |
 | Post-Market Pipeline | 14:30 | Close prices → sentiment → agent signals |
-| EGX Snapshot | 16:00 | Full daily data export |
+| Tadawul Snapshot | 16:00 | Full daily data export |
 | Nightly Pipeline | 00:00 | AI briefs, portfolio updates |
-| ETF Collection | 15:30 | EGX ETF prices, NAV, holdings |
+| ETF Collection | 15:30 | Tadawul ETF prices, NAV, holdings |
 | Global ETF Prices | 23:30 | NYSE/NASDAQ ETF data |
 | Weekly Backtest | Sunday 09:00 | Walk-forward accuracy run |
 
@@ -425,11 +425,11 @@ which stocks the models predict most reliably.
 
 | Capability | Bloomberg Terminal | Reuters Eikon | Local Broker Apps | **Xmore** |
 |-----------|-------------------|--------------|------------------|-----------|
-| EGX AI Signals | ✗ | ✗ | ✗ | ✅ |
+| Tadawul AI Signals | ✗ | ✗ | ✗ | ✅ |
 | 5-Agent Consensus | ✗ | ✗ | ✗ | ✅ |
 | Signal Outcome Tracking | ✗ | ✗ | ✗ | ✅ |
 | Arabic UI (full RTL) | Partial | Partial | Some | ✅ |
-| EGX ETF + Gold Rates | Partial | Partial | ✗ | ✅ |
+| Tadawul ETF + Gold Rates | Partial | Partial | ✗ | ✅ |
 | Forecast Portfolios | ✗ | ✗ | ✗ | ✅ |
 | Monthly Cost | $2,000+ | $1,800+ | Free | **Fraction** |
 
@@ -440,7 +440,7 @@ which stocks the models predict most reliably.
 ### Who Uses Xmore
 
 **Individual investors**
-Daily signal review before market open. Portfolio tracking in EGP. Price alerts.
+Daily signal review before market open. Portfolio tracking in SAR. Price alerts.
 
 **Fund managers & analysts**
 Multi-stock comparison. Sector performance. Walk-forward backtest confidence metrics.
@@ -464,7 +464,7 @@ strategy review. Intraday price updates.
 - ✅ 5 AI agents + Xmore Score
 - ✅ Bloomberg-style terminal UI
 - ✅ Forecast portfolios with D+5/10/20 evaluation
-- ✅ ETF dashboard (EGX + Global)
+- ✅ ETF dashboard (Tadawul + Global)
 - ✅ Commodity ETPs tab
 - ✅ FX + Gold rates with 90-day history
 - ✅ Price alerts, Stock comparison, AI briefs
@@ -484,7 +484,7 @@ strategy review. Intraday price updates.
 ## SLIDE 27 — CLOSING
 
 # XMORE
-## The Intelligence Layer for EGX Investors
+## The Intelligence Layer for Tadawul Investors
 
 **5 AI agents. Daily signals. Full accountability.**
 
@@ -494,5 +494,5 @@ Documentation: **/docs**
 
 ---
 
-*Xmore — AI Stock Prediction for EGX & Global Markets*
+*Xmore — AI Stock Prediction for Tadawul & Global Markets*
 *© 2026 — Confidential business presentation*

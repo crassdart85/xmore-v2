@@ -1,4 +1,4 @@
-# Xmore Project - 5 Key Improvement Recommendations
+﻿# Xmore Project - 5 Key Improvement Recommendations
 
 ## 1. Move Hardcoded Secrets to Environment Variables
 

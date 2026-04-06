@@ -1,4 +1,4 @@
-# 📊 Performance Tracking & Validation System
+﻿# 📊 Performance Tracking & Validation System
 
 ## Document Control
 
@@ -12,7 +12,7 @@
 
 ## 1. Overview
 
-The Xmore Performance System provides **investor-grade, auditable** tracking of all AI predictions. It enforces immutability of core prediction data, calculates professional financial metrics (Sharpe ratio, alpha, drawdown), compares performance against the EGX30 benchmark, and exposes public API endpoints for transparency.
+The Xmore Performance System provides **investor-grade, auditable** tracking of all AI predictions. It enforces immutability of core prediction data, calculates professional financial metrics (Sharpe ratio, alpha, drawdown), compares performance against the TASI benchmark, and exposes public API endpoints for transparency.
 
 ### Design Principles
 - **Immutability**: Predictions cannot be modified after creation (enforced at DB level via PostgreSQL triggers)
@@ -32,16 +32,16 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | `prediction_audit_log` | Logs every modification to outcome fields on trade_recommendations |
 | `agent_performance_daily` | Stores daily snapshots of per-agent rolling accuracy (30d, 90d) |
 | `agent_weights_log` | Audit trail for softmax dynamic agent weights (agent_name, weight, accuracy, sample_size, computed_at) |
-| `macro_indicators` | Cached Egypt macro data: CBE rate, USD/EGP, CPI YoY, GDP growth (indicator, value, period, source, fetched_at) |
+| `macro_indicators` | Cached KSA macro data: SAMA repo rate, USD/SAR, CPI YoY, GDP growth (indicator, value, period, source, fetched_at) |
 | `job_locks` | Advisory locking for pipeline coordination (job_name, locked_at, expires_at) |
 
 ### 2.2 Altered Columns (trade_recommendations)
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `benchmark_1d_return` | REAL | EGX30 1-day return on the same date |
+| `benchmark_1d_return` | REAL | TASI 1-day return on the same date |
 | `alpha_1d` | REAL | Xmore return minus benchmark return (1-day) |
-| `benchmark_5d_return` | REAL | EGX30 5-day return |
+| `benchmark_5d_return` | REAL | TASI 5-day return |
 | `alpha_5d` | REAL | Alpha for 5-day window |
 | `is_live` | BOOLEAN | TRUE for live predictions, FALSE for backtests |
 
@@ -64,7 +64,7 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 
 | Column | Type | Purpose |
 |--------|------|---------|
-| `benchmark_return_pct` | REAL | EGX30 return over the same holding period |
+| `benchmark_return_pct` | REAL | TASI return over the same holding period |
 | `alpha_pct` | REAL | Position return minus benchmark return |
 
 ### 2.4 PostgreSQL-Only Features
@@ -104,7 +104,7 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | `resolve_position_benchmarks()` | Calculates benchmark/alpha for closed user_positions |
 | `update_agent_accuracy_snapshot()` | Inserts daily agent accuracy into `agent_performance_daily` (PG only) |
 | `refresh_performance_views()` | Refreshes `mv_performance_global` materialized view (PG only) |
-| `get_benchmark_return(date, window)` | Fetches EGX30 return for a date + window combination |
+| `get_benchmark_return(date, window)` | Fetches TASI return for a date + window combination |
 | `compute_information_coefficient(lookback_days)` | Spearman rank correlation between signal_strength and actual_return over a rolling window |
 
 **Helpers**:
@@ -122,7 +122,7 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | `get_rolling_metrics(windows)` | Dict keyed by window ("30d", "90d"), with trades/win_rate/alpha per window |
 | `get_agent_comparison()` | List of agent dicts from `agent_performance_daily` |
 | `get_stock_performance(days)` | List of per-stock performance dicts |
-| `get_equity_curve(days)` | List of {date, xmore, egx30, alpha} points for charting |
+| `get_equity_curve(days)` | List of {date, xmore, tasi, alpha} points for charting |
 
 ---
 
@@ -222,14 +222,14 @@ The `engines/briefing_generator.py` now includes a `get_briefing_performance_sni
 
 ## 5. Discounted Cash Flow (DCF) Valuation Engine
 
-The DCF engine runs once per week (Sunday) and generates a **composite fair value** for each EGX Top-50 company.
+The DCF engine runs once per week (Sunday) and generates a **composite fair value** for each Tadawul Top-50 company.
 It outputs a signal that is used as an **additional agent input** for the consensus engine, providing a fundamental valuation layer on top of technical agents.
 
 ### 5.1 What it produces
 
 Each DCF run stores a record in `dcf_valuations` with:
-- **intrinsic_per_share** (EGP) — fair value from the model
-- **current_price** (EGP)
+- **intrinsic_per_share** (SAR) — fair value from the model
+- **current_price** (SAR)
 - **margin_of_safety** (discount/premium vs price)
 - **valuation_label** (`DEEP_VALUE`, `UNDERVALUED`, `FAIR`, `OVERVALUED`, `SPECULATIVE`)
 - **dcf_confidence** (`LOW`, `MEDIUM`, `HIGH`)
@@ -268,10 +268,10 @@ CREATE TABLE dcf_valuations (
 
 The DCF engine is implemented in the `agents/dcf/` directory:
 
-- **[dcf_config.py](../../agents/dcf/dcf_config.py)** — macro parameters (risk-free rate, market premium, Egypt-specific adjustments)
+- **[dcf_config.py](../../agents/dcf/dcf_config.py)** — macro parameters (risk-free rate, market premium, KSA-specific adjustments)
 - **[data_collector.py](../../agents/dcf/data_collector.py)** — fetches financial statements from yfinance
 - **[fcf_projector.py](../../agents/dcf/fcf_projector.py)** — projects 5-year quarterly free cash flows
-- **[wacc_calculator.py](../../agents/dcf/wacc_calculator.py)** — computes WACC with Egypt-calibrated parameters
+- **[wacc_calculator.py](../../agents/dcf/wacc_calculator.py)** — computes WACC with KSA-calibrated parameters
 - **[dcf_engine.py](../../agents/dcf/dcf_engine.py)** — two-stage DCF model (explicit period + terminal/Gordon growth)
 - **[scenario_runner.py](../../agents/dcf/scenario_runner.py)** — runs bull/base/bear scenar ios and composites the results
 - **[dcf_store.py](../../agents/dcf/dcf_store.py)** — persists results to database, emits signals
@@ -292,7 +292,7 @@ To run the DCF pipeline on demand (normally runs automatically on Sundays):
 # Activate virtual environment
 & .\.venv\Scripts\Activate.ps1
 
-# Run DCF for top 50 EGX companies
+# Run DCF for top 50 Tadawul companies
 python -m agents.dcf.run_dcf
 
 # Or run full pipeline including DCF

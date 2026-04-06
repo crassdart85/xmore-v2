@@ -1,4 +1,4 @@
-# Xmore — Project Guidelines
+﻿# Xmore — Project Guidelines
 
 Automated trading-signal platform currently running a **KSA-first Tadawul deployment** on the shared Xmore codebase. The multi-agent system generates 5-day predictions, evaluates performance, and serves results via a Node.js web UI and Streamlit dashboard.
 
@@ -12,7 +12,7 @@ Automated trading-signal platform currently running a **KSA-first Tadawul deploy
 | Web backend | Node.js + Express (`web-ui/`) |
 | Web frontend | Vanilla JS modules (`web-ui/public/`) — no React/Vue |
 | Dashboard | Streamlit (`dashboard.py`) |
-| CI/CD | GitHub Actions (`.github/workflows/scheduled-tasks.yml`) — KSA/Tadawul workflows with some legacy EGX jobs still present in the repo |
+| CI/CD | GitHub Actions (`.github/workflows/scheduled-tasks.yml`) — KSA/Tadawul workflows with some legacy Tadawul jobs still present in the repo |
 | Hosting | Render (`render.yaml`) and Vercel (`vercel.json`) |
 
 ## Build & Run
@@ -52,10 +52,10 @@ Test files live in `tests/` and cover portfolio, backtest, metrics, and formatti
 agents/          Signal agents (inherit BaseAgent) + consensus + evaluators
 engines/         ETF signals, backtesting, briefing, performance, circuit breaker,
                  agent_weights, event_detector, job_locks, macro_data, regime_model
-openbb_egx/      OpenBB-compatible EGX data provider (Pydantic v2, async TradingView + yfinance)
+openbb_egx/      OpenBB-compatible Tadawul data provider (Pydantic v2, async TradingView + yfinance)
 web-ui/          Express API + vanilla JS frontend (routes/, public/, services/)
 web-ui/services/ openbbMcpBridge.js — MCP bridge for RAG chat live data enrichment
-xmore_data/      Market-data provider layer (KSA-first Tadawul, legacy EGX support)
+xmore_data/      Market-data provider layer (KSA-first Tadawul, legacy Tadawul support)
 xmore_news/      News ingestion pipelines
 xmore_sentiment/ Sentiment analysis (Gemini, VADER, TextBlob)
 models/          Trained ML models (.joblib)
@@ -76,7 +76,7 @@ All agents inherit `BaseAgent` from `agents/agent_base.py` and return `AgentSign
 ### KSA market awareness
 - Tadawul trades **Sun–Thu, 10:00–15:00 Riyadh** (07:00–12:00 UTC).
 - The active KSA deployment uses `.SR` symbols (e.g., `2222.SR`).
-- Some legacy modules and table names still retain EGX naming for compatibility.
+- Some legacy modules and table names still retain Tadawul naming for compatibility.
 
 ### Environment variables
 `DATABASE_URL`, `EODHD_API_KEY`, `NEWS_API_KEY`, `FINNHUB_API_KEY`, `GOOGLE_API_KEY`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`. See `.env.example` for the full list.

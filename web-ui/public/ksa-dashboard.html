@@ -1,22 +1,22 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Xmore KSA — Tadawul Intelligence</title>
+  <title>Xmore KSA â€” Tadawul Intelligence</title>
   <meta name="description" content="AI-powered Tadawul market intelligence. Real-time signals, DCF valuation, Shariah screening, and performance analytics for Saudi stock market investors.">
   <meta name="theme-color" content="#0A1628">
   <link rel="stylesheet" href="/ksa-styles.css">
 </head>
 <body>
 
-  <!-- ── Market Switcher ──────────────────────────────────── -->
+  <!-- â”€â”€ Market Switcher â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="market-switcher">
-    <a href="https://xmore-project.onrender.com/" class="mkt-btn">🇪🇬 EGX</a>
-    <a href="/" class="mkt-btn active">🇸🇦 Tadawul</a>
+    <a href="https://xmore-project.onrender.com/" class="mkt-btn">ðŸ‡ªðŸ‡¬ EGX</a>
+    <a href="/" class="mkt-btn active">ðŸ‡¸ðŸ‡¦ Tadawul</a>
   </div>
 
-  <!-- ── Header ───────────────────────────────────────────── -->
+  <!-- â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <header class="ksa-header">
     <div class="ksa-header-inner">
       <div class="ksa-brand">
@@ -25,57 +25,57 @@
       </div>
       <div class="ksa-header-right">
         <div class="ksa-regime-badge" id="regimeBadge" aria-live="polite">Loading...</div>
-        <button class="lang-toggle" id="langToggle" onclick="toggleLang()" aria-label="Toggle language">🇸🇦 عربي</button>
+        <button class="lang-toggle" id="langToggle" onclick="toggleLang()" aria-label="Toggle language">ðŸ‡¸ðŸ‡¦ Ø¹Ø±Ø¨ÙŠ</button>
       </div>
     </div>
   </header>
 
-  <!-- ── Ticker Tape ───────────────────────────────────────── -->
+  <!-- â”€â”€ Ticker Tape â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="ksa-ticker-tape" role="marquee" aria-label="Live market ticker">
     <div class="ksa-ticker-inner" id="tickerInner">
       <!-- Populated by ksa-dashboard.js -->
       <span class="ksa-ticker-item">
         <span class="ticker-sym">2222</span>
-        <span class="ticker-up">▲</span>
+        <span class="ticker-up">â–²</span>
         <span>Loading...</span>
       </span>
     </div>
   </div>
 
-  <!-- ── Stats Strip: 5 KPI Cards ─────────────────────────── -->
+  <!-- â”€â”€ Stats Strip: 5 KPI Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="ksa-stats-strip" role="region" aria-label="Performance summary">
 
     <div class="ksa-stat-card" id="statWinRate">
       <div class="ksa-stat-label" data-i18n="winRate">Win Rate</div>
-      <div class="ksa-stat-value" id="valWinRate">—</div>
+      <div class="ksa-stat-value" id="valWinRate">â€”</div>
     </div>
 
     <div class="ksa-stat-card" id="statSharpe">
       <div class="ksa-stat-label" data-i18n="sharpeRatio">Sharpe (vs SAMA 4.25%)</div>
-      <div class="ksa-stat-value" id="valSharpe">—</div>
+      <div class="ksa-stat-value" id="valSharpe">â€”</div>
     </div>
 
     <div class="ksa-stat-card" id="statPF">
       <div class="ksa-stat-label" data-i18n="profitFactor">Profit Factor</div>
-      <div class="ksa-stat-value" id="valPF">—</div>
+      <div class="ksa-stat-value" id="valPF">â€”</div>
     </div>
 
     <div class="ksa-stat-card" id="statSignals">
       <div class="ksa-stat-label" data-i18n="signalsToday">Signals Today</div>
-      <div class="ksa-stat-value" id="valSignals">—</div>
+      <div class="ksa-stat-value" id="valSignals">â€”</div>
     </div>
 
     <div class="ksa-stat-card" id="statAlpha">
       <div class="ksa-stat-label" data-i18n="alpha30d">30D Alpha vs TASI</div>
-      <div class="ksa-stat-value" id="valAlpha">—</div>
+      <div class="ksa-stat-value" id="valAlpha">â€”</div>
     </div>
 
   </div><!-- /.ksa-stats-strip -->
 
-  <!-- ── Main Grid ─────────────────────────────────────────── -->
+  <!-- â”€â”€ Main Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div class="ksa-main-grid ksa-wrapper" role="main">
 
-    <!-- ── Left Column: Today's Signals Table ────────────── -->
+    <!-- â”€â”€ Left Column: Today's Signals Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="ksa-col-main">
 
       <div class="ksa-section-header">
@@ -118,7 +118,7 @@
 
     </div><!-- /.ksa-col-main -->
 
-    <!-- ── Right Column: Cards ───────────────────────────── -->
+    <!-- â”€â”€ Right Column: Cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
     <div class="ksa-col-side">
 
       <!-- DCF Insights -->
@@ -157,9 +157,9 @@
 
   </div><!-- /.ksa-main-grid -->
 
-  <!-- ── Footer Bar ────────────────────────────────────────── -->
+  <!-- â”€â”€ Footer Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <footer class="ksa-footer-bar ksa-wrapper" role="contentinfo">
-    <a href="/track-record" class="ksa-link" data-i18n="viewTrackRecord">View Full Track Record →</a>
+    <a href="/track-record" class="ksa-link" data-i18n="viewTrackRecord">View Full Track Record â†’</a>
     <span class="ksa-disclaimer" id="disclaimer" data-i18n="disclaimer">
       Signals are for informational purposes only and do not constitute investment advice
     </span>

@@ -132,7 +132,7 @@
                     <span>${stockCount} ${isAr() ? 'سهم' : 'stocks'}</span>
                     <span>${horizonLabel}</span>
                     <span class="pf-scenario-badge pf-scenario-${p.scenario}">${scenLabel}</span>
-                    <span>${Number(p.investment_amount || 0).toLocaleString()} EGP</span>
+                    <span>${Number(p.investment_amount || 0).toLocaleString()} SAR</span>
                 </div>
             </div>`;
         }).join('');

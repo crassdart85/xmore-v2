@@ -2,16 +2,16 @@
 
 ## Slide 1: Cover
 **Xmore**
-AI decision infrastructure for Egyptian equities
+AI decision infrastructure for Saudi equities
 
-- Thesis: Build the trusted decision layer for EGX participants
+- Thesis: Build the trusted decision layer for Tadawul participants
 - Current state: Live product surfaces, auditable performance stack, API foundations
 - Raise narrative: From product depth to scalable distribution
 
 ---
 
 ## Slide 2: Market Opportunity
-**EGX is a real market with structurally weak decision tooling**
+**Tadawul is a real market with structurally weak decision tooling**
 
 - Decision workflows are fragmented across charting, news, and manual benchmarking
 - Local-language (Arabic/English) investment workflows remain underbuilt
@@ -53,7 +53,7 @@ AI decision infrastructure for Egyptian equities
 ## Slide 6: Differentiation
 **Why this can win in a narrow but high-value wedge**
 
-- Local-first depth: EGX-focused workflow plus bilingual language handling
+- Local-first depth: Tadawul-focused workflow plus bilingual language handling
 - Trust primitives built in: immutability logic, audit trail endpoint, live-vs-simulated transparency
 - Ensemble over single-model risk: 5-agent architecture with consensus/scoring layers
 - Decision relevance: execution realism and benchmark framing reduce false confidence
@@ -106,7 +106,7 @@ Note: These are product maturity indicators; no revenue claims are implied.
 ## Slide 11: Go-To-Market
 **Land with trust, expand with workflow criticality**
 
-- Initial wedge: active EGX users needing daily structured decision support
+- Initial wedge: active Tadawul users needing daily structured decision support
 - Conversion lever: transparent track record + benchmark-relative evidence in product demos
 - Expansion path: advisors, broker desks, and embedded API integrations
 - Retention driver: daily recurring workflow (signals, monitoring, research, review)

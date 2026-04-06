@@ -1,43 +1,43 @@
-# Xmore — Business Presentation
+﻿# Xmore — Business Presentation
 
 ---
 
 ## Slide 1 — Title
 
 # Xmore
-### AI-Powered Stock Intelligence for the Egyptian Exchange
+### AI-Powered Stock Intelligence for the Saudi Exchange
 
 > Five AI agents. One consensus. Pre-market every day.
 
-**Live at:** xmore-project.onrender.com
-**Market:** Egyptian Exchange (EGX) — ~190 stocks
-**Status:** Production · March 2026
+**Live at:** xmore-ksa.onrender.com
+**Market:** Saudi Exchange (Tadawul) — 50+ stocks
+**Status:** Production · April 2026
 
 ---
 
 ## Slide 2 — The Problem
 
-### Egyptian retail investors trade blind
+### Saudi retail investors trade blind
 
 - **No pre-market intelligence** — brokers provide prices, not signals
 - **Information asymmetry** — institutional desks run quantitative models; retail traders rely on rumour and WhatsApp groups
-- **EGX-specific friction is ignored** — round-trip costs ≈ 0.70%, ±10% daily limit, thin liquidity in small caps frequently cause slippage that erodes gains
-- **No accountability** — signal providers in Egypt have no public track record; past calls vanish
+- **Tadawul-specific friction is ignored** — round-trip costs ≈ 0.38%, thin liquidity in small caps frequently cause slippage that erodes gains
+- **No accountability** — signal providers in KSA have no public track record; past calls vanish
 - **Language barrier** — all global quant tools are English-only; Arabic-speaking traders are underserved
-- **Benchmark manipulation** — performance ratios calculated with US 5% risk-free rate instead of Egypt CBE 27.25% — inflates Sharpe by 3–4×
+- **Benchmark manipulation** — performance ratios calculated with US 5% risk-free rate instead of SAIBOR 3M 4.89% — inflates Sharpe significantly
 
 ---
 
 ## Slide 3 — The Solution
 
-### Xmore: a daily AI consensus engine built for EGX
+### Xmore: a daily AI consensus engine built for Tadawul
 
 ```
 5 AI Agents → Consensus Engine → Execution Gate → 6-Mode Scoring → Dashboard
 ```
 
-Each trading day before 09:00 Cairo:
-1. Five agents independently analyse every tracked EGX stock
+Each trading day before 10:00 Riyadh:
+1. Five agents independently analyse every tracked Tadawul stock
 2. A weighted consensus BUY / HOLD / SELL is produced with an Xmore Score (0–100)
 3. BUY signals are filtered through real friction (costs, liquidity, regime)
 4. A composite investor score is translated into 6 output formats simultaneously
@@ -65,7 +65,7 @@ Agents vote independently. The **Xmore Score** (0–100) aggregates bull pressur
 
 ## Slide 5 — Execution Realism (Unique Differentiator)
 
-### We model what it actually costs to trade EGX
+### We model what it actually costs to trade Tadawul
 
 Most signal providers show raw alpha. Xmore shows **tradeable** alpha.
 
@@ -73,11 +73,11 @@ Most signal providers show raw alpha. Xmore shows **tradeable** alpha.
 
 | Check | Detail |
 |---|---|
-| Round-trip cost | Brokerage + stamp + FRA + EGX + Misr clearing ≈ 0.70% |
+| Round-trip cost | Brokerage + VAT + Tadawul fees ≈ 0.38% |
 | Minimum edge | Signal must offer ≥ 3× round-trip cost to be approved |
 | Liquidity slippage | High ADV: 10 bps · Mid: 25 bps · Low: 60 bps |
-| Market regime | EGX30 vs MA20 — new longs blocked in BEAR regime |
-| Gap risk | Stops floored at ±10% EGX daily limit |
+| Market regime | TASI vs MA20 — new longs blocked in BEAR regime |
+| Gap risk | Stops floored at ±10% Tadawul daily limit |
 | Trailing stop | Activates day 20 at 6% below peak; hard exit day 45 |
 
 Blocked signals are logged with reason — full audit trail.
@@ -88,19 +88,19 @@ Blocked signals are logged with reason — full audit trail.
 
 ## Slide 6 — Institutional-Grade Performance Metrics
 
-### We measure ourselves against international standards — EGX-calibrated
+### We measure ourselves against international standards — KSA-calibrated
 
-All ratios use **Egypt CBE rate (27.25%)** not US 5%, and **247 EGX trading days** not 252.
+All ratios use **KSA SAIBOR 3M rate (4.89%)** not US 5%, and **250 Tadawul trading days** not 252.
 
 | Metric | What it shows |
 |---|---|
-| **Sharpe Ratio** | Risk-adjusted return above CBE deposit rate |
+| **Sharpe Ratio** | Risk-adjusted return above SAIBOR deposit rate |
 | **Sortino Ratio** | Penalises only downside volatility |
 | **Calmar Ratio** | Annualised return ÷ max drawdown |
-| **Information Ratio** | Alpha consistency vs EGX30 benchmark |
+| **Information Ratio** | Alpha consistency vs TASI benchmark |
 | **Max Drawdown** | Peak-to-trough with recovery date |
 | **Rolling 30-day Sharpe** | Momentum of risk-adjusted performance |
-| **Beta vs EGX30** | Market sensitivity |
+| **Beta vs TASI** | Market sensitivity |
 | **Up/Down Capture** | How much of bull/bear moves Xmore participates in |
 
 A public **Track Record** page (`/track-record`) shows all metrics — no login required.
@@ -153,10 +153,10 @@ All surfaces: **bilingual EN/AR with full RTL layout**.
 ### Transparent, audited, bilingual
 
 - **Live predictions** since 11 January 2026 — evaluated at D+1 and D+5 by comparing predicted direction to actual close
-- **60-day historical simulation** — same agent logic applied to past EGX prices, clearly tagged **SIM**
-- **Walk-forward backtest** — re-runs every Sunday on all ~190 EGX stocks
+- **60-day historical simulation** — same agent logic applied to past Tadawul prices, clearly tagged **SIM**
+- **Walk-forward backtest** — re-runs every Sunday on all tracked Tadawul stocks
 
-**Live production numbers (verified on Render, March 2026):**
+**Live production numbers (verified on Render, April 2026):**
 
 | Metric | Value | Notes |
 |---|---|---|
@@ -166,14 +166,14 @@ All surfaces: **bilingual EN/AR with full RTL layout**.
 | Win/Loss ratio | **1.44×** | Winners avg 44% larger than losers |
 | Profit factor | **1.34** | Gross profit ÷ gross loss |
 | Expectancy per trade | **+0.23%** | Expected return on any signal |
-| Sharpe Ratio | **1.70** | EGX-calibrated (CBE 27.25%, 247 days) |
+| Sharpe Ratio | **1.70** | KSA-calibrated (SAIBOR 4.89%, 250 days) |
 | Sortino Ratio | **3.43** | Downside-only volatility penalised |
-| Information Ratio | **1.71** | Alpha consistency vs EGX30 |
+| Information Ratio | **1.71** | Alpha consistency vs TASI |
 | Max consecutive wins | **10** | Longest winning streak |
 | Max consecutive losses | **9** | Longest losing streak |
 
 **Track Record page features:**
-- Equity curve: cumulative Xmore return vs EGX30 benchmark (Chart.js)
+- Equity curve: cumulative Xmore return vs TASI benchmark (Chart.js)
 - Rolling 30/60/90-day KPI windows
 - Per-agent methodology cards
 - Walk-forward backtest results table (sorted by directional accuracy)
@@ -192,27 +192,27 @@ Public URL — share directly with prospective investors: `/track-record`
 
 ### Beyond single stocks
 
-**EGX ETF Dashboard**
-- 13 locally-listed Egyptian ETFs sourced from Mubasher (Arabic scraper)
-- 4 global Egypt-focused ETFs (EGPT, EEMX, FM, FRDM) via yfinance
+**Tadawul ETF Dashboard**
+- Locally-listed Saudi ETFs sourced from market data providers
+- Regional and global KSA-focused ETFs via yfinance
 - NAV, premium/discount, holdings modal, PDF factsheet RAG search
 - Commodity ETPs correctly classified (not mislabelled as equity ETFs)
 
 **FX & Gold Rates**
-- Live USD/EGP, USD/SAR, SAR/EGP, XAU/USD
-- Gold prices: 24K, 21K, 18K per gram EGP + Gold Pound EGP
+- Live USD/SAR, USD/SAR, SAR/SAR, XAU/USD
+- Gold prices: 24K, 21K, 18K per gram SAR + Gold Pound
 - 90-day sparkline history — auto-accumulates on every page load
 
 **Macro Brief (Xmore Pro)**
 - Gemini 2.5 Flash with Google Search grounding
-- Real-time EGX30 level, USD/EGP, inflation, interest rate, key movers
+- Real-time TASI level, USD/SAR, inflation, interest rate, key movers
 - Clickable web source citations — refreshes hourly
 
 ---
 
 ## Slide 11 — Market Assistant (RAG + Chat)
 
-### Ask anything. Get EGX-aware answers.
+### Ask anything. Get Tadawul-aware answers.
 
 **Context injected automatically:**
 - Today's consensus signals and Xmore Scores
@@ -264,12 +264,12 @@ Vanilla JS Dashboard (bilingual, dark/light, responsive)
 
 | Feature | Xmore | Generic screeners | Broker platforms |
 |---|---|---|---|
-| EGX-specific signals | ✓ | Partial | ✗ |
+| Tadawul-specific signals | ✓ | Partial | ✗ |
 | 5-agent consensus | ✓ | ✗ | ✗ |
 | Friction-adjusted signals | ✓ | ✗ | ✗ |
 | Public audited track record | ✓ | ✗ | ✗ |
 | Arabic RTL interface | ✓ | Rare | Partial |
-| EGX-correct risk metrics (CBE RF) | ✓ | ✗ | ✗ |
+| KSA-correct risk metrics (SAIBOR RF) | ✓ | ✗ | ✗ |
 | 6-mode investor scoring | ✓ | ✗ | ✗ |
 | ETF + macro intelligence | ✓ | Partial | ✗ |
 | RAG document search | ✓ | ✗ | ✗ |
@@ -309,9 +309,9 @@ Vanilla JS Dashboard (bilingual, dark/light, responsive)
 
 ### Medium-term
 - [ ] Paid Pro tier with advanced screener and API access keys
-- [ ] Portfolio optimiser (mean-variance, EGX constraints)
+- [ ] Portfolio optimiser (mean-variance, Tadawul constraints)
 - [ ] Mobile app (React Native, same API)
-- [ ] Expansion to ADX (Abu Dhabi) and Tadawul (Saudi Arabia)
+- [ ] Expansion to ADX (Abu Dhabi) and Tadawul (Egypt)
 
 ---
 
@@ -319,17 +319,17 @@ Vanilla JS Dashboard (bilingual, dark/light, responsive)
 
 ### Why Xmore
 
-1. **Only** pre-market AI consensus engine built specifically for EGX
-2. **Friction-realistic** — models actual Egyptian trading costs before recommending
+1. **Only** pre-market AI consensus engine built specifically for Tadawul
+2. **Friction-realistic** — models actual Saudi trading costs before recommending
 3. **Fully bilingual** — Arabic-first in a market where Arabic dominates
-4. **Institutionally measured** — EGX-correct risk metrics (CBE 27.25%), public track record
+4. **Institutionally measured** — KSA-correct risk metrics (SAIBOR 4.89%), public track record
 5. **6-mode scoring** — the same signal expressed in any format an investor prefers
 6. **Open by design** — predictions and performance are public; trust is earned, not claimed
-7. **Production-running** — live since Jan 11, 2026; 277+ signals evaluated; automated pipeline, zero manual intervention
+7. **Production-running** — live since Jan 11, 2026; automated pipeline, zero manual intervention
 8. **Fast by architecture** — pre-computed results mean the API always responds in < 500 ms
 
-> **Xmore turns Egypt's information asymmetry into a solvable engineering problem.**
+> **Xmore turns Saudi Arabia's information asymmetry into a solvable engineering problem.**
 
 ---
 
-*xmore-project.onrender.com · GitHub: crassdart85/xmore-v2*
+*xmore-ksa.onrender.com · GitHub: crassdart85/xmore-v2*

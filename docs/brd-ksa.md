@@ -1,4 +1,4 @@
-# Business Requirements Document — Xmore KSA (Tadawul)
+﻿# Business Requirements Document — Xmore KSA (Tadawul)
 **Version:** 1.2 | **Date:** April 2026 | **Status:** Active
 
 ---
@@ -24,7 +24,7 @@ Saudi retail investors lack affordable, systematic tools for Tadawul equity anal
 - Primary index benchmark: TASI (Tadawul All Share Index)
 - Currency: Saudi Riyal (SAR)
 - Timezone: Riyadh (UTC+3)
-- Approximate trading days/year: ~249–252
+- Approximate trading days/year: ~250 (Sun–Thu, excluding Saudi national holidays)
 
 ---
 
@@ -96,7 +96,7 @@ Saudi retail investors lack affordable, systematic tools for Tadawul equity anal
 | `engines/pivot_engine.py` | Pivot levels, ATR, candlestick patterns |
 | `engines/backtest.py` | Walk-forward backtest |
 | `engines/fetch_tasi_benchmark.py` | TASI daily prices; 3-strategy: EODHD → proxy; stores as `TASI.INDX` |
-| `engines/evaluate_performance.py` | `EGX30_SYMBOLS = ['TASI.INDX', '^TASI', '2222.SR']` on KSA branch |
+| `engines/evaluate_performance.py` | `TASI_SYMBOLS = ['TASI.INDX', '^TASI', '2222.SR']` on KSA branch |
 | `engines/timemachine_data.py` + `timemachine_engine.py` | 41 .SR symbols, `^TASI` key, `TASI_BASE=12000` |
 | `engines/agent_weights.py` | Softmax dynamic agent weights (T=2.0, floor 5%) + audit log |
 | `engines/event_detector.py` | News event detection (SAMA, CMA, TASI rebalance) → targeted sentiment refresh |
@@ -194,7 +194,7 @@ Friction model in `engines/backtest_friction.py` uses Tadawul fee structure:
 
 ## 11. GitHub Actions Schedule (UTC)
 
-Runs on `xmore-ksa` branch. Same schedule as EGX branch adapted for Tadawul market hours (open ~06:00 UTC, close ~10:00 UTC):
+Runs on `xmore-ksa` branch. Same schedule as Tadawul branch adapted for Tadawul market hours (open ~06:00 UTC, close ~10:00 UTC):
 
 | Job | Cron | Notes |
 |-----|------|-------|
@@ -271,7 +271,7 @@ All schema init steps: `timeout-minutes: 2` + `continue-on-error: true`.
 
 ## 13. Seeded Stock Universe
 
-41 `.SR` stocks seeded in `egx30_stocks` table (fixed March 2026 — was incorrectly seeding 190 EGX `.CA` stocks).
+41 `.SR` stocks seeded in `egx30_stocks` table (fixed March 2026 — was incorrectly seeding 190 Tadawul `.SR` stocks).
 
 Representative examples: `2222.SR` (Aramco), `1120.SR`, `1180.SR`, `2010.SR`, `2020.SR`, `2030.SR`, `2050.SR`, `2060.SR`, `2080.SR`, `2090.SR`, `2100.SR`, `2110.SR`, `2120.SR`, `2130.SR`, `2140.SR`, `2160.SR`, `2170.SR`, `2180.SR`, `2190.SR`, `2200.SR`, `2210.SR`, `2220.SR`, `2230.SR`, `2240.SR`, `2250.SR`, `2260.SR`, `2270.SR`, `2280.SR`, `2290.SR`, `2300.SR`, `2310.SR`, `2320.SR`, `2330.SR`, `2340.SR`, `2350.SR`, `4001.SR`, `4002.SR`, `4003.SR`, `4004.SR`, `4005.SR`, `4006.SR`
 
@@ -303,7 +303,7 @@ All server.js queries filter `WHERE symbol LIKE '%.SR'` (predictions, evaluation
 
 **Render (`xmore-ksa` service):** `DATABASE_URL`, `JWT_SECRET`, `GOOGLE_API_KEY`, `NEWS_API_KEY`, `FINNHUB_API_KEY`, `EODHD_API_KEY`, `MARKETAUX_API_KEY`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`
 
-**GitHub Actions (repo secrets):** `KSA_DATABASE_URL` ← **must be the External Database URL from `ksa-trading-db` on Render** (not the internal hostname). `ksa-branch-scheduled.yml` sets `DATABASE_URL: ${{ secrets.KSA_DATABASE_URL }}`. Using the shared `DATABASE_URL` (EGX DB) caused KSA data to contaminate the EGX database — fixed Apr 2026.
+**GitHub Actions (repo secrets):** `KSA_DATABASE_URL` ← **must be the External Database URL from `ksa-trading-db` on Render** (not the internal hostname). `ksa-branch-scheduled.yml` sets `DATABASE_URL: ${{ secrets.KSA_DATABASE_URL }}`. Using the shared `DATABASE_URL` (Tadawul DB) caused KSA data to contaminate Tadawul database — fixed Apr 2026.
 
 ### 15.2 Auth Pattern
 
@@ -334,7 +334,7 @@ Configured in `.claude/settings.json` + `.claude/hooks/` (local-only, gitignored
 | KSA `/execution/:ticker` HTTP 500 | Check `signal_type`/`xmore_score` columns exist; prices query must NOT filter `market_id` |
 | KSA signals HTTP 500 | `consensus_results` column is `prediction_date`; never SELECT `regime_flag` |
 | `consensus_results` stale .CA rows | server.js `WHERE symbol LIKE '%.SR'` filter removes them; will clear when KSA pipeline runs |
-| KSA pipeline writing to EGX DB (DB empty) | `ksa-branch-scheduled.yml` was using `secrets.DATABASE_URL` (EGX DB). Fixed Apr 2026: now uses `secrets.KSA_DATABASE_URL`. Render internal hostname won't work from GH Actions — use External Database URL. |
+| KSA pipeline writing to Tadawul DB (DB empty) | `ksa-branch-scheduled.yml` was using `secrets.DATABASE_URL` (Tadawul DB). Fixed Apr 2026: now uses `secrets.KSA_DATABASE_URL`. Render internal hostname won't work from GH Actions — use External Database URL. |
 
 ---
 
@@ -365,10 +365,10 @@ Each INSERT in `news_aggregator.py` must use `SAVEPOINT intel_insert` / `ROLLBAC
 - [ ] Same settings updated in Render dashboard (buildCommand field)
 - [ ] All secrets configured in Render dashboard for `xmore-ksa` service
 - [ ] `KSA_DATABASE_URL` repo secret set to **External** Database URL from `ksa-trading-db` (Render → PostgreSQL → Connection → External Database URL)
-- [ ] `DATABASE_URL` repo secret remains set to EGX DB (used by main branch workflows only)
+- [ ] `DATABASE_URL` repo secret remains set to Tadawul DB (used by main branch workflows only)
 - [ ] `intraday-price-update` job has NO schema init step
 - [ ] All other schema init steps have `timeout-minutes: 2` + `continue-on-error: true`
-- [ ] Verify 41 `.SR` stocks seeded in `egx30_stocks` table (not `.CA` stocks)
+- [ ] Verify 41 `.SR` stocks seeded in `egx30_stocks` table (not `.SR` stocks)
 
 ---
 
@@ -410,4 +410,4 @@ The frontend renders the badge on each rolling card so investors can distinguish
 
 ---
 
-*KSA branch (`xmore-ksa`). For Egyptian Exchange version see `docs/brd-eg.md` on the `main` branch.*
+*KSA branch (`xmore-ksa`). For Saudi Exchange version see `docs/brd-eg.md` on the `main` branch.*

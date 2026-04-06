@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-Xmore is an intelligence platform for equity decision support, centered on the Egyptian Exchange (EGX) and extended to selected global and ETF workflows. The platform combines a scheduled Python intelligence engine with a Node.js application layer, backed by a shared relational data model.
+Xmore is an intelligence platform for equity decision support, centered on the Saudi Exchange (Tadawul) and extended to selected global and ETF workflows. The platform combines a scheduled Python intelligence engine with a Node.js application layer, backed by a shared relational data model.
 
 In production, Xmore is designed to:
 
@@ -57,7 +57,7 @@ A key implementation characteristic is runtime separation: compute-heavy intelli
 
 The ingestion layer collects:
 
-- EGX market prices through a primary live-feed path with fallback providers.
+- Tadawul market prices through a primary live-feed path with fallback providers.
 - Global and macro reference series used for context and filtering.
 - News from API, RSS, and curated source pipelines.
 

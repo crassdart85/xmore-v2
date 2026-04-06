@@ -1,4 +1,4 @@
-# 🚀 XMORE DATA LAYER - COMPLETE IMPLEMENTATION DELIVERED
+﻿# 🚀 XMORE DATA LAYER - COMPLETE IMPLEMENTATION DELIVERED
 
 ## Executive Summary
 
@@ -94,7 +94,7 @@ A **production-ready, enterprise-grade data ingestion module** has been built an
 --symbol COMI                           # Single
 --symbols COMI SWDY HRHO               # Multiple
 --egx30                                 # All 30
---benchmark                             # EGX index
+--benchmark                             # TASI index
 --interval 1d/1w/1mo                   # Time periods
 --start/--end DATE or RELATIVE         # Date ranges
 --refresh                               # Bypass cache
@@ -109,11 +109,11 @@ A **production-ready, enterprise-grade data ingestion module** has been built an
 ```
 DataFrame columns (always, in order):
 - Date (datetime)
-- Open (float, EGP)
-- High (float, EGP)
-- Low (float, EGP)
-- Close (float, EGP)
-- Adj Close (float, EGP)
+- Open (float, SAR)
+- High (float, SAR)
+- Low (float, SAR)
+- Close (float, SAR)
+- Adj Close (float, SAR)
 - Volume (int)
 ```
 
@@ -150,7 +150,7 @@ df = dm.fetch_data("COMI", interval="1h")              # Intraday
 # Multiple symbols
 data = dm.fetch_multiple(["COMI", "SWDY", "HRHO"])
 
-# All EGX30
+# All TASI
 egx30 = dm.fetch_egx30()
 
 # Index (benchmark)
@@ -171,7 +171,7 @@ python xmore_data/main.py --symbol COMI --summary
 # Fetch multiple & export
 python xmore_data/main.py --symbols COMI SWDY --export excel
 
-# Fetch all EGX30 & export
+# Fetch all TASI & export
 python xmore_data/main.py --egx30 --export csv
 
 # Custom dates
@@ -198,7 +198,7 @@ python xmore_data/main.py --clear-cache
 | **Cache hit** | <10ms | Return from disk |
 | **Cold fetch (90d, single symbol)** | 1-3s | Depends on provider/internet |
 | **Force refresh** | 1-3s | Fresh from API |
-| **EGX30 benchmark (30 symbols)** | 30-90s | Sequential (parallel possible) |
+| **TASI benchmark (30 symbols)** | 30-90s | Sequential (parallel possible) |
 | **Memory per symbol/interval** | ~100KB | Varies by date range |
 
 **Caching Impact:**
@@ -357,7 +357,7 @@ cache.set(symbol, interval, df)
 from config import Config
 Config.CACHE_EXPIRATION_HOURS
 Config.ALPHA_VANTAGE_API_KEY
-Config.EGX30_SYMBOLS
+Config.TASI_SYMBOLS
 # Everything in one place
 ```
 ✅ Single source of truth
@@ -398,7 +398,7 @@ Before using in production signal/backtesting engine:
 
 ## ⚡ QUICK WINS (Things You Can Do Right Now)
 
-1. **Fetch EGX30 daily data:**
+1. **Fetch TASI daily data:**
    ```bash
    python xmore_data/main.py --egx30 --export excel
    ```

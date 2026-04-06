@@ -1,4 +1,4 @@
-"""
+﻿"""
 Xmore Data Layer - Quick Reference / Cheat Sheet
 
 Use this as a quick lookup for common tasks.
@@ -23,26 +23,26 @@ python xmore_data/main.py --cache-stats
 # ═════════════════════════════════════════════════════════════════════════════
 
 # FETCH SINGLE SYMBOL
-python xmore_data/main.py --symbol COMI
-python xmore_data/main.py --symbol COMI --interval 1d --start 2024-01-01
+python xmore_data/main.py --symbol 2222.SR
+python xmore_data/main.py --symbol 2222.SR --interval 1d --start 2024-01-01
 
 # FETCH MULTIPLE SYMBOLS
-python xmore_data/main.py --symbols COMI SWDY HRHO
-python xmore_data/main.py --symbols COMI SWDY HRHO --start 90d
+python xmore_data/main.py --symbols 2222.SR 1180.SR 2010.SR
+python xmore_data/main.py --symbols 2222.SR 1180.SR 2010.SR --start 90d
 
-# FETCH ALL EGX30
-python xmore_data/main.py --egx30
+# FETCH ALL TASI
+python xmore_data/main.py --TASI
 
-# FETCH EGX INDEX (BENCHMARK)
+# FETCH Tadawul INDEX (BENCHMARK)
 python xmore_data/main.py --benchmark
 
 # EXPORT DATA
-python xmore_data/main.py --symbol COMI --export csv           # Save CSV
-python xmore_data/main.py --symbols COMI SWDY --export excel   # Multi-sheet Excel
-python xmore_data/main.py --egx30 --export json                # JSON files
+python xmore_data/main.py --symbol 2222.SR --export csv           # Save CSV
+python xmore_data/main.py --symbols 2222.SR 1180.SR --export excel   # Multi-sheet Excel
+python xmore_data/main.py --TASI --export json                # JSON files
 
 # FORCE REFRESH (SKIP CACHE)
-python xmore_data/main.py --symbol COMI --refresh
+python xmore_data/main.py --symbol 2222.SR --refresh
 
 # CACHE MANAGEMENT
 python xmore_data/main.py --cache-stats                        # View cache info
@@ -58,21 +58,21 @@ from xmore_data import DataManager
 dm = DataManager()
 
 # FETCH SINGLE
-df = dm.fetch_data("COMI")
-df = dm.fetch_data("COMI", interval="1d", start="2024-01-01", end="2024-12-31")
-df = dm.fetch_data("COMI", start="90d")  # Last 90 days
-df = dm.fetch_data("COMI", start="1y")   # Last 1 year
+df = dm.fetch_data("2222.SR")
+df = dm.fetch_data("2222.SR", interval="1d", start="2024-01-01", end="2024-12-31")
+df = dm.fetch_data("2222.SR", start="90d")  # Last 90 days
+df = dm.fetch_data("2222.SR", start="1y")   # Last 1 year
 
 # FETCH MULTIPLE
-data = dm.fetch_multiple(["COMI", "SWDY", "HRHO"])
+data = dm.fetch_multiple(["2222.SR", "1180.SR", "2010.SR"])
 for symbol, df in data.items():
     print(f"{symbol}: {len(df)} rows")
 
-# FETCH EGX30
-egx30 = dm.fetch_egx30()
-for symbol, df in egx30.items():
+# FETCH TASI
+TASI = dm.fetch_TASI()
+for symbol, df in TASI.items():
     if df is not None:
-        print(f"{symbol}: EGP {df['Close'].iloc[-1]:.2f}")
+        print(f"{symbol}: SAR {df['Close'].iloc[-1]:.2f}")
 
 # FETCH INDEX
 index = dm.fetch_index()
@@ -84,7 +84,7 @@ df['Volatility'] = df['Close'].pct_change().rolling(20).std()
 
 # CACHE OPS
 dm.clear_cache()                    # Clear all
-dm.clear_cache("COMI")              # Clear specific symbol
+dm.clear_cache("2222.SR")              # Clear specific symbol
 stats = dm.get_cache_stats()
 print(dm.provider_info)             # Available providers
 
@@ -93,7 +93,7 @@ print(dm.provider_info)             # Available providers
 # ═════════════════════════════════════════════════════════════════════════════
 
 # 1. PORTFOLIO ANALYSIS
-symbols = ["COMI", "SWDY", "HRHO"]
+symbols = ["2222.SR", "1180.SR", "2010.SR"]
 data = dm.fetch_multiple(symbols, start="1y")
 
 for sym, df in data.items():
@@ -102,19 +102,19 @@ for sym, df in data.items():
         print(f"{sym}: {ret:+.2f}%")
 
 # 2. SIGNAL GENERATION
-df = dm.fetch_data("COMI", start="90d")
+df = dm.fetch_data("2222.SR", start="90d")
 df['SMA_20'] = df['Close'].rolling(20).mean()
 df['SMA_50'] = df['Close'].rolling(50).mean()
 df['Signal'] = (df['SMA_20'] > df['SMA_50']).astype(int)  # 1=Bullish, 0=Bearish
 
 # 3. VOLATILITY CALCULATION
-df = dm.fetch_data("COMI", start="1y")
+df = dm.fetch_data("2222.SR", start="1y")
 daily_returns = df['Close'].pct_change()
 annual_volatility = daily_returns.std() * (252 ** 0.5)
 print(f"Annual Volatility: {annual_volatility:.2%}")
 
 # 4. BENCHMARK COMPARISON
-stock = dm.fetch_data("COMI", start="90d")
+stock = dm.fetch_data("2222.SR", start="90d")
 index = dm.fetch_index(start="90d")
 
 stock_ret = (stock['Close'].iloc[-1] / stock['Close'].iloc[0] - 1) * 100
@@ -126,7 +126,7 @@ print(f"Index Return: {index_ret:+.2f}%")
 print(f"Alpha: {alpha:+.2f}%")
 
 # 5. BACKTESTING PREPARATION
-backtest_symbols = ["COMI", "SWDY", "HRHO", "ETEL", "ECAP"]
+backtest_symbols = ["2222.SR", "1180.SR", "2010.SR", "ETEL", "ECAP"]
 data = dm.fetch_multiple(backtest_symbols, start="2024-01-01", end="2024-12-31")
 
 # Save to CSV for backtester
@@ -142,7 +142,7 @@ for symbol, df in data.items():
 # FIX: pip install yfinance
 
 # ERROR: Symbol not found
-# FIX: Check spelling (COMI not COMISHR)
+# FIX: Check spelling (2222.SR not COMISHR)
 #      Use --refresh to bypass cache
 #      Try different date range
 
@@ -150,9 +150,9 @@ for symbol, df in data.items():
 # INFO: Module auto-waits, this is OK
 # FIX: Check cache stats, use cache to avoid repeated calls
 
-# ERROR: EGXPY not available
+# ERROR: EODHD not available
 # INFO: Falls back to yfinance automatically
-# FIX: pip install egxpy (optional but recommended)
+# FIX: pip install EODHD (optional but recommended)
 
 # SLOW PERFORMANCE
 # FIX: Enable cache (default: on)
@@ -167,8 +167,8 @@ for symbol, df in data.items():
 ALPHA_VANTAGE_API_KEY=your_key_here
 CACHE_EXPIRATION_HOURS=24
 LOG_LEVEL=INFO
-EGXPY_TIMEOUT=30
-EGXPY_RETRIES=3
+EODHD_TIMEOUT=30
+EODHD_RETRIES=3
 
 # ═════════════════════════════════════════════════════════════════════════════
 # FILE STRUCTURE
@@ -186,7 +186,7 @@ xmore_data/
 ├── setup.py                 # Package setup
 └── providers/
     ├── __init__.py          # Base provider class
-    ├── egxpy_provider.py     # EGXPY provider
+    ├── EODHD_provider.py     # EODHD provider
     ├── yfinance_provider.py  # yfinance provider
     └── alpha_vantage_provider.py  # Alpha Vantage provider
 
@@ -196,11 +196,11 @@ xmore_data/
 
 DataFrame columns (always):
     Date         - datetime
-    Open         - float (EGP)
-    High         - float (EGP)
-    Low          - float (EGP)
-    Close        - float (EGP)
-    Adj Close    - float (EGP)
+    Open         - float (SAR)
+    High         - float (SAR)
+    Low          - float (SAR)
+    Close        - float (SAR)
+    Adj Close    - float (SAR)
     Volume       - int
 
 Example:
@@ -219,10 +219,10 @@ python -c "from xmore_data import DataManager; print('✓ OK')"
 python -c "from xmore_data import DataManager; dm = DataManager(); print(dm.provider_info)"
 
 # Get latest price
-python -c "from xmore_data import DataManager; dm = DataManager(); df = dm.fetch_data('COMI'); print(df['Close'].iloc[-1])"
+python -c "from xmore_data import DataManager; dm = DataManager(); df = dm.fetch_data('2222.SR'); print(df['Close'].iloc[-1])"
 
-# Export EGX30 to Excel
-python xmore_data/main.py --egx30 --export excel
+# Export TASI to Excel
+python xmore_data/main.py --TASI --export excel
 
 # Test all features
 python xmore_data/examples.py

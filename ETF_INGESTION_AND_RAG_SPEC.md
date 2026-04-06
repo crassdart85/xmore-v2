@@ -1,4 +1,4 @@
-# ETF Ingestion & RAG — Technical Specification
+﻿# ETF Ingestion & RAG — Technical Specification
 
 *Source: project owner specification, March 2026*
 
@@ -6,7 +6,7 @@
 
 ## 0) Source links (scraped by ingestion jobs)
 
-### EGX (local ETFs)
+### Tadawul (local ETFs)
 
 | Page | URL |
 |------|-----|
@@ -17,8 +17,8 @@
 | ETF Fund Distribution (dividends; often empty but keep pipeline ready) | https://www.egx.com.eg/en/funddistribution.aspx |
 | ETF iNAV / Tracking Error | https://www.egx.com.eg/en/ETFINAV_Err.aspx |
 
-### EGX30 ETF docs
-- EGX30 ETF Information Sheet (PDF): https://www.egx30etf.com/Content/PDF%20Files/EGX30%20ETF%20Information%20Sheet.pdf
+### TASI ETF docs
+- TASI ETF Information Sheet (PDF): https://www.egx30etf.com/Content/PDF%20Files/TASI%20ETF%20Information%20Sheet.pdf
 
 ### Global "Egypt exposure" ETF universe
 
@@ -26,16 +26,16 @@
 |----------|-----|
 | ETFDB – ETFs with Egypt Exposure | https://etfdb.com/country/egypt/ |
 | ETFDB – Country exposure tool | https://etfdb.com/tool/etf-country-exposure-tool/ |
-| EGPT holdings (Yahoo Finance) | https://finance.yahoo.com/quote/EGPT/holdings/ |
+| SART holdings (Yahoo Finance) | https://finance.yahoo.com/quote/SART/holdings/ |
 | FM holdings (Yahoo Finance UK) | https://uk.finance.yahoo.com/quote/FM/holdings/ |
-| VanEck EGPT prospectus library | https://www.vaneck.com/us/en/library/market-vectors-etfs/egpt-statutory-prospectus-pdf/ |
-| SEC EDGAR EGPT filing index | https://www.sec.gov/Archives/edgar/data/1137360/000113736024000170/0001137360-24-000170-index.htm |
+| VanEck SART prospectus library | https://www.vaneck.com/us/en/library/market-vectors-etfs/egpt-statutory-prospectus-pdf/ |
+| SEC EDGAR SART filing index | https://www.sec.gov/Archives/edgar/data/1137360/000113736024000170/0001137360-24-000170-index.htm |
 
 ---
 
 ## 1) Operating assumptions
 
-- **EGX trading hours** (Africa/Cairo): 10:30–14:30, Mon–Fri
+- **Tadawul trading hours** (Asia/Riyadh): 10:30–14:30, Mon–Fri
 - **Global ETFs**: end-of-day snapshot after US markets close (no live tracking initially)
 
 ---
@@ -51,15 +51,15 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE exchange_code AS ENUM ('EGX', 'NYSE', 'NASDAQ', 'LSE', 'XETRA', 'TSX', 'OTHER');
+  CREATE TYPE exchange_code AS ENUM ('TADAWUL', 'NYSE', 'NASDAQ', 'LSE', 'XETRA', 'TSX', 'OTHER');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE currency_code AS ENUM ('EGP', 'USD', 'EUR', 'GBP', 'CAD', 'OTHER');
+  CREATE TYPE currency_code AS ENUM ('SAR', 'USD', 'EUR', 'GBP', 'CAD', 'OTHER');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE etf_region AS ENUM ('LOCAL_EGX', 'GLOBAL');
+  CREATE TYPE etf_region AS ENUM ('LOCAL_TADAWUL', 'GLOBAL');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -100,7 +100,7 @@ CREATE TABLE IF NOT EXISTS instrument_alias (
 );
 
 -- =========================
---  EGX ETF TRADING TAPE (DAILY)
+--  Tadawul ETF TRADING TAPE (DAILY)
 -- =========================
 CREATE TABLE IF NOT EXISTS etf_price_daily (
   instrument_id   BIGINT NOT NULL REFERENCES instrument(instrument_id) ON DELETE CASCADE,
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS etf_premium_discount_daily (
 );
 
 -- =========================
---  EGX ETF FUND VOLUME
+--  Tadawul ETF FUND VOLUME
 -- =========================
 CREATE TABLE IF NOT EXISTS etf_fund_volume (
   instrument_id     BIGINT NOT NULL REFERENCES instrument(instrument_id) ON DELETE CASCADE,
@@ -259,17 +259,17 @@ CREATE TABLE IF NOT EXISTS rag_embedding_job (
 | `etf_docs_ingest` | PDF URLs | `rag_document` + `rag_embedding_job` |
 | `rag_embedding_worker` | DB queue | `rag_chunks` |
 
-### EGX scraping notes
+### Tadawul scraping notes
 - Pages are ASP.NET WebForms; use `requests` + `BeautifulSoup`
 - Normalize numbers: strip commas, handle empty cells
 - Some pages may intermittently return "Request Rejected" → catch gracefully, log, retry
 
 ---
 
-## 4) Cron schedule (all UTC, Africa/Cairo = UTC+2)
+## 4) Cron schedule (all UTC, Asia/Riyadh = UTC+3)
 
 ```
-# EGX post-close jobs (Mon–Fri)
+# Tadawul post-close jobs (Mon–Fri)
 35 12 * * 1-5   python -m engines.etf_egx_tape
 45 12 * * 1-5   python -m engines.etf_egx_nav
 0  13 * * 1-5   python -m engines.etf_egx_holdings
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS rag_embedding_job (
 
 ### 5.1 System prompt
 ```
-You are Xmore ETF Intelligence, an institutional research assistant for EGX and global Egypt-exposure ETFs.
+You are Xmore ETF Intelligence, an institutional research assistant for Tadawul and global Egypt-exposure ETFs.
 
 Non-negotiables:
 - Never invent numbers. If a requested figure is not present in retrieved sources, say "Not available in the retrieved data."
@@ -358,7 +358,7 @@ engines/
 
 ## 7) Practical warnings
 
-- **EGX scraping**: Some pages may block automated requests. Handle "Request Rejected" gracefully; log and skip rather than crash.
+- **Tadawul scraping**: Some pages may block automated requests. Handle "Request Rejected" gracefully; log and skip rather than crash.
 - **ETFDB**: May return 403/429. Always fall back to the hardcoded seed list.
 - **yfinance**: Occasionally returns empty DataFrames for tickers outside US markets. Validate before inserting.
 - **PDF downloads**: Some issuers rotate PDF URLs. Use `content_hash` to detect duplicates.

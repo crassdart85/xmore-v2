@@ -1,4 +1,4 @@
-# Xmore — Terms of Service
+﻿# Xmore — Terms of Service
 
 **Last updated: February 2026**
 
@@ -23,7 +23,7 @@ Users are solely responsible for their own investment decisions. Xmore signals s
 ## 5. Data Sources
 
 Xmore aggregates data from public sources including:
-- Egyptian Exchange (EGX) live feeds
+- Saudi Exchange (Tadawul) live feeds
 - Yahoo Finance
 - Finnhub (news and sentiment)
 - TradingView (embedded charts)

@@ -63,7 +63,7 @@ Stock trading prediction system with web dashboard. Uses multiple signal engines
     - macro moves from FX and market regime history
   - added `/api/intelligence/quality` for freshness checks and agent drift monitoring.
 - `../routes/rag.js`
-  - research retrieval now resolves bilingual entities from `egx30_stocks`, `instrument`, and `instrument_alias`.
+  - research retrieval now resolves bilingual entities from `ksa_stocks`, `instrument`, and `instrument_alias`.
   - symbol/entity-specific news and structured chunks are prioritized ahead of generic retrieval.
   - `retrieval_meta` includes resolved entities.
 - `app.js`
@@ -111,7 +111,7 @@ Stock trading prediction system with web dashboard. Uses multiple signal engines
 - `Volume_Spike_Agent` - Volume analysis
 - `Consensus` - Accuracy-weighted vote across all agents (Phase 1)
 - **Trade Recommendation Engine** - Generates actionable Buy/Sell signals with entry/exit targets (Phase 2)
-- **Performance Evaluation Engine** - Resolves outcomes, calculates alpha vs EGX30 benchmark, agent accuracy (Phase 3)
+- **Performance Evaluation Engine** - Resolves outcomes, calculates alpha vs TASI benchmark, agent accuracy (Phase 3)
 
 ## API Endpoints
 - `/api/predictions` - Latest predictions from all agents (includes disclaimer)
@@ -120,7 +120,7 @@ Stock trading prediction system with web dashboard. Uses multiple signal engines
 - `/api/performance-v2/summary` - **NEW** Investor-grade overall performance + rolling metrics
 - `/api/performance-v2/by-agent` - **NEW** Per-agent accuracy comparison
 - `/api/performance-v2/by-stock?days=N` - **NEW** Per-stock performance breakdown
-- `/api/performance-v2/equity-curve?days=N` - **NEW** Cumulative return series (Xmore vs EGX30)
+- `/api/performance-v2/equity-curve?days=N` - **NEW** Cumulative return series (Xmore vs TASI)
 - `/api/performance-v2/predictions/open` - **NEW** Currently open predictions
 - `/api/performance-v2/predictions/history?page=N&limit=N` - **NEW** Auditable prediction history
 - `/api/performance-v2/audit?limit=N` - **NEW** Prediction modification audit trail
@@ -148,7 +148,7 @@ Stock trading prediction system with web dashboard. Uses multiple signal engines
 - **Materialized views**: PostgreSQL only (`mv_performance_global`); SQLite computes on-the-fly
 
 ## Notes
-- EGX stocks use `.CA` suffix (e.g., `COMI.CA`)
+- KSA stocks use `.SR` suffix (e.g., `2222.SR`)
 - Language preference stored in localStorage
 - Dark mode preference stored in localStorage (key: `theme`)
 - Server runs on port 3000 locally

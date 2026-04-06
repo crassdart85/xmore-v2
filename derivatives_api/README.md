@@ -1,4 +1,4 @@
-# Xmore Derivatives Pricing API
+﻿# Xmore Derivatives Pricing API
 
 FastAPI service wrapping the `derivatives/` module. Runs as a separate Render worker service. The Express server (`web-ui/server.js`) proxies to it internally via `DERIVATIVES_API_URL`.
 

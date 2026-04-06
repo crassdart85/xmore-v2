@@ -1,8 +1,8 @@
-# xmore.egx_etp
+﻿# xmore.egx_etp
 
-Production-grade EGX ETP ingestion module for the Xmore project.
+Production-grade Tadawul ETP ingestion module for the Xmore project.
 
-Discovers, classifies, and stores the full live EGX ETP universe — ETFs,
+Discovers, classifies, and stores the full live Tadawul ETP universe — ETFs,
 structured products, index-tracking funds, gold-linked ETPs, and certificates.
 
 **Conservative classification principle**: never invent issuer or exposure;
@@ -16,7 +16,7 @@ mark unknowns as `NULL`.
 xmore/egx_etp/
 ├── __init__.py        public API re-exports
 ├── fetcher.py         HTTP + Playwright fallback fetcher with tenacity retries
-├── parser.py          HTML parsers for each EGX page
+├── parser.py          HTML parsers for each Tadawul page
 ├── classifier.py      ETP type classifier with confidence scores
 ├── models.py          dataclasses: ProductCard, HoldingRow, NavRecord, etc.
 ├── db.py              PostgreSQL/SQLite upserts + schema DDL
@@ -35,7 +35,7 @@ pip install requests beautifulsoup4 lxml psycopg[binary] python-dotenv playwrigh
 playwright install chromium
 ```
 
-> **Note**: `playwright` is only required when EGX pages return JS-rendered
+> **Note**: `playwright` is only required when Tadawul pages return JS-rendered
 > shells that `requests` cannot parse. The fetcher falls back to Playwright
 > automatically.
 
@@ -85,17 +85,17 @@ from xmore.egx_etp import run_daily
 
 summary = run_daily()
 print(summary["status"])           # 'success' or 'failed'
-print(summary["cards_found"])      # number of ETP products found on EGX
+print(summary["cards_found"])      # number of ETP products found on Tadawul
 print(summary["products_upserted"])
 ```
 
 ---
 
-## Cron schedule (Africa/Cairo timezone)
+## Cron schedule (Africa/Riyadh timezone)
 
-EGX trading session: **09:00–14:00 Cairo (UTC+2)**, Sunday–Thursday.
+Tadawul trading session: **10:00–15:00 Riyadh (UTC+3)**, Sunday–Thursday.
 
-| Cron (UTC)          | Cairo time | Days      | Job                  |
+| Cron (UTC)          | Riyadh time | Days      | Job                  |
 |--------------------|------------|-----------|----------------------|
 | `30 12 * * 0-4`   | 14:30      | Sun–Thu   | Daily incremental    |
 
@@ -103,7 +103,7 @@ Add to GitHub Actions workflow (`.github/workflows/scheduled-tasks.yml`):
 
 ```yaml
   egx-etp-daily:
-    name: EGX ETP daily ingestion
+    name: Tadawul ETP daily ingestion
     runs-on: ubuntu-latest
     if: github.event_name == 'schedule'
     needs: []
@@ -120,7 +120,7 @@ Add to GitHub Actions workflow (`.github/workflows/scheduled-tasks.yml`):
 
 ---
 
-## EGX pages scraped
+## Tadawul pages scraped
 
 | Page key      | URL                                                    | Data extracted          |
 |--------------|--------------------------------------------------------|-------------------------|
@@ -140,7 +140,7 @@ Add to GitHub Actions workflow (`.github/workflows/scheduled-tasks.yml`):
 |------------------|-------------------------------------------------------------------|
 | `ETF`            | Has fund constituents (holdings) and/or NAV unit data             |
 | `GOLD_ETP`       | Name contains gold / ذهب / دهب                                    |
-| `INDEX_TRACKER`  | Name references EGX30/EGX70/EGX100/index but no holdings         |
+| `INDEX_TRACKER`  | Name references TASI/NOMU/EGX100/index but no holdings         |
 | `STRUCTURED_NOTE`| Bank/issuer-type naming + no holdings                             |
 | `ETN`            | Found in structured products taxonomy, or synthetic without basket |
 | `UNKNOWN_ETP`    | Insufficient evidence for any above category                      |

@@ -963,10 +963,10 @@ app.get('/api/intelligence/changes', optionalAuth, async (req, res) => {
         const latest = fxRows[0];
         const previous = fxRows[1];
         macroChanges.push({
-          label: 'USD/EGP',
-          current: Number(latest.usd_egp || 0),
-          previous: Number(previous.usd_egp || 0),
-          delta: Number((Number(latest.usd_egp || 0) - Number(previous.usd_egp || 0)).toFixed(4))
+          label: 'USD/SAR',
+          current: Number(latest.usd_sar || latest.usd_egp || 0),
+          previous: Number(previous.usd_sar || previous.usd_egp || 0),
+          delta: Number((Number(latest.usd_sar || latest.usd_egp || 0) - Number(previous.usd_sar || previous.usd_egp || 0)).toFixed(4))
         });
         macroChanges.push({
           label: 'Gold 21K',
@@ -1394,10 +1394,10 @@ app.get('/api/derivatives/brief/:ticker', (req, res) => {
     const straddlePct  = straddle / S * 100;
     const deltaDollar  = g.delta * S * 0.01;
 
-    const narrative = `${ticker} \u2014 ATM call trades at EGP ${g.call.toFixed(2)}, put at EGP ${g.put.toFixed(2)}. ` +
+    const narrative = `${ticker} \u2014 ATM call trades at SAR ${g.call.toFixed(2)}, put at SAR ${g.put.toFixed(2)}. ` +
       `Straddle cost ${straddle.toFixed(2)} (${straddlePct.toFixed(1)}% of spot). ` +
-      `Delta ${g.delta.toFixed(2)} \u2014 a 1% spot move gains/loses EGP ${deltaDollar.toFixed(2)}. ` +
-      `Theta bleeds EGP ${Math.abs(g.theta).toFixed(2)}/day. Vol sensitivity EGP ${g.vega.toFixed(2)} per 1% vol move.`;
+      `Delta ${g.delta.toFixed(2)} \u2014 a 1% spot move gains/loses SAR ${deltaDollar.toFixed(2)}. ` +
+      `Theta bleeds SAR ${Math.abs(g.theta).toFixed(2)}/day. Vol sensitivity SAR ${g.vega.toFixed(2)} per 1% vol move.`;
 
     res.json({
       ticker,

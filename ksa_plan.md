@@ -1,4 +1,4 @@
-# Xmore KSA Plan
+﻿# Xmore KSA Plan
 
 ## Objective
 
@@ -8,7 +8,7 @@ Convert Xmore from an EGX-first product into a KSA-first Tadawul product without
 
 ### 1. User-facing market conversion
 
-The active web experience was shifted from Egypt and EGX wording to Saudi Exchange and Tadawul wording across the main public surfaces.
+The active web experience was shifted from Egypt and Tadawul wording to Saudi Exchange and Tadawul wording across the main public surfaces.
 
 Files already converted in the KSA version include:
 
@@ -32,11 +32,11 @@ Key outcomes:
 - visible market copy now references Tadawul, Saudi market, TASI, and SAR
 - TradingView widgets on the main dashboard and Pro page now use Saudi tickers
 - /pro and /session are restored as real pages instead of redirects
-- Pro and Session pages filter out non-Saudi symbols so the KSA-branded experience does not leak EGX rows
+- Pro and Session pages filter out non-Saudi symbols so the KSA-branded experience does not leak Tadawul rows
 
 ### 2. KSA-first forecast and symbol handling
 
-Forecast-related logic was changed from EGX30 assumptions to a Tadawul-first universe.
+Forecast-related logic was changed from TASI assumptions to a Tadawul-first universe.
 
 Files:
 
@@ -48,7 +48,7 @@ Files:
 Key outcomes:
 
 - manual forecast symbols now resolve with KSA-first logic
-- auto forecast mode scans a Tadawul universe instead of EGX30
+- auto forecast mode scans a Tadawul universe instead of TASI
 - forecast display symbols normalize .SR cleanly
 - portfolio forecasts now run against resolved Saudi symbols
 
@@ -137,7 +137,7 @@ Local server code was started against the live PostgreSQL database and the follo
 
 ## Current State of the KSA Version
 
-The KSA version is now materially different from the original EGX build in four important ways:
+The KSA version is now materially different from the original Tadawul build in four important ways:
 
 1. the default symbol universe is Saudi
 2. the live reference metadata includes Saudi stocks
@@ -156,7 +156,7 @@ The migration is not complete across the full repo. Important remaining work inc
    - web-ui/routes/rag.js
    - web-ui/routes/screening.js
 
-2. data-model cleanup for legacy EGX naming such as:
+2. data-model cleanup for legacy Tadawul naming such as:
    - alpha_vs_egx30
    - egx30_return_pct
    - EGX-named benchmark fields and comments
@@ -172,7 +172,7 @@ The migration is not complete across the full repo. Important remaining work inc
 ## Recommended Next Phase
 
 1. replace remaining egx30_stocks joins with a market-neutral reference abstraction
-2. migrate benchmark computation from EGX30 semantics to TASI semantics across performance and track-record routes
+2. migrate benchmark computation from TASI semantics to TASI semantics across performance and track-record routes
 3. finish KSA conversion in RAG and screening routes
 4. add a reliable Tadawul benchmark ingestion source for TASI and MT30
 5. run a fresh deploy and post-deploy smoke test against the production app endpoints

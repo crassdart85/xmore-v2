@@ -1,4 +1,4 @@
-## ✅ VERIFICATION COMPLETE - ALL FILES SUCCESSFULLY CREATED
+﻿## ✅ VERIFICATION COMPLETE - ALL FILES SUCCESSFULLY CREATED
 
 ## March 21, 2026 Addendum - Signal Ranking and Production Validation
 
@@ -87,7 +87,7 @@
 
 ### Provider Fallback Chain ✅
 ```
-1. EGXPY (Primary)         → Best for EGX coverage
+1. EGXPY (Primary)         → Best for Tadawul coverage
 2. yfinance (Fallback 1)   → Global stock data
 3. Alpha Vantage (FB 2)    → Global with rate limits
 ```
@@ -129,8 +129,8 @@ Cache Miss → Try providers in order → Cache result → Return
 ### ✅ CLI Interface
 - [x] Single symbol fetch (`--symbol`)
 - [x] Multiple symbols (`--symbols`)
-- [x] All EGX30 (`--egx30`)
-- [x] EGX index benchmark (`--benchmark`)
+- [x] All TASI (`--egx30`)
+- [x] TASI index benchmark (`--benchmark`)
 - [x] Date range specification (absolute & relative)
 - [x] Export formats (CSV, Excel, JSON)
 - [x] Cache management (`--cache-stats`, `--clear-cache`)
@@ -228,7 +228,7 @@ TOTAL: 18 files | ~176 KB | 4,500+ lines of code
 ### Immediate Actions
 1. ✅ Install dependencies: `pip install -r requirements_data.txt`
 2. ✅ Test installation: `python xmore_data/main.py --cache-stats`
-3. ✅ Fetch EGX data: `python xmore_data/main.py --symbol COMI --summary`
+3. ✅ Fetch Tadawul data: `python xmore_data/main.py --symbol COMI --summary`
 4. ✅ Run examples: `python xmore_data/examples.py`
 
 ### Integration Ready

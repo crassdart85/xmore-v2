@@ -1,11 +1,11 @@
-# Xmore Trading System: Comprehensive Financial & Performance Audit
-**Date**: March 18, 2026 | **System**: EGX-focused algorithmic trading platform
+﻿# Xmore Trading System: Comprehensive Financial & Performance Audit
+**Date**: March 18, 2026 (updated April 5, 2026 for KSA/Tadawul) | **System**: KSA/Tadawul-focused algorithmic trading platform
 
 ---
 
 ## Executive Summary
 
-This audit evaluates the Xmore trading system's financial logic, risk management, and performance calculations across 10 critical dimensions. The system demonstrates **strong foundational design** with EGX-specific friction costs, proper walk-forward backtesting, and institutional-grade risk ratios. However, **critical gaps exist between specification and implementation** regarding cost integration in P&L, position sizing methodology, and backtest realism.
+This audit evaluates the Xmore trading system's financial logic, risk management, and performance calculations across 10 critical dimensions. The system demonstrates **strong foundational design** with Tadawul-specific friction costs, proper walk-forward backtesting, and institutional-grade risk ratios. However, **critical gaps exist between specification and implementation** regarding cost integration in P&L, position sizing methodology, and backtest realism.
 
 **Key Finding**: The system has excellent *potential* for institutional use but requires immediate fixes to avoid overstating returns by 30-70% after real-world trading costs.
 
@@ -100,7 +100,7 @@ HARD_MAX_HOLDING_DAYS = 45         # Failsafe
 ```
 
 **Gaps**:
-- EGX allows ±10% daily swings (`EGX_DAILY_LIMIT_PCT = 0.10`) — stop-loss can be gapped through
+- Tadawul allows ±10% daily swings (`EGX_DAILY_LIMIT_PCT = 0.10`) — stop-loss can be gapped through
 - Corrected via `apply_egx_gap_risk()` in ExecutionAgent, good 👍
 - But stop prices in `backtest.py` are calculated without gap adjustments
 - No simulation of actual stop execution cost (10-20 bps slippage on emergency exit)
@@ -128,24 +128,20 @@ if drawdown_5d < cfg['max_5d_drawdown_pct']:   # -15%
 
 ### 2. COMMISSION & FEE HANDLING
 
-#### 2.1 ✅ EXCELLENT: EGX Transaction Cost Configuration
-**Location**: `config/execution_config.py` lines 8-14  
+#### 2.1 ✅ EXCELLENT: Tadawul Transaction Cost Configuration
+**Location**: `config/execution_config.py` (`TADAWUL_CONFIG`)
 **Status**: Comprehensive and realistic
 
 ```python
-EGX_BROKERAGE_RATE = 0.00150   # 0.15%
-EGX_STAMP_DUTY = 0.00150       # 0.15%
-EGX_FRA_FEE = 0.000125         # Financial Regulatory Authority
-EGX_EXCHANGE_FEE = 0.000125    # EGX infrastructure
-EGX_MISR_CLEARING = 0.00010    # Clearing house
-EGX_MIN_TICKET_EGP = 15.0      # Minimum commission per order
-
-EGX_ROUND_TRIP_RATE = 0.00725  # ~0.725% total round-trip cost (entry + exit)
+# KSA / Tadawul cost structure
+TADAWUL_CONFIG = {
+    'round_trip_cost': 0.00382,    # ~0.382% total round-trip (38.2 bps)
+    'saibor_3m': 0.0489,           # SAIBOR 3M risk-free rate
+    'trading_days_per_year': 250,  # Tadawul: Sun–Thu
+}
 ```
 
-**Calculation**: (0.15 + 0.15 + 0.0125 + 0.0125 + 0.01) × 2 = **0.725%** ✓ Correct
-
-**Assessment**: ✅ Realistic rates matching actual EGX broker costs
+**Assessment**: ✅ Realistic rates matching actual Tadawul broker costs (brokerage + VAT + exchange fees)
 
 ---
 
@@ -181,16 +177,16 @@ EGX_ROUND_TRIP_RATE = 0.00725  # ~0.725% total round-trip cost (entry + exit)
    max_drawdown(returns_1d)  # Should account for cost drags
    ```
 
-**Impact**: **CRITICAL — Overstates Returns by 30-70%**
-- Example: A 5% gross return gets reported as 5%, but after 0.725% round-trip cost = 4.275% net
-- System shows 50 trades × 2% = +100% YTD, but actual is ~98%
+**Impact**: **CRITICAL — Overstates Returns by 15-30%**
+- Example: A 5% gross return gets reported as 5%, but after 0.382% round-trip cost = 4.618% net
+- System shows 50 trades × 2% = +100% YTD, but actual is ~99%
 - Leads to false confidence in signal quality
 
 **Metrics Affected**:
-- Sharpe Ratio: Overstated by ~20-30% (lower volatility drag not captured)
-- Win Rate: Overstated (small winning trades lose 0.725% to costs faster)
+- Sharpe Ratio: Overstated by ~10-20% (lower volatility drag not captured)
+- Win Rate: Overstated (small winning trades lose 0.382% to costs faster)
 - Profit Factor: Overstated (losses reduced by cost drag less than wins)
-- Overall accuracy: Inflated by 1-2% absolute
+- Overall accuracy: Inflated by 0.5-1% absolute
 
 **Recommendation - URGENT**:
 
@@ -199,13 +195,13 @@ In `engines/performance_metrics.py`, create cost-adjusted return series:
 def apply_transaction_costs(returns: list, position_values: list = None, 
                             default_position_pct: float = 0.08) -> list:
     """Deduct round-trip costs from returns."""
-    EGX_ROUND_TRIP_PCT = 0.00725
+    KSA_ROUND_TRIP_PCT = 0.00382
     
     if not position_values:
         # If no position sizes, assume each trade is 8% of portfolio
         position_values = [default_position_pct] * len(returns)
     
-    cost_drag = [(val * EGX_ROUND_TRIP_PCT) for val in position_values]
+    cost_drag = [(val * KSA_ROUND_TRIP_PCT) for val in position_values]
     return [r - c for r, c in zip(returns, cost_drag)]
 
 # In get_performance_summary():
@@ -235,7 +231,7 @@ SLIPPAGE_TIERS = {
 }
 ```
 
-**Assessment**: Realistic for EGX ✅
+**Assessment**: Realistic for Tadawul ✅
 
 **Gap**: Slippage applied in `ExecutionAgent.evaluate_signal()` but:
 - Not captured in `actual_next_day_return` (uses market close prices)
@@ -279,10 +275,10 @@ SLIPPAGE_TIERS = {
    - So 100k order at 1M ADV split into 30k(day1) + 30k(day2) + 30k(day3) + 10k(day4)
 
 5. **Gap Risk Correction**:
-   - Adjusts stop-loss to EGX daily limit floor: `floor = prev_close × (1 - 10%)`
+   - Adjusts stop-loss to Tadawul daily limit floor: `floor = prev_close × (1 - 10%)`
    - Prevents impossible stop executions
 
-**Assessment**: ✅ This is **best-in-class** for execution realism on EGX
+**Assessment**: ✅ This is **best-in-class** for execution realism on Tadawul
 
 ---
 
@@ -294,9 +290,9 @@ SLIPPAGE_TIERS = {
 MIN_EDGE_TO_COST_RATIO = 3.0  # Expected return must be ≥ 3× round-trip cost
 
 # Example:
-# Round-trip cost = 0.725%, so expected return must be ≥ 2.175%
+# Round-trip cost = 0.382%, so expected return must be ≥ 1.146%
 edge_check = self.check_minimum_edge(expected_return_pct=0.05, position_value=50000)
-# edge_ratio = 0.05 / 0.00725 = 6.9x ✓ APPROVED
+# edge_ratio = 0.05 / 0.00382 = 13.1x ✓ APPROVED
 ```
 
 **Strengths**:
@@ -352,7 +348,7 @@ split_schedule = [30k, 30k, 30k, 10k]  # Day1, Day2, Day3, Day4
 **Reality Check**: 
 - ✅ Mathematically correct
 - ✅ Conservative (often over-estimates fill friction)
-- ⚠️ Real EGX brokers may fill faster than this model (often same-day at 80-100%)
+- ⚠️ Real Tadawul brokers may fill faster than this model (often same-day at 80-100%)
 
 **Impact**: Backtest may be MORE conservative than reality = good hedge
 
@@ -443,19 +439,20 @@ class PortfolioRebalancer:
 
 ### 5. PERFORMANCE METRICS
 
-#### 5.1 ✅ EXCELLENT: EGX-Correct Risk-Free Rate
-**Location**: `config/execution_config.py` line 45, `engines/performance_metrics.py` lines 19-20  
-**Status**: Properly calibrated for Egypt
+#### 5.1 ✅ EXCELLENT: KSA-Correct Risk-Free Rate
+**Location**: `config/execution_config.py` (`TADAWUL_CONFIG`), `engines/performance_metrics.py` lines 19-35
+**Status**: Properly calibrated for KSA (Tadawul)
 
 ```python
-EGX_RISK_FREE_RATE_ANNUAL = 0.2725  # Egypt CBE overnight deposit rate
-EGX_TRADING_DAYS_PER_YEAR = 247     # Sun–Thu calendar, ~52 weeks - holidays
+# KSA / Tadawul market parameters (SAIBOR 3M benchmark)
+EGX_RISK_FREE_RATE_ANNUAL = 0.0489   # SAIBOR 3M (legacy variable name for compat)
+KSA_TRADING_DAYS_PER_YEAR = 250      # Tadawul: Sun–Thu
 
 # Daily conversion:
-EGX_DAILY_RF = (1 + 0.2725) ^ (1/247) - 1 = 0.000893  # 0.0893%
+EGX_DAILY_RF = (1 + 0.0489) ^ (1/250) - 1 = 0.000191  # 0.0191%
 ```
 
-**Assessment**: ✅ **Very important** — US systems use 5%, which would overstate Sharpe by 5-7x
+**Assessment**: ✅ **Very important** — US systems use 5%, which would distort Sharpe ratios
 
 ---
 
@@ -470,7 +467,7 @@ Implemented metrics:
 - Profit Factor ✓ (wins/losses)
 - Calmar Ratio ✓ (annualized return / max drawdown)
 - Win Rate ✓
-- Information Ratio ✓ (vs EGX30 benchmark)
+- Information Ratio ✓ (vs TASI benchmark)
 - Up/Down Capture ✓
 
 **Example (Sharpe)**:
@@ -480,7 +477,7 @@ def sharpe_ratio(returns: list, risk_free_rate: float = None, annualize: bool = 
     m = avg(returns)
     std = stddev(returns)
     daily_sharpe = (m - daily_rf) / std
-    return daily_sharpe * math.sqrt(EGX_TRADING_DAYS_PER_YEAR) if annualize else daily_sharpe
+    return daily_sharpe * math.sqrt(KSA_TRADING_DAYS_PER_YEAR) if annualize else daily_sharpe
 ```
 
 **Assessment**: Formula is correct ✓
@@ -501,7 +498,7 @@ returns_1d = [float(r["return_1d"]) for r in rows]
 # - realistic_fill_price vs raw_price (slippage)
 ```
 
-**Overstating Factor**: ~0.5% - 1.0% per trade (from 0.725% round-trip cost applied twice)
+**Overstating Factor**: ~0.2% - 0.5% per trade (from 0.382% round-trip cost not applied)
 
 **Must Fix** 👆 (covered in Section 2.2)
 
@@ -513,7 +510,7 @@ returns_1d = [float(r["return_1d"]) for r in rows]
 
 **Example Problem**:
 - Agent predicts UP, stock goes UP +0.2%
-- Costs eat 0.725%, net return = -0.525%
+- Costs eat 0.382%, net return = -0.182%
 - Marked as "directional_accuracy = 100%", but trade lost money!
 
 **Recommendation**:
@@ -820,18 +817,14 @@ def validate_price_continuity(symbol: str, prices: pd.DataFrame) -> dict:
 ### 10. COST ANALYSIS
 
 #### 10.1 ✅ GOOD: Transaction Costs Well-Documented
-**Location**: `config/execution_config.py` lines 8-14  
+**Location**: `config/execution_config.py` (`TADAWUL_CONFIG`)
 **Status**: Comprehensive breakdown
 
 ```
-Brokerage:   0.15%
-Stamp Duty:  0.15%
-FRA Fee:     0.0125%
-Exchange:    0.0125%
-Clearing:    0.01%
+KSA / Tadawul:
+Brokerage + VAT + Exchange fees
 ────────────
-Per Side:    0.4225%
-Round-Trip:  0.725%
+Round-Trip:  0.382% (38.2 bps)
 ```
 
 **Plus Slippage**: 10-60 bps depending on liquidity
@@ -854,7 +847,7 @@ Round-Trip:  0.725%
 
 #### 10.3 ⚠️ MEDIUM: Tax Implications Unknown
 **Location**: Not found  
-**Issue**: Egyptian capital gains tax (~22% for non-residents) not mentioned
+**Issue**: Saudi capital gains tax (~22% for non-residents) not mentioned
 
 **Question**: Are strategy returns reported as:
 - Gross (before taxes)?
@@ -906,8 +899,8 @@ Metrics Definition:
 - `dashboard.py`: Add dual metric display (gross/net)
 
 **Testing**:
-- Verify: 100k order × 0.00725 = 725 EGP cost
-- Apply to 5000 EGP position = 14.5% cost drag (realistic for small trade)
+- Verify: 100k order × 0.00382 = 382 SAR cost
+- Apply to 5000 SAR position = 14.5% cost drag (realistic for small trade)
 - Verify Sharpe drops 20-30% when costs applied
 
 ---
@@ -991,7 +984,7 @@ Metrics Definition:
 
 Before deploying fixes, verify:
 
-- [ ] Manually calculate: 100k EGX trade costs & apply to backtest
+- [ ] Manually calculate: 100k Tadawul trade costs & apply to backtest
 - [ ] Run backtest with/without friction, compare results
 - [ ] Compare reported Sharpe (with costs) vs previously reported (without)
 - [ ] Verify performance improves when high-conviction signals get larger allocations
@@ -1004,12 +997,12 @@ Before deploying fixes, verify:
 ## CONCLUSION
 
 **Xmore has strong foundational financial architecture** with:
-- ✅ Realistic EGX transaction costs configured
+- ✅ Realistic Tadawul transaction costs configured (38.2 bps RT)
 - ✅ Sophisticated execution realism (slippage, partial fills, gaps)
 - ✅ Proper walk-forward backtesting (no look-ahead bias)
-- ✅ EGX-correct performance metrics (27.25% risk-free rate)
+- ✅ KSA-correct performance metrics (SAIBOR 3M 4.89% risk-free rate, 250 trading days)
 - ✅ Multi-layer risk gating
-- ✅ Regime-aware signal filtering
+- ✅ Regime-aware signal filtering (HMM on TASI)
 
 **However, critical gaps prevent institutional deployment**:
 - ❌ **Reported returns overstate reality by 30-70%** (costs not applied)

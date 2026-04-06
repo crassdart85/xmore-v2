@@ -1,4 +1,4 @@
-# Xmore — AI Stock Prediction System: User Manual
+﻿# Xmore — AI Stock Prediction System: User Manual
 
 ---
 
@@ -86,7 +86,7 @@ Four animated metric cards appear at the top of the dashboard:
 A live performance strip showing 30-day rolling metrics:
 
 - **Win Rate** — Percentage of correct predictions
-- **Alpha** — Excess return vs. EGX30 benchmark
+- **Alpha** — Excess return vs. TASI benchmark
 - **Sharpe Ratio** — Risk-adjusted return measure
 - **Max Drawdown** — Largest peak-to-trough decline
 
@@ -151,7 +151,7 @@ Use the search box above the table to filter by stock symbol or company name. Fi
 
 ### 3.4 TradingView Ticker
 
-A live EGX30 index ticker tape runs across the top of the predictions view, showing real-time market data. It automatically adapts to your selected theme (dark/light).
+A live TASI index ticker tape runs across the top of the predictions view, showing real-time market data. It automatically adapts to your selected theme (dark/light).
 
 ---
 
@@ -386,7 +386,7 @@ Three headline metric cards:
 
 | Metric | Description |
 |--------|-------------|
-| **Alpha** | 30-day excess return vs. EGX30 benchmark (%) |
+| **Alpha** | 30-day excess return vs. TASI benchmark (%) |
 | **Sharpe Ratio** | 30-day risk-adjusted return |
 | **Max Drawdown** | 30-day largest peak-to-trough decline (%) |
 
@@ -395,15 +395,15 @@ Three headline metric cards:
 An interactive chart (powered by TradingView Lightweight Charts) showing:
 
 - **Xmore Strategy** (green line) — Cumulative return of AI predictions
-- **EGX30 Benchmark** (gray line) — Market benchmark return
+- **TASI Benchmark** (gray line) — Market benchmark return
 - **Alpha shading** — Visual difference between the two
 
 **Controls:**
 - **Period selector:** 30d / 60d / 90d / 180d
-- **Show EGX30 benchmark:** Toggle benchmark line on/off
+- **Show TASI benchmark:** Toggle benchmark line on/off
 - **Show drawdown zones:** Highlight periods of decline
 
-**Legend:** Shows current Xmore %, EGX30 %, and Alpha %.
+**Legend:** Shows current Xmore %, TASI %, and Alpha %.
 
 ### 9.4 Stability Metrics Table
 
@@ -746,7 +746,7 @@ The entire system supports **English** and **Arabic**.
 | GET | `/api/evaluations` | Prediction evaluation results |
 | GET | `/api/consensus` | All consensus signals |
 | GET | `/api/consensus/:symbol` | Detailed consensus for one stock |
-| GET | `/api/stocks` | All EGX30 stocks (for search) |
+| GET | `/api/stocks` | All TASI stocks (for search) |
 | GET | `/api/risk/overview` | Portfolio-level risk assessment |
 | GET | `/api/performance-v2/summary` | Overall performance metrics |
 | GET | `/api/performance-v2/by-agent` | Per-agent performance |

@@ -1,10 +1,15 @@
-"""
+﻿"""
 Xmore Data Layer - Complete Guide
 
 ========================================================================
                     PRODUCTION-READY DATA INGESTION
-                  FOR EGYPTIAN EXCHANGE (EGX) MARKET DATA
+              FOR KSA/TADAWUL MARKET DATA (EODHD PRIMARY)
 ========================================================================
+
+> **KSA Branch Note**: This branch targets Saudi Exchange (Tadawul) with
+> EODHD as the primary data source and yfinance as fallback.
+> Legacy Tadawul provider code (EGXPY, Alpha Vantage) is retained for
+> compatibility but is not used in the active KSA pipeline.
 
 📋 TABLE OF CONTENTS
 1. Overview
@@ -22,9 +27,9 @@ Xmore Data Layer - Complete Guide
 ========================================================================
 
 The Xmore Data Layer is a modular, fault-tolerant system for ingesting
-EGX market data with:
+KSA/Tadawul market data with:
 
-✓ Multi-provider fallback chain (EGXPY → yfinance → Alpha Vantage)
+✓ Multi-provider fallback chain (EODHD → yfinance → Alpha Vantage)
 ✓ Intelligent caching (24h TTL, force refresh)
 ✓ Rate limiting for free APIs
 ✓ Structured logging
@@ -34,7 +39,7 @@ EGX market data with:
 
 Design Goals:
 - Power Xmore's signal generation engine
-- Benchmark against EGX30
+- Benchmark against TASI
 - Support backtesting and live trading
 - Zero hardcoded secrets
 - Graceful degradation under API failures
@@ -55,7 +60,8 @@ xmore_data/
 │
 └── providers/
     ├── __init__.py                  # Base provider class
-    ├── egxpy_provider.py            # Primary: EGXLytics integration
+    ├── egxpy_provider.py            # Legacy: EGXLytics integration (Tadawul only)
+    ├── eodhd_provider.py            # Primary: EODHD API (KSA/Tadawul)
     ├── yfinance_provider.py         # Fallback 1: Yahoo Finance
     └── alpha_vantage_provider.py    # Fallback 2: Alpha Vantage
 
@@ -79,7 +85,7 @@ Data Flow:
          │ ✗ MISS
          ▼
 ┌──────────────────────────────┐
-│  Try Provider #1: EGXPY      │───► ✓ Success? Cache & Return
+│  Try Provider #1: EODHD      │───► ✓ Success? Cache & Return
 └────────┬─────────────────────┘
          │ ✗ Fail
          ▼
@@ -99,9 +105,10 @@ Provider Features:
 ┌─────────────────────────────────────────────────────────────────────┐
 │ PROVIDER      │ PRIMARY | INTRADAY | RATE LIMIT | SYMBOLS          │
 ┝─────────────────────────────────────────────────────────────────────┤
-│ EGXPY         │   ✓    │    ✓    │   None    │ EGX + Index      │
-│ yfinance      │   ✗    │    ✓    │   Fair    │ Limited EGX      │
+│ EODHD         │   ✓    │    ✓    │   Fair    │ KSA + Global     │
+│ yfinance      │   ✗    │    ✓    │   Fair    │ KSA (.SR)        │
 │ Alpha Vantage │   ✗    │    ✗    │ 5/min    │ Global stocks    │
+│ EGXPY         │   ✗    │    ✓    │   None    │ Tadawul only (legacy)│
 └─────────────────────────────────────────────────────────────────────┘
 
 ========================================================================
@@ -120,13 +127,15 @@ A. INSTALLATION
    - yfinance (required)
    - joblib (caching)
    - python-dotenv (secrets)
-   - Optional: egxpy, alpha-vantage
+   - Optional: egxpy (legacy Tadawul only), alpha-vantage
+   - EODHD_API_KEY recommended for KSA primary provider
 
 
 2. Create .env file in project root:
 
    # .env
-   ALPHA_VANTAGE_API_KEY=your_key_here  # Optional, get from https://www.alphavantage.co
+   EODHD_API_KEY=your_key_here         # Primary KSA data source
+   ALPHA_VANTAGE_API_KEY=your_key_here  # Optional fallback, get from https://www.alphavantage.co
    CACHE_EXPIRATION_HOURS=24
    LOG_LEVEL=INFO
 
@@ -139,15 +148,15 @@ A. INSTALLATION
 B. FIRST DATA FETCH
 ───────────────────────────────────────────────────────────────────────
 
-Fetch COMI (Commercial International Bank) last 90 days:
+Fetch 2222.SR (Saudi Aramco) last 90 days:
 
-   python xmore_data/main.py --symbol COMI --summary
+   python xmore_data/main.py --symbol 2222.SR --summary
 
 Expected output:
-   ╔══════════════════════════════════════════════════════════╗
-   ║ COMI [from EGXPY]
-   ╠══════════════════════════════════════════════════════════╣
-   ║ Latest Close     : EGP XXX.XX
+   ╔════════════════════════════════════════════════════════╗
+   ║ 2222.SR [from EODHD]
+   ╠════════════════════════════════════════════════════════╣
+   ║ Latest Close     : SAR XX.XX
    ║ Change           : +X.XX (+X.XX%)
    ║ High / Low       : XXX.XX / XXX.XX
    ║ Avg Volume       : X,XXX,XXX
@@ -161,7 +170,7 @@ C. IMPORT IN YOUR CODE
 from xmore_data import DataManager
 
 dm = DataManager()
-df = dm.fetch_data("COMI", interval="1d", start="2024-01-01")
+df = dm.fetch_data("2222.SR", interval="1d", start="2024-01-01")
 
 print(df.head())
 print(df.columns)  # Date, Open, High, Low, Close, Adj Close, Volume
@@ -174,28 +183,28 @@ A. BASIC COMMANDS
 ───────────────────────────────────────────────────────────────────────
 
 Fetch single symbol:
-   python xmore_data/main.py --symbol COMI
+   python xmore_data/main.py --symbol 2222.SR
 
 Fetch multiple symbols:
-   python xmore_data/main.py --symbols COMI SWDY HRHO
+   python xmore_data/main.py --symbols 2222.SR 1180.SR 2010.SR
 
-Fetch entire EGX30:
+Fetch entire KSA universe:
    python xmore_data/main.py --egx30
 
-Fetch EGX index (benchmark):
+Fetch TASI index (benchmark):
    python xmore_data/main.py --benchmark
 
 B. DATE RANGES
 ───────────────────────────────────────────────────────────────────────
 
 Explicit dates:
-   python xmore_data/main.py --symbol COMI --start 2024-01-01 --end 2024-12-31
+   python xmore_data/main.py --symbol 2222.SR --start 2024-01-01 --end 2024-12-31
 
 Relative dates:
-   python xmore_data/main.py --symbol COMI --start 90d      # Last 90 days
-   python xmore_data/main.py --symbol COMI --start 1y       # Last 1 year
-   python xmore_data/main.py --symbol COMI --start 6mo      # Last 6 months
-   python xmore_data/main.py --symbol COMI --start 4w       # Last 4 weeks
+   python xmore_data/main.py --symbol 2222.SR --start 90d      # Last 90 days
+   python xmore_data/main.py --symbol 2222.SR --start 1y       # Last 1 year
+   python xmore_data/main.py --symbol 2222.SR --start 6mo      # Last 6 months
+   python xmore_data/main.py --symbol 2222.SR --start 4w       # Last 4 weeks
 
 C. INTERVALS
 ───────────────────────────────────────────────────────────────────────
@@ -212,16 +221,16 @@ D. EXPORT OPTIONS
 ───────────────────────────────────────────────────────────────────────
 
 Export to CSV:
-   python xmore_data/main.py --symbol COMI --export csv
+   python xmore_data/main.py --symbol 2222.SR --export csv
 
 Export to Excel (multiple symbols in one file):
-   python xmore_data/main.py --symbols COMI SWDY HRHO --export excel
+   python xmore_data/main.py --symbols 2222.SR 1180.SR 2010.SR --export excel
 
 Export to JSON:
    python xmore_data/main.py --benchmark --export json
 
 Custom output directory:
-   python xmore_data/main.py --symbol COMI --export csv --output-dir /path/to/exports
+   python xmore_data/main.py --symbol 2222.SR --export csv --output-dir /path/to/exports
 
 E. CACHE MANAGEMENT
 ───────────────────────────────────────────────────────────────────────
@@ -230,7 +239,7 @@ Show cache stats:
    python xmore_data/main.py --cache-stats
 
 Force refresh (bypass cache):
-   python xmore_data/main.py --symbol COMI --refresh
+   python xmore_data/main.py --symbol 2222.SR --refresh
 
 Clear all cache:
    python xmore_data/main.py --clear-cache
@@ -239,10 +248,10 @@ F. SUMMARY & DISPLAY
 ───────────────────────────────────────────────────────────────────────
 
 Show data summary (default if no export):
-   python xmore_data/main.py --symbol COMI --summary
+   python xmore_data/main.py --symbol 2222.SR --summary
 
 Fetch + export without summary:
-   python xmore_data/main.py --symbol COMI --export csv
+   python xmore_data/main.py --symbol 2222.SR --export csv
 
 ========================================================================
 5. PROGRAMMATIC API
@@ -262,7 +271,7 @@ dm = DataManager(
 
 # Fetch single symbol
 df = dm.fetch_data(
-    symbol="COMI",
+    symbol="2222.SR",
     interval="1d",
     start="2024-01-01",       # Optional: YYYY-MM-DD or relative (90d, 1y)
     end="2024-12-31",         # Optional: defaults to today
@@ -284,7 +293,7 @@ B. FETCH MULTIPLE SYMBOLS
 
 # Fetch multiple symbols at once
 data = dm.fetch_multiple(
-    symbols=["COMI", "SWDY", "HRHO"],
+    symbols=["2222.SR", "1180.SR", "2010.SR"],
     interval="1d",
     start="2024-01-01"
 )
@@ -294,35 +303,35 @@ for symbol, df in data.items():
     if df is not None:
         print(f"{symbol}: {len(df)} rows, latest close = {df['Close'].iloc[-1]}")
 
-C. FETCH EGX INDEX
+C. FETCH TASI INDEX
 ───────────────────────────────────────────────────────────────────────
 
-# Fetch EGX index (Egyptian Exchange benchmark)
+# Fetch TASI index (Tadawul benchmark)
 index_df = dm.fetch_index(start="2024-01-01")
 
-# Calculate EGX index returns
+# Calculate TASI index returns
 index_df['Daily_Return'] = index_df['Close'].pct_change()
 
-D. FETCH ALL EGX30
+D. FETCH ALL KSA UNIVERSE
 ───────────────────────────────────────────────────────────────────────
 
-# Fetch all 30 EGX listed companies
-egx30_data = dm.fetch_egx30(interval="1d", start="2024-01-01")
+# Fetch all KSA universe stocks
+ksa_data = dm.fetch_egx30(interval="1d", start="2024-01-01")
 
 # Returns: Dict[symbol] -> DataFrame (None if failed)
-success_count = sum(1 for df in egx30_data.values() if df is not None)
-print(f"Successfully fetched {success_count}/30 symbols")
+success_count = sum(1 for df in ksa_data.values() if df is not None)
+print(f"Successfully fetched {success_count} symbols")
 
-for symbol, df in egx30_data.items():
+for symbol, df in ksa_data.items():
     if df is not None and not df.empty:
         latest_price = df['Close'].iloc[-1]
-        print(f"{symbol}: EGP {latest_price:.2f}")
+        print(f"{symbol}: SAR {latest_price:.2f}")
 
 E. CACHE OPERATIONS
 ───────────────────────────────────────────────────────────────────────
 
 # Clear cache for specific symbol
-dm.clear_cache(symbol="COMI")
+dm.clear_cache(symbol="2222.SR")
 
 # Clear all cache
 dm.clear_cache()
@@ -342,7 +351,7 @@ F. PROVIDER INFORMATION
 
 # Check which providers are available
 print(dm.provider_info)
-# Output: ['EGXPY', 'yfinance', 'Alpha Vantage']
+# Output: ['EODHD', 'yfinance', 'Alpha Vantage']
 
 ========================================================================
 6. CONFIGURATION
@@ -408,7 +417,7 @@ A. HOW CACHING WORKS
 
 Cache Key:
     Symbol + Interval + Date Range Hash
-    Example: COMI_1d_a3f5c1d2.joblib
+    Example: 2222_SR_1d_a3f5c1d2.joblib
 
 Cache Location:
     .cache/market_data/
@@ -450,7 +459,7 @@ View cache size:
     dm.get_cache_stats()
 
 Clear symbol cache:
-    dm.clear_cache("COMI")
+    dm.clear_cache("2222.SR")
 
 Clear all cache:
     dm.clear_cache()
@@ -459,7 +468,7 @@ Disable caching:
     dm = DataManager(use_cache=False)
 
 Fetch with refresh:
-    dm.fetch_data("COMI", force_refresh=True)
+    dm.fetch_data("2222.SR", force_refresh=True)
 
 ========================================================================
 8. TROUBLESHOOTING
@@ -489,9 +498,9 @@ Causes:
     - Date range outside available data
     - All providers failed
 Solution:
-    Check symbol spelling: COMI (not COMI.CA)
+    Check symbol spelling: 2222.SR
     Try wider date range: --start 1y
-    Check provider coverage: only EGXPY has full EGX coverage
+    Check provider coverage: EODHD has full KSA coverage (requires EODHD_API_KEY)
     Verify .env ALPHA_VANTAGE_API_KEY if tertiary fallback fails
 
 Problem: "Rate limit exceeded (Alpha Vantage)"
@@ -567,13 +576,13 @@ B. TESTING
 Test single provider:
    from xmore_data.providers.egxpy_provider import EGXPYProvider
    provider = EGXPYProvider()
-   df = provider.fetch("COMI", start="2024-01-01")
+   df = provider.fetch("2222.SR", start="2024-01-01")
    print(df)
 
 Test fallback chain (intentionally break EGXPY):
    dm = DataManager()
    dm.providers = dm.providers[1:]  # Remove EGXPY
-   df = dm.fetch_data("COMI")  # Should use yfinance
+   df = dm.fetch_data("2222.SR")  # Should use yfinance
 
 C. LOGGING CONFIGURATION
 ───────────────────────────────────────────────────────────────────────
@@ -604,7 +613,7 @@ Example: Using data layer in signal generation:
    sg = SignalGenerator()
    
    # Fetch data
-   df = dm.fetch_data("COMI", start="2024-01-01")
+   df = dm.fetch_data("2222.SR", start="2024-01-01")
    
    # Generate signals
    signals = sg.generate_signals(df)

@@ -1,4 +1,4 @@
-# Xmore — Technical Equations & Workflow Reference
+﻿# Xmore — Technical Equations & Workflow Reference
 
 > **Scope**: Every quantitative formula, signal rule, and decision boundary used in the Xmore signal pipeline, ML engine, risk layer, and execution model. Source-mapped to the actual implementation file.
 
@@ -23,7 +23,7 @@
 5. [Consensus Engine](#4-consensus-engine)
 6. [Risk Agent](#5-risk-agent)
 7. [Execution Model](#6-execution-model)
-   - 6.1 EGX Transaction Cost Structure
+   - 6.1 Tadawul Transaction Cost Structure
    - 6.2 Slippage Model
    - 6.3 Position Sizing
    - 6.4 Fill Ratio Model
@@ -67,8 +67,8 @@ evaluate.py  ──►  evaluations table (was_correct, accuracy)
 ```
 
 **Prediction horizon**: 5 trading days  
-**Universe**: EGX-30 (.CA suffix) + select US symbols  
-**Operating hours**: Sun–Thu 07:00–12:00 UTC (EGX session)
+**Universe**: TASI (.SR suffix) + select US symbols  
+**Operating hours**: Sun–Thu 07:00–12:00 UTC (Tadawul session)
 
 ---
 
@@ -261,7 +261,7 @@ Three macro signals are merged onto the price DataFrame as 5-day rolling returns
 
 $$r_t^{\text{Brent},5} = \frac{P_t^{\text{Brent}} - P_{t-5}^{\text{Brent}}}{P_{t-5}^{\text{Brent}}}$$
 
-$$r_t^{\text{USD/EGP},5} = \frac{P_t^{\text{USD/EGP}} - P_{t-5}^{\text{USD/EGP}}}{P_{t-5}^{\text{USD/EGP}}}$$
+$$r_t^{\text{USD/SAR},5} = \frac{P_t^{\text{USD/SAR}} - P_{t-5}^{\text{USD/SAR}}}{P_{t-5}^{\text{USD/SAR}}}$$
 
 $$r_t^{\text{EEM},5} = \frac{P_t^{\text{EEM}} - P_{t-5}^{\text{EEM}}}{P_{t-5}^{\text{EEM}}}$$
 
@@ -511,27 +511,20 @@ $$\text{FLAG if} \quad \frac{|\text{signals in sector}|}{|\text{total signals}|}
 
 > Source: [`config/execution_config.py`](config/execution_config.py)
 
-### 6.1 EGX Transaction Cost Structure
+### 6.1 KSA / Tadawul Transaction Cost Structure
 
 | Component | Rate | Direction |
 |-----------|------|-----------|
-| Brokerage | 0.150% | Per leg |
-| Stamp Duty | 0.150% | Per leg |
-| FRA fee | 0.0125% | Per leg |
-| EGX fee | 0.0125% | Per leg |
-| Misr Clearing | 0.010% | Per leg |
-| **One-way total** | **~0.335%** | |
-| **Round-trip total** | **~0.725%** | |
+| Brokerage + VAT + Exchange fees | ~0.191% | Per leg |
+| **Round-trip total** | **~0.382%** | |
 
-$$\text{EGX\_ROUND\_TRIP\_RATE} = 2 \times (0.00150 + 0.00150 + 0.000125 + 0.000125 + 0.00010) \approx 0.725\%$$
-
-Minimum ticket: EGP 15 per order.
+$$\text{TADAWUL\_ROUND\_TRIP\_RATE} \approx 0.382\%$$
 
 **Minimum Edge Rule**
 
 Signal must have expected return $\ge 3\times$ round-trip cost:
 
-$$\text{Expected Return} \ge 3 \times 0.725\% = 2.175\%$$
+$$\text{Expected Return} \ge 3 \times 0.382\% = 1.146\%$$
 
 ---
 
@@ -539,7 +532,7 @@ $$\text{Expected Return} \ge 3 \times 0.725\% = 2.175\%$$
 
 Slippage assigned by ADV (Average Daily Value) tier:
 
-| Liquidity Tier | Min ADV (EGP) | Slippage |
+| Liquidity Tier | Min ADV (SAR) | Slippage |
 |---------------|--------------|---------|
 | High | ≥ 5,000,000 | 10 bps = 0.10% |
 | Medium | ≥ 1,000,000 | 25 bps = 0.25% |
@@ -622,9 +615,9 @@ $$\text{PnL}_t = \begin{cases} +|r_t| & \hat{y}_t = \text{UP} \wedge y_t = \text
 
 **Cost-adjusted P&L**
 
-$$\text{Net PnL}_t = \text{PnL}_t - \text{EGX\_ROUND\_TRIP\_RATE} \times 100$$
+$$\text{Net PnL}_t = \text{PnL}_t - \text{TADAWUL\_ROUND\_TRIP\_RATE} \times 100$$
 
-where EGX round-trip rate = 0.725%.
+where Tadawul round-trip rate = 0.382%.
 
 ---
 
@@ -691,9 +684,9 @@ Composite risk score from four macro indicators:
 $$R_{\text{macro}} = \frac{R_{\text{rate}} + R_{\text{fx}} + R_{\text{inflation}} + R_{\text{growth}}}{4}$$
 
 where each component $R_i \in [0, 1]$ is a normalized risk measure:
-- $R_{\text{rate}}$: CBE interest rate vs thresholds (>18% → HIGH)
-- $R_{\text{fx}}$: USD/EGP depreciation stress
-- $R_{\text{inflation}}$: CPI YoY vs thresholds (>20% → HIGH)
+- $R_{\text{rate}}$: SAMA repo rate vs thresholds
+- $R_{\text{fx}}$: USD/SAR stability (pegged but monitored)
+- $R_{\text{inflation}}$: CPI YoY vs thresholds
 - $R_{\text{growth}}$: GDP growth momentum (inverted: low growth → high risk)
 
 **Macro-Adjusted Simulation** (`SimulationConfig`):

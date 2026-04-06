@@ -1,18 +1,18 @@
-console.log('=== INIT-DB.JS STARTING ===');
+﻿console.log('=== INIT-DB.JS STARTING ===');
 const { Pool } = require('pg');
 
 const DATABASE_URL = process.env.DATABASE_URL;
 console.log('DATABASE_URL exists:', !!DATABASE_URL);
 
 if (!DATABASE_URL) {
-  console.log('⚠️  No DATABASE_URL found. Skipping database initialization.');
+  console.log('âš ï¸  No DATABASE_URL found. Skipping database initialization.');
   process.exit(0);
 }
 
 // Set a global timeout - exit after 600 seconds no matter what
 const TIMEOUT_MS = 600000;
 const timeoutId = setTimeout(() => {
-  console.error('❌ Database initialization timed out after 600 seconds');
+  console.error('âŒ Database initialization timed out after 600 seconds');
   process.exit(1);
 }, TIMEOUT_MS);
 timeoutId.unref(); // Don't keep process alive just for timeout
@@ -35,7 +35,7 @@ const pool = new Pool({
  * managed Postgres overrides session-level SET commands via role config
  * or connection-pool resets between queries.
  *
- * SET LOCAL is transaction-scoped and cannot be overridden externally —
+ * SET LOCAL is transaction-scoped and cannot be overridden externally â€”
  * it applies for the duration of the enclosing transaction only.
  *
  * Errors (lock timeout, statement timeout, concurrent run) are caught
@@ -50,23 +50,23 @@ async function safeCreateIndex(db, sql) {
     await db.query('COMMIT');
   } catch (e) {
     try { await db.query('ROLLBACK'); } catch (_) {}
-    console.warn(`⚠️  DDL skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
+    console.warn(`âš ï¸  DDL skipped (lock timeout / concurrent run): ${e.message.split('\n')[0]}`);
   }
 }
 
 async function initializeDatabase() {
-  console.log('🔧 Initializing PostgreSQL database...');
-  console.log('📍 Connecting to:', DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
+  console.log('ðŸ”§ Initializing PostgreSQL database...');
+  console.log('ðŸ“ Connecting to:', DATABASE_URL.replace(/:[^:@]+@/, ':****@'));
 
   try {
     // Test connection
-    console.log('⏳ Testing database connection...');
+    console.log('â³ Testing database connection...');
     await pool.query('SELECT 1');
-    console.log('✅ Connected to PostgreSQL');
+    console.log('âœ… Connected to PostgreSQL');
 
     // lock_timeout: fail fast if we can't acquire a DDL lock within 5s
     // (covers concurrent GH Actions jobs holding AccessExclusiveLock).
-    // statement_timeout=0: index BUILD time is intentionally unlimited —
+    // statement_timeout=0: index BUILD time is intentionally unlimited â€”
     // lock_timeout already protects against lock hangs. Capping build time
     // caused all 47 index creations to timeout at 30s each, consuming the
     // entire 300s global window before the server could start.
@@ -74,10 +74,10 @@ async function initializeDatabase() {
     // subsequent pool.query() call on this same connection.
     await pool.query("SET lock_timeout = '5s'");
     await pool.query("SET statement_timeout = '0'");
-    console.log('⏱  lock_timeout=5s  statement_timeout=0 (unlimited)');
+    console.log('â±  lock_timeout=5s  statement_timeout=0 (unlimited)');
 
     // Create tables
-    console.log('📋 Creating tables...');
+    console.log('ðŸ“‹ Creating tables...');
 
     // Table 1: Stock Prices
     await pool.query(`
@@ -233,7 +233,7 @@ async function initializeDatabase() {
     // Add reasoning column to predictions if it doesn't exist
     try {
       await pool.query('ALTER TABLE predictions ADD COLUMN IF NOT EXISTS reasoning TEXT');
-      console.log('✅ Added reasoning column to predictions');
+      console.log('âœ… Added reasoning column to predictions');
     } catch (err) {
       // Column may already exist, that's fine
     }
@@ -241,7 +241,7 @@ async function initializeDatabase() {
     // Add xmore_score column to consensus_results if not exists
     try {
       await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS xmore_score REAL');
-      console.log('✅ Added xmore_score column to consensus_results');
+      console.log('âœ… Added xmore_score column to consensus_results');
     } catch (err) { /* already exists */ }
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS calibrated_confidence REAL'); } catch (err) { /* already exists */ }
     try { await pool.query('ALTER TABLE consensus_results ADD COLUMN IF NOT EXISTS expected_edge_pct REAL'); } catch (err) { /* already exists */ }
@@ -277,7 +277,7 @@ async function initializeDatabase() {
       )
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_backtest_symbol ON backtest_results(symbol, run_date DESC)');
-    console.log('✅ backtest_results table ready');
+    console.log('âœ… backtest_results table ready');
 
     // Table: Agent Performance Daily (populated by evaluate_performance.py)
     await pool.query(`
@@ -297,7 +297,7 @@ async function initializeDatabase() {
       )
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_apd_snapshot ON agent_performance_daily(snapshot_date DESC)');
-    console.log('✅ agent_performance_daily table ready');
+    console.log('âœ… agent_performance_daily table ready');
 
     // Table: Regime Log (populated by regime_filter.py)
     await pool.query(`
@@ -311,7 +311,7 @@ async function initializeDatabase() {
       )
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_regime_log_date ON regime_log(date DESC)');
-    console.log('✅ regime_log table ready');
+    console.log('âœ… regime_log table ready');
 
     // Table: ETF Signals (populated by agent_etf_signal.py)
     await pool.query(`
@@ -336,14 +336,14 @@ async function initializeDatabase() {
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_etf_signals_date ON etf_signals(signal_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_etf_signals_symbol ON etf_signals(symbol)');
-    console.log('✅ etf_signals table ready');
+    console.log('âœ… etf_signals table ready');
 
     // ============================================
     // AUTH & WATCHLIST TABLES
     // ============================================
 
     // Table 8: Users
-    console.log('📊 Creating users table...');
+    console.log('ðŸ“Š Creating users table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -359,8 +359,8 @@ async function initializeDatabase() {
       )
     `);
 
-    // Table 9: EGX 30 Stocks reference
-    console.log('📊 Creating egx30_stocks table...');
+    // Table 9: KSA Stocks reference (legacy table name: egx30_stocks)
+    console.log('ðŸ“Š Creating egx30_stocks table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS egx30_stocks (
         id SERIAL PRIMARY KEY,
@@ -375,7 +375,7 @@ async function initializeDatabase() {
     `);
 
     // Table 10: User Watchlist
-    console.log('📊 Creating user_watchlist table...');
+    console.log('ðŸ“Š Creating user_watchlist table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_watchlist (
         id SERIAL PRIMARY KEY,
@@ -387,7 +387,7 @@ async function initializeDatabase() {
     `);
 
     // Table 12: User Positions
-    console.log('📊 Creating user_positions table...');
+    console.log('ðŸ“Š Creating user_positions table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_positions (
         id SERIAL PRIMARY KEY,
@@ -407,7 +407,7 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, "CREATE INDEX IF NOT EXISTS idx_positions_user ON user_positions(user_id)");
 
     // Table 13: Trade Recommendations
-    console.log('📊 Creating trade_recommendations table...');
+    console.log('ðŸ“Š Creating trade_recommendations table...');
     await pool.query(`
       CREATE TABLE IF NOT EXISTS trade_recommendations (
         id SERIAL PRIMARY KEY,
@@ -611,13 +611,13 @@ async function initializeDatabase() {
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pda_portfolio ON portfolio_daily_actuals(portfolio_id, date DESC)');
 
-    // pgvector extension — enables fast vector similarity search
+    // pgvector extension â€” enables fast vector similarity search
     // Graceful: skips silently if extension is unavailable on this PostgreSQL instance
     try {
       await pool.query('CREATE EXTENSION IF NOT EXISTS vector');
-      console.log('✅ pgvector extension ready');
+      console.log('âœ… pgvector extension ready');
     } catch (e) {
-      console.log('⚠️  pgvector extension not available — will use in-app cosine similarity fallback');
+      console.log('âš ï¸  pgvector extension not available â€” will use in-app cosine similarity fallback');
     }
 
     // Table 21: RAG Chunks (embedded text from market_reports, news_article, event_intel)
@@ -641,9 +641,9 @@ async function initializeDatabase() {
     try {
       await pool.query('ALTER TABLE rag_chunks ADD COLUMN IF NOT EXISTS embedding_vec vector(768)');
       await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_rag_chunks_vec ON rag_chunks USING ivfflat (embedding_vec vector_cosine_ops) WITH (lists = 100)');
-      console.log('✅ pgvector column + index on rag_chunks ready');
+      console.log('âœ… pgvector column + index on rag_chunks ready');
     } catch(_) {
-      console.log('⚠️  pgvector column not added — extension may be unavailable');
+      console.log('âš ï¸  pgvector column not added â€” extension may be unavailable');
     }
 
     // Table 22: Prediction Contexts (snapshot + embedding + outcome for pattern matching)
@@ -663,7 +663,7 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pc_symbol ON prediction_contexts(symbol, prediction_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_pc_outcome ON prediction_contexts(actual_outcome)');
 
-    // Table 23: News RAG Chunks (live news feed integration — embedded articles with metadata)
+    // Table 23: News RAG Chunks (live news feed integration â€” embedded articles with metadata)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS news_rag_chunks (
         id               TEXT PRIMARY KEY,
@@ -712,17 +712,21 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_drift_log_applied_at ON drift_adjustment_log(applied_at DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_drift_log_expires_at ON drift_adjustment_log(expires_at)');
 
-    // ── ETF / Instrument tables ────────────────────────────────────────────────
+    // â”€â”€ ETF / Instrument tables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    // ENUMs (idempotent — EXCEPTION WHEN duplicate_object THEN NULL)
+    // ENUMs (idempotent â€” EXCEPTION WHEN duplicate_object THEN NULL)
     await pool.query(`DO $$ BEGIN CREATE TYPE instrument_type AS ENUM ('EQUITY','ETF','INDEX','FX','RATE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
-    // Add ETP subtypes to instrument_type enum (safe — ALTER TYPE IF NOT EXISTS value)
+    // Add ETP subtypes to instrument_type enum (safe â€” ALTER TYPE IF NOT EXISTS value)
     for (const v of ['COMMODITY_ETP','GOLD_ETP','INDEX_TRACKER','STRUCTURED_NOTE','ETN','ETP','UNKNOWN_ETP','EQUITY_FUND']) {
       await pool.query(`DO $$ BEGIN ALTER TYPE instrument_type ADD VALUE IF NOT EXISTS '${v}'; EXCEPTION WHEN others THEN NULL; END $$`);
     }
-    await pool.query(`DO $$ BEGIN CREATE TYPE exchange_code   AS ENUM ('EGX','NYSE','NASDAQ','LSE','XETRA','TSX','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
-    await pool.query(`DO $$ BEGIN CREATE TYPE currency_code   AS ENUM ('EGP','USD','EUR','GBP','CAD','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
-    await pool.query(`DO $$ BEGIN CREATE TYPE etf_region      AS ENUM ('LOCAL_EGX','GLOBAL'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await pool.query(`DO $$ BEGIN CREATE TYPE exchange_code   AS ENUM ('TADAWUL','EGX','NYSE','NASDAQ','LSE','XETRA','TSX','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await pool.query(`DO $$ BEGIN CREATE TYPE currency_code   AS ENUM ('SAR','EGP','USD','EUR','GBP','CAD','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    await pool.query(`DO $$ BEGIN CREATE TYPE etf_region      AS ENUM ('LOCAL_KSA','LOCAL_EGX','GLOBAL'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
+    // Ensure new enum values exist for existing DBs (backwards-compat migration)
+    for (const [enumName, val] of [['exchange_code','TADAWUL'],['currency_code','SAR'],['etf_region','LOCAL_KSA']]) {
+      await pool.query(`DO $$ BEGIN ALTER TYPE ${enumName} ADD VALUE IF NOT EXISTS '${val}'; EXCEPTION WHEN others THEN NULL; END $$`);
+    }
     await pool.query(`DO $$ BEGIN CREATE TYPE doc_type        AS ENUM ('PROSPECTUS','FACTSHEET','INFO_SHEET','INDEX_METHODOLOGY','HOLDINGS_FILE','OTHER'); EXCEPTION WHEN duplicate_object THEN NULL; END $$`);
 
     // Table: instrument master
@@ -913,9 +917,9 @@ async function initializeDatabase() {
       )
     `);
 
-    console.log('✅ ETF / instrument tables ready');
+    console.log('âœ… ETF / instrument tables ready');
 
-    // New columns (safe — IF NOT EXISTS syntax; errors caught so lock_timeout doesn't abort init)
+    // New columns (safe â€” IF NOT EXISTS syntax; errors caught so lock_timeout doesn't abort init)
     try { await pool.query('ALTER TABLE user_positions ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1'); } catch(_) {}
     try { await pool.query('ALTER TABLE evaluations    ADD COLUMN IF NOT EXISTS horizon_days INTEGER DEFAULT 5'); } catch(_) {}
 
@@ -972,7 +976,7 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_sse_symbol  ON stock_signal_evals(symbol, prediction_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_sse_horizon ON stock_signal_evals(horizon_days)');
 
-    // scored_signals — Universal Investor Scoring
+    // scored_signals â€” Universal Investor Scoring
     await pool.query(`
       CREATE TABLE IF NOT EXISTS scored_signals (
         id               SERIAL PRIMARY KEY,
@@ -995,7 +999,7 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_scored_date   ON scored_signals(signal_date DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_scored_symbol ON scored_signals(symbol)');
 
-    // signal_ic_log — Information Coefficient monitoring (Spearman rank IC per symbol)
+    // signal_ic_log â€” Information Coefficient monitoring (Spearman rank IC per symbol)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS signal_ic_log (
         id            SERIAL PRIMARY KEY,
@@ -1009,7 +1013,7 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_date   ON signal_ic_log(computed_at DESC)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_ic_log_symbol ON signal_ic_log(symbol)');
 
-    // agent_weights_log — audit trail for softmax dynamic agent weights
+    // agent_weights_log â€” audit trail for softmax dynamic agent weights
     await pool.query(`
       CREATE TABLE IF NOT EXISTS agent_weights_log (
         id          SERIAL PRIMARY KEY,
@@ -1031,7 +1035,7 @@ async function initializeDatabase() {
     await safeDDL(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS signal_strength REAL');
     await safeDDL(pool, 'ALTER TABLE evaluations ADD COLUMN IF NOT EXISTS actual_return REAL');
 
-    // macro_indicators — cached Egypt macro data (CBE rate, USD/EGP, CPI, GDP)
+    // macro_indicators â€” cached KSA macro data (SAMA rate, USD/SAR, CPI, GDP)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS macro_indicators (
         id          SERIAL PRIMARY KEY,
@@ -1044,7 +1048,7 @@ async function initializeDatabase() {
     `);
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_macro_indicator ON macro_indicators(indicator, fetched_at DESC)');
 
-    // job_locks — advisory locking to prevent concurrent pipeline steps
+    // job_locks â€” advisory locking to prevent concurrent pipeline steps
     await pool.query(`
       CREATE TABLE IF NOT EXISTS job_locks (
         job_name    TEXT PRIMARY KEY,
@@ -1053,54 +1057,54 @@ async function initializeDatabase() {
       )
     `);
 
-    console.log('✅ New tables (alerts, fx_history, signal_evals, scored_signals, signal_ic_log, agent_weights_log, job_locks) ready');
+    console.log('âœ… New tables (alerts, fx_history, signal_evals, scored_signals, signal_ic_log, agent_weights_log, job_locks) ready');
 
-    // Seed KSA stocks (Tadawul) — disable statement_timeout for INSERT
+    // Seed KSA stocks (Tadawul) â€” disable statement_timeout for INSERT
     await pool.query("SET statement_timeout = 0");
-    console.log('ἳ1 Seeding KSA stocks...');
+    console.log('á¼³1 Seeding KSA stocks...');
     await pool.query(`
       INSERT INTO egx30_stocks (symbol, name_en, name_ar, sector_en, sector_ar) VALUES
-      ('1010.SR', 'Riyad Bank', 'بنك الرياض', 'Banking', 'البنوك'),
-      ('1020.SR', 'Bank Aljazira', 'بنك الجزيرة', 'Banking', 'البنوك'),
-      ('1030.SR', 'Saudi Investment Bank', 'البنك السعودي للاستثمار', 'Banking', 'البنوك'),
-      ('1050.SR', 'Banque Saudi Fransi', 'بنك البلاد الفرنسي', 'Banking', 'البنوك'),
-      ('1060.SR', 'Saudi Awwal Bank', 'البنك السعودي الأول', 'Banking', 'البنوك'),
-      ('1080.SR', 'Arab National Bank', 'البنك العربي الوطني', 'Banking', 'البنوك'),
-      ('1120.SR', 'Al Rajhi Bank', 'مصرف الراجحي', 'Banking', 'البنوك'),
-      ('1140.SR', 'Bank Albilad', 'بنك البلاد', 'Banking', 'البنوك'),
-      ('1150.SR', 'Alinma Bank', 'مصرف الإنماء', 'Banking', 'البنوك'),
-      ('1180.SR', 'Saudi National Bank', 'البنك الأهلي السعودي', 'Banking', 'البنوك'),
-      ('1211.SR', 'Maaden', 'معادن', 'Materials', 'المواد'),
-      ('1810.SR', 'Seera Group', 'مجموعة سيرا', 'Consumer Discretionary', 'السلع الاستهلاكية الكمالية'),
-      ('2010.SR', 'SABIC', 'سابك', 'Materials', 'المواد'),
-      ('2020.SR', 'SABIC Agri-Nutrients', 'سابك للمغذيات الزراعية', 'Materials', 'المواد'),
-      ('2060.SR', 'National Industrialization', 'التصنيع الوطنية', 'Industrials', 'الصناعة'),
-      ('2082.SR', 'ACWA Power', 'أكوا باور', 'Utilities', 'المرافق'),
-      ('2222.SR', 'Saudi Aramco', 'أرامكو السعودية', 'Energy', 'الطاقة'),
-      ('2280.SR', 'Almarai', 'المراعي', 'Consumer Staples', 'السلع الاستهلاكية الأساسية'),
-      ('2290.SR', 'Yanbu National Petrochemical', 'ينبع للبتروكيماويات', 'Materials', 'المواد'),
-      ('2310.SR', 'Sahara International Petrochemical', 'صحارى الدولية للبتروكيماويات', 'Materials', 'المواد'),
-      ('2330.SR', 'Advanced Petrochemical', 'المتقدمة للبتروكيماويات', 'Materials', 'المواد'),
-      ('2350.SR', 'Saudi Kayan Petrochemical', 'كيان السعودية للبتروكيماويات', 'Materials', 'المواد'),
-      ('2380.SR', 'Petro Rabigh', 'بترو رابغ', 'Materials', 'المواد'),
-      ('3030.SR', 'Saudi Cement', 'أسمنت السعودية', 'Materials', 'المواد'),
-      ('3040.SR', 'Qassim Cement', 'أسمنت القصيم', 'Materials', 'المواد'),
-      ('3050.SR', 'Southern Province Cement', 'أسمنت المنطقة الجنوبية', 'Materials', 'المواد'),
-      ('3060.SR', 'Yanbu Cement', 'أسمنت ينبع', 'Materials', 'المواد'),
-      ('3080.SR', 'Eastern Province Cement', 'أسمنت المنطقة الشرقية', 'Materials', 'المواد'),
-      ('3090.SR', 'Tabuk Cement', 'أسمنت تبوك', 'Materials', 'المواد'),
-      ('4002.SR', 'Mouwasat Medical', 'الموسى الطبية', 'Healthcare', 'الرعاية الصحية'),
-      ('4003.SR', 'United Electronics', 'اليكترونيات المتحدة', 'Consumer Discretionary', 'السلع الاستهلاكية الكمالية'),
-      ('4004.SR', 'Dallah Healthcare', 'دله الصحية', 'Healthcare', 'الرعاية الصحية'),
-      ('4013.SR', 'Dr. Sulaiman Al Habib', 'مجموعة د. سليمان الحبيب', 'Healthcare', 'الرعاية الصحية'),
-      ('4190.SR', 'Jarir Marketing', 'جرير للتسويق', 'Consumer Discretionary', 'السلع الاستهلاكية الكمالية'),
-      ('4300.SR', 'Dar Al Arkan', 'دار الأركان', 'Real Estate', 'العقارات'),
-      ('4321.SR', 'Cenomi Centers', 'سينومي سنترز', 'Real Estate', 'العقارات'),
-      ('4323.SR', 'Sumou Real Estate', 'سمو العقارية', 'Real Estate', 'العقارات'),
-      ('5110.SR', 'Saudi Electricity', 'الكهرباء السعودية', 'Utilities', 'المرافق'),
-      ('7010.SR', 'stc', 'الاتصالات السعودية', 'Telecommunications', 'الاتصالات'),
-      ('7202.SR', 'solutions by stc', 'سلوشنز بي إس تي سي', 'Technology', 'التكنولوجيا'),
-      ('7203.SR', 'Elm', 'إلم', 'Technology', 'التكنولوجيا')
+      ('1010.SR', 'Riyad Bank', 'Ø¨Ù†Ùƒ Ø§Ù„Ø±ÙŠØ§Ø¶', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1020.SR', 'Bank Aljazira', 'Ø¨Ù†Ùƒ Ø§Ù„Ø¬Ø²ÙŠØ±Ø©', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1030.SR', 'Saudi Investment Bank', 'Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ù„Ù„Ø§Ø³ØªØ«Ù…Ø§Ø±', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1050.SR', 'Banque Saudi Fransi', 'Ø¨Ù†Ùƒ Ø§Ù„Ø¨Ù„Ø§Ø¯ Ø§Ù„ÙØ±Ù†Ø³ÙŠ', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1060.SR', 'Saudi Awwal Bank', 'Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ Ø§Ù„Ø£ÙˆÙ„', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1080.SR', 'Arab National Bank', 'Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø¹Ø±Ø¨ÙŠ Ø§Ù„ÙˆØ·Ù†ÙŠ', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1120.SR', 'Al Rajhi Bank', 'Ù…ØµØ±Ù Ø§Ù„Ø±Ø§Ø¬Ø­ÙŠ', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1140.SR', 'Bank Albilad', 'Ø¨Ù†Ùƒ Ø§Ù„Ø¨Ù„Ø§Ø¯', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1150.SR', 'Alinma Bank', 'Ù…ØµØ±Ù Ø§Ù„Ø¥Ù†Ù…Ø§Ø¡', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1180.SR', 'Saudi National Bank', 'Ø§Ù„Ø¨Ù†Ùƒ Ø§Ù„Ø£Ù‡Ù„ÙŠ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠ', 'Banking', 'Ø§Ù„Ø¨Ù†ÙˆÙƒ'),
+      ('1211.SR', 'Maaden', 'Ù…Ø¹Ø§Ø¯Ù†', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('1810.SR', 'Seera Group', 'Ù…Ø¬Ù…ÙˆØ¹Ø© Ø³ÙŠØ±Ø§', 'Consumer Discretionary', 'Ø§Ù„Ø³Ù„Ø¹ Ø§Ù„Ø§Ø³ØªÙ‡Ù„Ø§ÙƒÙŠØ© Ø§Ù„ÙƒÙ…Ø§Ù„ÙŠØ©'),
+      ('2010.SR', 'SABIC', 'Ø³Ø§Ø¨Ùƒ', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('2020.SR', 'SABIC Agri-Nutrients', 'Ø³Ø§Ø¨Ùƒ Ù„Ù„Ù…ØºØ°ÙŠØ§Øª Ø§Ù„Ø²Ø±Ø§Ø¹ÙŠØ©', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('2060.SR', 'National Industrialization', 'Ø§Ù„ØªØµÙ†ÙŠØ¹ Ø§Ù„ÙˆØ·Ù†ÙŠØ©', 'Industrials', 'Ø§Ù„ØµÙ†Ø§Ø¹Ø©'),
+      ('2082.SR', 'ACWA Power', 'Ø£ÙƒÙˆØ§ Ø¨Ø§ÙˆØ±', 'Utilities', 'Ø§Ù„Ù…Ø±Ø§ÙÙ‚'),
+      ('2222.SR', 'Saudi Aramco', 'Ø£Ø±Ø§Ù…ÙƒÙˆ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©', 'Energy', 'Ø§Ù„Ø·Ø§Ù‚Ø©'),
+      ('2280.SR', 'Almarai', 'Ø§Ù„Ù…Ø±Ø§Ø¹ÙŠ', 'Consumer Staples', 'Ø§Ù„Ø³Ù„Ø¹ Ø§Ù„Ø§Ø³ØªÙ‡Ù„Ø§ÙƒÙŠØ© Ø§Ù„Ø£Ø³Ø§Ø³ÙŠØ©'),
+      ('2290.SR', 'Yanbu National Petrochemical', 'ÙŠÙ†Ø¨Ø¹ Ù„Ù„Ø¨ØªØ±ÙˆÙƒÙŠÙ…Ø§ÙˆÙŠØ§Øª', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('2310.SR', 'Sahara International Petrochemical', 'ØµØ­Ø§Ø±Ù‰ Ø§Ù„Ø¯ÙˆÙ„ÙŠØ© Ù„Ù„Ø¨ØªØ±ÙˆÙƒÙŠÙ…Ø§ÙˆÙŠØ§Øª', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('2330.SR', 'Advanced Petrochemical', 'Ø§Ù„Ù…ØªÙ‚Ø¯Ù…Ø© Ù„Ù„Ø¨ØªØ±ÙˆÙƒÙŠÙ…Ø§ÙˆÙŠØ§Øª', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('2350.SR', 'Saudi Kayan Petrochemical', 'ÙƒÙŠØ§Ù† Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ© Ù„Ù„Ø¨ØªØ±ÙˆÙƒÙŠÙ…Ø§ÙˆÙŠØ§Øª', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('2380.SR', 'Petro Rabigh', 'Ø¨ØªØ±Ùˆ Ø±Ø§Ø¨Øº', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('3030.SR', 'Saudi Cement', 'Ø£Ø³Ù…Ù†Øª Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('3040.SR', 'Qassim Cement', 'Ø£Ø³Ù…Ù†Øª Ø§Ù„Ù‚ØµÙŠÙ…', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('3050.SR', 'Southern Province Cement', 'Ø£Ø³Ù…Ù†Øª Ø§Ù„Ù…Ù†Ø·Ù‚Ø© Ø§Ù„Ø¬Ù†ÙˆØ¨ÙŠØ©', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('3060.SR', 'Yanbu Cement', 'Ø£Ø³Ù…Ù†Øª ÙŠÙ†Ø¨Ø¹', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('3080.SR', 'Eastern Province Cement', 'Ø£Ø³Ù…Ù†Øª Ø§Ù„Ù…Ù†Ø·Ù‚Ø© Ø§Ù„Ø´Ø±Ù‚ÙŠØ©', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('3090.SR', 'Tabuk Cement', 'Ø£Ø³Ù…Ù†Øª ØªØ¨ÙˆÙƒ', 'Materials', 'Ø§Ù„Ù…ÙˆØ§Ø¯'),
+      ('4002.SR', 'Mouwasat Medical', 'Ø§Ù„Ù…ÙˆØ³Ù‰ Ø§Ù„Ø·Ø¨ÙŠØ©', 'Healthcare', 'Ø§Ù„Ø±Ø¹Ø§ÙŠØ© Ø§Ù„ØµØ­ÙŠØ©'),
+      ('4003.SR', 'United Electronics', 'Ø§Ù„ÙŠÙƒØªØ±ÙˆÙ†ÙŠØ§Øª Ø§Ù„Ù…ØªØ­Ø¯Ø©', 'Consumer Discretionary', 'Ø§Ù„Ø³Ù„Ø¹ Ø§Ù„Ø§Ø³ØªÙ‡Ù„Ø§ÙƒÙŠØ© Ø§Ù„ÙƒÙ…Ø§Ù„ÙŠØ©'),
+      ('4004.SR', 'Dallah Healthcare', 'Ø¯Ù„Ù‡ Ø§Ù„ØµØ­ÙŠØ©', 'Healthcare', 'Ø§Ù„Ø±Ø¹Ø§ÙŠØ© Ø§Ù„ØµØ­ÙŠØ©'),
+      ('4013.SR', 'Dr. Sulaiman Al Habib', 'Ù…Ø¬Ù…ÙˆØ¹Ø© Ø¯. Ø³Ù„ÙŠÙ…Ø§Ù† Ø§Ù„Ø­Ø¨ÙŠØ¨', 'Healthcare', 'Ø§Ù„Ø±Ø¹Ø§ÙŠØ© Ø§Ù„ØµØ­ÙŠØ©'),
+      ('4190.SR', 'Jarir Marketing', 'Ø¬Ø±ÙŠØ± Ù„Ù„ØªØ³ÙˆÙŠÙ‚', 'Consumer Discretionary', 'Ø§Ù„Ø³Ù„Ø¹ Ø§Ù„Ø§Ø³ØªÙ‡Ù„Ø§ÙƒÙŠØ© Ø§Ù„ÙƒÙ…Ø§Ù„ÙŠØ©'),
+      ('4300.SR', 'Dar Al Arkan', 'Ø¯Ø§Ø± Ø§Ù„Ø£Ø±ÙƒØ§Ù†', 'Real Estate', 'Ø§Ù„Ø¹Ù‚Ø§Ø±Ø§Øª'),
+      ('4321.SR', 'Cenomi Centers', 'Ø³ÙŠÙ†ÙˆÙ…ÙŠ Ø³Ù†ØªØ±Ø²', 'Real Estate', 'Ø§Ù„Ø¹Ù‚Ø§Ø±Ø§Øª'),
+      ('4323.SR', 'Sumou Real Estate', 'Ø³Ù…Ùˆ Ø§Ù„Ø¹Ù‚Ø§Ø±ÙŠØ©', 'Real Estate', 'Ø§Ù„Ø¹Ù‚Ø§Ø±Ø§Øª'),
+      ('5110.SR', 'Saudi Electricity', 'Ø§Ù„ÙƒÙ‡Ø±Ø¨Ø§Ø¡ Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©', 'Utilities', 'Ø§Ù„Ù…Ø±Ø§ÙÙ‚'),
+      ('7010.SR', 'stc', 'Ø§Ù„Ø§ØªØµØ§Ù„Ø§Øª Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©', 'Telecommunications', 'Ø§Ù„Ø§ØªØµØ§Ù„Ø§Øª'),
+      ('7202.SR', 'solutions by stc', 'Ø³Ù„ÙˆØ´Ù†Ø² Ø¨ÙŠ Ø¥Ø³ ØªÙŠ Ø³ÙŠ', 'Technology', 'Ø§Ù„ØªÙƒÙ†ÙˆÙ„ÙˆØ¬ÙŠØ§'),
+      ('7203.SR', 'Elm', 'Ø¥Ù„Ù…', 'Technology', 'Ø§Ù„ØªÙƒÙ†ÙˆÙ„ÙˆØ¬ÙŠØ§')
       ON CONFLICT (symbol) DO UPDATE SET
         name_en = EXCLUDED.name_en,
         name_ar = EXCLUDED.name_ar,
@@ -1109,13 +1113,13 @@ async function initializeDatabase() {
         is_active = TRUE,
         updated_at = CURRENT_TIMESTAMP
     `);
-    console.log('✅ KSA stocks seeded');
+    console.log('âœ… KSA stocks seeded');
 
     // Re-enable statement_timeout for index creation (30s per index)
     await pool.query("SET statement_timeout = '30s'");
 
     // Create indexes
-    console.log('📊 Creating indexes...');
+    console.log('ðŸ“Š Creating indexes...');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_prices_symbol_date ON prices(symbol, date)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_news_symbol_date ON news(symbol, date)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_predictions_symbol ON predictions(symbol, prediction_date)');
@@ -1125,14 +1129,14 @@ async function initializeDatabase() {
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_users_email_lower ON users(email_lower)');
     await safeCreateIndex(pool, 'CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlist(user_id)');
 
-    // Migration: reclassify EGX commodity funds from 'ETF' → 'COMMODITY_ETP'
-    // issuer column was set to cls_en ('COMMODITY') by etf_egx_mubasher.py
+    // Migration (legacy EGX): reclassify commodity funds from 'ETF' â†’ 'COMMODITY_ETP'
+    // Kept for backwards compat; uses exchange='EGX' filter, no-op on KSA-only DBs
     try {
       const res = await pool.query(`UPDATE instrument SET type = 'COMMODITY_ETP' WHERE exchange = 'EGX' AND issuer = 'COMMODITY' AND type = 'ETF'`);
-      if (res.rowCount > 0) console.log(`✅ Reclassified ${res.rowCount} EGX commodity fund(s) → COMMODITY_ETP`);
-    } catch(e) { console.log('⚠️  Commodity ETP migration skipped:', e.message); }
+      if (res.rowCount > 0) console.log(`âœ… Reclassified ${res.rowCount} EGX commodity fund(s) â†’ COMMODITY_ETP`);
+    } catch(e) { console.log('âš ï¸  Commodity ETP migration skipped:', e.message); }
 
-    console.log('✅ Database initialized successfully!');
+    console.log('âœ… Database initialized successfully!');
 
     // Get stats
     const statsQueries = {
@@ -1141,14 +1145,14 @@ async function initializeDatabase() {
       stocksTracked: 'SELECT COUNT(DISTINCT symbol) as count FROM prices',
     };
 
-    console.log('\n📊 Database Statistics:');
+    console.log('\nðŸ“Š Database Statistics:');
     for (const [key, query] of Object.entries(statsQueries)) {
       const result = await pool.query(query);
       console.log(`   ${key}: ${result.rows[0].count}`);
     }
 
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    console.error('âŒ Database initialization failed:', error);
     process.exit(1);
   } finally {
     await pool.end();

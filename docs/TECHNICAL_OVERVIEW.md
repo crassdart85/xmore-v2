@@ -1,4 +1,4 @@
-# Xmore Technical Overview
+﻿# Xmore Technical Overview
 
 ## 1. System Architecture
 
@@ -76,7 +76,7 @@ The core logic of Xmore resides in a series of Python scripts orchestrated by Gi
 
 ### 2.2 CI/CD Automation (GitHub Actions)
 The system is fully automated with multiple scheduled jobs, including:
--   **Intraday Updates**: Price and news updates during EGX trading hours.
+-   **Intraday Updates**: Price and news updates during Tadawul trading hours.
 -   **Post-Market Pipeline**: A major job that runs after the market closes to generate the next day's signals.
 -   **Daily & Weekly Jobs**: Includes full pipeline runs, backtesting, and evaluation catch-ups.
 
@@ -101,12 +101,12 @@ Xmore features an AI-powered market assistant integrated into the web dashboard,
 -   **`rag/embedder.py`**: A service to process and embed external documents (like ETF factsheets) into vector representations using Gemini's `text-embedding-004` model.
 -   **`rag/retriever.py`**: Performs semantic search over the embedded documents to find relevant context for user queries.
 -   **`web-ui/routes/rag.js`**: The Node.js API endpoint for the chat assistant. It enriches user prompts with a significant amount of real-time market context, including:
-    -   Static EGX market knowledge (trading hours, rules, indices).
+    -   Static Tadawul market knowledge (trading hours, rules, indices).
     -   A live-queried list of all ~190 tracked stocks.
     -   Current signals, prices, and sentiment data.
     -   The user's personal portfolio data.
 -   **`web-ui/services/openbbMcpBridge.js`**: An MCP bridge that enriches the RAG chat with live market data. Extracts Tadawul symbols from user queries, fetches live quotes (SAR) from OpenBB API (if running) and macro context from the local DB cache. When enrichment succeeds, a "Live data" badge is shown next to the assistant's response in the chat widget.
--   This enriched context allows the Gemini model to provide highly relevant and accurate answers about the Egyptian market.
+-   This enriched context allows the Gemini model to provide highly relevant and accurate answers about the Saudi market.
 
 ---
 
@@ -121,14 +121,14 @@ A custom database abstraction layer in `database.py` allows the same Python code
 
 ---
 
-## 6. OpenBB EGX Data Provider
+## 6. OpenBB Tadawul Data Provider
 
-Xmore includes a standalone OpenBB-compatible data provider package (`openbb_egx/`) for Egyptian Exchange market data:
+Xmore includes a standalone OpenBB-compatible data provider package (`openbb_egx/`) for Saudi Exchange market data:
 
 -   **`openbb_egx/models/equity_historical.py`**: Historical OHLCV data via TradingView Scanner API (primary) with yfinance fallback. Pydantic v2 query/data models.
--   **`openbb_egx/models/equity_quote.py`**: Live quote fetcher for EGX symbols.
--   **`openbb_egx/models/equity_search.py`**: Symbol search across EGX-listed equities.
--   **`openbb_egx/models/market_snapshot.py`**: Full market snapshot (all active EGX symbols).
+-   **`openbb_egx/models/equity_quote.py`**: Live quote fetcher for Tadawul symbols.
+-   **`openbb_egx/models/equity_search.py`**: Symbol search across Tadawul-listed equities.
+-   **`openbb_egx/models/market_snapshot.py`**: Full market snapshot (all active Tadawul symbols).
 -   **14 unit tests** in `openbb_egx/tests/test_egx_provider.py`.
 
 ---

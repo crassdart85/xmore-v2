@@ -1,4 +1,4 @@
-# ✅ IMPLEMENTATION COMPLETE & VERIFIED
+﻿# ✅ IMPLEMENTATION COMPLETE & VERIFIED
 
 ## Executive Summary
 
@@ -178,7 +178,7 @@ python xmore_data/examples.py
 # Fetch single symbol
 python xmore_data/main.py --symbol COMI
 
-# Fetch all EGX30
+# Fetch all TASI
 python xmore_data/main.py --egx30
 
 # Fetch with date range
@@ -222,7 +222,7 @@ df = dm.fetch_data("COMI", start="90d")
 # Fetch multiple symbols
 data = dm.fetch_multiple(["COMI", "SWDY", "HRHO"])
 
-# Fetch all EGX30
+# Fetch all TASI
 egx30 = dm.fetch_egx30()
 
 # Fetch index (benchmark)

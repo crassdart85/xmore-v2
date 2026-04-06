@@ -1,47 +1,47 @@
-# Xmore Investor Deck (PPT v3)
+﻿# Xmore Investor Deck (PPT v3)
 
 ---
 
 ## 1. Title
 
 **Xmore**
-AI-powered EGX market intelligence and decision support
+AI-powered Tadawul market intelligence and decision support
 
-**Tagline:** Institutional-grade signals. Walk-forward validated. Built for Egypt.
+**Tagline:** Institutional-grade signals. Walk-forward validated. Built for Saudi Arabia.
 
 ---
 
 ## 2. The Problem
 
-Egypt's retail and professional investors face a market intelligence gap:
+Saudi Arabia's retail and professional investors face a market intelligence gap:
 
 - **No trusted signals** — recommendations are opaque, unaudited, and unexplained
-- **Friction blindness** — tools ignore EGX costs (stamp duty, FRA fees, Misr clearing), daily ±10% price limits, and liquidity constraints
+- **Friction blindness** — tools ignore Tadawul costs (brokerage, VAT, exchange fees), and liquidity constraints
 - **Language exclusion** — every professional-grade tool is English-only
-- **Benchmark misuse** — Sharpe ratios calculated with US risk-free rates (5%) instead of CBE (27.25%), inflating apparent performance by 5–7×
+- **Benchmark misuse** — Sharpe ratios calculated with US risk-free rates (5%) instead of SAIBOR 3M (4.89%), inflating apparent performance
 - **No regime awareness** — systems publish buy signals during crisis periods; no market state gating
-- **ETF blindspot** — 13 EGX-listed funds with combined billions in AUM have zero quantitative signal coverage
+- **ETF blindspot** — Saudi-listed ETFs have zero quantitative signal coverage
 
 ---
 
 ## 3. The Solution
 
-**Xmore** is a full-stack EGX intelligence platform that runs daily, automatically, and publicly audits every signal it publishes.
+**Xmore** is a full-stack Tadawul intelligence platform that runs daily, automatically, and publicly audits every signal it publishes.
 
 **Three core capabilities:**
 
 1. **AI signal engine** — six heterogeneous agents, a four-layer consensus pipeline, regime gating, and walk-forward validation
-2. **Institutional performance layer** — EGX-correct Sharpe/Sortino/Calmar with CBE risk-free rate; public track record with equity curve
+2. **Institutional performance layer** — KSA-correct Sharpe/Sortino/Calmar with SAIBOR 3M risk-free rate; public track record with equity curve
 3. **Market intelligence hub** — bilingual (EN/AR) dashboard with live briefing, ETF signals, pivot levels, AI research assistant, and macro analysis
 
 ---
 
 ## 4. Why Now
 
-- EGX retail participation is accelerating — but tools remain fragmented and English-only
-- FRA regulatory push for transparency and risk disclosure creates demand for auditable systems
+- Tadawul retail participation is accelerating — but tools remain fragmented and English-only
+- CMA regulatory push for transparency and risk disclosure creates demand for auditable systems
 - Arabic-first quantitative intelligence is effectively unserved
-- ETF market on EGX is growing but has zero signal coverage today
+- ETF market on Tadawul is growing but has zero signal coverage today
 - AI infrastructure costs have collapsed — what cost millions two years ago runs for hundreds per month
 
 ---
@@ -62,10 +62,10 @@ Egypt's retail and professional investors face a market intelligence gap:
 **Four-layer pipeline:**
 1. **Agent vote** — weighted by live accuracy (dynamic weights updated daily)
 2. **Confidence gating** — signals with < 60% max probability converted to HOLD
-3. **Execution filter** — edge ratio must exceed 3× round-trip cost (EGX-specific costs)
+3. **Execution filter** — edge ratio must exceed 3× round-trip cost (Tadawul-specific costs: ~38.2 bps)
 4. **Regime gate** — HMM-detected Crisis blocks UP signals; Turbulent downgrades conviction
 
-**Coverage:** ~190 EGX-listed stocks + all active ETFs and ETPs
+**Coverage:** 50+ Tadawul-listed stocks + active ETFs
 
 ---
 
@@ -86,7 +86,7 @@ Walk-forward results run every Sunday and are published publicly on the Track Re
 
 ## 7. Product: ETF & ETP Signals
 
-The first quantitative signal engine for EGX-listed funds.
+The first quantitative signal engine for Tadawul-listed funds.
 
 **Signal components (per instrument, daily):**
 - MA crossover (adaptive periods)
@@ -94,7 +94,7 @@ The first quantitative signal engine for EGX-listed funds.
 - **NAV premium/discount signal** — unique to fund instruments: trading at >2% discount to NAV → BUY signal; >3% premium → SELL
 - 5-day momentum
 
-**Instruments covered:** All active LOCAL_EGX funds + globally-listed Egypt-focused ETFs (EGPT, FM, FRDM, etc.)
+**Instruments covered:** All active Tadawul-listed ETFs + regional KSA-focused ETFs
 
 **Output:** UP / HOLD / DOWN signal with confidence %, individual sub-signal breakdown, and NAV premium/discount badge — displayed on Pro page and Track Record.
 
@@ -106,12 +106,12 @@ The first quantitative signal engine for EGX-listed funds.
 
 | Module | What it does |
 |---|---|
-| **Predictions Dashboard** | Daily signals for 190 stocks — screener by signal, sector, conviction, confidence |
+| **Predictions Dashboard** | Daily signals for 50+ stocks — screener by signal, sector, conviction, confidence |
 | **Market Regime Banner** | Live Calm / Turbulent / Crisis indicator on every page |
 | **Daily Briefing** | 7-section pre-market brief: market pulse, actions today, portfolio snapshot, watchlist heatmap, sector breakdown, risk alerts, sentiment |
 | **Session Sheet** | Intraday pivot levels (P/R1/R2/S1/S2), ATR, trend bias, position simulator |
 | **Xmore Pro** | Professional view: top movers, sector performance, ETF signals, regime pill, macro analysis |
-| **Time Machine** | Monte Carlo GBM forecast (pure JS, no Python) for any EGX30 stock or ETF |
+| **Time Machine** | Monte Carlo GBM forecast (pure JS, no Python) for any TASI stock or ETF |
 | **AI Research Assistant** | Gemini RAG grounded in live prices, signals, regime state, backtest results, ETF NAV/AUM, news, and user portfolios |
 | **Track Record** | Public audit: equity curve, signal distribution, sector accuracy, regime performance, walk-forward results, ETF signals, prediction log |
 
@@ -123,7 +123,7 @@ The first quantitative signal engine for EGX-listed funds.
 
 1. **Immutable signal log** — every prediction timestamped before market open; exportable CSV
 2. **Walk-forward validation** — out-of-sample accuracy published weekly per agent
-3. **Benchmarking** — all metrics vs EGX30; alpha and IR computed at D+1 and D+5
+3. **Benchmarking** — all metrics vs TASI; alpha and IR computed at D+1 and D+5
 4. **Regime transparency** — accuracy broken down by Calm / Turbulent / Crisis regimes; regime gate performance shown explicitly
 
 **Key metrics displayed publicly (no login required):**
@@ -139,12 +139,12 @@ The first quantitative signal engine for EGX-listed funds.
 |---|---|---|
 | **Signal methodology** | Black box | 6 agents, 4-layer pipeline, published weights |
 | **Validation** | In-sample backtest | Walk-forward out-of-sample (institutional standard) |
-| **EGX cost model** | None | Full round-trip cost (stamp duty, FRA, clearing, slippage) |
+| **Tadawul cost model** | None | Full round-trip cost (brokerage, VAT, exchange fees, slippage) |
 | **Regime awareness** | None | HMM-gated: Crisis blocks UP; Turbulent downgrades |
 | **Language** | English only | Full Arabic (RTL), bilingual across all 8 pages |
 | **ETF coverage** | Price display only | Daily quantitative signals (MA, RSI, NAV premium) |
 | **Transparency** | None | Public track record, immutable logs, exportable data |
-| **Benchmark** | US risk-free rate | CBE rate (27.25%), 247 EGX trading days |
+| **Benchmark** | US risk-free rate | SAIBOR 3M rate (4.89%), 250 Tadawul trading days |
 
 ---
 
@@ -182,26 +182,26 @@ All signal computation, model inference, performance metrics, ETF signal generat
 - **Phase 1 (now):** Build track record with free tier — signal quality is the marketing
 - **Phase 2:** Target 20 brokerages and advisory desks for Pro and Team pilots
 - **Phase 3:** Enterprise rollout — brokerage white-label integration, API licensing for research platforms
-- **Expansion path:** ADX (Abu Dhabi) → Tadawul (Saudi) — same architecture, new data sources
+- **Expansion path:** ADX (Abu Dhabi) → Tadawul (Egypt) — same architecture, new data sources
 
 ---
 
 ## 14. Moat
 
-- **Local data pipelines** — EGX-specific scrapers, Arabic news parsers, CBE rate fetcher, live EGX price source
-- **EGX cost model** — complete round-trip cost model that no generic platform has bothered to build for Egypt
+- **Local data pipelines** — Tadawul-specific data providers, Arabic news parsers, SAIBOR rate, live KSA price source
+- **Tadawul cost model** — complete round-trip cost model that no generic platform has bothered to build for KSA
 - **Regime-gated signals** — HMM-based market state detection baked into signal production
 - **Walk-forward validation infrastructure** — weekly backtesting harness with out-of-sample results published publicly
-- **ETF signal engine** — first quantitative signal system for EGX-listed funds (NAV premium/discount is an ETF-specific signal no stock screener provides)
+- **ETF signal engine** — first quantitative signal system for Tadawul-listed funds (NAV premium/discount is an ETF-specific signal no stock screener provides)
 - **Proprietary RAG corpus** — fund prospectuses, market reports, and news embedded and queryable
-- **Bilingual financial terminology layer** — 190+ stock names, sector labels, and UI strings in Arabic; not translatable overnight
+- **Bilingual financial terminology layer** — 50+ stock names, sector labels, and UI strings in Arabic; not translatable overnight
 
 ---
 
 ## 15. Traction (Insert Metrics)
 
 - Active users: _
-- Daily signals generated: ~190 stocks + all ETFs
+- Daily signals generated: 50+ stocks + ETFs
 - Signal evaluations completed: _
 - Pipeline uptime: _
 - Walk-forward windows run: _
@@ -219,10 +219,10 @@ All signal computation, model inference, performance metrics, ETF signal generat
 - [ ] Direct brokerage API integration (order placement)
 
 **6–18 months:**
-- [ ] Portfolio optimiser (mean-variance, EGX constraints)
+- [ ] Portfolio optimiser (mean-variance, Tadawul constraints)
 - [ ] Mobile app (React Native, same API)
 - [ ] ADX / Tadawul expansion
-- [ ] EGX derivatives signals when exchange enables them
+- [ ] Tadawul derivatives signals when exchange enables them
 
 ---
 
@@ -232,7 +232,7 @@ All signal computation, model inference, performance metrics, ETF signal generat
 - Scale data coverage and signal breadth (additional markets, deeper ETF data)
 - Accelerate enterprise sales into brokerage platforms and advisory desks
 - Fund the ML infrastructure for per-instrument ETF models
-- Distribution into EGX brokerage apps as an embedded intelligence layer
+- Distribution into Tadawul brokerage apps as an embedded intelligence layer
 
 ---
 
@@ -240,5 +240,5 @@ All signal computation, model inference, performance metrics, ETF signal generat
 
 **Xmore**
 Business Partnerships: [add email]
-Platform: xmore-project.onrender.com
+Platform: xmore-ksa.onrender.com
 Repository: github.com/crassdart85/xmore-v2

@@ -175,7 +175,7 @@ async function kpiForWindow(days) {
 
             // Primary (net)
             alpha_vs_tasi:         parseFloat(mean(alphaNet).toFixed(4)),
-            alpha_vs_egx30:        parseFloat(mean(alphaNet).toFixed(4)), // legacy compat
+            alpha_vs_tasi:        parseFloat(mean(alphaNet).toFixed(4)), // legacy compat
             avg_return_1d:         parseFloat(mean(returnsNet).toFixed(4)),
             avg_alpha_1d:          parseFloat(mean(alphaNet).toFixed(4)),
             sharpe_ratio:          parseFloat(calcSharpe(returnsNet).toFixed(2)),
@@ -189,7 +189,7 @@ async function kpiForWindow(days) {
 
             // Secondary (gross)
             alpha_vs_tasi_gross:   parseFloat(mean(alphaGross).toFixed(4)),
-            alpha_vs_egx30_gross:  parseFloat(mean(alphaGross).toFixed(4)), // legacy compat
+            alpha_vs_tasi_gross:  parseFloat(mean(alphaGross).toFixed(4)), // legacy compat
             avg_return_1d_gross:   parseFloat(mean(returnsGross).toFixed(4)),
             avg_alpha_1d_gross:    parseFloat(mean(alphaGross).toFixed(4)),
             sharpe_ratio_gross:    parseFloat(calcSharpe(returnsGross).toFixed(2)),
@@ -370,7 +370,7 @@ router.get('/equity-curve', async (req, res) => {
                 recommendation_date AS date,
                 ${round('AVG(actual_next_day_return)')} AS xmore_gross,
                 ${round(`AVG(${costPctSql()})`)} AS avg_cost_pct,
-                ${round('AVG(benchmark_1d_return)')}    AS egx30
+                ${round('AVG(benchmark_1d_return)')}    AS tasi
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
             AND ${marketFilter()}
@@ -379,21 +379,21 @@ router.get('/equity-curve', async (req, res) => {
             ORDER BY recommendation_date ASC
         `);
 
-        let xmoreCum = 0, xmoreCumGross = 0, egx30Cum = 0;
+        let xmoreCum = 0, xmoreCumGross = 0, tasiCum = 0;
         const series = rows.map(r => {
             const gross = parseFloat(r.xmore_gross) || 0;
             const cost = parseFloat(r.avg_cost_pct) || 0;
             const net = gross - cost;
             xmoreCum += net;
             xmoreCumGross += gross;
-            egx30Cum += parseFloat(r.egx30) || 0;
+            tasiCum += parseFloat(r.tasi) || 0;
             return {
                 date:  r.date,
                 xmore: Math.round(xmoreCum * 100) / 100,
                 xmore_gross: Math.round(xmoreCumGross * 100) / 100,
-                egx30: Math.round(egx30Cum * 100) / 100,
-                alpha: Math.round((xmoreCum - egx30Cum) * 100) / 100,
-                alpha_gross: Math.round((xmoreCumGross - egx30Cum) * 100) / 100,
+                tasi: Math.round(tasiCum * 100) / 100,
+                alpha: Math.round((xmoreCum - tasiCum) * 100) / 100,
+                alpha_gross: Math.round((xmoreCumGross - tasiCum) * 100) / 100,
             };
         });
 
@@ -411,7 +411,7 @@ router.get('/equity-curve', async (req, res) => {
             drawdown_series,
             total_xmore: series.length ? series[series.length - 1].xmore : 0,
             total_xmore_gross: series.length ? series[series.length - 1].xmore_gross : 0,
-            total_egx30: series.length ? series[series.length - 1].egx30 : 0,
+            total_tasi: series.length ? series[series.length - 1].tasi : 0,
             total_alpha: series.length ? series[series.length - 1].alpha : 0,
             total_alpha_gross: series.length ? series[series.length - 1].alpha_gross : 0,
         });
@@ -423,7 +423,7 @@ router.get('/equity-curve', async (req, res) => {
             drawdown_series: [],
             total_xmore: 0,
             total_xmore_gross: 0,
-            total_egx30: 0,
+            total_tasi: 0,
             total_alpha: 0,
             total_alpha_gross: 0
         });
@@ -612,7 +612,7 @@ router.get('/backtest', async (req, res) => {
         `, [limit]);
 
         if (!rows.length) {
-            return res.json({ status: 'pending', message: 'First backtest runs every Sunday at 09:00 Cairo.' });
+            return res.json({ status: 'pending', message: 'First backtest runs every Sunday at 09:00 Riyadh.' });
         }
 
         // Last run date
@@ -642,7 +642,7 @@ router.get('/backtest', async (req, res) => {
             },
         });
     } catch (err) {
-        if (isTableMissing(err)) return res.json({ status: 'pending', message: 'First backtest runs every Sunday at 09:00 Cairo.' });
+        if (isTableMissing(err)) return res.json({ status: 'pending', message: 'First backtest runs every Sunday at 09:00 Riyadh.' });
         console.error('[track-record] /backtest error:', err);
         res.status(500).json({ error: 'Failed to load backtest results.' });
     }

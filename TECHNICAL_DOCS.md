@@ -1,4 +1,4 @@
-# 📈 Xmore Stock Prediction System - Technical Documentation
+﻿# 📈 Xmore Stock Prediction System - Technical Documentation
 
 ## Overview
 

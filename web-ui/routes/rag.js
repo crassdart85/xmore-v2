@@ -3,7 +3,7 @@
  * RAG Routes â€” Retrieval-Augmented Generation for Xmore
  *
  * POST /api/rag/ask              Q&A against embedded market reports
- * POST /api/rag/chat             General EGX research chat with news context
+ * POST /api/rag/chat             General KSA/Tadawul research chat with news context
  * GET  /api/rag/embed/status     How many chunks are embedded
  * POST /api/rag/embed            Embed un-embedded reports (pure Node.js, no Python)
  * GET  /api/sentiment/:symbol/evidence  News articles that drove sentiment score
@@ -395,7 +395,7 @@ router.post('/ask', async (req, res) => {
             return `[Source ${i + 1}: ${label}]\n${c.chunk_text}`;
         }).join('\n\n---\n\n');
 
-        const prompt = `You are an expert financial analyst for the Egyptian Exchange (EGX).
+        const prompt = `You are an expert financial analyst for the Saudi Exchange (Tadawul).
 Use ONLY the provided document and news excerpts to answer the question.
 If the answer is not in the excerpts, say "I cannot find this in the available sources."
 
@@ -431,7 +431,7 @@ Answer concisely and cite the source where relevant.`;
 
 // â”€â”€ Static KSA market knowledge (injected into every /chat prompt) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const EGX_MARKET_KNOWLEDGE = `
+const KSA_MARKET_KNOWLEDGE = `
 SAUDI EXCHANGE (TADAWUL) â€” REFERENCE KNOWLEDGE
 ================================================
 The Saudi Exchange (Tadawul / ØªØ¯Ø§ÙˆÙ„) is the national stock exchange of Saudi Arabia,
@@ -474,7 +474,7 @@ XMORE PLATFORM â€” METHODOLOGY & DATA SOURCES:
   * Portfolio forecasts + actual vs forecast performance (user-specific, when logged in)
 `.trim();
 
-// â”€â”€ POST /api/rag/chat â€” General EGX research chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ POST /api/rag/chat â€” General KSA/Tadawul research chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 router.post('/chat', optionalAuth, async (req, res) => {
     const { question, symbol, language, source_mode } = req.body || {};
@@ -497,7 +497,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
             .filter(Boolean);
         const focusSymbol = String(symbol || resolvedSymbols[0] || '').toUpperCase() || null;
 
-        // 1. Load EGX stock reference from DB
+        // 1. Load KSA stock reference from DB
         let stockReferenceBlock = '';
         try {
             const stocks = await dbAll(
@@ -675,7 +675,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 const gainers = sorted.slice(0, 5).filter(p => (p.change_pct || 0) > 0);
                 const losers  = [...sorted].reverse().slice(0, 5).filter(p => (p.change_pct || 0) < 0);
                 const byVol   = [...priceRows].sort((a, b) => (b.volume || 0) - (a.volume || 0)).slice(0, 5);
-                const lines   = [`LIVE EGX MARKET DATA (${latestDate}, ${priceRows.length} stocks):`];
+                const lines   = [`LIVE TADAWUL MARKET DATA (${latestDate}, ${priceRows.length} stocks):`];
                 if (gainers.length) lines.push(`  Top Gainers: ${gainers.map(p => `${p.symbol} +${p.change_pct}%`).join(', ')}`);
                 if (losers.length)  lines.push(`  Top Losers:  ${losers.map(p => `${p.symbol} ${p.change_pct}%`).join(', ')}`);
                 if (byVol.length)   lines.push(`  Most Active: ${byVol.map(p => p.symbol).join(', ')}`);
@@ -760,7 +760,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                        FROM instrument i
                        JOIN etf_nav n ON n.instrument_id = i.instrument_id
                        JOIN etf_price_daily p ON p.instrument_id = i.instrument_id
-                       WHERE i.is_active = TRUE AND i.region = 'LOCAL_EGX'
+                       WHERE i.is_active = TRUE AND i.region IN ('LOCAL_KSA','LOCAL_EGX')
                        ORDER BY i.symbol, n.nav_date DESC`
                     : `SELECT i.symbol, n.nav_unit, p.close_price,
                          ROUND((p.close_price - n.nav_unit) / NULLIF(n.nav_unit,0) * 100, 2) AS prem_pct
@@ -769,7 +769,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                          AND n.nav_date = (SELECT MAX(nav_date) FROM etf_nav WHERE instrument_id = i.id)
                        JOIN etf_price_daily p ON p.instrument_id = i.id
                          AND p.trade_date = (SELECT MAX(trade_date) FROM etf_price_daily WHERE instrument_id = i.id)
-                       WHERE i.is_active = 1 AND i.region = 'LOCAL_EGX'`,
+                       WHERE i.is_active = 1 AND i.region IN ('LOCAL_KSA','LOCAL_EGX')`,
                     []
                 );
                 if (navRows.length > 0) {
@@ -792,7 +792,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                 );
                 if (aumRows.length > 0) {
                     const sorted = [...aumRows].sort((a, b) => (b.aum || 0) - (a.aum || 0)).slice(0, 5);
-                    marketDataBlock += `\n  ETF Fund Size (AUM): ${sorted.map(r => `${r.symbol}: ${(r.aum/1e6).toFixed(1)}M EGP`).join(', ')}`;
+                    marketDataBlock += `\n  ETF Fund Size (AUM): ${sorted.map(r => `${r.symbol}: ${(r.aum/1e6).toFixed(1)}M SAR`).join(', ')}`;
                 }
                 const etfSigRows = await dbAll(
                     isPostgres
@@ -944,7 +944,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
                             return `    ${r.symbol}: ${forecast}${prob}${actual}`;
                         }).join('\n') || '    (no forecast results yet)';
                         pfDetails.push(
-                            `  Portfolio "${pf.name}" â€” ${symbols.length} stock(s), ${pf.horizon_days}d ${pf.scenario} horizon, ${pf.investment_amount} EGP\n${stockLines}`
+                            `  Portfolio "${pf.name}" â€” ${symbols.length} stock(s), ${pf.horizon_days}d ${pf.scenario} horizon, ${pf.investment_amount} SAR\n${stockLines}`
                         );
                     }
                     portfolioBlock = `\nUSER'S FORECAST PORTFOLIOS:\n${pfDetails.join('\n')}`;
@@ -991,15 +991,15 @@ router.post('/chat', optionalAuth, async (req, res) => {
             // Fail silently — enrichment is best-effort
         }
 
-        const prompt = `You are an expert EGX financial market analyst with access to live market data.
-Use the live market data, stock reference, EGX knowledge, and knowledge base excerpts to answer questions.
+        const prompt = `You are an expert Saudi/Tadawul financial market analyst with access to live market data.
+Use the live market data, stock reference, KSA market knowledge, and knowledge base excerpts to answer questions.
 When discussing the user's portfolios, use the portfolio data provided â€” show actual vs forecast performance.
 Keep answers concise (2-4 sentences) and factual. Use live data when asked about today's market.
 Answer language must be ${lang === 'ar' ? 'Arabic' : 'English'}.
 ${symbolNote}
 ${entityNote}
 
-${EGX_MARKET_KNOWLEDGE}
+${KSA_MARKET_KNOWLEDGE}
 ${liveDataBlock}
 ${stockReferenceBlock}
 ${marketDataBlock ? '\n' + marketDataBlock : ''}
@@ -1031,15 +1031,15 @@ User question: ${question}`;
     }
 });
 
-// â”€â”€ POST /api/rag/macro â€” EGX Macro Driver Read with Google Search grounding â”€â”€
+// â”€â”€ POST /api/rag/macro â€” KSA Macro Driver Read with Google Search grounding â”€â”€
 
 router.post('/macro', async (req, res) => {
     if (!GEMINI_API_KEY) return res.status(503).json({ error: 'GOOGLE_API_KEY not configured' });
 
-    // Today's date in Cairo time (UTC+2)
-    const cairoNow = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    const today    = cairoNow.toISOString().slice(0, 10);
-    const dayName  = cairoNow.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Africa/Cairo' });
+    // Today's date in Riyadh time (UTC+3)
+    const riyadhNow = new Date(Date.now() + 3 * 60 * 60 * 1000);
+    const today     = riyadhNow.toISOString().slice(0, 10);
+    const dayName   = riyadhNow.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Riyadh' });
 
     // Lightweight DB snapshot to anchor the analysis
     let dbSnapshot = '';
@@ -1085,34 +1085,34 @@ router.post('/macro', async (req, res) => {
         }
     } catch (_e) { /* silently skip */ }
 
-    const prompt = `You are an EGX macro analyst. Today is ${dayName}, ${today} (Africa/Cairo, UTC+2).
+    const prompt = `You are a Saudi/Tadawul macro analyst. Today is ${dayName}, ${today} (Asia/Riyadh, UTC+3).
 
 Use Google Search to find CURRENT data. Search for:
-- "Central Bank of Egypt MPC decision 2026" (latest policy rate)
-- "IMF Egypt 2026 disbursement" (latest review/tranche)
-- "USD EGP exchange rate ${today}" (FX level)
-- "oil price ${today}" and "Egypt EGX market ${today}" (global shocks)
+- "SAMA repo rate 2025" or "Saudi Central Bank interest rate" (latest policy rate)
+- "Saudi Arabia GDP growth 2025" (latest economic outlook)
+- "USD SAR exchange rate ${today}" (FX level)
+- "oil price ${today}" and "Saudi Tadawul TASI ${today}" (global shocks)
 
-Provide a concise EGX Macro Driver Read:
+Provide a concise KSA/Tadawul Macro Driver Read:
 
-## 1. Rates (CBE)
-Latest MPC decision: rate levels, direction, implication for EGX valuations (rate-sensitive sectors).
+## 1. Rates (SAMA)
+Latest SAMA repo rate decision: rate levels, direction, implication for Tadawul valuations (rate-sensitive sectors like banking, real estate).
 
 ## 2. IMF / External Financing
 Latest IMF program status, any recent disbursement, implication for FX confidence and bank funding.
 
-## 3. FX (USD/EGP)
-Current approximate exchange rate. Signal: stability or pressure?
+## 3. FX (USD/SAR)
+Current exchange rate (pegged ~3.75). Any pressure on the peg? Capital flow signals?
 
 ## 4. Global Shocks (last 48h)
-Dominant global macro shock (oil, EM risk-off, regional events) and Egypt-specific impact (Suez, imported inflation, foreign flows).
+Dominant global macro shock (oil, EM risk-off, regional events) and Saudi-specific impact (Aramco, petrochemicals, foreign investment flows).
 
 ## 5. Sector Lens
-Given the macro mix: which EGX sectors have a tailwind vs headwind today?
+Given the macro mix: which Tadawul sectors have a tailwind vs headwind today?
 (Banks / Real Estate / Energy-exporters / Consumer-import-heavy / Industrials)
 
 ## 6. Net Tone
-One sentence: overall macro tone for EGX today â€” supportive / neutral / cautious â€” and why.
+One sentence: overall macro tone for Tadawul today â€” supportive / neutral / cautious â€” and why.
 ${dbSnapshot ? '\n' + dbSnapshot : ''}
 
 Keep each section 2-3 sentences. Cite the source searched. Flag any data that is delayed or unavailable.`;
@@ -1232,7 +1232,7 @@ router.post('/why-signal', async (req, res) => {
         const sigWord = sig === 'UP' ? 'bullish' : sig === 'DOWN' ? 'bearish' : 'neutral';
 
         // Semantically rich query covering the stock + signal direction
-        const query  = `${sym} stock ${sigWord} signal Egypt EGX ${agent}`.trim();
+        const query  = `${sym} stock ${sigWord} signal Saudi Tadawul ${agent}`.trim();
         const qEmbedding = await embedText(query);
 
         // Top chunks across ALL source types (reports + news_article + event_intel)
@@ -1258,7 +1258,7 @@ router.post('/why-signal', async (req, res) => {
             : 'No recent news found for this stock.';
 
         const prompt =
-`You are a concise EGX financial analyst. Explain in 3-4 bullet points why ${sym} has a ${sig} signal today.
+`You are a concise Saudi/Tadawul financial analyst. Explain in 3-4 bullet points why ${sym} has a ${sig} signal today.
 Draw on the evidence below. Be specific â€” mention concrete facts where present.
 If evidence is insufficient, say so honestly.
 

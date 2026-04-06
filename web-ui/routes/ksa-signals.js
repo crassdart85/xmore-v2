@@ -1,7 +1,7 @@
 /**
  * KSA Signals API Routes
  * All queries partition by market_id = 'KSA'
- * Mirrors EGX signal routes with SAR currency and .SR tickers
+ * KSA/Tadawul signal routes with SAR currency and .SR tickers
  */
 'use strict';
 

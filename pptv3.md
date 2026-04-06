@@ -1,17 +1,17 @@
-# Xmore — AI Stock Intelligence for the Egyptian Exchange
+﻿# Xmore — AI Stock Intelligence for the Saudi Exchange
 ### Simple Guide · Platform Walkthrough · Key Features
 
 ---
 
 ## What Is Xmore?
 
-Xmore is an AI-powered stock intelligence platform built specifically for the **Egyptian Exchange (EGX)** — the Cairo stock market open Sunday–Thursday, 10:00–14:30 Cairo time.
+Xmore is an AI-powered stock intelligence platform built specifically for the **Saudi Exchange (Tadawul)** — the largest exchange in the Middle Easttock market open Sunday–Thursday, 10:00–14:30 Riyadh time.
 
 **The problem it solves:**
-Egyptian retail investors have almost none of the analytical tools available in US or Gulf markets. No Arabic-language screener, no sentiment tool that reads Arabic news, no system to tell you when the market regime has quietly shifted from calm to turbulent. Most traders rely on tips and gut feel.
+Saudi retail investors have almost none of the analytical tools available in US or other markets. No Arabic-language screener, no sentiment tool that reads Arabic news, no system to tell you when the market regime has quietly shifted from calm to turbulent. Most traders rely on tips and gut feel.
 
 **What Xmore does:**
-Every day before the market opens, five independent AI agents analyze every tracked EGX stock — reading prices, news (Arabic + English), technical patterns, and macro signals — and vote on whether each stock is likely to go **UP**, **DOWN**, or **HOLD**. The votes are weighted by each agent's recent accuracy, risk-checked, filtered for market regime, and published as a final confident signal with a conviction percentage. No backdating. No cherry-picking. Every signal is timestamped before market open.
+Every day before the market opens, five independent AI agents analyze every tracked KSA stock — reading prices, news (Arabic + English), technical patterns, and macro signals — and vote on whether each stock is likely to go **UP**, **DOWN**, or **HOLD**. The votes are weighted by each agent's recent accuracy, risk-checked, filtered for market regime, and published as a final confident signal with a conviction percentage. No backdating. No cherry-picking. Every signal is timestamped before market open.
 
 ---
 
@@ -66,7 +66,7 @@ These five agents vote. A **Consensus Engine** weighs their votes by recent accu
 
 | Tab | Use it when… |
 |---|---|
-| **Predictions** | You want today's BUY/SELL/HOLD for all EGX stocks |
+| **Predictions** | You want today's BUY/SELL/HOLD for all KSA stocks |
 | **Briefing** | You want the daily 7-section AI morning report |
 | **Trades** | You want specific trade ideas for the session |
 | **Watchlist** | You want to filter everything to only your followed stocks |
@@ -77,8 +77,8 @@ These five agents vote. A **Consensus Engine** weighs their votes by recent accu
 | **Results** | You want to verify whether past signals were correct |
 | **Prices** | You want a quick price/volume table |
 | **Time Machine** | You want to replay the past OR simulate the future |
-| **Rates** | You want USD/EGP and gold prices |
-| **ETFs** | You want technical signals on EGX funds |
+| **Rates** | You want USD/SAR and gold prices |
+| **ETFs** | You want technical signals on KSA funds |
 
 **Tip:** Create an account and add stocks to your **Watchlist** — every tab then filters to show only your stocks, so you get a personalized experience.
 
@@ -92,7 +92,7 @@ Before you do anything else each day, open the **Briefing** tab. It loads a fres
 2. **Your Actions Today** — Any urgent BUY or SELL signals specifically for stocks you follow.
 3. **Portfolio Snapshot** — Quick P&L read on your open positions.
 4. **Watchlist Signal Map** — Visual heatmap of your stocks sorted by signal strength.
-5. **Sector Overview** — How each of the 15 EGX sectors is positioned today.
+5. **Sector Overview** — How each of the KSA sectors is positioned today.
 6. **Risk Alerts** — Signals that were downgraded or blocked by the risk filter.
 7. **Sentiment Snapshot** — Overall positive/negative split from Arabic + English news today.
 
@@ -108,11 +108,11 @@ The Time Machine tab has two distinct tools: **Past** and **Future**.
 
 ### Time Machine — Past Tab: "What if I had invested here?"
 
-**In plain language:** You pick a past date and an amount in EGP. The system replays exactly what Xmore's historical trading signals would have done with your money from that date until today. You see whether you would have made or lost money, and how that compares to simply buying the EGX30 index.
+**In plain language:** You pick a past date and an amount in SAR. The system replays exactly what Xmore's historical trading signals would have done with your money from that date until today. You see whether you would have made or lost money, and how that compares to simply buying the TASI index.
 
 **Step-by-step:**
 
-1. **Set your amount** — Use the slider or type directly. Range: 5,000 EGP to 10,000,000 EGP.
+1. **Set your amount** — Use the slider or type directly. Range: 5,000 SAR to 10,000,000 SAR.
 2. **Pick your start date** — Or use the quick buttons: 3 months ago, 6 months ago, 1 year ago, 2 years ago.
 3. **Click Simulate** — Wait a few seconds while the system replays history.
 
@@ -120,11 +120,11 @@ The Time Machine tab has two distinct tools: **Past** and **Future**.
 
 | Result | What it means |
 |---|---|
-| **Hero card** | Your 50,000 EGP → 68,420 EGP with +36.8% return animated in real time |
-| **Alpha vs EGX30** | How much Xmore beat the index — e.g. +12pp above the market |
-| **Equity curve chart** | Your portfolio (blue filled area) vs EGX30 benchmark (grey dashed line) over time |
-| **Monthly breakdown table** | Month-by-month comparison: Xmore % vs EGX30 % |
-| **Top winning trades** | The best individual trade calls in that period, with entry/exit prices and profit in EGP |
+| **Hero card** | Your 50,000 SAR → 68,420 SAR with +36.8% return animated in real time |
+| **Alpha vs TASI** | How much Xmore beat the index — e.g. +12pp above the market |
+| **Equity curve chart** | Your portfolio (blue filled area) vs TASI benchmark (grey dashed line) over time |
+| **Monthly breakdown table** | Month-by-month comparison: Xmore % vs TASI % |
+| **Top winning trades** | The best individual trade calls in that period, with entry/exit prices and profit in SAR |
 | **Worst losing trades** | The bad calls — shown honestly, not hidden |
 | **Trade timeline** | Every BUY and SELL event in chronological order with the reason |
 
@@ -140,7 +140,7 @@ The Time Machine tab has two distinct tools: **Past** and **Future**.
 
 **Auto — AI picks the best stock for you:**
 1. Set amount, target date (up to 30 days out), and scenario (Base / Bull / Bear).
-2. The AI scans all EGX30 stocks and picks the one with the best expected return for your parameters.
+2. The AI scans all KSA universe stocks and picks the one with the best expected return for your parameters.
 3. You see a ranked list of all 30 stocks so you can review the AI's reasoning.
 
 **Manual — You pick your own stocks:**
@@ -152,12 +152,12 @@ The Time Machine tab has two distinct tools: **Past** and **Future**.
 
 | Result | What it means |
 |---|---|
-| **Expected portfolio value** | e.g. "Your 50,000 EGP is expected to become 56,200 EGP" — animated counter |
+| **Expected portfolio value** | e.g. "Your 50,000 SAR is expected to become 56,200 SAR" — animated counter |
 | **Probability of profit** | e.g. "67% chance your investment will be positive" — shown as a progress bar |
 | **Scenario range** | Worst case (5th percentile) / Median / Best case (95th percentile) — three side-by-side values |
 | **Band chart** | Green dashed = best path, blue filled = median, red dashed = worst, grey line = break-even |
 | **Outcome histogram** | Distribution of all 5,000 simulation final values — green bars = profit, red bars = loss |
-| **Plain-language summary** | "Based on 5,000 simulations, COMI is expected to return +12.4% over 63 trading days." |
+| **Plain-language summary** | "Based on 5,000 simulations, 2222.SR is expected to return +12.4% over 63 trading days." |
 
 **Three scenarios explained:**
 - **Base** — neutral market assumptions using historical drift
@@ -170,15 +170,15 @@ The Time Machine tab has two distinct tools: **Past** and **Future**.
 
 ## 📊 PRO PAGE (Deep Dive)
 
-The Pro page (`/pro`) is a market-intelligence dashboard for active traders who want a single, data-rich view of the **entire EGX market** — not just their own watchlist.
+The Pro page (`/pro`) is a market-intelligence dashboard for active traders who want a single, data-rich view of the **entire Tadawul market** — not just their own watchlist.
 
 **Header bar (always visible):**
-- Live FX rates: USD/EGP, USD/SAR, SAR/EGP — updated hourly
-- Gold prices in EGP per gram: 24K, 21K, 18K, and the Egyptian Pound gold coin
+- Live FX rates: USD/SAR — updated hourly
+- Gold prices in SAR per gram: 24K, 21K, 18K
 - Today's date (day of week + calendar date)
 
 **TradingView live ticker tape:**
-A scrolling live feed of real prices for EGX30, CIB, EFG Hermes, Telecom Egypt, and 8 other major blue chips — running along the top of the page from TradingView. Prices are real-time.
+A scrolling live feed of real prices for TASI, Aramco, Al Rajhi, STC, and 8 other major blue chips — running along the top of the page from TradingView. Prices are real-time.
 
 ---
 
@@ -190,18 +190,18 @@ Six summary numbers across the top that tell you the market state in under five 
 
 | Pill | What it shows |
 |---|---|
-| TRACKED | How many EGX stocks are being monitored by Xmore |
+| TRACKED | How many KSA stocks are being monitored by Xmore |
 | UP | Stocks advancing today + what percentage of the market they represent |
 | DOWN | Stocks declining today |
 | BEST AGENT WIN RATE | Highest accuracy % among all individual AI agents in recent history |
 | LAST DATA | Date of the most recent price data loaded |
 | MARKET REGIME | **Calm** (green) / **Turbulent** (amber) / **Crisis** (red) — from the HMM model |
 
-**2. EGX30 Intraday Chart + Blue Chips**
+**2. TASI Intraday Chart + Blue Chips**
 
 Split view:
-- **Left:** A full TradingView advanced candle chart of the EGX30 index (5-minute candles, Cairo timezone)
-- **Right:** A TradingView market overview widget showing major EGX blue chips with their day-change %
+- **Left:** A full TradingView advanced candle chart of the TASI index (5-minute candles, Riyadh timezone)
+- **Right:** A TradingView market overview widget showing major KSA blue chips with their day-change %
 
 **3. Top Gainers and Top Losers Tables**
 
@@ -209,7 +209,7 @@ Two side-by-side tables, each showing the 8 biggest movers. Columns:
 
 | Column | Meaning |
 |---|---|
-| Symbol | Ticker (without .CA) |
+| Symbol | Ticker (.SR) |
 | Close | Latest price |
 | Change % | Day's gain or loss — green or red |
 | Signal | BUY / SELL / HOLD badge from the consensus engine |
@@ -220,11 +220,11 @@ Two side-by-side tables, each showing the 8 biggest movers. Columns:
 
 **4. Sector Performance Panel**
 
-Horizontal bar chart for every EGX sector. Green = sector average up, red = down. Tells you instantly which sectors are rotating in or out of favor today — which helps portfolio-level decisions.
+Horizontal bar chart for every KSA sector. Green = sector average up, red = down. Tells you instantly which sectors are rotating in or out of favor today — which helps portfolio-level decisions.
 
 **5. ETF and ETP Signals**
 
-Cards for every tracked EGX fund and commodity tracker. Each card shows:
+Cards for every tracked KSA fund and commodity tracker. Each card shows:
 - Signal badge (UP / DOWN / HOLD)
 - Confidence %
 - RSI value
@@ -242,7 +242,7 @@ If you have created forecast portfolios on the main dashboard, this section show
 
 Quick Black-Scholes options calculator:
 - Input: ticker, spot price, strike, expiry (1M / 3M / 6M / 1Y)
-- Output: Call price, Put price, Straddle cost, Delta, Gamma, Theta/day, Vega/1% vol — all in EGP
+- Output: Call price, Put price, Straddle cost, Delta, Gamma, Theta/day, Vega/1% vol — all in SAR
 - Useful for quickly checking hedge cost before opening or exiting a large position
 
 **8. Walk-Forward Backtest Results**
@@ -252,26 +252,26 @@ A table showing the ML agent's out-of-sample accuracy per stock (90-day train / 
 **9. Macro Brief Panel**
 
 An AI-generated narrative (auto-refreshed hourly) covering:
-- CBE interest rate direction and implication for EGX valuations
+- SAMA repo rate direction and implication for KSA valuations
 - IMF program status and FX confidence signal
-- Current USD/EGP level
+- Current USD/SAR level
 - Global shocks (oil, EM risk-off, regional events)
-- Which EGX sectors have a tailwind vs headwind today
+- Which KSA sectors have a tailwind vs headwind today
 - Net macro tone: supportive / neutral / cautious
 
-Powered by Gemini with Google Search grounding — the AI actually searches the web in real time for current CBE and IMF data.
+Powered by Gemini with Google Search grounding — the AI actually searches the web in real time for current SAMA and IMF data.
 
 ---
 
 ## 📋 SESSION SHEET (Deep Dive)
 
-The Session Sheet (`/session`) is a **pre-market cheat sheet** designed to be read in the 15–30 minutes before EGX opens (before 10:00 Cairo time, Sunday–Thursday). Login is required.
+The Session Sheet (`/session`) is a **pre-market cheat sheet** designed to be read in the 15–30 minutes before Tadawul opens (before 10:00 Riyadh time, Sunday–Thursday). Login is required.
 
 ---
 
 ### Index Support & Resistance Cards
 
-At the top, cards for the **EGX30** and **EGX70** indices show the six key levels computed from the previous session's OHLC data:
+At the top, cards for the **TASI** and **Nomu** indices show the six key levels computed from the previous session's OHLC data:
 
 | Level | What it means |
 |---|---|
@@ -344,9 +344,9 @@ The entire Session Sheet (and indeed the whole platform) is fully bilingual:
 The Track Record page (`/track-record`) is Xmore's public proof of edge. Every signal is shown — whether it was right or wrong. Nothing is removed or backdated.
 
 Key sections:
-- **KPI Summary** — Total signals, Win rate, Alpha vs EGX30, Sharpe ratio, Profit factor (toggle: 30D / 90D / 180D / All-time)
+- **KPI Summary** — Total signals, Win rate, Alpha vs TASI, Sharpe ratio, Profit factor (toggle: 30D / 90D / 180D / All-time)
 - **Live Signal Feed** — The 20 most recent signals with timestamps proving they were issued before market open
-- **Equity Curve** — Cumulative AI return (blue) vs EGX30 benchmark (grey)
+- **Equity Curve** — Cumulative AI return (blue) vs TASI benchmark (grey)
 - **Agent Breakdown** — Which agent is doing the heavy lifting right now
 - **Sector Accuracy** — Where the AI has an edge and where it doesn't
 - **Regime Performance** — Accuracy in Calm vs Turbulent vs Crisis markets (proves regime gating works)
@@ -358,8 +358,8 @@ Key sections:
 ## The AI Research Assistant
 
 Available in the dashboard and Pro page, the chat assistant knows:
-- All ~190 EGX stocks by name (Arabic + English), sector, and ticker
-- EGX market facts: trading hours, currency, indices, regulator
+- All KSA universe stocks by name (Arabic + English), sector, and ticker
+- KSA market facts: trading hours (Sun-Thu 10:00-15:00 Riyadh), currency (SAR), TASI index, CMA regulator
 - Live market data: today's gainers/losers, consensus signals, sentiment
 - Current market regime
 - The last week of news (Arabic + English sources)
@@ -367,7 +367,7 @@ Available in the dashboard and Pro page, the chat assistant knows:
 - Uploaded PDF reports and factsheets (RAG vector search)
 - ETF prices, NAV, AUM, and signals
 
-Ask it: "Why does COMI have a BUY signal today?", "Which sectors have a tailwind?", "What is my portfolio doing vs the forecast?", "What is the current USD/EGP rate and what does it mean for EGX banks?" — and get a grounded, factual answer with cited sources.
+Ask it: "Why does 2222.SR have a BUY signal today?", "Which sectors have a tailwind?", "What is my portfolio doing vs the forecast?", "What is the current USD/SAR rate and what does it mean for Tadawul banks?" — and get a grounded, factual answer with cited sources.
 
 ---
 
@@ -383,7 +383,7 @@ Ask it: "Why does COMI have a BUY signal today?", "Which sectors have a tailwind
 □ 7. Use Time Machine (Future): simulate your shortlisted stock under Base / Bull / Bear scenarios
 □ 8. Before committing capital: check Track Record for that stock's historical accuracy
 □ 9. After the session: log paper trades in Session Sheet simulator to track performance
-□ 10. Weekly: review Time Machine (Past) — did following the signals beat the EGX30?
+□ 10. Weekly: review Time Machine (Past) — did following the signals beat TASI?
 ```
 
 ---
@@ -392,13 +392,13 @@ Ask it: "Why does COMI have a BUY signal today?", "Which sectors have a tailwind
 
 | Item | Detail |
 |---|---|
-| **Exchange** | Egyptian Exchange (EGX) — البورصة المصرية |
+| **Exchange** | Saudi Exchange (Tadawul) — البورصة المصرية |
 | **Trading days** | Sunday – Thursday |
-| **Hours** | 10:00 – 14:30 Cairo time (UTC+2) |
-| **Currency** | Egyptian Pound (EGP) |
-| **Main index** | EGX30 — 30 most liquid stocks |
+| **Hours** | 10:00 – 14:30 Riyadh time (UTC+3) |
+| **Currency** | Saudi Riyal (SAR) |
+| **Main index** | TASI — 30 most liquid stocks |
 | **Stocks tracked** | ~190 across 15 sectors |
-| **Symbol format** | TICKER.CA (e.g. COMI.CA for CIB) |
+| **Symbol format** | TICKER.SR (e.g. 2222.SR for Aramco) |
 | **Signal freshness** | Agents run daily post-market; signals published before next open |
 | **Languages** | English + Arabic (full RTL support) |
 | **Data refresh** | Prices: intraday (6× daily during session) · News: 3× daily · Signals: once daily post-market |

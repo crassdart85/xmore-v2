@@ -1,10 +1,10 @@
-/**
+﻿/**
  * Screening & Portfolio Construction Routes
  *
- * GET  /api/screening/top-picks          — today's best 5 stocks (cached 1 h)
- * GET  /api/screening/sector-focus       — top 3 sectors by buy-signal strength
- * GET  /api/screening/ranked-signals     — BUY signals sorted by confidence + win-rate
- * POST /api/screening/portfolio-builder  — build a portfolio for a given SAR budget
+ * GET  /api/screening/top-picks          â€” today's best 5 stocks (cached 1 h)
+ * GET  /api/screening/sector-focus       â€” top 3 sectors by buy-signal strength
+ * GET  /api/screening/ranked-signals     â€” BUY signals sorted by confidence + win-rate
+ * POST /api/screening/portfolio-builder  â€” build a portfolio for a given SAR budget
  */
 
 const { spawn } = require('child_process');
@@ -14,7 +14,7 @@ const express = require('express');
 const router = express.Router();
 
 // Float tolerance used for budget and risk constraint validation (in SAR)
-const BUDGET_TOLERANCE_EGP = 1.0; // kept as-is for internal math, unit is SAR
+const BUDGET_TOLERANCE_SAR = 1.0; // float tolerance for budget/risk constraints
 
 let db;
 let isPostgres = false;
@@ -24,7 +24,7 @@ function attachDb(database, pg) {
     isPostgres = !!pg;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function dbAll(sql, params = []) {
     return new Promise((resolve, reject) => {
@@ -75,7 +75,7 @@ function runScreeningPython(args, timeoutMs = 20000) {
     });
 }
 
-// ─── In-memory cache (1 hour TTL) ─────────────────────────────────────────────
+// â”€â”€â”€ In-memory cache (1 hour TTL) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const _cache = {};
 
@@ -93,15 +93,15 @@ function cacheSet(key, data) {
     _cache[key] = { data, ts: Date.now() };
 }
 
-// ─── GET /top-picks ───────────────────────────────────────────────────────────
+// â”€â”€â”€ GET /top-picks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Returns today's top 5 stock picks with rationale.
  * Results are cached for 1 hour to avoid redundant computation.
  *
  * Query params:
- *   date  — override date (YYYY-MM-DD), defaults to today
- *   top_n — number of picks (default 5, max 10)
+ *   date  â€” override date (YYYY-MM-DD), defaults to today
+ *   top_n â€” number of picks (default 5, max 10)
  */
 router.get('/top-picks', async (req, res) => {
     try {
@@ -159,14 +159,14 @@ router.get('/top-picks', async (req, res) => {
     }
 });
 
-// ─── GET /sector-focus ────────────────────────────────────────────────────────
+// â”€â”€â”€ GET /sector-focus â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Returns the top 3 sectors by buy-signal strength.
  *
  * Query params:
- *   date  — override date (YYYY-MM-DD), defaults to today
- *   top_n — number of sectors (default 3, max 10)
+ *   date  â€” override date (YYYY-MM-DD), defaults to today
+ *   top_n â€” number of sectors (default 3, max 10)
  */
 router.get('/sector-focus', async (req, res) => {
     try {
@@ -221,14 +221,14 @@ router.get('/sector-focus', async (req, res) => {
     }
 });
 
-// ─── GET /ranked-signals ──────────────────────────────────────────────────────
+// â”€â”€â”€ GET /ranked-signals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Returns active BUY signals sorted by confidence, recent win-rate, and freshness.
  *
  * Query params:
- *   date  — override date (YYYY-MM-DD), defaults to today
- *   limit — max rows (default 30, max 100)
+ *   date  â€” override date (YYYY-MM-DD), defaults to today
+ *   limit â€” max rows (default 30, max 100)
  */
 router.get('/ranked-signals', async (req, res) => {
     try {
@@ -321,15 +321,15 @@ router.get('/ranked-signals', async (req, res) => {
     }
 });
 
-// ─── POST /portfolio-builder ──────────────────────────────────────────────────
+// â”€â”€â”€ POST /portfolio-builder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 /**
  * Build a SAR-denominated portfolio from active KSA BUY signals.
  *
  * Body (JSON):
- *   budgetSAR            {number}  — total budget in SAR (required; budgetEGP accepted as alias)
- *   riskTolerancePercent {number}  — max % of budget to risk (default 5)
- *   date                 {string}  — signal date override (default today)
+ *   budgetSAR            {number}  â€” total budget in SAR (required; budgetEGP accepted as alias)
+ *   riskTolerancePercent {number}  â€” max % of budget to risk (default 5)
+ *   date                 {string}  â€” signal date override (default today)
  */
 router.post('/portfolio-builder', express.json(), async (req, res) => {
     try {
@@ -405,7 +405,7 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
             });
         }
 
-        // Sector map (inline — avoid Python round-trip for performance)
+        // Sector map (inline â€” avoid Python round-trip for performance)
         // KSA Tadawul universe (.SR symbols)
         const SECTOR_MAP = {
             '1180.SR': 'Banking',        '1120.SR': 'Banking',
@@ -477,7 +477,7 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
             let riskSAR  = parseFloat((qty * riskPerSh).toFixed(2));
 
             // Clamp to remaining budget
-            if (totalInvested + entrySAR > budget + BUDGET_TOLERANCE_EGP) {
+            if (totalInvested + entrySAR > budget + BUDGET_TOLERANCE_SAR) {
                 const remaining = budget - totalInvested;
                 if (remaining < entry) break;
                 qty = Math.max(1, Math.floor(remaining / entry));
@@ -514,8 +514,8 @@ router.post('/portfolio-builder', express.json(), async (req, res) => {
                 total_invested:        parseFloat(totalInvested.toFixed(2)),
                 cash_remaining:        parseFloat((budget - totalInvested).toFixed(2)),
                 total_risk_sar:        parseFloat(totalRisk.toFixed(2)),
-                budget_constraint_met: totalInvested <= budget + BUDGET_TOLERANCE_EGP,
-                risk_constraint_met:   totalRisk <= maxRisk + BUDGET_TOLERANCE_EGP,
+                budget_constraint_met: totalInvested <= budget + BUDGET_TOLERANCE_SAR,
+                risk_constraint_met:   totalRisk <= maxRisk + BUDGET_TOLERANCE_SAR,
             },
         });
 

@@ -150,10 +150,10 @@ function detectLanguage(text) {
     return arCount > enCount ? 'AR' : 'EN';
 }
 
-const TICKER_RE = /\b[A-Z]{2,5}(?:\.CA)?\b/g;
+const TICKER_RE = /\b[A-Z0-9]{2,5}(?:\.SR)?\b/g;
 const BULLISH_RE = /\b(buy|long|bullish|upside|outperform|go(?:ing)?\s+up|rise|rally|upgrade|accumulate|overweight|strong|growth|positive|gain|recover)\b/gi;
 const BEARISH_RE = /\b(sell|short|bearish|downside|underperform|go(?:ing)?\s+down|fall|decline|downgrade|reduce|underweight|weak|loss|drop|risk|negative|warning)\b/gi;
-const TOPIC_RE = /\b(earnings|revenue|profit|dividend|merger|acquisition|IPO|interest\s+rate|inflation|GDP|oil|sector|market|index|EGX|banking|real\s+estate|pharma|tech|telecom|construction|food|chemicals|retail)\b/gi;
+const TOPIC_RE = /\b(earnings|revenue|profit|dividend|merger|acquisition|IPO|interest\s+rate|inflation|GDP|oil|sector|market|index|TASI|Tadawul|banking|real\s+estate|pharma|tech|telecom|construction|food|chemicals|retail)\b/gi;
 
 function buildInsight(text) {
     if (!text) return '';

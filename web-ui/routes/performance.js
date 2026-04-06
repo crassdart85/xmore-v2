@@ -133,14 +133,14 @@ router.get('/summary', async (req, res) => {
             const variance = arr.reduce((acc, v) => acc + ((v - m) ** 2), 0) / (arr.length - 1);
             return Math.sqrt(Math.max(variance, 0));
         };
-        // EGX risk-free rate (CBE rate ~27.25% annual) — used for all Sharpe calculations
-        const EGX_TRADING_DAYS = 247;
-        const EGX_RF_ANNUAL = 0.2725;
-        const _dailyRf = Math.pow(1 + EGX_RF_ANNUAL, 1 / EGX_TRADING_DAYS) - 1;
-        const _sharpeEgx = (arr) => {
+        // KSA risk-free rate (SAIBOR 3M ~4.89% annual) — used for all Sharpe calculations
+        const KSA_TRADING_DAYS = 250;
+        const KSA_RF_ANNUAL = 0.0489;
+        const _dailyRf = Math.pow(1 + KSA_RF_ANNUAL, 1 / KSA_TRADING_DAYS) - 1;
+        const _sharpeKsa = (arr) => {
             if (arr.length < 2) return 0;
             const m = mean(arr), s = stdev(arr);
-            return s > 0 ? ((m - _dailyRf) / s) * Math.sqrt(EGX_TRADING_DAYS) : 0;
+            return s > 0 ? ((m - _dailyRf) / s) * Math.sqrt(KSA_TRADING_DAYS) : 0;
         };
         const calcMaxDrawdown = (returnsArr) => {
             let cum = 0;
@@ -171,10 +171,10 @@ router.get('/summary', async (req, res) => {
             );
             const alphaArr = returnsArr.map((r, i) => r - benchArr[i]); // Net alpha (primary)
             const wins = subset.filter(r => r.was_correct === true || r.was_correct === 1 || r.was_correct === 't').length;
-            const vol = stdev(returnsArr) * Math.sqrt(EGX_TRADING_DAYS);
-            const volGross = stdev(returnsArrGross) * Math.sqrt(EGX_TRADING_DAYS);
-            const sharpe = _sharpeEgx(returnsArr);
-            const sharpeGross = _sharpeEgx(returnsArrGross);
+            const vol = stdev(returnsArr) * Math.sqrt(KSA_TRADING_DAYS);
+            const volGross = stdev(returnsArrGross) * Math.sqrt(KSA_TRADING_DAYS);
+            const sharpe = _sharpeKsa(returnsArr);
+            const sharpeGross = _sharpeKsa(returnsArrGross);
             return {
                 trades: total,
                 wins,
@@ -212,18 +212,18 @@ router.get('/summary', async (req, res) => {
         const sinceRows = rows.filter(r => String(r.recommendation_date || '').substring(0, 10) >= IMPROVEMENT_DATE);
         const rSince = sinceRows.length ? buildStats(sinceRows) : null;
 
-        // â”€â”€ Institutional metrics (EGX-correct risk-free rate: 27.25%) â”€â”€
-        // Note: EGX_TRADING_DAYS, EGX_RF_ANNUAL, _dailyRf, _sharpeEgx are defined above buildStats
-        const calcSharpeEgx = _sharpeEgx; // alias for institutional_metrics block
-        const calcSortinoEgx = (arr) => {
+        // â”€â”€ Institutional metrics (KSA-correct risk-free rate: SAIBOR 4.89%) â”€â”€
+        // Note: KSA_TRADING_DAYS, KSA_RF_ANNUAL, _dailyRf, _sharpeKsa are defined above buildStats
+        const calcSharpeKsa = _sharpeKsa; // alias for institutional_metrics block
+        const calcSortinoKsa = (arr) => {
             const m = mean(arr), dn = arr.filter(v => v < 0);
             if (!dn.length) return 99.9;
             const ds = stdev(dn);
-            return ds > 0 ? ((m - _dailyRf) / ds) * Math.sqrt(EGX_TRADING_DAYS) : 99.9;
+            return ds > 0 ? ((m - _dailyRf) / ds) * Math.sqrt(KSA_TRADING_DAYS) : 99.9;
         };
         const calcCalmar = (arr, mdd) => {
             if (arr.length < 20 || !mdd) return 0;
-            const ann = Math.pow(1 + mean(arr), EGX_TRADING_DAYS) - 1;
+            const ann = Math.pow(1 + mean(arr), KSA_TRADING_DAYS) - 1;
             return ann / Math.abs(mdd);
         };
         const calcBeta = (pArr, bArr) => {
@@ -239,7 +239,7 @@ router.get('/summary', async (req, res) => {
             if (n < 2) return 0;
             const ex = pArr.slice(0, n).map((v, i) => v - bArr[i]);
             const te = stdev(ex);
-            return te > 0 ? (mean(ex) / te) * Math.sqrt(EGX_TRADING_DAYS) : 0;
+            return te > 0 ? (mean(ex) / te) * Math.sqrt(KSA_TRADING_DAYS) : 0;
         };
         const calcCapture = (pArr, bArr, up) => {
             const n = Math.min(pArr.length, bArr.length);
@@ -298,8 +298,8 @@ router.get('/summary', async (req, res) => {
                     ? 'No live-only evaluated signals found; metrics include historical simulation data.'
                     : 'Metrics based on live pipeline predictions only.',
             },
-            sharpe_ratio:             Number(calcSharpeEgx(allR).toFixed(2)),
-            sortino_ratio:            Number(calcSortinoEgx(allR).toFixed(2)),
+            sharpe_ratio:             Number(calcSharpeKsa(allR).toFixed(2)),
+            sortino_ratio:            Number(calcSortinoKsa(allR).toFixed(2)),
             calmar_ratio:             Number(calcCalmar(allR, mddAll).toFixed(2)),
             max_drawdown_pct:         `${(ddDet.pct * 100).toFixed(1)}%`,
             max_drawdown_duration_days: ddDet.dur,
@@ -314,14 +314,14 @@ router.get('/summary', async (req, res) => {
             profit_factor:            Number(wl.pf.toFixed(2)),
             consecutive_wins_max:     wl.mW,
             consecutive_losses_max:   wl.mL,
-            risk_free_rate_applied:   '27.25%',
+            risk_free_rate_applied:   '4.89%',
             minimum_trades_met:       tradeCount >= 30,
             data_quality_warning:     qWarn,
             avg_cost_per_trade_pct:   Number((allCosts.length ? mean(allCosts) : 0).toFixed(4)),
             cost_drag_total_pct:      Number(allCosts.reduce((a, b) => a + b, 0).toFixed(2)),
             gross_secondary: {
-                sharpe_ratio_gross: Number(calcSharpeEgx(allRGross).toFixed(2)),
-                sortino_ratio_gross: Number(calcSortinoEgx(allRGross).toFixed(2)),
+                sharpe_ratio_gross: Number(calcSharpeKsa(allRGross).toFixed(2)),
+                sortino_ratio_gross: Number(calcSortinoKsa(allRGross).toFixed(2)),
                 calmar_ratio_gross: Number(calcCalmar(allRGross, mddGross).toFixed(2)),
                 profit_factor_gross: Number(wlGross.pf.toFixed(2))
             }
@@ -516,7 +516,7 @@ router.get('/equity-curve', async (req, res) => {
                 recommendation_date AS date,
                 ${isPostgres ? 'ROUND(AVG(actual_next_day_return)::numeric, 4)' : 'ROUND(AVG(actual_next_day_return), 4)'} AS xmore_gross,
                 ${isPostgres ? `ROUND(AVG(${costPctSql()})::numeric, 4)` : `ROUND(AVG(${costPctSql()}), 4)`} AS avg_cost_pct,
-                ${isPostgres ? 'ROUND(AVG(benchmark_1d_return)::numeric, 4)' : 'ROUND(AVG(benchmark_1d_return), 4)'} AS egx30
+                ${isPostgres ? 'ROUND(AVG(benchmark_1d_return)::numeric, 4)' : 'ROUND(AVG(benchmark_1d_return), 4)'} AS tasi
             FROM trade_recommendations
             WHERE actual_next_day_return IS NOT NULL
             AND ${liveFilter}
@@ -525,21 +525,21 @@ router.get('/equity-curve', async (req, res) => {
             ORDER BY recommendation_date ASC
         `, [days]);
 
-        let xmoreCum = 0, xmoreCumGross = 0, egx30Cum = 0;
+        let xmoreCum = 0, xmoreCumGross = 0, tasiCum = 0;
         const series = rows.map(r => {
             const gross = parseFloat(r.xmore_gross) || 0;
             const cost = parseFloat(r.avg_cost_pct) || 0;
             const net = gross - cost;
             xmoreCum += net;
             xmoreCumGross += gross;
-            egx30Cum += parseFloat(r.egx30) || 0;
+            tasiCum += parseFloat(r.tasi) || 0;
             return {
                 date: r.date,
                 xmore: Math.round(xmoreCum * 100) / 100,
                 xmore_gross: Math.round(xmoreCumGross * 100) / 100,
-                egx30: Math.round(egx30Cum * 100) / 100,
-                alpha: Math.round((xmoreCum - egx30Cum) * 100) / 100,
-                alpha_gross: Math.round((xmoreCumGross - egx30Cum) * 100) / 100
+                tasi: Math.round(tasiCum * 100) / 100,
+                alpha: Math.round((xmoreCum - tasiCum) * 100) / 100,
+                alpha_gross: Math.round((xmoreCumGross - tasiCum) * 100) / 100
             };
         });
 
@@ -548,7 +548,7 @@ router.get('/equity-curve', async (req, res) => {
             series,
             total_xmore: series.length ? series[series.length - 1].xmore : 0,
             total_xmore_gross: series.length ? series[series.length - 1].xmore_gross : 0,
-            total_egx30: series.length ? series[series.length - 1].egx30 : 0,
+            total_tasi: series.length ? series[series.length - 1].tasi : 0,
             total_alpha: series.length ? series[series.length - 1].alpha : 0,
             total_alpha_gross: series.length ? series[series.length - 1].alpha_gross : 0
         });
@@ -559,7 +559,7 @@ router.get('/equity-curve', async (req, res) => {
                 series: [],
                 total_xmore: 0,
                 total_xmore_gross: 0,
-                total_egx30: 0,
+                total_tasi: 0,
                 total_alpha: 0,
                 total_alpha_gross: 0
             });
@@ -717,8 +717,8 @@ router.get('/full-report', async (req, res) => {
             const m = mean(arr);
             return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1));
         };
-        const TRADING_DAYS = 250, EGX_RF = 0.06;
-        const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
+        const TRADING_DAYS = 250, KSA_RF = 0.06;
+        const dailyRf = Math.pow(1 + KSA_RF, 1 / TRADING_DAYS) - 1;
 
         const allRGross  = rows.map(r => toNum(r.actual_next_day_return));
         const costs = rows.map(perTradeCostPct);
@@ -752,7 +752,7 @@ router.get('/full-report', async (req, res) => {
             benchmark_returns: benchR,
             portfolio_returns: allR,
             portfolio_returns_gross: allRGross,
-            risk_free_rate_used: EGX_RF,
+            risk_free_rate_used: KSA_RF,
             minimum_trades_met: tradeCount >= 30,
             avg_cost_per_trade_pct: Number((costs.length ? mean(costs) : 0).toFixed(4)),
             total_cost_drag_pct: Number(costs.reduce((a, b) => a + b, 0).toFixed(2)),
@@ -788,8 +788,8 @@ router.get('/export-summary', async (req, res) => {
         const toNum = v => Number(v || 0);
         const mean  = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
         const stdev = arr => { if (arr.length < 2) return 0; const m = mean(arr); return Math.sqrt(arr.reduce((a, v) => a + (v - m) ** 2, 0) / (arr.length - 1)); };
-        const TRADING_DAYS = 250, EGX_RF = 0.06;
-        const dailyRf = Math.pow(1 + EGX_RF, 1 / TRADING_DAYS) - 1;
+        const TRADING_DAYS = 250, KSA_RF = 0.06;
+        const dailyRf = Math.pow(1 + KSA_RF, 1 / TRADING_DAYS) - 1;
         const allRGross = rows.map(r => toNum(r.actual_next_day_return));
         const costs = rows.map(perTradeCostPct);
         const allR = allRGross.map((r, i) => r - costs[i]); // Net primary

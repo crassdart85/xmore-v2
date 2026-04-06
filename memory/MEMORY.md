@@ -15,14 +15,14 @@
   - a default-branch scheduler for GitHub cron
 
 ## Mar 25, 2026 - KSA Track Record Route + API Alignment
-- The public `/track-record` URL on the KSA deployment was accidentally serving the generic EGX track-record page.
-- That caused live EGX leakage on `xmore-ksa.onrender.com/track-record`, including EGX descriptions, EGX risk-free basis, and `.CA` symbols.
+- The public `/track-record` URL on the KSA deployment was accidentally serving the generic Tadawul track-record page.
+- That caused live Tadawul leakage on `xmore-ksa.onrender.com/track-record`, including Tadawul descriptions, Tadawul risk-free basis, and `.SR` symbols.
 - Fixes applied:
   - `/track-record` now redirects to `/ksa/track-record`
   - `ksa-track-record.js` now calls `/api/ksa/track-record/*` endpoints for summary, equity curve, prediction log, and agent breakdown
   - KSA route handlers now wrap the callback-style DB adapter in promises before using `await`
 - Takeaway:
-  - KSA public pages must never reuse the generic EGX `/track-record` route
+  - KSA public pages must never reuse the generic Tadawul `/track-record` route
   - Node route modules in this repo need promise wrappers around `db.all/db.get` if they want `async/await`
 
 ## Mar 25, 2026 - KSA Time Machine UI Alignment
@@ -61,7 +61,7 @@
 
 ## Key File Paths
 - `web-ui/server.js` â€” Express app, all API endpoints
-- `web-ui/init-db.js` â€” PostgreSQL table creation + full EGX stock seed (~190)
+- `web-ui/init-db.js` â€" PostgreSQL table creation + KSA stock seed
 - `web-ui/middleware/auth.js` â€” JWT auth middleware
 - `web-ui/routes/auth.js` â€” signup/login/logout/me
 - `web-ui/routes/stocks.js` â€” GET /api/stocks
@@ -94,7 +94,7 @@
 
 ## Completed Features
 - Auth system (email/password, bcrypt 12 rounds, JWT httpOnly cookies, rate limiting)
-- Full EGX stock reference table (~190 stocks across 15 sectors, bilingual names)
+- Full KSA stock reference table (Tadawul universe, bilingual names)
 - User watchlist (search, add/remove, no stock limit) â€” tab always visible, login prompt on click
 - **Watchlist-only filtering**: logged-in users see ONLY their followed stocks across all tabs
 - Trade recommendations + portfolio tracking
@@ -137,17 +137,17 @@
 - `web-ui/public/track-record.html`: header badge shortened to ?Live pre-market signals?.
 
 ## CI/CD Pipeline (current â€” 7 jobs)
-- **`intraday-price-update`**: `'0 7,8,9,10,11,12 * * 0-4'` (Sunâ€“Thu, EGX hours) â€” `collect_data.py --prices-only`
+- **`intraday-price-update`**: `'0 7,8,9,10,11,12 * * 0-4'` (Sun–Thu, Tadawul hours) — `collect_data.py --prices-only`
 - **`intraday-news-update`**: `'0 7,9,11 * * 0-4'` (3Ã— trading day) â€” news + RSS + news RAG ingestion
 - **`post-market-pipeline`**: `'30 12 * * 0-4'` â€” prices â†’ news â†’ sentiment â†’ agents â†’ evaluate (no continue-on-error!)
-- **`egx-daily-snapshot`**: `'0 14 * * 0-4'` â€” backup EGX data export
+- **`ksa-daily-snapshot`**: `'0 14 * * 0-4'` — backup KSA data export
 - **`daily-pipeline`**: `'0 22 * * 0-5'` (Sunâ€“Fri) â€” full: collect â†’ agents â†’ portfolios â†’ evaluate; depends on post-market-pipeline but runs anyway (`if: always()`)
 - **`catchup-evaluation`**: `'0 6,12,18 * * *'` (3Ã— daily) â€” `evaluate.py` + `evaluate_performance.py`
-- **`weekly-backtest`**: `'0 7 * * 0'` (Sunday 07:00 UTC = 09:00 Cairo) â€” `run_backtest.py` walk-forward validation
+- **`weekly-backtest`**: `'0 7 * * 0'` (Sunday 07:00 UTC = 10:00 Riyadh) â€” `run_backtest.py` walk-forward validation
 - **Key Python files**: `collect_data.py`, `sentiment_gemini.py`, `run_agents.py`, `evaluate.py`, `engines/evaluate_performance.py`, `engines/generate_portfolios.py`
 - **Required secrets**: `DATABASE_URL`, `FINNHUB_API_KEY`, `NEWS_API_KEY`, `GOOGLE_API_KEY`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`
 - **Concurrency**: `cancel-in-progress: false` â€” new runs queue behind running ones; earlier queued runs can be dropped
-- **EGX price source**: `data/egx_live_scraper.py` (primary, `http://41.33.162.236/egs4/`) â†’ yfinance fallback (`.CA` suffix)
+- **KSA price source**: `xmore_data/` (EODHD primary) â†' yfinance fallback (`.SR` suffix)
 
 ## ML Agent Improvements (Mar 11, 2026)
 - **LightGBM** replaces RandomForestClassifier in `agents/agent_ml.py`; RF fallback if not installed
@@ -157,7 +157,7 @@
   - Probability calibration removed (LightGBM natively better-calibrated than RF)
   - `lightgbm>=4.3.0` added to `requirements.txt`
 - **Walk-forward backtest harness**: `engines/backtest.py`
-  - CLI: `python engines/backtest.py --symbol COMI.CA` or `--all`
+  - CLI: `python engines/backtest.py --symbol 2222.SR` or `--all`
   - Metrics: accuracy, directional_accuracy, signal_pnl_pct, per-class precision/recall/F1
   - Mirrors `agent_ml._train_model` pipeline exactly (same features, same LightGBM params)
 - **Adaptive RSI periods** (`agents/agent_rsi.py`): `_get_vol_regime()` + `_RSI_PERIODS={low:10, normal:14, high:20}`
@@ -165,11 +165,11 @@
 - **Sentiment recency decay** (`sentiment_gemini.py` `collect_sentiment()`): `weight=2^(-days_ago/1.5)`, half-life 1.5 days
 - **Vol regime thresholds** (shared): EWMA span=32, daily â€” Low <1.5%, High >3.0%, Normal otherwise
 - **GARCH-inspired features** in `features.py`: `garch_ewm_vol`, `vol_of_vol`, `vol_persistence` (no arch lib needed)
-- **Macro features**: `brent_return_5d`, `usdegp_return_5d`, `eem_return_5d` â€” stored as MACRO_* in prices table, 5d pct_change
-- **USD/EGP source** (`collect_data.py` `_fetch_usdegp_rate()`): CBE official (cbe.org.eg) primary â†’ open.er-api.com â†’ frankfurter.app â†’ exchangerate.host â†’ yfinance fallback. CBE blocked by WAF on cloud IPs; free APIs cover Render. `data_source='cbe_official'` when CBE succeeds.
+- **Macro features**: `brent_return_5d`, `usdsar_return_5d`, `eem_return_5d` â€" stored as MACRO_* in prices table, 5d pct_change
+- **USD/SAR source** (`collect_data.py`): yfinance SAR=X primary â†' exchange rate API fallback. `data_source='yfinance'`.
 - **Session Sheet** (`/session`, `web-ui/public/session.html`+`session.css`):
   - Stock table: CODE, Name, Trend (ØµØ§Ø¹Ø¯/Ø¹Ø±Ø¶Ù‰/Ù‡Ø§Ø¨Ø·), Type (Ù…ØªØ§Ø¬Ø±Ø©/Ø§Ø­ØªÙØ§Ø¸), Buy Guide, Stop Loss, Target, Profit%, Risk%, R/R, S2, S1, Pivot, R1, R2
-  - Index cards: EGX30/70 pivot levels computed server-side from last 2 OHLC rows
+  - Index cards: TASI pivot levels computed server-side from last 2 OHLC rows
   - API: `GET /api/trades/session-sheet` â†’ `{session_date, stocks[], indices[]}`
   - `engines/pivot_engine.py`: classic floor-trader pivots, ATR(14), EMA10/30 trend, buy guide at S1
   - 10 new columns in `trade_recommendations` (safe-add migration): trend_ar/en, rec_type_ar/en, buy_guide, pivot, r1, r2, s1, s2
@@ -183,7 +183,7 @@
   - **Confidence gating**: `CONFIDENCE_THRESHOLD=0.60`; UP/DOWNâ†’HOLD when `max(probs)<0.60`
   - **Optuna HPO**: 25-trial TPE, cached in model file (`best_params` key); skipped on retrains
   - **Regime-gated consensus** (Layer 4 in `consensus_engine.py`): Crisisâ†’UP blocked; Turbulentâ†’conviction downgraded
-  - **`_detect_market_regime()`** in `run_agents.py`: tries EGX30.CA â†’ COMI.CA â†’ HRHO.CA as HMM proxy
+  - **`_detect_market_regime()`** in `run_agents.py`: uses TASI index as HMM proxy
 
 ## Bug Fixes â€” see `memory/bugfixes.md` for full details
 - **Feb 2026**: PG `_safe_add_column()`, `INSERT OR IGNORE` â†’ `ON CONFLICT DO NOTHING`, `utils.py` shadowing `utils/` package
@@ -198,14 +198,14 @@
   - DB price fetching via unified `db.all()` wrapper; PG uses `ANY($1)`, SQLite uses `IN (?,?,...)`
   - `yahoo-finance2` npm optional fallback for symbols not yet in DB
   - `simulateStock(symbol, amount, horizon, scenario, db)` â€” single stock
-  - `autoSelectBest(amount, horizon, scenario, db)` â€” batch scan all 30 EGX30 stocks
+  - `autoSelectBest(amount, horizon, scenario, db)` — batch scan all KSA universe stocks
 - **Route**: `/forecast` in `timemachine.js` calls JS engine; `/simulate` (past backtest) still uses Python
 - **Pattern**: `timemachine.js` now exports `{ router, attachDb }` like all other route modules; `server.js` calls `attachTimemachineDb(db, isPostgres)`
 - **Committed**: `bd82e70`
 
 ## Time Machine Feature (Feb 18â€“28, 2026)
 - **Past tab**: Python pipeline (ephemeral, no DB writes) â†’ `web-ui/routes/timemachine.js` spawns Python, Map cache 1h TTL
-- **Future tab**: Monte Carlo GBM in `engines/timemachine_forecast.py`; auto-select best EGX30 stock via `_batch_prices_yfinance()` (single batch download); forecastEngine.js pure-JS fallback for prod
+- **Future tab**: Monte Carlo GBM in `engines/timemachine_forecast.py`; auto-select best KSA stock via `_batch_prices_yfinance()` (single batch download); forecastEngine.js pure-JS fallback for prod
 - **Key paths**: `engines/timemachine_data.py`, `engines/timemachine_signals.py`, `engines/timemachine_forecast.py`, `web-ui/routes/timemachine.js`, `web-ui/public/timemachine.js`, `web-ui/public/timemachine.css`
 - **Delisted**: MNHD.CA, AUTO.CA removed; ALCN.CA, EAST.CA added as replacements
 - **Prod fix**: `web-ui/requirements-web.txt` (minimal deps) + `pip3 install` in `render.yaml` for Render's Node env
@@ -230,12 +230,11 @@
 - `engines/simulation_core.py`: `_apply_news_drift_adjustments()` in `fit()` â€” graceful fallback
 - New dep: `trafilatura>=1.8.0` (both requirements files)
 
-## AI Research Assistant â€” EGX Knowledge (Mar 2, 2026)
-- `web-ui/routes/rag.js` `/api/rag/chat` endpoint enriched with EGX context
-- `EGX_MARKET_KNOWLEDGE` static block: market facts, trading hours (10:00â€“14:30 Cairo Sunâ€“Thu), currency (EGP), indices (EGX30/70/100), symbol format (TICKER.CA), regulator (FRA), 250+ companies, 15+ sectors
-- Stock reference: queries `egx30_stocks` DB table (190 stocks: symbol, name_en, name_ar, sector_en) â†’ compact list injected into every chat prompt
-- Graceful fallback: stock query wrapped in try/catch â€” if table missing (local SQLite), static EGX block still included
-- Before: assistant said "I cannot provide information about comi.ca" â€” After: knows all 190 EGX stocks and basic market facts
+## AI Research Assistant â€" KSA Knowledge (Mar 2, 2026)
+- `web-ui/routes/rag.js` `/api/rag/chat` endpoint enriched with KSA market context
+- `KSA_MARKET_KNOWLEDGE` static block: market facts, trading hours (10:00–15:00 Riyadh Sun–Thu), currency (SAR), indices (TASI), symbol format (TICKER.SR), regulator (CMA/Tadawul)
+- Stock reference: queries `ksa_stocks` DB table (KSA universe: symbol, name_en, name_ar, sector_en) → compact list injected into every chat prompt
+- Graceful fallback: stock query wrapped in try/catch — if table missing (local SQLite), static KSA block still included
 
 ## Walk-Forward Backtest Engine (Mar 16, 2026)
 - `engines/walk_forward_backtest.py`: `WalkForwardBacktest` class â€” 90-day train / 20-day test / 10-day step rolling windows
@@ -248,12 +247,12 @@
 - API: `GET /api/track-record/backtest?agent=consensus` â†’ returns status 'pending' until first Sunday run
 
 ## Telegram Channel Ingestion (Mar 16, 2026)
-- `engines/telegram_reader.py`: pulls posts from two public EGX channels; runs before agents in `run_agents.py`
+- `engines/telegram_reader.py`: pulls posts from KSA market channels; runs before agents in `run_agents.py`
   - Arabic/English parser: extracts tickers, direction (BULLISH/BEARISH/NEUTRAL), post_type (SIGNAL/NEWS/COMMENTARY), entry/target/stop prices
   - Session persisted in `system_config` DB table (base64-encoded .session file)
   - Non-fatal: any Telegram error is logged and swallowed â€” never crashes the main pipeline
   - First-run setup: `python engines/telegram_reader.py --setup` (interactive phone + OTP auth)
-- EGX ticker whitelist: 30+ symbols in `EGX_TICKERS` set to reduce false-positive extractions
+- KSA ticker whitelist: symbols in `KSA_TICKERS` set to reduce false-positive extractions
 - New news columns: `ticker_mentions`, `direction`, `post_type`, `entry_price`, `target_price`, `stop_price`, `views`, `forwards`, `has_media`
 - New DB table: `system_config (key PK, value TEXT, updated_at)` for session + other config storage
 - `telethon>=1.42.0` added to `requirements.txt`
@@ -295,7 +294,7 @@
     - freshness checks across prices/predictions/consensus/news/sentiment/FX/forecasts
     - drift monitoring from `agent_performance_daily`
 - `web-ui/routes/rag.js`
-  - added bilingual entity resolution for EGX stocks and ETFs via `egx30_stocks`, `instrument`, and `instrument_alias`.
+  - added bilingual entity resolution for KSA stocks and ETFs via `ksa_stocks`, `instrument`, and `instrument_alias`.
   - chat retrieval now prioritizes resolved symbol/entity context and symbol-specific news before generic RAG excerpts.
   - `retrieval_meta` now includes resolved entities.
 - Dashboard UI
@@ -347,12 +346,12 @@
 - KSA deployment routing is now root-native:
   - `/` serves `ksa-dashboard.html`
   - `/track-record` serves `ksa-track-record.html`
-  - the EGX market-switch button now goes to the separate EGX deployment host
+  - Tadawul market-switch button now goes to the separate Tadawul deployment host
   - `/ksa` and `/ksa/track-record` now redirect to the root-native equivalents
   - public KSA HTML links were updated to stop using `/ksa` as the canonical page prefix
 - KSA public track-record is now aligned to the richer full-page implementation:
   - `web-ui/server.js` now serves `track-record.html` at `/track-record`
   - `web-ui/routes/track-record.js` now filters `market_id = 'KSA'`
-  - KSA sector/regime/agent/prediction queries were rewritten to stop depending on EGX-only tables and columns
+  - KSA sector/regime/agent/prediction queries were rewritten to stop depending on Tadawul-only tables and columns
 - Remaining known gap:
   - stop-loss/gap-through-stop lifecycle simulation is still not a full explicit backtest execution model.

@@ -1,11 +1,11 @@
-# Xmore Data Layer - Implementation Summary
+﻿# Xmore Data Layer - Implementation Summary
 
 ## 📋 Project Overview
 
-A **production-ready, modular data ingestion layer** for Xmore's AI-driven signal generation and performance benchmarking engine on the Egyptian Exchange (EGX).
+A **production-ready, modular data ingestion layer** for Xmore's AI-driven signal generation and performance benchmarking engine on the Saudi Exchange (Tadawul).
 
 ### Key Features  
-✅ **Multi-provider fallback chain** (EGXPY → yfinance → Alpha Vantage)  
+✅ **Multi-provider fallback chain** (eodhd → yfinance → Alpha Vantage)  
 ✅ **Intelligent caching** with 24h TTL and force-refresh capability  
 ✅ **Rate limiting** for free APIs (Alpha Vantage 5 calls/min)  
 ✅ **Exponential backoff retry logic** for resilience  
@@ -35,7 +35,7 @@ xmore_data/
 │
 └── providers/
     ├── __init__.py                  # Base provider ABC class
-    ├── egxpy_provider.py            # EGXPY integration (Primary)
+    ├── eodhd_provider.py            # eodhd integration (Primary)
     ├── yfinance_provider.py         # Yahoo Finance (Fallback 1)
     └── alpha_vantage_provider.py    # Alpha Vantage (Fallback 2)
 ```
@@ -57,7 +57,7 @@ xmore_data/
 
 ```
 ┌─────────────────────────────────┐
-│ Request: fetch_data("COMI")     │
+│ Request: fetch_data("2222.SR")     │
 └────────┬────────────────────────┘
          │
          ▼
@@ -67,7 +67,7 @@ xmore_data/
          │ ✗ MISS
          ▼
     ┌──────────────────────────────┐
-    │ Provider #1: EGXPY (Primary) │──▶ ✓ Success? Cache & Return
+    │ Provider #1: eodhd (Primary) │──▶ ✓ Success? Cache & Return
     └────┬───────────────────────────┘
          │ ✗ Fail (log warning)
          ▼
@@ -121,7 +121,7 @@ Client Application (Signal Engine, Backtester, etc.)
   - Logging (level, file path)
   - Rate limits (per provider)
   - Retry strategy (exponential backoff)
-  - EGX30 symbols list
+  - TASI symbols list
 
 ### 2. **Base Provider Class** (`providers/__init__.py`)
 
@@ -138,9 +138,9 @@ class MarketDataProvider(ABC):
 
 **Enforces:** Consistent interface, standardized output
 
-### 3. **EGXPY Provider** (`providers/egxpy_provider.py`)
+### 3. **eodhd Provider** (`providers/eodhd_provider.py`)
 
-- **Primary data source** for EGX
+- **Primary data source** for Tadawul
 - Handles import fallback (pip → local source)
 - Interval mapping (1m/5m/15m/1h/1d/1w/1mo)
 - Exponential backoff retry (3 attempts)
@@ -148,7 +148,7 @@ class MarketDataProvider(ABC):
 
 ### 4. **yfinance Provider** (`providers/yfinance_provider.py`)
 
-- **First fallback** if EGXPY unavailable
+- **First fallback** if eodhd unavailable
 - Global stock coverage
 - Intraday data support
 - Interval: 1m/5m/15m/1h/1d/1w/1mo
@@ -174,9 +174,9 @@ class MarketDataProvider(ABC):
 
 ```python
 dm = DataManager()
-df = dm.fetch_data("COMI")              # Caches result
-df = dm.fetch_data("COMI")              # Returns from cache instantly
-df = dm.fetch_data("COMI", force_refresh=True)  # Skips cache
+df = dm.fetch_data("2222.SR")              # Caches result
+df = dm.fetch_data("2222.SR")              # Returns from cache instantly
+df = dm.fetch_data("2222.SR", force_refresh=True)  # Skips cache
 ```
 
 ### 7. **Data Manager** (`data_manager.py`)
@@ -192,7 +192,7 @@ df = dm.fetch_data("COMI", force_refresh=True)  # Skips cache
 ```python
 df = dm.fetch_data(symbol, interval, start, end, force_refresh)
 data = dm.fetch_multiple(symbols)
-egx30 = dm.fetch_egx30()
+TASI = dm.fetch_TASI()
 index = dm.fetch_index()
 stats = dm.get_cache_stats()
 dm.clear_cache(symbol_or_none)
@@ -204,32 +204,32 @@ dm.clear_cache(symbol_or_none)
 
 ```bash
 # Single symbol
-python xmore_data/main.py --symbol COMI
+python xmore_data/main.py --symbol 2222.SR
 
 # Multiple symbols
-python xmore_data/main.py --symbols COMI SWDY HRHO
+python xmore_data/main.py --symbols 2222.SR 1180.SR 2010.SR
 
-# Entire EGX30
-python xmore_data/main.py --egx30
+# Entire TASI
+python xmore_data/main.py --TASI
 
-# Benchmark (EGX index)
+# Benchmark (TASI index)
 python xmore_data/main.py --benchmark
 
 # Date ranges
-python xmore_data/main.py --symbol COMI --start 2024-01-01 --end 2024-12-31
-python xmore_data/main.py --symbol COMI --start 90d  # Relative
+python xmore_data/main.py --symbol 2222.SR --start 2024-01-01 --end 2024-12-31
+python xmore_data/main.py --symbol 2222.SR --start 90d  # Relative
 
 # Export to CSV/Excel/JSON
-python xmore_data/main.py --symbol COMI --export csv
-python xmore_data/main.py --symbols COMI SWDY --export excel
+python xmore_data/main.py --symbol 2222.SR --export csv
+python xmore_data/main.py --symbols 2222.SR 1180.SR --export excel
 
 # Cache management
 python xmore_data/main.py --cache-stats
 python xmore_data/main.py --clear-cache
-python xmore_data/main.py --symbol COMI --refresh
+python xmore_data/main.py --symbol 2222.SR --refresh
 
 # Summary display
-python xmore_data/main.py --symbol COMI --summary
+python xmore_data/main.py --symbol 2222.SR --summary
 ```
 
 ### 9. **Utilities & Helpers** (`utils.py`)
@@ -246,7 +246,7 @@ python xmore_data/main.py --symbol COMI --summary
 
 1. Basic data fetch
 2. Multi-symbol portfolio analysis
-3. Benchmark comparison vs EGX30
+3. Benchmark comparison vs TASI
 4. Signal generation (SMA crossover)
 5. Volatility & risk metrics
 6. Cache behavior demonstration
@@ -263,7 +263,7 @@ python xmore_data/main.py --symbol COMI --summary
 pip install -r requirements_data.txt
 
 # Optional: Install all providers
-pip install egxpy alpha-vantage
+pip install eodhd alpha-vantage
 
 # Setup configuration
 cp .env.example .env
@@ -277,13 +277,13 @@ python xmore_data/main.py --cache-stats
 
 ```bash
 # CLI
-python xmore_data/main.py --symbol COMI --summary
+python xmore_data/main.py --symbol 2222.SR --summary
 
 # Python
 from xmore_data import DataManager
 
 dm = DataManager()
-df = dm.fetch_data("COMI", start="90d")
+df = dm.fetch_data("2222.SR", start="90d")
 print(df[['Date', 'Close', 'Volume']].head())
 ```
 
@@ -307,9 +307,9 @@ print(df[['Date', 'Close', 'Volume']].head())
 
 ```
 ╔══════════════════════════════════════════════════════════╗
-║ COMI [from EGXPY]
+║ 2222.SR [from eodhd]
 ╠══════════════════════════════════════════════════════════╣
-║ Latest Close     : EGP 127.50
+║ Latest Close     : SAR 127.50
 ║ Change           : +2.50 (+3.21%)
 ║ High / Low       : 128.05 / 126.20
 ║ Avg Volume       : 3,456,789
@@ -331,13 +331,13 @@ All configuration via environment variables:
 ALPHA_VANTAGE_API_KEY=your_key_here  # Optional
 CACHE_EXPIRATION_HOURS=24
 LOG_LEVEL=INFO
-EGXPY_TIMEOUT=30
-EGXPY_RETRIES=3
+eodhd_TIMEOUT=30
+eodhd_RETRIES=3
 ```
 
 ### Graceful Degradation
 
-- ✓ EGXPY missing? Use yfinance
+- ✓ eodhd missing? Use yfinance
 - ✓ yfinance missing? Use Alpha Vantage
 - ✓ All missing? Clear error message with solution
 - ✓ Rate limit hit? Auto-wait and retry
@@ -353,7 +353,7 @@ EGXPY_RETRIES=3
 |----------|------|-------|
 | Cache hit | <10ms | Instant Return from disk |
 | Cold fetch (90d) | 1-3s | Depends on provider, internet |
-| EGX30 (30 symbols) | 30-90s | Parallel opportunity (future) |
+| TASI (30 symbols) | 30-90s | Parallel opportunity (future) |
 | Force refresh | 1-3s | Always fresh from API |
 
 ### Caching Impact
@@ -393,10 +393,10 @@ pytest xmore_data/test_data_manager.py --cov=xmore_data --cov-report=html
 python xmore_data/examples.py
 
 # Test single symbol
-python xmore_data/main.py --symbol COMI --start 30d --summary
+python xmore_data/main.py --symbol 2222.SR --start 30d --summary
 
-# Test fallback chain (remove EGXPY in code)
-python xmore_data/main.py --symbol COMI
+# Test fallback chain (remove eodhd in code)
+python xmore_data/main.py --symbol 2222.SR
 # Should fall back to yfinance
 ```
 
@@ -414,7 +414,7 @@ dm = DataManager()
 sg = SignalGenerator()
 
 # Fetch data
-df = dm.fetch_data("COMI", start="1y")
+df = dm.fetch_data("2222.SR", start="1y")
 
 # Generate signals
 signals = sg.generate_signals(df)
@@ -427,7 +427,7 @@ for signal in signals:
 ### With Backtesting Engine
 
 ```python
-symbols = ["COMI", "SWDY", "HRHO"]
+symbols = ["2222.SR", "1180.SR", "2010.SR"]
 data = dm.fetch_multiple(symbols, start="2024-01-01", end="2024-12-31")
 
 backtester = BacktestingEngine()
@@ -444,7 +444,7 @@ for symbol, df in data.items():
 index = dm.fetch_index(start="2024-01-01")
 
 # Fetch portfolio
-portfolio = dm.fetch_multiple(["COMI", "SWDY"], start="2024-01-01")
+portfolio = dm.fetch_multiple(["2222.SR", "1180.SR"], start="2024-01-01")
 
 # Calculate alpha
 for symbol, df in portfolio.items():
@@ -493,7 +493,7 @@ The data layer is **production-ready** and can immediately power:
 
 1. **Signal Generation Engine** - Real-time bullish/bearish/neutral signals
 2. **Backtesting System** - Historical strategy evaluation
-3. **Performance Benchmarking** - Alpha calculation vs EGX30
+3. **Performance Benchmarking** - Alpha calculation vs TASI
 4. **Risk Metrics** - Sharpe ratio, max drawdown, volatility
 5. **Portfolio Optimization** - Multi-symbol analysis
 6. **Live Trading** - Daily data updates with fresh signals
@@ -517,7 +517,7 @@ The data layer is **production-ready** and can immediately power:
 A: Install at least one: `pip install yfinance`
 
 **Q: Symbol not found**  
-A: Check spelling (COMI not COMISHR), try with `--refresh`
+A: Check spelling (2222.SR not 2222.SRSHR), try with `--refresh`
 
 **Q: Slow performance**  
 A: Check cache is enabled, use relative dates (90d), increase TTL
@@ -575,7 +575,7 @@ It's ready to integrate into:
 - Risk analysis tools
 - Portfolio optimization algorithms
 
-**Install, configure, and start fetching EGX market data in minutes!**
+**Install, configure, and start fetching KSA/Tadawul market data in minutes!**
 
 ---
 
