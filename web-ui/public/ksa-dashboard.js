@@ -192,10 +192,17 @@ function showError(containerId, msg) {
 
 /* ── Load Stats ──────────────────────────────────────────────── */
 async function loadStats() {
+  const strip = document.querySelector('.ksa-stats-strip');
   try {
     const res  = await fetch('/api/ksa/performance/summary');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+
+    /* Hide ribbon when backend has no evaluated signals */
+    if (!data.available || data.total_signals < 5) {
+      if (strip) strip.style.display = 'none';
+      return;
+    }
 
     /* Win Rate */
     const wr = parseFloat(data.win_rate || data.winRate || 0);
@@ -243,11 +250,8 @@ async function loadStats() {
 
   } catch (err) {
     console.warn('[KSA] Stats load error:', err.message);
-    /* Show placeholder dashes — non-fatal */
-    ['valWinRate','valSharpe','valPF','valSignals','valAlpha'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = '—';
-    });
+    /* Hide ribbon on error — better than showing misleading zeros */
+    if (strip) strip.style.display = 'none';
   }
 }
 
