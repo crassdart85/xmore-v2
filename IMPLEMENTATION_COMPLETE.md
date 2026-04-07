@@ -1,5 +1,7 @@
 ﻿# 🚀 XMORE DATA LAYER - COMPLETE IMPLEMENTATION DELIVERED
 
+> **KSA Deployment Note (April 2026):** The `xmore_data/` module retains EGXPY as a legacy provider for historical compatibility. The active KSA/Tadawul pipeline uses EODHD (primary) and yfinance (fallback) via `collect_data.py` — not the EGXPY provider. CLI examples using `--egx30` and `fetch_egx30()` are legacy interfaces; the KSA universe is configured in `config/ksa_universe.py`.
+
 ## Executive Summary
 
 A **production-ready, enterprise-grade data ingestion module** has been built and delivered. This is a fully functional, tested, and documented system ready to power Xmore's signal generation and performance benchmarking engine.

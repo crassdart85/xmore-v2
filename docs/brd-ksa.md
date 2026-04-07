@@ -203,7 +203,7 @@ Runs on `xmore-ksa` branch. Same schedule as Tadawul branch adapted for Tadawul 
 | `post-market-pipeline` | `30 12 * * 0-4` | 90m timeout |
 | `daily-pipeline` | `0 22 * * 0-5` | 60m timeout |
 | `catchup-evaluation` | `0 6,18 * * *` + `15 12 * * *` | 30m timeout; 12:15 staggers past price-update |
-| `etf-egx-all` | `30 13 * * 0-4` | KSA ETFs |
+| `etf-ksa-all` | `30 13 * * 0-4` | KSA ETFs |
 | `etf-global-prices` | `30 21 * * 1-5` | |
 | `etf-rag-embedding` | `15 6,10,14,20 * * *` | 4×/day |
 | `weekly-backtest` | `0 7 * * 0` | |
@@ -274,7 +274,7 @@ All schema init steps: `timeout-minutes: 2` + `continue-on-error: true`.
 
 ## 13. Seeded Stock Universe
 
-41 `.SR` stocks seeded in `egx30_stocks` table (fixed March 2026 — was incorrectly seeding 190 Tadawul `.SR` stocks).
+41 `.SR` stocks seeded in `egx30_stocks` table (legacy table name retained for schema compatibility — holds KSA/Tadawul data).
 
 Representative examples: `2222.SR` (Aramco), `1120.SR`, `1180.SR`, `2010.SR`, `2020.SR`, `2030.SR`, `2050.SR`, `2060.SR`, `2080.SR`, `2090.SR`, `2100.SR`, `2110.SR`, `2120.SR`, `2130.SR`, `2140.SR`, `2160.SR`, `2170.SR`, `2180.SR`, `2190.SR`, `2200.SR`, `2210.SR`, `2220.SR`, `2230.SR`, `2240.SR`, `2250.SR`, `2260.SR`, `2270.SR`, `2280.SR`, `2290.SR`, `2300.SR`, `2310.SR`, `2320.SR`, `2330.SR`, `2340.SR`, `2350.SR`, `4001.SR`, `4002.SR`, `4003.SR`, `4004.SR`, `4005.SR`, `4006.SR`
 
@@ -374,7 +374,7 @@ Each INSERT in `news_aggregator.py` must use `SAVEPOINT intel_insert` / `ROLLBAC
 - [ ] `DATABASE_URL` repo secret remains set to Tadawul DB (used by main branch workflows only)
 - [ ] `intraday-price-update` job has NO schema init step
 - [ ] All other schema init steps have `timeout-minutes: 2` + `continue-on-error: true`
-- [ ] Verify 41 `.SR` stocks seeded in `egx30_stocks` table (not `.SR` stocks)
+- [ ] Verify 41 `.SR` stocks seeded in `egx30_stocks` table (legacy name; holds KSA rows)
 
 ---
 

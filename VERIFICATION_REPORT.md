@@ -1,5 +1,7 @@
 ﻿## ✅ VERIFICATION COMPLETE - ALL FILES SUCCESSFULLY CREATED
 
+> **KSA Deployment Note (April 2026):** EGXPY and `--egx30` references below apply to the `xmore_data/` legacy abstraction layer. The active KSA/Tadawul pipeline operates through `collect_data.py`, `run_agents_ksa.py`, and the `.SR` symbol universe.
+
 ## March 21, 2026 Addendum - Signal Ranking and Production Validation
 
 ### Code Changes Verified

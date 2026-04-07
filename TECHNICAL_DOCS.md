@@ -150,12 +150,12 @@ The entire workflow is orchestrated by `run_pipeline.py`.
     - Targeted tests passed: `pytest tests/test_scoring_formatter.py`
     - Deployed API smoke passed against Render on March 21, 2026.
     - Live recommendation generation executed successfully against production PostgreSQL after installing missing local runtime dependencies (`finnhub-python`, `google-genai`, `python-dotenv`).
-    - The March 21 production run persisted no new `trade_recommendations` or `scored_signals` rows because the run occurred with `EGX=CLOSED`, and [generate_daily_trade_recommendations](f:/xmore-project/run_agents.py#L1939) skips per-symbol processing when the target market is closed.
+    - The March 21 production run persisted no new `trade_recommendations` or `scored_signals` rows because the run occurred with the target market closed, and [generate_daily_trade_recommendations](run_agents.py#L1939) skips per-symbol processing when the target market is closed.
 
 ### DCF Valuation Engine (New Feature)
 - **Added**: Standalone Discounted Cash Flow (DCF) valuation module (`agents/dcf/`)
 - **Frequency**: Runs once per week (Sundays) via `run_agents.py`
-- **Inputs**: Historical financial statements, market data, Egypt-calibrated WACC
+- **Inputs**: Historical financial statements, market data, KSA-calibrated WACC
 - **Outputs**: Fair value estimates (bull/base/bear scenarios + composite), stored in `dcf_valuations` table
 - **Integration**: DCF signals feed into the multi-agent consensus engine, boosting weight on deep value or punishing on overvaluation
 - **Modules**: dcf_config, data_collector, fcf_projector, wacc_calculator, dcf_engine, scenario_runner, dcf_store, run_dcf, dcf_agent

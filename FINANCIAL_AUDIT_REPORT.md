@@ -100,16 +100,16 @@ HARD_MAX_HOLDING_DAYS = 45         # Failsafe
 ```
 
 **Gaps**:
-- Tadawul allows ±10% daily swings (`EGX_DAILY_LIMIT_PCT = 0.10`) — stop-loss can be gapped through
-- Corrected via `apply_egx_gap_risk()` in ExecutionAgent, good 👍
+- Tadawul allows ±10% daily swings (`TADAWUL_DAILY_LIMIT_PCT = 0.10`) — stop-loss can be gapped through
+- Corrected via `apply_tadawul_gap_risk()` in ExecutionAgent, good 👍
 - But stop prices in `backtest.py` are calculated without gap adjustments
 - No simulation of actual stop execution cost (10-20 bps slippage on emergency exit)
 
 **Impact**: **MEDIUM** — Backtests show 2-3% better returns than live execution due to gap slippage
 
 **Recommendation**:
-- In backtest.py, apply `ExecutionAgent.apply_egx_gap_risk()` to all stop-loss calculations
-- Add cost simulation for stop execution: `gap_slippage_cost_egp = stop_gap_cost + normal_slippage`
+- In backtest.py, apply `ExecutionAgent.apply_tadawul_gap_risk()` to all stop-loss calculations
+- Add cost simulation for stop execution: `gap_slippage_cost = stop_gap_cost + normal_slippage`
 
 ---
 
@@ -166,7 +166,7 @@ TADAWUL_CONFIG = {
    ```python
    returns_1d = [float(r["return_1d"]) for r in rows if r.get("return_1d")]
    # These are gross returns from trade_recommendations.actual_next_day_return
-   # Never subtract the round_trip_cost_egp that was calculated!
+   # Never subtract the round_trip_cost (stored as round_trip_cost_egp for legacy compat) that was calculated!
    ```
 
 3. **Profit Factor & Sharpe Calculation**:
@@ -225,9 +225,9 @@ return {
 
 ```python
 SLIPPAGE_TIERS = {
-    "high":   {"min_adv_egp": 5_000_000, "bps": 10},   # 0.10% slippage
-    "medium": {"min_adv_egp": 1_000_000, "bps": 25},   # 0.25% slippage
-    "low":    {"min_adv_egp": 0,         "bps": 60},   # 0.60% slippage
+    "high":   {"min_adv_sar": 5_000_000, "bps": 10},   # 0.10% slippage
+    "medium": {"min_adv_sar": 1_000_000, "bps": 25},   # 0.25% slippage
+    "low":    {"min_adv_sar": 0,         "bps": 60},   # 0.60% slippage
 }
 ```
 
@@ -445,11 +445,11 @@ class PortfolioRebalancer:
 
 ```python
 # KSA / Tadawul market parameters (SAIBOR 3M benchmark)
-EGX_RISK_FREE_RATE_ANNUAL = 0.0489   # SAIBOR 3M (legacy variable name for compat)
+KSA_RISK_FREE_RATE_ANNUAL = 0.0489   # SAIBOR 3M
 KSA_TRADING_DAYS_PER_YEAR = 250      # Tadawul: Sun–Thu
 
 # Daily conversion:
-EGX_DAILY_RF = (1 + 0.0489) ^ (1/250) - 1 = 0.000191  # 0.0191%
+KSA_DAILY_RF = (1 + 0.0489) ^ (1/250) - 1 = 0.000191  # 0.0191%
 ```
 
 **Assessment**: ✅ **Very important** — US systems use 5%, which would distort Sharpe ratios
@@ -473,7 +473,7 @@ Implemented metrics:
 **Example (Sharpe)**:
 ```python
 def sharpe_ratio(returns: list, risk_free_rate: float = None, annualize: bool = True) -> float:
-    daily_rf = EGX_DAILY_RF if risk_free_rate is None else risk_free_rate
+    daily_rf = KSA_DAILY_RF if risk_free_rate is None else risk_free_rate
     m = avg(returns)
     std = stddev(returns)
     daily_sharpe = (m - daily_rf) / std
@@ -494,7 +494,7 @@ returns_1d = [float(r["return_1d"]) for r in rows]
 # (next_close - entry_close) / entry_close
 
 # But doesn't account for:
-# - round_trip_cost_egp (which is calculated but unused!)
+# - round_trip_cost_egp (legacy column name; calculated but unused in P&L!)
 # - realistic_fill_price vs raw_price (slippage)
 ```
 
@@ -839,7 +839,7 @@ Round-Trip:  0.382% (38.2 bps)
 **Where costs are calculated**:
 - ✓ `ExecutionAgent.calculate_round_trip_cost()`
 - ✓ `ExecutionAgent.apply_slippage()`
-- ✓ Stored in `trade_recommendations.round_trip_cost_egp`
+- ✓ Stored in `trade_recommendations.round_trip_cost_egp` (legacy column name, holds SAR values)
 - ✗ **Never used** in P&L calculation
 - ✗ **Never deducted** from performance metrics
 
@@ -859,7 +859,7 @@ Round-Trip:  0.382% (38.2 bps)
 Metrics Definition:
 - Gross Return: Price change only
 - Net Return (Execution): After slippage, partial fills, costs
-- Net Return (Taxes): After Egypt capital gains tax (22% for most investors)
+- Net Return (Taxes): After Saudi capital gains tax (0% for residents; ~20% zakat on net income for corporates)
 - Display: Show all three levels
 ```
 

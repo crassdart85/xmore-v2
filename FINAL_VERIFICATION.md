@@ -1,5 +1,7 @@
 ﻿# ✅ IMPLEMENTATION COMPLETE & VERIFIED
 
+> **KSA Deployment Note (April 2026):** This document records the original `xmore_data/` module verification. EGXPY references apply to the legacy EGX provider within that module. The active KSA pipeline uses EODHD/yfinance via `collect_data.py` with the `.SR` symbol universe from `config/ksa_universe.py`.
+
 ## Executive Summary
 
 **All components of the Xmore Data Layer have been successfully created, tested, and verified.**

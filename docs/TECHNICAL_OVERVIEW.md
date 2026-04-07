@@ -123,7 +123,7 @@ A custom database abstraction layer in `database.py` allows the same Python code
 
 ## 6. OpenBB Tadawul Data Provider
 
-Xmore includes a standalone OpenBB-compatible data provider package (`openbb_egx/`) for Saudi Exchange market data:
+Xmore includes a standalone OpenBB-compatible data provider package (`openbb_egx/`, legacy module name retained for compatibility) for Saudi Exchange market data:
 
 -   **`openbb_egx/models/equity_historical.py`**: Historical OHLCV data via TradingView Scanner API (primary) with yfinance fallback. Pydantic v2 query/data models.
 -   **`openbb_egx/models/equity_quote.py`**: Live quote fetcher for Tadawul symbols.

@@ -146,33 +146,48 @@ The KSA version is now materially different from the original Tadawul build in f
 
 ## Remaining Gaps
 
-The migration is not complete across the full repo. Important remaining work includes:
+Most gaps identified during the original migration have now been resolved (April 2026 P3+P4+P5 remediation). Completed items are marked below.
 
-1. route-layer cleanup for remaining egx30_stocks assumptions in:
-   - web-ui/routes/briefing.js
-   - web-ui/routes/watchlist.js
-   - web-ui/routes/performance.js
-   - web-ui/routes/track-record.js
-   - web-ui/routes/rag.js
-   - web-ui/routes/screening.js
+1. ~~route-layer cleanup for remaining egx30_stocks assumptions~~ **DONE (April 2026)**
+   - stocks.js, trades.js, watchlist.js, rag.js now use `STOCK_TABLE` constant
+   - performance.js and screening.js already used STOCK_TABLE / were correct
 
 2. data-model cleanup for legacy Tadawul naming such as:
-   - alpha_vs_egx30
-   - egx30_return_pct
-   - EGX-named benchmark fields and comments
+   - `alpha_vs_egx30`, `egx30_return_pct`, `round_trip_cost_egp` — **retained as legacy DB column names** (require schema migration to rename; functional as-is since they store KSA data)
 
-3. benchmark data source work for TASI index history
-   - Yahoo Finance did not provide a working ^TASI or TASI.SR index series in this environment
-   - index-level Tadawul benchmark backfill still needs a reliable source
+3. ~~benchmark data source work for TASI index history~~ **DONE (April 2026)**
+   - Regime proxy now uses `TASI.INDX`, `^TASI`, `2222.SR`
+   - Benchmark evaluation uses `TASI_BENCHMARK_SYMBOLS`
 
-4. sentiment and research layers still contain some EGX-specific symbol handling and prompt/reference content in secondary paths
+4. ~~sentiment and research layers still contain some EGX-specific symbol handling~~ **DONE (April 2026)**
+   - `sentiment_gemini.py` now uses `KSA_TOP50` from `config.ksa_universe`
+   - `rss_news_collector.py` replaced 13 Egypt feeds with 9 Saudi/GCC feeds
+   - `custom_source_fetcher.py` uses Tadawul keywords and `.SR` fallbacks
 
-5. non-web pipeline modules still contain legacy EGX-specific datasets and naming that should be reviewed before calling the migration complete
+5. ~~non-web pipeline modules still contain legacy EGX-specific datasets~~ **DONE (April 2026)**
+   - `collect_data.py`: `collect_ksa_data()`, `_fetch_usdsar_rate()`, `MACRO_USDSAR`
+   - `run_agents.py`: TASI regime proxy
+   - `agent_ml.py`, `backtest.py`, `features.py`: `MACRO_USDSAR` / `usdsar_*` columns
+   - `backfill_history.py`: cleaned macro symbol list
+   - `evaluate_performance.py`: market-scoped with `market_id` parameter
+   - `config/ksa_holidays.py`: shared Saudi holiday calendar
+
+## Known Legacy Names Retained (No Runtime Impact)
+
+These items use legacy naming in the database schema or inactive modules. They do not affect KSA runtime behavior:
+
+| Item | Location | Reason Kept |
+|------|----------|-------------|
+| `egx30_stocks` table | database.py, routes | Schema migration required; table holds KSA `.SR` rows |
+| `egx30_return_pct` column | generate_portfolios.py | Migration 008 column; stores TASI benchmark data |
+| `round_trip_cost_egp` column | trade_recommendations | Legacy column name; holds SAR values |
+| `openbb_egx/` module | Package directory | Standalone OpenBB provider; retained as legacy module |
+| `EGX_STOCKS` alias | config.py | Backward-compat alias → `KSA_STOCKS` |
 
 ## Recommended Next Phase
 
-1. replace remaining egx30_stocks joins with a market-neutral reference abstraction
-2. migrate benchmark computation from TASI semantics to TASI semantics across performance and track-record routes
-3. finish KSA conversion in RAG and screening routes
+1. ~~replace remaining egx30_stocks joins with a market-neutral reference abstraction~~ **DONE**
+2. ~~migrate benchmark computation from EGX semantics to TASI semantics~~ **DONE**
+3. ~~finish KSA conversion in RAG and screening routes~~ **DONE**
 4. add a reliable Tadawul benchmark ingestion source for TASI and MT30
 5. run a fresh deploy and post-deploy smoke test against the production app endpoints
