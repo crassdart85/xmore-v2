@@ -2,13 +2,11 @@
 Data Collection Script
 
 This module is responsible for fetching stock prices and news from external APIs.
-Primary EGX source: EGX live feed (http://41.33.162.236/egs4/)
-Fallback: Yahoo Finance (yfinance)
+Primary source: Yahoo Finance (yfinance) for KSA .SR Tadawul stocks.
 News: NewsAPI + RSS feeds
 
 Key components:
-- EGX live feed scraper (primary for Egyptian stocks)
-- Price collection via yfinance (fallback + US stocks)
+- Price collection via yfinance (primary for KSA/Tadawul stocks)
 - News collection via NewsAPI
 - Basic sentiment analysis using TextBlob
 - Database persistence for collected data
@@ -42,40 +40,19 @@ def _adapt_sql(sql):
             sql = sql.rstrip().rstrip(')') + ') ON CONFLICT DO NOTHING'
     return sql
 
-def collect_egx_data():
+def collect_ksa_data():
     """
-    Collect EGX stock data using live feed as primary source, yfinance as fallback.
+    Collect KSA/Tadawul stock data via yfinance.
 
     Strategy:
-    - Try EGX live feed first (200+ stocks, real-time data)
-    - Fall back to yfinance if live feed fails
+    - Use yfinance for all .SR (Saudi Exchange) symbols
     - Store all data in prices table with source tracking
 
     Returns:
         int: Number of stocks successfully collected.
     """
-    print("🏛️  Fetching EGX data...")
-
-    try:
-        # Primary: EGX live feed
-        from data.egx_live_scraper import fetch_egx_live, egx_to_prices_schema
-        df = fetch_egx_live()
-        prices_df = egx_to_prices_schema(df)
-        
-        if len(prices_df) > 0:
-            stored = _store_prices(prices_df, source='egx_live')
-            print(f"  ✅ EGX live feed: {stored} stocks collected")
-            return stored
-        else:
-            raise ValueError("EGX live feed returned 0 stocks")
-
-    except Exception as e:
-        print(f"  ⚠️  EGX live feed failed: {e}")
-        print(f"  🔄 Falling back to yfinance for EGX stocks...")
-        logger.warning(f"EGX live feed failed: {e}, falling back to yfinance")
-
-        # Fallback: use yfinance for EGX stocks
-        return collect_prices_yfinance(config.EGX_STOCKS)
+    print("🏛️  Fetching KSA/Tadawul data via yfinance...")
+    return collect_prices_yfinance(config.KSA_STOCKS)
 
 
 def validate_price_continuity(symbol: str, df) -> None:
@@ -178,94 +155,57 @@ def collect_prices_yfinance(symbols=None):
     return success_count
 
 
-def _fetch_usdegp_rate():
+def _fetch_usdsar_rate():
     """
-    Fetch current USD/EGP exchange rate from multiple sources in priority order:
-      1. Central Bank of Egypt (cbe.org.eg) — official source
-      2. open.er-api.com — free tier, no key needed
-      3. frankfurter.app — ECB-based, free
-      4. exchangerate.host — free API
+    Fetch current USD/SAR exchange rate from multiple sources in priority order:
+      1. open.er-api.com — free tier, no key needed
+      2. frankfurter.app — ECB-based, free
+      3. exchangerate.host — free API
+    SAR is pegged to USD at ~3.75, so the rate should be very stable.
     Returns float rate or None if all sources fail.
     """
-    today = datetime.utcnow().strftime('%Y-%m-%d')
-
-    # --- Source 1: CBE official page ---
-    try:
-        headers = {
-            'User-Agent': (
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                'AppleWebKit/537.36 (KHTML, like Gecko) '
-                'Chrome/122.0.0.0 Safari/537.36'
-            ),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
-            'Connection': 'keep-alive',
-        }
-        resp = requests.get(
-            'http://cbe.org.eg/en/economic-research/statistics/exchange-rates',
-            headers=headers, timeout=10
-        )
-        if resp.status_code == 200:
-            # CBE renders a table: Currency | Buying | Selling
-            # Look for USD row — typically "US Dollar" or "USD"
-            text = resp.text
-            # Match patterns like USD row in table
-            patterns = [
-                r'US\s*Dollar.*?(\d+\.\d+).*?(\d+\.\d+)',
-                r'USD.*?(\d+\.\d+).*?(\d+\.\d+)',
-            ]
-            for pat in patterns:
-                m = re.search(pat, text, re.IGNORECASE | re.DOTALL)
-                if m:
-                    buying  = float(m.group(1))
-                    selling = float(m.group(2))
-                    mid = (buying + selling) / 2
-                    if 10 < mid < 200:   # sanity: EGP has been 30–50 range in recent years
-                        print(f"  CBE rate: USD/EGP = {mid:.4f} (buying={buying}, selling={selling})")
-                        return mid
-    except Exception as e:
-        print(f"  CBE fetch failed: {e}")
-
-    # --- Source 2: open.er-api.com (free, no key) ---
+    # --- Source 1: open.er-api.com (free, no key) ---
     try:
         r = requests.get('https://open.er-api.com/v6/latest/USD', timeout=8)
         if r.status_code == 200:
             data = r.json()
-            rate = data.get('rates', {}).get('EGP')
-            if rate and 10 < rate < 200:
-                print(f"  open.er-api rate: USD/EGP = {rate:.4f}")
+            rate = data.get('rates', {}).get('SAR')
+            if rate and 2.5 < rate < 5.0:  # SAR is pegged ~3.75
+                print(f"  open.er-api rate: USD/SAR = {rate:.4f}")
                 return float(rate)
     except Exception as e:
         print(f"  open.er-api failed: {e}")
 
-    # --- Source 3: frankfurter.app (ECB-based) ---
+    # --- Source 2: frankfurter.app (ECB-based) ---
     try:
-        r = requests.get('https://api.frankfurter.app/latest?from=USD&to=EGP', timeout=8)
+        r = requests.get('https://api.frankfurter.app/latest?from=USD&to=SAR', timeout=8)
         if r.status_code == 200:
             data = r.json()
-            rate = data.get('rates', {}).get('EGP')
-            if rate and 10 < rate < 200:
-                print(f"  frankfurter rate: USD/EGP = {rate:.4f}")
+            rate = data.get('rates', {}).get('SAR')
+            if rate and 2.5 < rate < 5.0:
+                print(f"  frankfurter rate: USD/SAR = {rate:.4f}")
                 return float(rate)
     except Exception as e:
         print(f"  frankfurter failed: {e}")
 
-    # --- Source 4: exchangerate.host ---
+    # --- Source 3: exchangerate.host ---
     try:
         r = requests.get(
-            'https://api.exchangerate.host/latest?base=USD&symbols=EGP',
+            'https://api.exchangerate.host/latest?base=USD&symbols=SAR',
             timeout=8
         )
         if r.status_code == 200:
             data = r.json()
-            rate = data.get('rates', {}).get('EGP')
-            if rate and 10 < rate < 200:
-                print(f"  exchangerate.host rate: USD/EGP = {rate:.4f}")
+            rate = data.get('rates', {}).get('SAR')
+            if rate and 2.5 < rate < 5.0:
+                print(f"  exchangerate.host rate: USD/SAR = {rate:.4f}")
                 return float(rate)
     except Exception as e:
         print(f"  exchangerate.host failed: {e}")
 
-    return None
+    # Fallback: SAR is pegged at 3.75
+    print("  Using fallback pegged rate: USD/SAR = 3.7500")
+    return 3.75
 
 
 def collect_macro_data():
@@ -274,7 +214,7 @@ def collect_macro_data():
 
     Three instruments captured as special symbols:
       MACRO_BRENT   ← BZ=F  (Brent crude front-month future)
-      MACRO_USDEGP  ← USDEGP=X  (USD / Egyptian Pound spot rate, CBE primary)
+      MACRO_USDSAR  ← SAR=X  (USD / Saudi Riyal spot rate)
       MACRO_EEM     ← EEM   (iShares MSCI Emerging Markets ETF)
 
     Stored in the same prices table as stock prices (with data_source='yfinance_macro').
@@ -282,7 +222,7 @@ def collect_macro_data():
     """
     MACRO_SYMBOLS = {
         'MACRO_BRENT':  'BZ=F',
-        'MACRO_USDEGP': 'USDEGP=X',
+        'MACRO_USDSAR': 'SAR=X',
         'MACRO_EEM':    'EEM',
     }
 
@@ -301,28 +241,28 @@ def collect_macro_data():
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """
 
-    print("Fetching macro context data (Brent, USD/EGP, EM)...")
+    print("Fetching macro context data (Brent, USD/SAR, EM)...")
     stored = 0
     today = datetime.utcnow().strftime('%Y-%m-%d')
 
-    # --- Special handling for USD/EGP: try CBE official source first ---
-    cbe_rate = _fetch_usdegp_rate()
-    if cbe_rate is not None:
+    # --- Special handling for USD/SAR: try API sources first ---
+    sar_rate = _fetch_usdsar_rate()
+    if sar_rate is not None:
         try:
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(sql, (
-                    'MACRO_USDEGP',
+                    'MACRO_USDSAR',
                     today,
-                    cbe_rate, cbe_rate, cbe_rate, cbe_rate,
+                    sar_rate, sar_rate, sar_rate, sar_rate,
                     0,
-                    'cbe_official',
+                    'fx_api',
                 ))
             stored += 1
-            print(f"  OK MACRO_USDEGP (CBE): {cbe_rate:.4f} EGP/USD")
-            MACRO_SYMBOLS.pop('MACRO_USDEGP', None)   # skip yfinance fallback
+            print(f"  OK MACRO_USDSAR: {sar_rate:.4f} SAR/USD")
+            MACRO_SYMBOLS.pop('MACRO_USDSAR', None)   # skip yfinance fallback
         except Exception as e:
-            print(f"  MACRO_USDEGP CBE store error: {e} — will try yfinance")
+            print(f"  MACRO_USDSAR store error: {e} — will try yfinance")
 
     for internal_sym, yf_sym in MACRO_SYMBOLS.items():
         try:
@@ -362,16 +302,16 @@ def collect_prices():
     """
     total = 0
 
-    # EGX stocks: try live feed first, fallback to yfinance
-    if config.EGX_STOCKS:
-        total += collect_egx_data()
+    # KSA stocks: use yfinance for Tadawul .SR symbols
+    if config.KSA_STOCKS:
+        total += collect_ksa_data()
 
     # US stocks: always use yfinance
     if config.US_STOCKS:
         print("📈 Fetching US stock data from yfinance...")
         total += collect_prices_yfinance(config.US_STOCKS)
 
-    # Macro context (Brent, USD/EGP, EM) — used as ML features
+    # Macro context (Brent, USD/SAR, EM) — used as ML features
     collect_macro_data()
 
     return total
@@ -466,9 +406,10 @@ def collect_news():
     
     for symbol in config.ALL_STOCKS:
         try:
-            # Build query: symbol + generic terms for context. 
-            # For EGX, adding 'Egypt' helps filter irrelevant global noise.
-            query = f"{symbol} OR {symbol.split('.')[0]} Egypt Stock"
+            # Build query: symbol + generic terms for context.
+            # For KSA, adding 'Saudi' or 'Tadawul' helps filter irrelevant global noise.
+            ticker_code = symbol.split('.')[0]
+            query = f"{ticker_code} Saudi Stock OR {ticker_code} Tadawul"
             
             # Query NewsAPI for everything about the symbol
             articles = newsapi.get_everything(q=query, from_param=from_date, language='en')
@@ -520,15 +461,15 @@ def collect_news():
 
 def collect_rss_news_wrapper():
     """
-    Collect Egyptian financial news from RSS feeds.
+    Collect KSA/Tadawul financial news from RSS feeds.
 
-    This supplements NewsAPI with local Egyptian sources for better EGX coverage.
+    This supplements NewsAPI with local Saudi/GCC sources for better KSA coverage.
     RSS feeds are particularly useful for Arabic-language financial news.
 
     Returns:
         dict: Collection statistics from RSS collector
     """
-    print("📰 Fetching Egyptian RSS news feeds...")
+    print("📰 Fetching KSA RSS news feeds...")
     try:
         from rss_news_collector import collect_rss_news
         stats = collect_rss_news(days_back=3, use_finbert=False)

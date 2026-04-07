@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Custom News Source Fetcher
 ==========================
@@ -7,9 +7,9 @@ channels, Telegram bot groups) and inserts articles into the news table so the
 existing VADER/FinBERT sentiment pipeline can pick them up on the next run.
 
 Called by:
-  • Node.js (admin "Fetch Now"):  python engines/custom_source_fetcher.py --source-id N
-  • GitHub Actions (daily):       python engines/custom_source_fetcher.py --fetch-all
-  • Admin manual text ingest:     python engines/custom_source_fetcher.py --ingest-text '<json>'
+  â€¢ Node.js (admin "Fetch Now"):  python engines/custom_source_fetcher.py --source-id N
+  â€¢ GitHub Actions (daily):       python engines/custom_source_fetcher.py --fetch-all
+  â€¢ Admin manual text ingest:     python engines/custom_source_fetcher.py --ingest-text '<json>'
 
 All output goes to stdout as newline-delimited JSON so Node.js can parse it.
 Logs go to stderr so they don't interfere with stdout JSON.
@@ -39,35 +39,35 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Optional imports — graceful fallback if library missing
+# Optional imports â€” graceful fallback if library missing
 # ---------------------------------------------------------------------------
 try:
     import feedparser
     HAS_FEEDPARSER = True
 except ImportError:
     HAS_FEEDPARSER = False
-    logger.warning("feedparser not installed — RSS sources will be skipped")
+    logger.warning("feedparser not installed â€” RSS sources will be skipped")
 
 try:
     from newspaper import Article as NewspaperArticle
     HAS_NEWSPAPER = True
 except ImportError:
     HAS_NEWSPAPER = False
-    logger.warning("newspaper3k not installed — URL article extraction will use fallback")
+    logger.warning("newspaper3k not installed â€” URL article extraction will use fallback")
 
 try:
     from bs4 import BeautifulSoup
     HAS_BS4 = True
 except ImportError:
     HAS_BS4 = False
-    logger.warning("beautifulsoup4 not installed — Telegram public scraping will fail")
+    logger.warning("beautifulsoup4 not installed â€” Telegram public scraping will fail")
 
 try:
     import requests as req_lib
     HAS_REQUESTS = True
 except ImportError:
     HAS_REQUESTS = False
-    logger.warning("requests not installed — network fetching will fail")
+    logger.warning("requests not installed â€” network fetching will fail")
 
 try:
     from langdetect import detect as langdetect_detect
@@ -76,7 +76,7 @@ except ImportError:
     HAS_LANGDETECT = False
 
 # ---------------------------------------------------------------------------
-# DB connection — same pattern used across the project
+# DB connection â€” same pattern used across the project
 # ---------------------------------------------------------------------------
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -143,7 +143,7 @@ def detect_language(text: str) -> str:
     return "en"
 
 # ---------------------------------------------------------------------------
-# Symbol matching — mirrors rss_news_collector.match_article_to_symbols
+# Symbol matching â€” mirrors rss_news_collector.match_article_to_symbols
 # ---------------------------------------------------------------------------
 # Minimal inline fallback so this module has no hard dependency on rss_news_collector
 def _match_to_symbols(text: str, conn, is_postgres: bool) -> List[str]:
@@ -181,10 +181,10 @@ def _match_to_symbols(text: str, conn, is_postgres: bool) -> List[str]:
     except Exception as e:
         logger.warning("Symbol match DB error: %s", e)
 
-    market_kws = ["egx", "egyptian exchange", "cairo stock", "egypt stock market",
-                  "البورصة المصرية", "egx30"]
+    market_kws = ["tadawul", "saudi exchange", "saudi stock", "ksa stock market",
+                  "Ø§Ù„Ø¨ÙˆØ±ØµØ© Ø§Ù„Ø³Ø¹ÙˆØ¯ÙŠØ©", "ØªØ§Ø³ÙŠ", "tasi"]
     if any(kw in text_lower for kw in market_kws):
-        symbols.extend(["COMI.CA", "HRHO.CA", "TMGH.CA", "SWDY.CA", "ETEL.CA"])
+        symbols.extend(["2222.SR", "1180.SR", "2010.SR", "7010.SR", "4061.SR"])
 
     return list(set(symbols))
 
@@ -192,9 +192,9 @@ def _match_to_symbols(text: str, conn, is_postgres: bool) -> List[str]:
 # Simple sentiment (fallback when VADER/FinBERT not available)
 # ---------------------------------------------------------------------------
 _POS = ["rise", "gain", "profit", "growth", "surge", "rally", "bull", "high",
-        "expand", "dividend", "success", "ارتفاع", "صعود", "ربح", "نمو", "أرباح"]
+        "expand", "dividend", "success", "Ø§Ø±ØªÙØ§Ø¹", "ØµØ¹ÙˆØ¯", "Ø±Ø¨Ø­", "Ù†Ù…Ùˆ", "Ø£Ø±Ø¨Ø§Ø­"]
 _NEG = ["fall", "drop", "loss", "decline", "plunge", "crash", "bear", "low",
-        "cut", "fail", "debt", "risk", "concern", "انخفاض", "هبوط", "خسارة", "تراجع"]
+        "cut", "fail", "debt", "risk", "concern", "Ø§Ù†Ø®ÙØ§Ø¶", "Ù‡Ø¨ÙˆØ·", "Ø®Ø³Ø§Ø±Ø©", "ØªØ±Ø§Ø¬Ø¹"]
 
 def _quick_sentiment(text: str) -> Tuple[float, str]:
     tl = text.lower()
@@ -246,7 +246,7 @@ def _insert_news(cur, symbol: str, headline: str, source_name: str,
         ON CONFLICT (symbol, headline, date) DO NOTHING
     """, is_postgres)
     cur.execute(sql, (symbol, date_str, headline[:500], source_name, url, sentiment_score, sentiment_label))
-    # Note: article_date is already converted to date_str above — no datetime passed to cursor
+    # Note: article_date is already converted to date_str above â€” no datetime passed to cursor
 
 def _update_source_fetched(cur, source_id: int, telegram_offset: Optional[int],
                            is_postgres: bool) -> None:
@@ -477,7 +477,7 @@ def process_source(source: Dict, conn, is_postgres: bool) -> Dict:
                 # Match to stocks and write to news table
                 symbols = _match_to_symbols(content, conn, is_postgres)
                 if not symbols:
-                    symbols = ["COMI.CA"]  # fallback: general market
+                    symbols = ["2222.SR"]  # fallback: general market
                 headline = entry["title"][:500] or content[:200]
                 for sym in symbols:
                     _insert_news(cur, sym, headline, source_name,
@@ -501,7 +501,7 @@ def process_source(source: Dict, conn, is_postgres: bool) -> Dict:
                                     datetime.now(timezone.utc), is_postgres)
                     symbols = _match_to_symbols(content, conn, is_postgres)
                     if not symbols:
-                        symbols = ["COMI.CA"]
+                        symbols = ["2222.SR"]
                     headline = content.split("\n")[0][:500]
                     for sym in symbols:
                         _insert_news(cur, sym, headline, source_name,
@@ -522,7 +522,7 @@ def process_source(source: Dict, conn, is_postgres: bool) -> Dict:
                                 m["message_date"], is_postgres)
                 symbols = _match_to_symbols(m["text"], conn, is_postgres)
                 if not symbols:
-                    symbols = ["COMI.CA"]
+                    symbols = ["2222.SR"]
                 for sym in symbols:
                     _insert_news(cur, sym, m["text"][:500], source_name,
                                  None, score, label, m["message_date"], is_postgres)
@@ -546,7 +546,7 @@ def process_source(source: Dict, conn, is_postgres: bool) -> Dict:
                                     m["message_date"], is_postgres)
                     symbols = _match_to_symbols(m["text"], conn, is_postgres)
                     if not symbols:
-                        symbols = ["COMI.CA"]
+                        symbols = ["2222.SR"]
                     for sym in symbols:
                         _insert_news(cur, sym, m["text"][:500], source_name,
                                      None, score, label, m["message_date"], is_postgres)
@@ -612,7 +612,7 @@ def ingest_manual_text(payload: Dict) -> Dict:
 
         if _article_exists(cur, source_id, external_id, is_postgres):
             conn.close()
-            return {"ok": True, "articles_new": 0, "message": "Duplicate content — already stored"}
+            return {"ok": True, "articles_new": 0, "message": "Duplicate content â€” already stored"}
 
         score, label = _quick_sentiment(content)
         _insert_article(cur, source_id, content, content_type,
@@ -621,7 +621,7 @@ def ingest_manual_text(payload: Dict) -> Dict:
 
         symbols = _match_to_symbols(content, conn, is_postgres)
         if not symbols:
-            symbols = ["COMI.CA"]
+            symbols = ["2222.SR"]
         for sym in symbols:
             _insert_news(cur, sym, content[:500], source_name,
                          None, score, label, datetime.now(timezone.utc), is_postgres)
@@ -696,7 +696,7 @@ def fetch_all_active_sources() -> List[Dict]:
             result = process_source(src, conn2, is_postgres2)
             conn2.close()
             results.append(result)
-            logger.info("  → fetched=%d new=%d", result["articles_fetched"], result["articles_new"])
+            logger.info("  â†’ fetched=%d new=%d", result["articles_fetched"], result["articles_new"])
     except Exception as e:
         logger.error("fetch_all_active_sources error: %s", e)
         results.append({"ok": False, "error": str(e)})

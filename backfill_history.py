@@ -160,11 +160,8 @@ def _macro_symbols():
     """Macro instruments needed for ML features."""
     return {
         "MACRO_BRENT":  "BZ=F",
-        "MACRO_USDEGP": "USDEGP=X",
+        "MACRO_USDSAR": "SAR=X",
         "MACRO_EEM":    "EEM",
-        # KSA-relevant macros
-        "MACRO_BRENT_USD": "BZ=F",   # same source, deduped by upsert
-        "MACRO_USDSAR":    "USDSAR=X",
     }
 
 

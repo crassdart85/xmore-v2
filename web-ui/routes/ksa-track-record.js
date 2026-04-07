@@ -158,7 +158,7 @@ router.get('/track-record/agent-breakdown', async (req, res) => {
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             GROUP BY agent_name
-            ORDER BY correct::float / NULLIF(total, 0) DESC
+            ORDER BY ${isPostgres ? 'correct::float' : 'CAST(correct AS REAL)'} / NULLIF(total, 0) DESC
         `);
 
         res.json({

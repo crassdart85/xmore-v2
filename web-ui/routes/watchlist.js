@@ -8,6 +8,9 @@
 const express = require('express');
 const { authMiddleware } = require('../middleware/auth');
 
+const ACTIVE_MARKET = String(process.env.MARKET || '').toUpperCase();
+const STOCK_TABLE = ACTIVE_MARKET === 'KSA' ? 'ksa_stocks' : 'egx30_stocks';
+
 const router = express.Router();
 
 let db = null;
@@ -76,7 +79,7 @@ router.get('/watchlist', authMiddleware, async (req, res) => {
           cr.conviction,
           cr.agent_agreement
         FROM user_watchlist w
-        JOIN egx30_stocks s ON w.stock_id = s.id
+        JOIN ${STOCK_TABLE} s ON w.stock_id = s.id
         LEFT JOIN LATERAL (
           SELECT prediction, confidence, target_date
           FROM predictions
@@ -108,7 +111,7 @@ router.get('/watchlist', authMiddleware, async (req, res) => {
           (SELECT conviction FROM consensus_results WHERE symbol = s.symbol AND symbol LIKE '%.SR' ORDER BY prediction_date DESC LIMIT 1) AS conviction,
           (SELECT agent_agreement FROM consensus_results WHERE symbol = s.symbol AND symbol LIKE '%.SR' ORDER BY prediction_date DESC LIMIT 1) AS agent_agreement
         FROM user_watchlist w
-        JOIN egx30_stocks s ON w.stock_id = s.id
+        JOIN ${STOCK_TABLE} s ON w.stock_id = s.id
         WHERE w.user_id = ?
         ORDER BY w.added_at DESC
       `;
@@ -139,7 +142,7 @@ router.post('/watchlist/:stockId', authMiddleware, async (req, res) => {
         // Check stock exists
         const boolTrue = isPostgres ? 'TRUE' : '1';
         const stock = await dbGet(
-            `SELECT id FROM egx30_stocks WHERE id = ${ph(1)} AND is_active = ${boolTrue}`,
+            `SELECT id FROM ${STOCK_TABLE} WHERE id = ${ph(1)} AND is_active = ${boolTrue}`,
             [stockId]
         );
         if (!stock) {

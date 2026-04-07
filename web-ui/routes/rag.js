@@ -18,6 +18,8 @@ const { buildEnrichedSystemPrompt } = require('../services/openbbMcpBridge');
 
 let _db = null;
 let _isPostgres = false;
+const _activeMarket = String(process.env.MARKET || '').toUpperCase();
+const _stockTable = _activeMarket === 'KSA' ? 'ksa_stocks' : 'egx30_stocks';
 
 function attachDb(db, isPostgres) {
     _db = db;
@@ -271,11 +273,11 @@ async function loadEntityCatalog() {
     const catalog = [];
     try {
         const stockRows = await dbAll(
-            `SELECT symbol, name_en, name_ar, sector_en FROM egx30_stocks WHERE is_active ${_isPostgres ? '= TRUE' : '= 1'} ORDER BY symbol ASC`,
+            `SELECT symbol, name_en, name_ar, sector_en FROM ${_stockTable} WHERE is_active ${_isPostgres ? '= TRUE' : '= 1'} ORDER BY symbol ASC`,
             []
         );
         stockRows.forEach(row => {
-            const aliases = [row.symbol, String(row.symbol || '').replace(/\.CA$/i, ''), row.name_en, row.name_ar, row.sector_en]
+            const aliases = [row.symbol, String(row.symbol || '').replace(/\.SR$/i, ''), row.name_en, row.name_ar, row.sector_en]
                 .filter(Boolean)
                 .map(normalizeEntityText);
             catalog.push({
@@ -501,7 +503,7 @@ router.post('/chat', optionalAuth, async (req, res) => {
         let stockReferenceBlock = '';
         try {
             const stocks = await dbAll(
-                `SELECT symbol, name_en, name_ar, sector_en FROM egx30_stocks ORDER BY symbol ASC`,
+                `SELECT symbol, name_en, name_ar, sector_en FROM ${_stockTable} ORDER BY symbol ASC`,
                 []
             );
             if (stocks.length > 0) {

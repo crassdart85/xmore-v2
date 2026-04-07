@@ -350,15 +350,15 @@ def add_crosssectional_features(df, index_df=None):
 
 def add_macro_features(df, macro_df):
     """
-    Merge macro context (Brent crude, USD/EGP rate, EM equity) into the stock price DataFrame.
+    Merge macro context (Brent crude, USD/SAR rate, EM equity) into the stock price DataFrame.
 
     Uses 5-day rolling returns for each macro series so the ML agent sees recent direction,
     not just the raw level (which varies in scale across instruments).
 
-    macro_df must have columns: date, brent_close, usdegp_close, eem_close.
+    macro_df must have columns: date, brent_close, usdsar_close, eem_close.
     Any missing macro series is filled with 0 (neutral / no signal).
     """
-    macro_cols = ['brent_return_5d', 'usdegp_return_5d', 'eem_return_5d']
+    macro_cols = ['brent_return_5d', 'usdsar_return_5d', 'eem_return_5d']
 
     if macro_df is None or len(macro_df) == 0:
         for col in macro_cols:
@@ -372,7 +372,7 @@ def add_macro_features(df, macro_df):
 
     for raw_col, ret_col in [
         ('brent_close',  'brent_return_5d'),
-        ('usdegp_close', 'usdegp_return_5d'),
+        ('usdsar_close', 'usdsar_return_5d'),
         ('eem_close',    'eem_return_5d'),
     ]:
         if raw_col in macro.columns:
@@ -475,7 +475,7 @@ def get_feature_columns():
         # Volume
         'OBV', 'AD_Line',
         # Macro context
-        'brent_return_5d', 'usdegp_return_5d', 'eem_return_5d',
+        'brent_return_5d', 'usdsar_return_5d', 'eem_return_5d',
         # Sentiment
         'sentiment_score',
         # Cross-sectional momentum (stock vs EGX30 index)

@@ -6,6 +6,9 @@
 const express = require('express');
 const router = express.Router();
 
+const ACTIVE_MARKET = String(process.env.MARKET || '').toUpperCase();
+const STOCK_TABLE = ACTIVE_MARKET === 'KSA' ? 'ksa_stocks' : 'egx30_stocks';
+
 let db = null;
 
 function attachDb(_db) {
@@ -18,14 +21,14 @@ router.get('/stocks', (req, res) => {
         console.log('DEBUG: /api/stocks hit. isPostgres:', isPostgres, 'Querying DB...');
         const ksaQuery = `
     SELECT id, symbol, name_en, name_ar, sector_en, sector_ar
-    FROM egx30_stocks
+    FROM ${STOCK_TABLE}
     WHERE is_active = ${isPostgres ? 'TRUE' : '1'}
             AND UPPER(symbol) LIKE '%.SR'
     ORDER BY symbol
   `;
         const fallbackQuery = `
         SELECT id, symbol, name_en, name_ar, sector_en, sector_ar
-        FROM egx30_stocks
+        FROM ${STOCK_TABLE}
         WHERE is_active = ${isPostgres ? 'TRUE' : '1'}
         ORDER BY CASE WHEN UPPER(symbol) LIKE '%.SR' THEN 0 ELSE 1 END, symbol
     `;

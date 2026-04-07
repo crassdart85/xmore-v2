@@ -339,10 +339,10 @@ class MLAgent(BaseAgent):
                 cur.execute("""
                     SELECT date,
                         MAX(CASE WHEN symbol='MACRO_BRENT'  THEN close END) AS brent_close,
-                        MAX(CASE WHEN symbol='MACRO_USDEGP' THEN close END) AS usdegp_close,
+                        MAX(CASE WHEN symbol='MACRO_USDSAR' THEN close END) AS usdsar_close,
                         MAX(CASE WHEN symbol='MACRO_EEM'    THEN close END) AS eem_close
                     FROM prices
-                    WHERE symbol IN ('MACRO_BRENT', 'MACRO_USDEGP', 'MACRO_EEM')
+                    WHERE symbol IN ('MACRO_BRENT', 'MACRO_USDSAR', 'MACRO_EEM')
                     GROUP BY date ORDER BY date
                 """)
                 rows = cur.fetchall()

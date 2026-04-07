@@ -49,6 +49,12 @@ except Exception as _uni_err:
     KSA_INITIAL_UNIVERSE = []
     print(f"[KSA] WARNING: Could not import KSA universe: {_uni_err}")
 
+try:
+    from config.ksa_holidays import SAUDI_HOLIDAYS, is_trading_day, is_saudi_holiday
+except Exception as _hol_err:
+    SAUDI_HOLIDAYS = set()
+    print(f"[KSA] WARNING: Could not import KSA holidays: {_hol_err}")
+
 # ---------------------------------------------------------------------------
 # Logger
 # ---------------------------------------------------------------------------
@@ -61,28 +67,9 @@ MARKET_ID   = "KSA"
 TASI_TICKER = "^TASI.SR"
 _TABLE_COLUMNS_CACHE: dict[str, set[str]] = {}
 
-# Saudi national holidays 2026 (Gregorian calendar equivalents).
-# Sources: Saudi official calendar -- Founding Day, Eid al-Fitr, Eid al-Adha,
-# National Day, Islamic New Year, Prophet's Birthday.
-SAUDI_HOLIDAYS_2026 = [
-    # Founding Day -- 22 Feb
-    datetime.date(2026, 2, 22),
-    # Eid al-Fitr (estimated 20-22 Mar 2026, 3-day holiday)
-    datetime.date(2026, 3, 20),
-    datetime.date(2026, 3, 21),
-    datetime.date(2026, 3, 22),
-    # Eid al-Adha (estimated 27-30 May 2026, 4-day holiday)
-    datetime.date(2026, 5, 27),
-    datetime.date(2026, 5, 28),
-    datetime.date(2026, 5, 29),
-    datetime.date(2026, 5, 30),
-    # Islamic New Year (estimated 17 Jun 2026)
-    datetime.date(2026, 6, 17),
-    # Prophet's Birthday (estimated 25 Aug 2026)
-    datetime.date(2026, 8, 25),
-    # Saudi National Day -- 23 Sep
-    datetime.date(2026, 9, 23),
-]
+# Saudi holidays imported from config.ksa_holidays (shared module).
+# Retained as local alias for backward compatibility with inline references.
+SAUDI_HOLIDAYS_2026 = list(SAUDI_HOLIDAYS)
 
 # Tadawul trading week: Sunday-Thursday (weekday indices Sun=6, Mon=0 ... Thu=3)
 _TADAWUL_TRADING_DAYS = {6, 0, 1, 2, 3}
@@ -125,18 +112,11 @@ def is_holiday(check_date: datetime.date = None) -> bool:
     """
     Return True if check_date (default today) is a Saudi public holiday or
     falls on the Tadawul weekend (Friday or Saturday).
-
-    Tadawul trades Sunday-Thursday.
-    Python weekday(): Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6.
+    Delegates to shared config.ksa_holidays module.
     """
     if check_date is None:
         check_date = datetime.date.today()
-    if check_date in SAUDI_HOLIDAYS_2026:
-        return True
-    # Friday=4, Saturday=5 are Tadawul weekend
-    if check_date.weekday() in (4, 5):
-        return True
-    return False
+    return not is_trading_day(check_date)
 
 
 # ---------------------------------------------------------------------------

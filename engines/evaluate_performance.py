@@ -22,7 +22,7 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 # TASI benchmark symbols to try (in order of preference)
 # TASI.INDX is written by engines/fetch_tasi_benchmark.py
 # 2222.SR (Aramco) is a ~15% weight proxy of last resort
-EGX30_SYMBOLS = ['TASI.INDX', '^TASI', '2222.SR']  # alias kept for internal use
+TASI_BENCHMARK_SYMBOLS = ['TASI.INDX', '^TASI', '2222.SR']
 
 
 # ─── SQL HELPERS ───────────────────────────────────────────────
@@ -77,22 +77,22 @@ def run_evaluation(pipeline_run_id: str = None, market_id: str = None):
     Full evaluation pass. Called daily after briefing generation.
     Args:
         pipeline_run_id: Optional pipeline run tracking ID.
-        market_id: Optional market filter (e.g. 'KSA'). Currently unused
-                   but accepted so callers don't raise TypeError.
+        market_id: Optional market filter (e.g. 'KSA'). When set, only
+                   evaluates trade_recommendations with matching market_id.
     """
-    print("[Evaluate] Starting performance evaluation...")
+    print(f"[Evaluate] Starting performance evaluation (market_id={market_id or 'ALL'})...")
 
     try:
         # 1. Resolve 1-day outcomes + benchmarks
-        resolved_1d = resolve_1day_outcomes()
+        resolved_1d = resolve_1day_outcomes(market_id=market_id)
         print(f"[Evaluate] Resolved {resolved_1d} 1-day outcomes")
 
         # 2. Resolve 5-day outcomes + benchmarks
-        resolved_5d = resolve_5day_outcomes()
+        resolved_5d = resolve_5day_outcomes(market_id=market_id)
         print(f"[Evaluate] Resolved {resolved_5d} 5-day outcomes")
 
         # 3. Resolve closed positions with benchmarks
-        resolved_pos = resolve_position_benchmarks()
+        resolved_pos = resolve_position_benchmarks(market_id=market_id)
         print(f"[Evaluate] Resolved {resolved_pos} position benchmarks")
 
         # 4. Update per-agent accuracy snapshots (PostgreSQL only)
@@ -140,7 +140,7 @@ def run_evaluation(pipeline_run_id: str = None, market_id: str = None):
 
 # ─── 1-DAY RESOLUTION ─────────────────────────────────────────
 
-def resolve_1day_outcomes() -> int:
+def resolve_1day_outcomes(market_id: str = None) -> int:
     """
     For recommendations where 1 trading day has passed:
     - Fill actual_next_day_return
@@ -148,6 +148,7 @@ def resolve_1day_outcomes() -> int:
     - Calculate alpha_1d
     - Set was_correct
     """
+    market_filter = f"AND tr.market_id = '{market_id}'" if market_id else ""
     with get_connection() as conn:
         cursor = conn.cursor()
 
@@ -163,6 +164,7 @@ def resolve_1day_outcomes() -> int:
             AND tr.recommendation_date >= {_interval(90)}
             AND tr.close_price IS NOT NULL
             AND tr.close_price > 0
+            {market_filter}
         """
         unresolved = _query(cursor, sql)
 
@@ -243,13 +245,14 @@ def resolve_1day_outcomes() -> int:
 
 # ─── 5-DAY RESOLUTION ─────────────────────────────────────────
 
-def resolve_5day_outcomes() -> int:
+def resolve_5day_outcomes(market_id: str = None) -> int:
     """
     For recommendations where 5+ trading days have passed:
     - Fill actual_5day_return
     - Fill benchmark_5d_return
     - Calculate alpha_5d
     """
+    market_filter = f"AND tr.market_id = '{market_id}'" if market_id else ""
     with get_connection() as conn:
         cursor = conn.cursor()
 
@@ -261,6 +264,7 @@ def resolve_5day_outcomes() -> int:
             AND tr.recommendation_date >= {_interval(90)}
             AND tr.close_price IS NOT NULL
             AND tr.close_price > 0
+            {market_filter}
         """
         unresolved = _query(cursor, sql)
 
@@ -298,7 +302,7 @@ def resolve_5day_outcomes() -> int:
                 ((close_5d - rec["close_price"]) / rec["close_price"]) * 100, 4
             )
 
-            # Benchmark: EGX30 over same 5-day period
+            # Benchmark: TASI over same 5-day period
             benchmark_5d = get_benchmark_return(cursor, rec_date, date_5d)
 
             # Buy-and-hold: same stock 5-day
@@ -336,7 +340,7 @@ def resolve_5day_outcomes() -> int:
 
 # ─── POSITION BENCHMARK RESOLUTION ────────────────────────────
 
-def resolve_position_benchmarks() -> int:
+def resolve_position_benchmarks(market_id: str = None) -> int:
     """
     For closed positions: calculate what TASI returned
     over the same entry_date → exit_date period.
@@ -345,6 +349,7 @@ def resolve_position_benchmarks() -> int:
         cursor = conn.cursor()
 
         try:
+            market_filter = f"AND market_id = '{market_id}'" if market_id else ""
             sql = f"""
                 SELECT id, symbol, entry_date, exit_date, entry_price,
                        exit_price, return_pct
@@ -353,6 +358,7 @@ def resolve_position_benchmarks() -> int:
                 AND benchmark_return_pct IS NULL
                 AND entry_date IS NOT NULL
                 AND exit_date IS NOT NULL
+                {market_filter}
             """
             unresolved = _query(cursor, sql)
         except Exception:
@@ -387,7 +393,7 @@ def get_benchmark_return(cursor, start_date, end_date) -> float:
     Saudi Aramco (2222.SR) as a liquid proxy of last resort.
     Returns percentage return, or None if data unavailable.
     """
-    for symbol in EGX30_SYMBOLS:
+    for symbol in TASI_BENCHMARK_SYMBOLS:
         start_sql = f"""
             SELECT close FROM prices
             WHERE symbol = {_ph(1)} AND date <= {_ph(2)}
@@ -415,7 +421,7 @@ def get_benchmark_return(cursor, start_date, end_date) -> float:
 
 def evaluate_correctness(action: str, actual_return: float):
     """Determine if a recommendation was correct.
-    Handles both EGX-style (BUY/SELL/HOLD) and KSA consensus (UP/DOWN/HOLD).
+    Handles both legacy (BUY/SELL/HOLD) and KSA consensus (UP/DOWN/HOLD).
     """
     if action in ("BUY", "UP"):
         return actual_return > 0           # Price went up

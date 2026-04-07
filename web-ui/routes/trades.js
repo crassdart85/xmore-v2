@@ -1,6 +1,9 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
+
+const ACTIVE_MARKET = String(process.env.MARKET || '').toUpperCase();
+const STOCK_TABLE = ACTIVE_MARKET === 'KSA' ? 'ksa_stocks' : 'egx30_stocks';
 
 let db;
 
@@ -35,7 +38,7 @@ function safeJsonArrayParse(value) {
 }
 
 
-// ─── GET /api/trades/today ────────────────────────────────────
+// â”€â”€â”€ GET /api/trades/today â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/today', authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
@@ -77,7 +80,7 @@ router.get('/today', authMiddleware, async (req, res) => {
                 CASE WHEN up.id IS NOT NULL THEN 1 ELSE 0 END AS has_position,
                 up.entry_date, up.entry_price
             FROM trade_recommendations tr
-            JOIN egx30_stocks s ON tr.symbol = s.symbol
+            JOIN ${STOCK_TABLE} s ON tr.symbol = s.symbol
             LEFT JOIN user_positions up
                 ON up.user_id = tr.user_id
                 AND up.symbol = tr.symbol
@@ -139,7 +142,7 @@ router.get('/today', authMiddleware, async (req, res) => {
 });
 
 
-// ─── GET /api/trades/history ──────────────────────────────────
+// â”€â”€â”€ GET /api/trades/history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/history', authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
@@ -167,7 +170,7 @@ router.get('/history', authMiddleware, async (req, res) => {
                 tr.*, s.name_en, s.name_ar,
                 tr.actual_next_day_return, tr.actual_5day_return, tr.was_correct
             FROM trade_recommendations tr
-            JOIN egx30_stocks s ON tr.symbol = s.symbol
+            JOIN ${STOCK_TABLE} s ON tr.symbol = s.symbol
             ${whereClause}
             ORDER BY tr.recommendation_date DESC, tr.priority DESC
             LIMIT $${paramIdx++} OFFSET $${paramIdx++}
@@ -198,7 +201,7 @@ router.get('/history', authMiddleware, async (req, res) => {
     }
 });
 
-// ─── GET /api/portfolio ───────────────────────────────────────
+// â”€â”€â”€ GET /api/portfolio â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/portfolio', authMiddleware, async (req, res) => {
     try {
         // Since we are mocking 'user_positions' which might not exist if running fresh without migration locally (though I added sql),
@@ -223,7 +226,7 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
                 (SELECT close FROM prices WHERE symbol = up.symbol ORDER BY date DESC LIMIT 1) AS current_price,
                 ${daysHeldExpr} AS days_held
             FROM user_positions up
-            LEFT JOIN egx30_stocks s ON up.symbol = s.symbol
+            LEFT JOIN ${STOCK_TABLE} s ON up.symbol = s.symbol
             WHERE up.user_id = $1 AND up.status = 'OPEN'
             ORDER BY up.entry_date DESC
         `;
@@ -255,7 +258,7 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
                 up.return_pct,
                 ${closedDaysExpr} AS days_held
             FROM user_positions up
-            JOIN egx30_stocks s ON up.symbol = s.symbol
+            JOIN ${STOCK_TABLE} s ON up.symbol = s.symbol
             WHERE up.user_id = $1 AND up.status = 'CLOSED'
             ORDER BY up.exit_date DESC
             LIMIT 30
@@ -334,7 +337,7 @@ router.get('/portfolio', authMiddleware, async (req, res) => {
     }
 });
 
-// ─── GET /api/trades/performance ──────────────────────────────
+// â”€â”€â”€ GET /api/trades/performance â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.get('/performance', authMiddleware, async (req, res) => {
     try {
         const userId = req.userId;
@@ -391,7 +394,7 @@ router.get('/performance', authMiddleware, async (req, res) => {
     }
 });
 
-// ─── POST /api/trades/positions — Open a virtual position ────────────────────
+// â”€â”€â”€ POST /api/trades/positions â€” Open a virtual position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.post('/positions', authMiddleware, async (req, res) => {
     try {
         const userId = req.user?.userId || req.userId;
@@ -416,14 +419,14 @@ router.post('/positions', authMiddleware, async (req, res) => {
         if (db._isPostgres && result.rows.length === 0) {
             return res.status(409).json({ error: 'An open position for this symbol already exists' });
         }
-        return res.json({ ok: true, message: `Position opened for ${symbol} at ${price} × ${qty}` });
+        return res.json({ ok: true, message: `Position opened for ${symbol} at ${price} Ã— ${qty}` });
     } catch (err) {
         console.error('Error opening position:', err);
         res.status(500).json({ error: 'Server error' });
     }
 });
 
-// ─── PATCH /api/trades/positions/:id — Close a virtual position ───────────────
+// â”€â”€â”€ PATCH /api/trades/positions/:id â€” Close a virtual position â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 router.patch('/positions/:id', authMiddleware, async (req, res) => {
     try {
         const userId = req.user?.userId || req.userId;
@@ -457,7 +460,7 @@ router.patch('/positions/:id', authMiddleware, async (req, res) => {
     }
 });
 
-// ─── Session Sheet (/api/trades/session-sheet) ───────────────────────────────
+// â”€â”€â”€ Session Sheet (/api/trades/session-sheet) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Returns the latest Tadawul session signals enriched with pivot levels, trend,
 // and execution guidance.
 router.get('/session-sheet', authMiddleware, async (req, res) => {
@@ -477,8 +480,8 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
         const stocksSql = `
             SELECT
                 tr.symbol,
-                COALESCE(s.name_en, REPLACE(REPLACE(tr.symbol, '.SR', ''), '.CA', '')) AS name_en,
-                COALESCE(s.name_ar, REPLACE(REPLACE(tr.symbol, '.SR', ''), '.CA', '')) AS name_ar,
+                COALESCE(s.name_en, REPLACE(tr.symbol, '.SR', '')) AS name_en,
+                COALESCE(s.name_ar, REPLACE(tr.symbol, '.SR', '')) AS name_ar,
                 s.sector_en, s.sector_ar,
                 tr.action, tr.signal, tr.confidence, tr.conviction,
                 tr.close_price, tr.stop_loss_price, tr.stop_loss_pct,
@@ -486,7 +489,7 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
                 tr.trend_ar, tr.trend_en, tr.rec_type_ar, tr.rec_type_en,
                 tr.buy_guide, tr.pivot, tr.r1, tr.r2, tr.s1, tr.s2, tr.patterns
             FROM trade_recommendations tr
-            LEFT JOIN egx30_stocks s ON tr.symbol = s.symbol
+            LEFT JOIN ${STOCK_TABLE} s ON tr.symbol = s.symbol
             WHERE tr.user_id = $1
               AND tr.recommendation_date = $2
               AND tr.signal IN ('UP', 'DOWN')
@@ -497,8 +500,8 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
 
         // Index pivot levels (TASI, MT30 when available in the price store)
         const indexSymbols = [
-            { candidates: ['TASI.SR', 'TASI', '^TASI'], name_en: 'TASI Index', name_ar: 'مؤشر تاسي' },
-            { candidates: ['MT30.SR', 'MT30'], name_en: 'Tadawul MT30', name_ar: 'مؤشر إم تي 30' },
+            { candidates: ['TASI.SR', 'TASI', '^TASI'], name_en: 'TASI Index', name_ar: 'Ù…Ø¤Ø´Ø± ØªØ§Ø³ÙŠ' },
+            { candidates: ['MT30.SR', 'MT30'], name_en: 'Tadawul MT30', name_ar: 'Ù…Ø¤Ø´Ø± Ø¥Ù… ØªÙŠ 30' },
         ];
         const indexData = [];
         for (const meta of indexSymbols) {
@@ -548,9 +551,9 @@ router.get('/session-sheet', authMiddleware, async (req, res) => {
     }
 });
 
-// ─── Price Alerts ──────────────────────────────────────────────
+// â”€â”€â”€ Price Alerts â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-// GET /api/trades/alerts — list user's alerts + trigger check vs latest price
+// GET /api/trades/alerts â€” list user's alerts + trigger check vs latest price
 router.get('/alerts', authMiddleware, async (req, res) => {
     try {
         const userId = req.user?.userId || req.userId;
@@ -586,7 +589,7 @@ router.get('/alerts', authMiddleware, async (req, res) => {
     }
 });
 
-// POST /api/trades/alerts — create alert
+// POST /api/trades/alerts â€” create alert
 router.post('/alerts', authMiddleware, async (req, res) => {
     try {
         const userId = req.user?.userId || req.userId;

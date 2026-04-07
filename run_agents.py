@@ -218,8 +218,8 @@ def _detect_market_regime(conn) -> Optional[dict]:
     Fit a Gaussian HMM on recent EGX30-representative returns to classify
     the current market regime as Calm / Turbulent / Crisis.
 
-    Uses COMI.CA (Commercial International Bank) as a liquid EGX30 proxy when
-    a dedicated EGX30 index price series is not available.
+    Uses TASI.INDX or 2222.SR (Saudi Aramco) as a liquid Tadawul proxy when
+    a dedicated TASI index price series is not available.
 
     Returns a dict with keys:
         regime_label_en   — "Calm", "Turbulent", or "Crisis"
@@ -233,8 +233,8 @@ def _detect_market_regime(conn) -> Optional[dict]:
         if not HAS_HMMLEARN:
             return None
 
-        # Try EGX30 index first, fall back to COMI.CA
-        proxy_symbols = ['EGX30.CA', 'COMI.CA', 'HRHO.CA']
+        # Try TASI index first, fall back to Saudi Aramco (most liquid .SR proxy)
+        proxy_symbols = ['TASI.INDX', '^TASI', '2222.SR']
         price_series = None
         for sym in proxy_symbols:
             if os.getenv('DATABASE_URL'):

@@ -1,8 +1,8 @@
 """
 Gemini-powered Sentiment Analysis Module
 
-Primary news source : Enterprise Egypt (bilingual EN/AR, EGX-focused)
-Fallback 1          : Mubasher EGX RSS EN + AR (free, no key)
+Primary news source : KSA financial news (bilingual EN/AR, Tadawul-focused)
+Fallback 1          : Mubasher KSA RSS EN + AR (free, no key)
 Fallback 2          : Finnhub API per-symbol headlines
 AI model            : gemini-2.5-flash (free tier: 10 req/min, 1,500 req/day)
 Scoring             : Gemini returns sentiment text -> mapped to ±0.7/0.0
@@ -24,7 +24,7 @@ from google import genai
 from google.genai import types as genai_types
 import config
 from database import create_tables, get_connection, log_system_run
-from egx_symbols import EGX_SYMBOL_DATABASE
+from config.ksa_universe import KSA_TOP50
 
 from ana_lyze import prompts
 from ana_lyze.CallGenAI import CallGemma
@@ -38,18 +38,19 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
 
 # ── Company name → Yahoo symbol lookup ──────────────────────────────────────
-# Built from EGX_SYMBOL_DATABASE so Gemini output can be matched to a ticker
+# Built from KSA_TOP50 so Gemini output can be matched to a ticker
 _NAME_TO_SYMBOL: dict = {}
-for _ticker, _stock in EGX_SYMBOL_DATABASE.items():
-    _NAME_TO_SYMBOL[_stock.name_en.lower()] = _stock.yahoo
-    _NAME_TO_SYMBOL[_stock.name_ar.lower()] = _stock.yahoo
-    _NAME_TO_SYMBOL[_ticker.lower()] = _stock.yahoo
+for _stock in KSA_TOP50:
+    _NAME_TO_SYMBOL[_stock["name_en"].lower()] = _stock["symbol"]
+    _NAME_TO_SYMBOL[_stock["name_ar"].lower()] = _stock["symbol"]
+    # Also map the bare ticker code (e.g., "2222" -> "2222.SR")
+    _NAME_TO_SYMBOL[_stock["symbol"].replace(".SR", "").lower()] = _stock["symbol"]
 
 # Company list JSON passed inside the Gemini prompt so it can identify tickers
 _COMPANY_LIST_JSON = json.dumps(
     [
-        {"name": s.name_en, "name_ar": s.name_ar, "symbol": s.yahoo}
-        for s in EGX_SYMBOL_DATABASE.values()
+        {"name": s["name_en"], "name_ar": s["name_ar"], "symbol": s["symbol"]}
+        for s in KSA_TOP50
     ],
     ensure_ascii=False,
 )

@@ -57,6 +57,7 @@ const KSA_FILTER_CR = "consensus_results.symbol LIKE '%.SR'";
 const DEFAULT_ROUND_TRIP_COST_PCT = 0.725;
 
 function perTradeCostPct(row) {
+    // Column names retain legacy _egp suffix; values are currency-agnostic (SAR for KSA)
     const rtc = Number(row?.round_trip_cost_egp);
     const pve = Number(row?.position_value_egp);
     if (Number.isFinite(rtc) && Number.isFinite(pve) && pve > 0) {
