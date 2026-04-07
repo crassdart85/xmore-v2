@@ -57,6 +57,7 @@ router.get('/signals/latest', async (req, res) => {
             FROM consensus_results c
             LEFT JOIN ksa_stocks k ON k.symbol = c.symbol
             WHERE c.market_id = 'KSA'
+              AND c.symbol LIKE '%.SR'
             ORDER BY prediction_date DESC
             LIMIT ${ph(1)}
         `, [limit]);
@@ -83,6 +84,7 @@ router.get('/signals/today', async (req, res) => {
             SELECT MAX(prediction_date) AS latest_date
             FROM consensus_results
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
         `);
         const latestDate = latest?.latest_date || null;
         if (!latestDate) {
@@ -101,6 +103,7 @@ router.get('/signals/today', async (req, res) => {
             FROM consensus_results c
             LEFT JOIN ksa_stocks k ON k.symbol = c.symbol
             WHERE c.market_id = 'KSA'
+              AND c.symbol LIKE '%.SR'
               AND ${dateClause}
             ORDER BY xmore_score DESC
         `, [latestDate]);
@@ -128,6 +131,7 @@ router.get('/performance/summary', async (req, res) => {
                    alpha_1d, recommendation_date
             FROM trade_recommendations
             WHERE market_id = 'KSA'
+              AND symbol LIKE '%.SR'
               AND actual_next_day_return IS NOT NULL
               AND ${simFilter()}
             ORDER BY recommendation_date ASC
@@ -225,7 +229,7 @@ router.get('/freshness', async (_req, res) => {
                 { latest_value: null },
             )),
             dbGetSafe(
-                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA'`,
+                `SELECT MAX(prediction_date) AS latest_value FROM consensus_results WHERE market_id = 'KSA' AND symbol LIKE '%.SR'`,
                 [],
                 { latest_value: null },
             ),
@@ -467,7 +471,7 @@ router.get('/context/:ticker', async (req, res) => {
 // GET /api/ksa/health
 router.get('/health', async (req, res) => {
     try {
-        const row = await dbGet(`SELECT COUNT(*) AS cnt FROM consensus_results WHERE market_id = 'KSA'`);
+        const row = await dbGet(`SELECT COUNT(*) AS cnt FROM consensus_results WHERE market_id = 'KSA' AND symbol LIKE '%.SR'`);
         res.json({ status: 'ok', market: 'KSA', total_signals: Number(row?.cnt || 0) });
     } catch (e) {
         res.status(500).json({ status: 'error', error: e.message });
