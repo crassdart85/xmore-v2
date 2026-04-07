@@ -98,7 +98,12 @@ def _get_table_columns(conn, table_name: str) -> set[str]:
             cursor.execute(f"PRAGMA table_info({table_name})")
             cols = {str(row[1]).lower() for row in cursor.fetchall()}
     except Exception as exc:
-        logger.debug(f"[KSA] Could not inspect columns for {table_name}: {exc}")
+        logger.error(f"[KSA] Could not inspect columns for {table_name}: {exc}")
+        print(f"[KSA] ERROR: column inspection failed for {table_name}: {exc}")
+
+    if not cols:
+        logger.warning(f"[KSA] {table_name}: 0 columns found — inserts will be incomplete")
+        print(f"[KSA] WARNING: {table_name} has 0 columns — check DB connection/schema")
 
     _TABLE_COLUMNS_CACHE[cache_key] = cols
     return cols
@@ -576,9 +581,11 @@ def _run_consensus(
         logger.warning(f"[KSA] {ticker}: consensus engine error (non-fatal): {e}")
         return result
 
-    # Persist to consensus_results (best-effort)
+    # Persist to consensus_results
     try:
         cols = _get_table_columns(conn, "consensus_results")
+        if not cols:
+            logger.error(f"[KSA] {ticker}: consensus_results table columns empty — schema issue")
         payload = {"symbol": ticker}
         if "prediction_date" in cols:
             payload["prediction_date"] = datetime.date.today()
@@ -588,8 +595,29 @@ def _run_consensus(
             payload["final_signal"] = result.get("final_signal", "HOLD")
         if "conviction" in cols:
             payload["conviction"] = result.get("conviction", "LOW")
+        if "confidence" in cols:
+            payload["confidence"] = result.get("confidence", 50)
         if "xmore_score" in cols:
             payload["xmore_score"] = result.get("xmore_score", 50)
+        if "bull_score" in cols:
+            payload["bull_score"] = result.get("bull_score")
+        if "bear_score" in cols:
+            payload["bear_score"] = result.get("bear_score")
+        if "agent_agreement" in cols:
+            payload["agent_agreement"] = result.get("agent_agreement")
+        if "risk_level" in cols:
+            payload["risk_level"] = result.get("risk_level")
+        if "expected_move" in cols:
+            payload["expected_move"] = result.get("expected_move")
+        if "drivers_json" in cols:
+            drivers = result.get("drivers") or result.get("key_drivers") or []
+            payload["drivers_json"] = json.dumps(drivers) if isinstance(drivers, (list, dict)) else drivers
+        if "risk_action" in cols:
+            payload["risk_action"] = result.get("risk_action", "PROCEED")
+        if "agents_agreeing" in cols:
+            payload["agents_agreeing"] = result.get("agents_agreeing")
+        if "agents_total" in cols:
+            payload["agents_total"] = result.get("agents_total", len(signals))
         if "market_id" in cols:
             payload["market_id"] = MARKET_ID
         if "signal_count" in cols:
@@ -606,10 +634,12 @@ def _run_consensus(
             [payload[c] for c in col_names],
         )
         conn.commit()
+        logger.info(f"[KSA] {ticker}: consensus written ({len(col_names)} cols)")
     except Exception as _db_err:
-        logger.debug(
-            f"[KSA] consensus_results write skipped for {ticker}: {_db_err}"
+        logger.error(
+            f"[KSA] consensus_results write FAILED for {ticker}: {_db_err}"
         )
+        print(f"[KSA] ERROR: consensus write failed for {ticker}: {_db_err}")
         try:
             conn.rollback()
         except Exception:
@@ -694,13 +724,14 @@ def _store_signal(conn, ticker: str, consensus_result: dict, market_data: dict =
             [payload[c] for c in col_names],
         )
         conn.commit()
-        logger.debug(
+        logger.info(
             f"[KSA] Signal stored for {ticker}: {final_signal} ({conviction}) "
             f"close={close_price}"
         )
 
     except Exception as e:
-        logger.warning(f"[KSA] Failed to store signal for {ticker}: {e}")
+        logger.error(f"[KSA] Failed to store signal for {ticker}: {e}")
+        print(f"[KSA] ERROR: signal write failed for {ticker}: {e}")
         try:
             conn.rollback()
         except Exception:
@@ -735,6 +766,7 @@ def execute(args) -> None:
 
     # ---- 2. DB connection ------------------------------------------------
     db_url = os.environ.get("DATABASE_URL")
+    print(f"[KSA] DATABASE_URL present: {bool(db_url)}, length: {len(db_url) if db_url else 0}")
     if not db_url:
         if args.dry_run:
             # Allow local dry-run via shared SQLite fallback
@@ -745,6 +777,7 @@ def execute(args) -> None:
             conn.row_factory = sqlite3.Row
         else:
             logger.error("[KSA] DATABASE_URL not set -- aborting")
+            print("[KSA] FATAL: DATABASE_URL not set — cannot write signals. Set KSA_DATABASE_URL secret.")
             return
     else:
         try:
