@@ -19,7 +19,7 @@ The project consists of three main layers:
 ### 1. Data Layer (SQLite)
 *   **`prices` table**: Stores historical stock data sourced from Yahoo Finance.
 *   **`news` table**: Stores financial news headlines and their encoded sentiment scores (FinBERT).
-*   **`predictions` / `evaluations` tables**: Store agent outputs and performance metrics.
+*   **`predictions` / `evaluations` tables**: Store agent outputs (including `confidence_score` for consensus agreement) and calibrated performance metrics (`magnitude_score`, `calibration_score`, `signal_strength`).
 
 ### 2. Logic & ML Layer (Python)
 *   **`collect_data.py`**: ETL script. Fetches prices (yfinance) and News (NewsAPI), runs FinBERT inference, and stores data.

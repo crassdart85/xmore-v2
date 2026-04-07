@@ -290,14 +290,14 @@ All server.js queries filter `WHERE symbol LIKE '%.SR'` (predictions, evaluation
 | `/api/prices/history/:symbol` | Added Apr 6 2026 — returns last N days OHLCV for one symbol; `?days=` param (default 60, max 365); used by native TASI proxy chart in pro.js |
 | `consensus_results` date column | `prediction_date` (not `timestamp`, not `date`) — `ksa-signals.js` aliases as `prediction_date AS timestamp` |
 | `regime_flag` | Does NOT exist in `consensus_results` — never SELECT it |
-| KSA-only columns on `trade_recommendations` | `signal_type`, `xmore_score`, `notes` — added via ALTER TABLE in `init-db-ksa.js` |
+| KSA-only columns on `trade_recommendations` | `signal_type`, `xmore_score`, `notes`, `is_simulated` — added via ALTER TABLE in `init-db-ksa.js` and `_safe_add_column()` in `database.py` |
 | `run_agents_ksa.py` | Writes `signal_type` (not legacy `signal` column) |
 | TASI benchmark | Stored as symbol `TASI.INDX`; fallback to `^TASI` / `2222.SR` proxy |
 | `agent_weights_log` | Softmax weight audit trail (added April 2026 via `init-db-ksa.js`) |
 | `macro_indicators` | SAMA rate, USD/SAR, CPI, GDP cached by MacroDataProvider |
 | `job_locks` | Advisory pipeline locking (TTL-based) |
 | `evaluations` new columns | `magnitude_score`, `calibration_score`, `signal_strength`, `actual_return` |
-| `predictions` new column | `confidence_score` (consensus confidence from softmax weights) |
+| `predictions` new columns | `confidence_score` (consensus confidence from softmax weights), `reasoning` (agent rationale text) — auto-applied by `database.py` `create_tables()` |
 
 ---
 

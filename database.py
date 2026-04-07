@@ -291,6 +291,7 @@ def create_tables():
 
         # Add reasoning column to predictions if it doesn't exist
         _safe_add_column(cursor, "predictions", "reasoning", "TEXT")
+        _safe_add_column(cursor, "predictions", "confidence_score", "REAL")
 
         # Add columns to consensus_results if they don't exist
         _safe_add_column(cursor, "consensus_results", "xmore_score", "REAL")
@@ -552,6 +553,7 @@ def create_tables():
         _safe_add_column(cursor, "trade_recommendations", "xmore_score", "REAL")
         _safe_add_column(cursor, "trade_recommendations", "notes", "TEXT")
         _safe_add_column(cursor, "trade_recommendations", "actual_outcome", "TEXT")
+        _safe_add_column(cursor, "trade_recommendations", "is_simulated", f"{bool_default}")
         _safe_add_column(cursor, "regime_log", "market_id", "TEXT DEFAULT 'KSA'")
         _safe_add_column(cursor, "regime_log", "regime_label", "TEXT")
         _safe_add_column(cursor, "regime_log", "regime_label_en", "TEXT")

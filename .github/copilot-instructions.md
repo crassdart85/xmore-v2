@@ -60,6 +60,8 @@ xmore_news/      News ingestion pipelines
 xmore_sentiment/ Sentiment analysis (Gemini, VADER, TextBlob)
 models/          Trained ML models (.joblib)
 migrations/      DB schema versioning (013–015: agent weights, eval metrics, job locks)
+                 Note: confidence_score (predictions) and is_simulated (trade_recommendations)
+                 are auto-applied via _safe_add_column() in database.py create_tables()
 config/          Execution configuration + ksa_universe.py (stock universe) + ksa_holidays.py (trading calendar)
 ```
 

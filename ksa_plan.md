@@ -184,6 +184,13 @@ These items use legacy naming in the database schema or inactive modules. They d
 | `openbb_egx/` module | Package directory | Standalone OpenBB provider; retained as legacy module |
 | `EGX_STOCKS` alias | config.py | Backward-compat alias → `KSA_STOCKS` |
 
+## Schema Columns Auto-Applied by `database.py` `create_tables()`
+
+| Column | Table | Purpose |
+|--------|-------|---------|
+| `confidence_score` | `predictions` | Consensus confidence from softmax-weighted agent agreement |
+| `is_simulated` | `trade_recommendations` | Distinguishes simulated (backfill) recs from live signals; used by track-record `simFilter()` |
+
 ## Recommended Next Phase
 
 1. ~~replace remaining egx30_stocks joins with a market-neutral reference abstraction~~ **DONE**

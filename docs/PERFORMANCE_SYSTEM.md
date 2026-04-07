@@ -44,6 +44,7 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 | `benchmark_5d_return` | REAL | TASI 5-day return |
 | `alpha_5d` | REAL | Alpha for 5-day window |
 | `is_live` | BOOLEAN | TRUE for live predictions, FALSE for backtests |
+| `is_simulated` | BOOLEAN | Distinguishes simulated (backfill) trade recommendations from live signals; used by `ksa-track-record.js` `simFilter()` |
 
 ### 2.2b Altered Columns (predictions)
 
@@ -82,6 +83,8 @@ The Xmore Performance System provides **investor-grade, auditable** tracking of 
 - `web-ui/migrations/013_agent_weights.sql` — `agent_weights_log` table + `confidence_score` on predictions
 - `web-ui/migrations/014_evaluation_metrics.sql` — Calibrated metric columns on evaluations
 - `web-ui/migrations/015_job_locks.sql` — `job_locks` table for advisory pipeline locking
+
+> **Note:** `confidence_score` (predictions) and `is_simulated` (trade_recommendations) are also auto-applied via `_safe_add_column()` in `database.py` `create_tables()`, ensuring SQLite environments get these columns without running SQL migrations.
 
 ---
 
